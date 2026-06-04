@@ -6,8 +6,12 @@ from supabase import create_client, Client
 # 🔑 API KEYS & CREDENTIALS (Secured)
 # ==========================================
 SUPERCELL_API_KEY = os.environ.get("SUPERCELL_API_KEY")
-SUPABASE_URL      = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY      = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+PROXY_HOST = os.environ.get("PROXY_HOST")
+PROXY_PORT = os.environ.get("PROXY_PORT")
+PROXY_USER = os.environ.get("PROXY_USER")
+PROXY_PASS = os.environ.get("PROXY_PASS")
 
 if not SUPERCELL_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     print("⚠️ Missing API keys. Ensure environment variables are set.")
@@ -18,14 +22,10 @@ HEADERS = {
     "Accept": "application/json"
 }
 BASE_URL = "https://api.brawlstars.com/v1"
-
-# ... (Leave the rest of the file exactly as it is!) ...
-
-def fetch_player_battles(player_tag, bracket, extracted_data):
-    """Helper function to fetch and process matches for a single player."""
-    player_url_tag = player_tag.replace("#", "%23")
-    log_url = f"{BASE_URL}/players/{player_url_tag}/battlelog"
-    log_res = requests.get(log_url, headers=HEADERS)
+PROXIES = {
+    "http": f"http://{PROXY_USER}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}",
+    "https": f"http://{PROXY_USER}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}",
+}
     
     if log_res.status_code != 200:
         return
