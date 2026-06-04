@@ -26,8 +26,18 @@ PROXIES = {
     "https": f"http://{PROXY_USER}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}",
 }
 
-def fetch_player_battles(player_tag, bracket, extracted_data):
-    """Helper function to fetch and process matches for a single player."""
+COUNTRIES = [
+    "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
+    "TR","MX","AR","PL","ES","IT","NL","SE","NO","FI",
+    "DK","AU","CA","IN","ID","TH","VN","PH","MY","SG",
+    "HU","CZ","RO","PT","BE","CH","AT","GR","IL","SA"
+]
+
+def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags):
+    if player_tag in seen_tags:
+        return
+    seen_tags.add(player_tag)
+
     player_url_tag = player_tag.replace("#", "%23")
     log_url = f"{BASE_URL}/players/{player_url_tag}/battlelog"
     log_res = requests.get(log_url, headers=HEADERS, proxies=PROXIES)
@@ -71,35 +81,35 @@ def fetch_player_battles(player_tag, bracket, extracted_data):
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
     extracted_data = []
+    seen_tags = set()
 
     # ==========================================
-    # PASS 1: Masters & Legendary Bracket
+    # PASS 1: Global + Country Leaderboards
     # ==========================================
-    print("Gathering Global Masters data...")
-    rankings_url = f"{BASE_URL}/rankings/global/players?limit=15"
-    response = requests.get(rankings_url, headers=HEADERS, proxies=PROXIES)
-
-    if response.status_code == 200:
-        top_players = response.json().get("items", [])
-        for player in top_players:
-            fetch_player_battles(player['tag'], "masters_legendary", extracted_data)
-    else:
-        print("❌ Failed to reach Global Leaderboard.")
+    for country in COUNTRIES:
+        if country == "global":
+            url = f"{BASE_URL}/rankings/global/players?limit=200"
+        else:
+            url = f"{BASE_URL}/rankings/{country}/players?limit=200"
+        print(f"Fetching leaderboard: {country}...")
+        response = requests.get(url, headers=HEADERS, proxies=PROXIES)
+        if response.status_code == 200:
+            for player in response.json().get("items", []):
+                fetch_player_battles(player['tag'], "masters_legendary", extracted_data, seen_tags)
+        else:
+            print(f"⚠️ Could not fetch leaderboard for {country}")
 
     # ==========================================
     # PASS 2: Diamond & Mythic Bracket
     # ==========================================
     print("Gathering Diamond/Mythic seed data...")
-
-    # ⚠️ ADD YOUR PLAYER TAGS HERE (Keep the # symbol!)
     seed_tags = [
         "#YOUR_TAG_HERE",
         "#FRIEND_1_TAG",
         "#FRIEND_2_TAG"
     ]
-
     for tag in seed_tags:
-        fetch_player_battles(tag, "diamond_mythic", extracted_data)
+        fetch_player_battles(tag, "diamond_mythic", extracted_data, seen_tags)
 
     # ==========================================
     # SAVE PIPELINE: SUPABASE CLOUD
@@ -108,7 +118,7 @@ def harvest_to_cloud():
         print("⚠️ No valid Ranked matches found to save.")
         return
 
-    print("Connecting to Supabase...")
+    print(f"Connecting to Supabase... pushing {len(extracted_data)} matches")
     try:
         supabase_headers = {
             "apikey": SUPABASE_KEY,
