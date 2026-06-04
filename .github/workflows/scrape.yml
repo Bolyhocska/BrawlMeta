@@ -22,19 +22,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests supabase
 
-      - name: Debug secrets
+      - name: Get fresh Supercell API key
+        id: get_key
         run: |
-          echo "SUPERCELL_API_KEY set: ${{ secrets.SUPERCELL_API_KEY != '' }}"
-          echo "SUPABASE_URL set: ${{ secrets.SUPABASE_URL != '' }}"
-          echo "SUPABASE_KEY set: ${{ secrets.SUPABASE_KEY != '' }}"
-          echo "PROXY_HOST set: ${{ secrets.PROXY_HOST != '' }}"
-          echo "PROXY_PORT set: ${{ secrets.PROXY_PORT != '' }}"
-          echo "PROXY_USER set: ${{ secrets.PROXY_USER != '' }}"
-          echo "PROXY_PASS set: ${{ secrets.PROXY_PASS != '' }}"
+          RESPONSE=$(curl -s -X POST https://get-sc-key.vercel.app \
+            -H "Content-Type: application/json" \
+            -d '{"email":"${{ secrets.SUPERCELL_EMAIL }}","password":"${{ secrets.SUPERCELL_PASSWORD }}","game":"brawlstars"}')
+          echo "key=$(echo $RESPONSE | python3 -c \"import sys,json; print(json.load(sys.stdin)['key'])\")" >> $GITHUB_OUTPUT
 
       - name: Run Scraper
         env:
-          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          SUPERCELL_API_KEY: ${{ steps.get_key.outputs.key }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           PROXY_HOST: ${{ secrets.PROXY_HOST }}
