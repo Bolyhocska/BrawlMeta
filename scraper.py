@@ -5,9 +5,9 @@ from supabase import create_client, Client
 # ==========================================
 # 🔑 API KEYS & CREDENTIALS (Secured)
 # ==========================================
-SUPERCELL_API_KEY = os.environ.get("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6IjFjMzMyZjEwLTRhM2QtNGJkNC1iMTU3LWVlZThmN2ZiM2EzYSIsImlhdCI6MTc4MDU5MzUxMSwic3ViIjoiZGV2ZWxvcGVyL2M4YWFhM2NkLTgxNjctMGIxYS0zN2YxLTlhNmE3ODUxMjU2OSIsInNjb3BlcyI6WyJicmF3bHN0YXJzIl0sImxpbWl0cyI6W3sidGllciI6ImRldmVsb3Blci9zaWx2ZXIiLCJ0eXBlIjoidGhyb3R0bGluZyJ9LHsiY2lkcnMiOlsiMjEzLjU1LjI0My43MyJdLCJ0eXBlIjoiY2xpZW50In1dfQ.mxtTaUQK2RPT4kNDgoJ2v6ZOlWJCoWV_dxNWqGA8fmVqc29yTacM7LLKwhI2gSYnHe0Sn7ArgLYr1kUYXCw8gg")
-SUPABASE_URL = os.environ.get("https://srvmcjoasywfegfnyyvr.supabase.co")
-SUPABASE_KEY = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydm1jam9hc3l3ZmVnZm55eXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODk4ODcsImV4cCI6MjA5NjE2NTg4N30.Sgbh-ap_bvVVgPwKcEvQQts0QVUosoP0D5DlO-EbK1I")
+SUPERCELL_API_KEY = os.environ.get("SUPERCELL_API_KEY")
+SUPABASE_URL      = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY      = os.environ.get("SUPABASE_KEY")
 
 if not SUPERCELL_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     print("⚠️ Missing API keys. Ensure environment variables are set.")
