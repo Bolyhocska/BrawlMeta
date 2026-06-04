@@ -2,7 +2,6 @@ name: BrawlMeta Auto-Scraper
 
 on:
   schedule:
-    # Runs the scraper every 3 hours
     - cron: '0 */3 * * *'
   workflow_dispatch: 
 
@@ -22,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests supabase
-      
+
       - name: Debug secrets
         run: |
           echo "SUPERCELL_API_KEY set: ${{ secrets.SUPERCELL_API_KEY != '' }}"
@@ -32,7 +31,7 @@ jobs:
           echo "PROXY_PORT set: ${{ secrets.PROXY_PORT != '' }}"
           echo "PROXY_USER set: ${{ secrets.PROXY_USER != '' }}"
           echo "PROXY_PASS set: ${{ secrets.PROXY_PASS != '' }}"
-      
+
       - name: Run Scraper
         env:
           SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
