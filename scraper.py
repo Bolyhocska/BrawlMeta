@@ -104,9 +104,9 @@ def harvest_to_cloud():
     # ==========================================
     print("Gathering Diamond/Mythic seed data...")
     seed_tags = [
-        "#YOUR_TAG_HERE",
-        "#FRIEND_1_TAG",
-        "#FRIEND_2_TAG"
+        "#28PJ2LUUC",
+        "#2JJPLROYGY",
+        "#RYRU2L2UV"
     ]
     for tag in seed_tags:
         fetch_player_battles(tag, "diamond_mythic", extracted_data, seen_tags)
