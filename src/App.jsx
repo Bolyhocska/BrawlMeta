@@ -1,0 +1,894 @@
+import { useState, useEffect, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { 
+  Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check, 
+  RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight 
+} from "lucide-react";
+
+// ==========================================
+// 🔌 SUPABASE CLOUD CONFIGURATION
+// ==========================================
+const SUPABASE_URL = "https://srvmcjoasywfegfnyyvr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydm1jam9hc3l3ZmVnZm55eXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODk4ODcsImV4cCI6MjA5NjE2NTg4N30.Sgbh-ap_bvVVgPwKcEvQQts0QVUosoP0D5DlO-EbK1I"; // ⚠️ Paste your actual publishable key string here
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const MAPS = [
+  { id: 1, name: "Belle's Rock", mode: "Knockout", modeColor: "#f59e0b" },
+  { id: 2, name: "Backyard Bowl", mode: "Gem Grab", modeColor: "#8b5cf6" },
+  { id: 3, name: "Super Stadium", mode: "Brawl Ball", modeColor: "#3b82f6" },
+  { id: 4, name: "Kaboom Canyon", mode: "Bounty", modeColor: "#ef4444" },
+  { id: 5, name: "Snake Prairie", mode: "Heist", modeColor: "#10b981" },
+  { id: 6, name: "Galaxy Arena", mode: "Hot Zone", modeColor: "#ec4899" },
+];
+
+const BRAWLERS = [
+  { id: 1,  name: "Shelly",    role: "Fighter",    tier: "A", color: "#f97316", initial: "SH", winRate: 54, banRate: 12, pickRate: 24, range: "Short",  tags: ["Frontline", "Reliable"] },
+  { id: 2,  name: "Nita",     role: "Fighter",    tier: "B", color: "#a78bfa", initial: "NI", winRate: 51, banRate: 4,  pickRate: 11, range: "Mid",    tags: ["Tank", "Summoner"] },
+  { id: 3,  name: "Colt",     role: "Sharpshooter",tier:"A", color: "#60a5fa", initial: "CO", winRate: 53, banRate: 18, pickRate: 35, range: "Long",   tags: ["Lane Control", "Wall Breaker"] },
+  { id: 4,  name: "Bull",     role: "Tank",        tier: "S", color: "#ef4444", initial: "BU", winRate: 58, banRate: 32, pickRate: 14, range: "Short",  tags: ["Hard Counter Snipers", "Brute Force"] },
+  { id: 5,  name: "Jessie",   role: "Fighter",    tier: "B", color: "#fbbf24", initial: "JE", winRate: 49, banRate: 5,  pickRate: 19, range: "Mid",    tags: ["Turret Control", "Area Denial"] },
+  { id: 6,  name: "Brock",    role: "Sharpshooter",tier:"A", color: "#f472b6", initial: "BR", winRate: 52, banRate: 8,  pickRate: 28, range: "Long",   tags: ["Sniper", "Long Range Poke"] },
+  { id: 7,  name: "Dynamike", role: "Thrower",    tier: "A", color: "#fb923c", initial: "DY", winRate: 55, banRate: 45, pickRate: 31, range: "Mid",    tags: ["Thrower", "Wall Ignorer"] },
+  { id: 8,  name: "Tick",     role: "Thrower",    tier: "B", color: "#4ade80", initial: "TI", winRate: 50, banRate: 22, pickRate: 9,  range: "Long",   tags: ["Area Control", "Thrower"] },
+  { id: 9,  name: "8-Bit",    role: "Sharpshooter",tier:"B", color: "#818cf8", initial: "8B", winRate: 48, banRate: 2,  pickRate: 7,  range: "Long",   tags: ["Support DPS", "Buff Zone"] },
+  { id: 10, name: "Emz",      role: "Fighter",    tier: "A", color: "#c084fc", initial: "EM", winRate: 53, banRate: 14, pickRate: 18, range: "Mid",    tags: ["Lane Denial", "Area Control"] },
+  { id: 11, name: "Piper",    role: "Sharpshooter",tier:"S", color: "#f9a8d4", initial: "PI", winRate: 57, banRate: 52, pickRate: 41, range: "Long",   tags: ["S-Tier Sniper", "Burst Damage"] },
+  { id: 12, name: "Pam",      role: "Support",    tier: "C", color: "#6ee7b7", initial: "PA", winRate: 46, banRate: 1,  pickRate: 4,  range: "Mid",    tags: ["Healer", "Tank Support"] },
+  { id: 13, name: "Frank",    role: "Tank",        tier: "A", color: "#94a3b8", initial: "FR", winRate: 54, banRate: 28, pickRate: 15, range: "Short",  tags: ["CC Machine", "Frontline"] },
+  { id: 14, name: "Bibi",     role: "Fighter",    tier: "A", color: "#fb7185", initial: "BI", winRate: 53, banRate: 9,  pickRate: 16, range: "Short",  tags: ["Bounce Attack", "Frontline"] },
+  { id: 15, name: "Bea",      role: "Sharpshooter",tier:"B", color: "#fde68a", initial: "BE", winRate: 51, banRate: 3,  pickRate: 12, range: "Long",   tags: ["Charged Shot", "Lane Control"] },
+  { id: 16, name: "Nani",     role: "Sharpshooter",tier:"S", color: "#7dd3fc", initial: "NA", winRate: 56, banRate: 38, pickRate: 22, range: "Long",   tags: ["S-Tier Lane Control", "Peep Burst"] },
+  { id: 17, name: "Edgar",    role: "Fighter",    tier: "B", color: "#f87171", initial: "ED", winRate: 49, banRate: 65, pickRate: 48, range: "Short",  tags: ["Self-Heal Rush", "Flanker"] },
+  { id: 18, name: "Griff",    role: "Fighter",    tier: "A", color: "#fcd34d", initial: "GR", winRate: 52, banRate: 6,  pickRate: 14, range: "Mid",    tags: ["Coin Splash", "Area Clear"] },
+  { id: 19, name: "Grom",     role: "Thrower",    tier: "C", color: "#86efac", initial: "GO", winRate: 47, banRate: 4,  pickRate: 8,  range: "Long",   tags: ["Thrower", "Map Control"] },
+  { id: 20, name: "Bonnie",   role: "Fighter",    tier: "B", color: "#fdba74", initial: "BO", winRate: 50, banRate: 2,  pickRate: 10, range: "Mid",    tags: ["Dual Form", "Versatile"] },
+  { id: 21, name: "Gale",     role: "Support",    tier: "A", color: "#bfdbfe", initial: "GA", winRate: 54, banRate: 19, pickRate: 20, range: "Mid",    tags: ["Knockback CC", "Support"] },
+  { id: 22, name: "Colette",  role: "Fighter",    tier: "A", color: "#f9a8d4", initial: "CL", winRate: 54, banRate: 25, pickRate: 23, range: "Mid",    tags: ["Tank Shredder", "HP Damage"] },
+  { id: 23, name: "Crow",     role: "Assassin",    tier: "S", color: "#a3e635", initial: "CR", winRate: 58, banRate: 44, pickRate: 33, range: "Long",   tags: ["S-Tier Poison", "Anti-Healer"] },
+  { id: 24, name: "Leon",     role: "Assassin",    tier: "S", color: "#34d399", initial: "LE", winRate: 57, banRate: 41, pickRate: 29, range: "Mid",    tags: ["Invisible Flanker", "Burst Kill"] },
+  { id: 25, name: "Sandy",    role: "Support",    tier: "A", color: "#fde68a", initial: "SA", winRate: 55, banRate: 15, pickRate: 17, range: "Mid",    tags: ["Sand Storm Vision", "Area Cover"] },
+  { id: 26, name: "Amber",    role: "Fighter",    tier: "A", color: "#fb923c", initial: "AM", winRate: 54, banRate: 11, pickRate: 15, range: "Mid",    tags: ["DoT Fire", "Area Denial"] },
+  { id: 27, name: "Meg",      role: "Tank",        tier: "A", color: "#c4b5fd", initial: "ME", winRate: 53, banRate: 21, pickRate: 13, range: "Mid",    tags: ["Mech Form", "Dual HP"] },
+  { id: 28, name: "Surge",    role: "Fighter",    tier: "S", color: "#38bdf8", initial: "SU", winRate: 56, banRate: 39, pickRate: 30, range: "Mid",    tags: ["S-Tier Scaling", "Upgrade Threat"] },
+  { id: 29, name: "Mortis",   role: "Assassin",    tier: "B", color: "#a78bfa", initial: "MO", winRate: 50, banRate: 34, pickRate: 42, range: "Short",  tags: ["Dash Flanker", "Low HP Threat"] },
+  { id: 30, name: "Tara",     role: "Support",    tier: "B", color: "#818cf8", initial: "TA", winRate: 51, banRate: 8,  pickRate: 12, range: "Mid",    tags: ["Black Hole Super", "Support CC"] },
+];
+
+const SUGGESTION_POOL = [
+  { brawlerId: 4,  reason: "Hard Counter to Snipers",    badge: "Hard Counter",   badgeType: "danger" },
+  { brawlerId: 16, reason: "S-Tier Lane Control",        badge: "S-Tier",         badgeType: "gold" },
+  { brawlerId: 24, reason: "Counters Throwers + CC",     badge: "Flanker Pick",   badgeType: "success" },
+  { brawlerId: 23, reason: "Neutralizes Healers",        badge: "Anti-Support",   badgeType: "warning" },
+  { brawlerId: 21, reason: "Enables Team Comp Synergy",  badge: "Synergy Pick",   badgeType: "info" },
+  { brawlerId: 11, reason: "Dominates Open Maps",        badge: "Map Specialist", badgeType: "gold" },
+];
+
+const WIN_RATES = [78, 74, 71, 68, 65, 72];
+const TIER_COLORS = { S: "#f59e0b", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };
+const getBrawler = (id) => BRAWLERS.find((b) => b.id === id);
+
+const MODE_COLORS = {
+  brawlBall: "#3b82f6",
+  brawlball: "#3b82f6",
+  gemGrab: "#8b5cf6",
+  knockout: "#f59e0b",
+  bounty: "#ef4444",
+  heist: "#10b981",
+  hotZone: "#ec4899",
+};
+
+const RESULT_STYLES = {
+  victory: { label: "Victory", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.35)" },
+  defeat: { label: "Defeat", color: "#ef4444", bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.35)" },
+  draw: { label: "Draw", color: "#94a3b8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.35)" },
+};
+
+const formatMode = (mode) => {
+  if (!mode) return "Unknown";
+  const spaced = mode.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");
+  return spaced.replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const formatBrawlerName = (name) =>
+  name
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+const getResultStyle = (result) => RESULT_STYLES[result?.toLowerCase()] ?? { label: result ?? "—", color: "#64748b", bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.35)" };
+
+const RANK_BRACKETS = [
+  { id: "masters_legendary", label: "Masters & Legendary", accent: "#f59e0b" },
+  { id: "diamond_mythic", label: "Diamond & Mythic", accent: "#a78bfa" },
+];
+
+const normalizeBrawlerKey = (name) => (name || "").toUpperCase().trim();
+
+const resolveMatchBracket = (match) => {
+  if (match.rank_bracket) return match.rank_bracket;
+  const avg = match.avg_brawler_trophies;
+  if (typeof avg === "number") {
+    return avg >= 2250 ? "masters_legendary" : "diamond_mythic";
+  }
+  return "masters_legendary";
+};
+
+const filterMatchesByBracket = (matches, rankBracket) =>
+  matches.filter((m) => resolveMatchBracket(m) === rankBracket);
+
+const assignTier = (picks, wins, totalPicks) => {
+  const winRate = picks ? (wins / picks) * 100 : 0;
+  const pickRate = totalPicks ? (picks / totalPicks) * 100 : 0;
+  if (winRate >= 55 && pickRate >= 2.5) return "S";
+  if (winRate >= 52 && pickRate >= 1.5) return "A";
+  if (winRate >= 48) return "B";
+  return "C";
+};
+
+const MINIMUM_PICKS = 2;
+
+const computeMetaFromMatches = (matches) => {
+  const stats = {};
+  let totalPicks = 0;
+
+  for (const match of matches) {
+    const winners = Array.isArray(match.winners) ? match.winners : [];
+    const losers = Array.isArray(match.losers) ? match.losers : [];
+
+    for (const raw of winners) {
+      const key = normalizeBrawlerKey(raw);
+      if (!key) continue;
+
+      if (!stats[key]) {
+        stats[key] = {
+          key,
+          name: formatBrawlerName(raw),
+          picks: 0,
+          wins: 0,
+        };
+      }
+
+      stats[key].picks += 1;
+      stats[key].wins += 1;
+      totalPicks += 1;
+    }
+
+    for (const raw of losers) {
+      const key = normalizeBrawlerKey(raw);
+      if (!key) continue;
+
+      if (!stats[key]) {
+        stats[key] = {
+          key,
+          name: formatBrawlerName(raw),
+          picks: 0,
+          wins: 0,
+        };
+      }
+
+      stats[key].picks += 1;
+      totalPicks += 1;
+    }
+  }
+
+  return Object.values(stats)
+    .filter((b) => b.picks >= MINIMUM_PICKS)
+    .map((b) => {
+      const winRate =
+        b.picks > 0
+          ? Math.round((b.wins / b.picks) * 1000) / 10
+          : 0;
+
+      const pickRate =
+        totalPicks > 0
+          ? Math.round((b.picks / totalPicks) * 1000) / 10
+          : 0;
+
+      return {
+        ...b,
+        winRate,
+        pickRate,
+        tier: assignTier(b.picks, b.wins, totalPicks),
+      };
+    })
+    .sort((a, b) => {
+      if (b.winRate !== a.winRate) {
+        return b.winRate - a.winRate;
+      }
+      return b.pickRate - a.pickRate;
+    });
+};
+
+const getBrawlerVisual = (name) => {
+  const key = normalizeBrawlerKey(name);
+  const found = BRAWLERS.find((b) => normalizeBrawlerKey(b.name) === key);
+  if (found) return { color: found.color, initial: found.initial };
+  const hash = [...key].reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  const palette = ["#60a5fa", "#a78bfa", "#f97316", "#34d399", "#f472b6"];
+  return { color: palette[hash % palette.length], initial: key.slice(0, 2) };
+};
+
+// ==========================================
+// 🛰️ DYNAMIC SUPABASE HOOK (Replaced Local JSON File)
+// ==========================================
+function useLiveMeta() {
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function getCloudMatches() {
+      try {
+        // Fetch everything from your capitalized "Matches" table in Supabase
+        const { data, error: sbError } = await supabase
+          .from("Matches")
+          .select("*");
+
+        if (sbError) throw sbError;
+        setMatches(data || []);
+      } catch (err) {
+        console.error("Cloud Fetch Error:", err);
+        setError("Could not sync data with Supabase Cloud archive.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getCloudMatches();
+  }, []);
+
+  return { matches, loading, error };
+}
+
+const badgeStyles = {
+  danger:  { bg: "rgba(239,68,68,0.18)",   color: "#fca5a5", border: "rgba(239,68,68,0.4)" },
+  gold:    { bg: "rgba(245,158,11,0.18)",  color: "#fcd34d", border: "rgba(245,158,11,0.4)" },
+  success: { bg: "rgba(16,185,129,0.18)",  color: "#6ee7b7", border: "rgba(16,185,129,0.4)" },
+  warning: { bg: "rgba(251,191,36,0.18)",  color: "#fde68a", border: "rgba(251,191,36,0.4)" },
+  info:    { bg: "rgba(96,165,250,0.18)",  color: "#93c5fd", border: "rgba(96,165,250,0.4)" },
+};
+
+export default function BrawlMeta() {
+  const [activeTab, setActiveTab] = useState("meta"); // meta, trending, brawlers, premium
+  const [rankBracket, setRankBracket] = useState("masters_legendary");
+  const { matches: liveMatches, loading: liveLoading, error: liveError } = useLiveMeta();
+  const [selectedMap, setSelectedMap] = useState(MAPS[0]);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [blueTeam, setBlueTeam] = useState([null, null, null]);
+  const [redTeam, setRedTeam] = useState([null, null, null]);
+  const [activeSlot, setActiveSlot] = useState({ team: "blue", idx: 0 });
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("All");
+  const [suggestions, setSuggestions] = useState([]);
+  const [animKey, setAnimKey] = useState(0);
+
+  const allPicked = [...blueTeam, ...redTeam].filter(Boolean).map((b) => b.id);
+
+  useEffect(() => {
+    const pool = SUGGESTION_POOL.filter((s) => !allPicked.includes(s.brawlerId));
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+    setSuggestions(shuffled.map((s, i) => ({ ...s, winRate: WIN_RATES[i] ?? 65 })));
+    setAnimKey((k) => k + 1);
+  }, [blueTeam, redTeam]);
+
+  const roles = ["All", ...Array.from(new Set(BRAWLERS.map((b) => b.role)))];
+  const filtered = BRAWLERS.filter((b) => {
+    const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
+    const matchRole = filterRole === "All" || b.role === filterRole;
+    return matchSearch && matchRole;
+  });
+
+  const handleBrawlerSelect = (brawler) => {
+    if (allPicked.includes(brawler.id)) return;
+    const { team, idx } = activeSlot;
+    if (team === "blue") {
+      const next = [...blueTeam];
+      next[idx] = brawler;
+      setBlueTeam(next);
+      const nextIdx = next.findIndex((s, i) => s === null && i > idx);
+      if (nextIdx !== -1) setActiveSlot({ team: "blue", idx: nextIdx });
+      else {
+        const redIdx = redTeam.findIndex((s) => s === null);
+        if (redIdx !== -1) setActiveSlot({ team: "red", idx: redIdx });
+      }
+    } else {
+      const next = [...redTeam];
+      next[idx] = brawler;
+      setRedTeam(next);
+      const nextIdx = next.findIndex((s, i) => s === null && i > idx);
+      if (nextIdx !== -1) setActiveSlot({ team: "red", idx: nextIdx });
+      else {
+        const blueIdx = blueTeam.findIndex((s) => s === null);
+        if (blueIdx !== -1) setActiveSlot({ team: "blue", idx: blueIdx });
+      }
+    }
+  };
+
+  const removeSlot = (team, idx) => {
+    if (team === "blue") {
+      const next = [...blueTeam];
+      next[idx] = null;
+      setBlueTeam(next);
+    } else {
+      const next = [...redTeam];
+      next[idx] = null;
+      setRedTeam(next);
+    }
+    setActiveSlot({ team, idx });
+  };
+
+  const resetDraft = () => {
+    setBlueTeam([null, null, null]);
+    setRedTeam([null, null, null]);
+    setActiveSlot({ team: "blue", idx: 0 });
+  };
+
+  // 🌀 Show cloud connection layout loading
+  if (liveLoading) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#050b14", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 12, color: "#94a3b8", fontFamily: "sans-serif" }}>
+        <div style={{ width: 40, height: 40, border: "3px solid rgba(245,158,11,0.1)", borderTopColor: "#f59e0b", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <span style={{ fontSize: 14, letterSpacing: "0.05em", color: "#cbd5e1", fontWeight: 600 }}>SYNCING WITH SUPABASE ARCHIVE...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.root}>
+      <div style={styles.scanlines} />
+
+      {/* NAVBAR */}
+      <nav style={styles.nav}>
+        <div style={styles.navBrand}>
+          <div style={styles.brandIcon}>
+            <Swords size={18} color="#f59e0b" />
+          </div>
+          <span style={styles.brandText}>Brawl<span style={styles.brandAccent}>Meta</span></span>
+          <span style={styles.brandBadge}>ELITE</span>
+        </div>
+
+        {/* TAB NAVIGATION */}
+        <div style={styles.tabGroup}>
+          <button style={{ ...styles.tabBtn, ...(activeTab === "trending" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("trending")}>
+            <Flame size={14} /> Trending
+          </button>
+          <button style={{ ...styles.tabBtn, ...(activeTab === "meta" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("meta")}>
+            <Cpu size={14} /> Draft Assistant
+          </button>
+          <button style={{ ...styles.tabBtn, ...(activeTab === "brawlers" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("brawlers")}>
+            <ListOrdered size={14} /> Tier List
+          </button>
+          <button style={{ ...styles.tabBtn, ...(activeTab === "premium" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("premium")}>
+            <Crown size={14} color={activeTab === "premium" ? "#f59e0b" : "#64748b"} /> Premium
+          </button>
+        </div>
+
+        <div style={styles.navRight}>
+          {activeTab === "meta" && (
+            <button style={styles.resetBtn} onClick={resetDraft}>
+              <RotateCcw size={13} /> Reset
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/* MAIN LAYOUT GATEWAY */}
+      <div style={styles.contentContainer}>
+        <RankBracketSelector value={rankBracket} onChange={setRankBracket} />
+        {activeTab === "trending" && (
+          <TrendingView
+            rankBracket={rankBracket}
+            liveMatches={liveMatches}
+            liveLoading={liveLoading}
+            liveError={liveError}
+          />
+        )}
+        {activeTab === "meta" && (
+          <div style={styles.main}>
+            {/* LEFT — DRAFT PANELS */}
+            <div style={styles.draftPanel}>
+              <div style={styles.panelHeader}>
+                <Map size={14} color="#94a3b8" />
+                <div style={styles.mapDropdownWrapper}>
+                  <button style={styles.mapDropdown} onClick={() => setMapOpen(!mapOpen)}>
+                    <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{selectedMap.name}</span>
+                    <span style={{ ...styles.modeBadge, background: selectedMap.modeColor + "30", color: selectedMap.modeColor, border: `1px solid ${selectedMap.modeColor}50` }}>
+                      {selectedMap.mode}
+                    </span>
+                    <ChevronDown size={13} color="#64748b" style={{ transform: mapOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+                  </button>
+                  {mapOpen && (
+                    <div style={styles.dropdown}>
+                      {MAPS.map((m) => (
+                        <button key={m.id} style={{ ...styles.dropdownItem, background: selectedMap.id === m.id ? "rgba(245,158,11,0.1)" : "transparent" }}
+                          onClick={() => { setSelectedMap(m); setMapOpen(false); }}>
+                          <span style={{ color: "#cbd5e1", fontSize: 13 }}>{m.name}</span>
+                          <span style={{ ...styles.modeBadge, background: m.modeColor + "25", color: m.modeColor, border: `1px solid ${m.modeColor}40` }}>{m.mode}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span style={styles.pickCounter}>{allPicked.length}/6 Picked</span>
+              </div>
+
+              <div style={styles.teamsGrid}>
+                {/* BLUE */}
+                <div style={styles.teamColumn}>
+                  <div style={styles.teamLabel}>
+                    <Shield size={13} color="#3b82f6" />
+                    <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>BLUE TEAM</span>
+                  </div>
+                  {blueTeam.map((brawler, idx) => (
+                    <DraftSlot key={idx} brawler={brawler} team="blue" idx={idx} active={activeSlot.team === "blue" && activeSlot.idx === idx}
+                      onClick={() => !brawler && setActiveSlot({ team: "blue", idx })} onRemove={() => removeSlot("blue", idx)} />
+                  ))}
+                </div>
+                <div style={styles.vsDivider}><div style={styles.vsCircle}>VS</div></div>
+                {/* RED */}
+                <div style={styles.teamColumn}>
+                  <div style={{ ...styles.teamLabel, justifyContent: "flex-end" }}>
+                    <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>RED TEAM</span>
+                    <Swords size={13} color="#ef4444" />
+                  </div>
+                  {redTeam.map((brawler, idx) => (
+                    <DraftSlot key={idx} brawler={brawler} team="red" idx={idx} active={activeSlot.team === "red" && activeSlot.idx === idx}
+                      onClick={() => !brawler && setActiveSlot({ team: "red", idx })} onRemove={() => removeSlot("red", idx)} />
+                  ))}
+                </div>
+              </div>
+
+              {/* SELECTION GRID */}
+              <div style={styles.pickerSection}>
+                <div style={styles.pickerHeader}>
+                  <div style={styles.searchWrapper}>
+                    <Target size={13} color="#64748b" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                    <input style={styles.searchInput} placeholder="Search brawler…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  </div>
+                  <div style={styles.roleFilters}>
+                    {roles.map((r) => (
+                      <button key={r} style={{ ...styles.roleBtn, ...(filterRole === r ? styles.roleBtnActive : {}) }} onClick={() => setFilterRole(r)}>{r}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={styles.brawlerGrid}>
+                  {filtered.map((b) => {
+                    const picked = allPicked.includes(b.id);
+                    return (
+                      <button key={b.id} style={{ ...styles.brawlerChip, opacity: picked ? 0.35 : 1, cursor: picked ? "not-allowed" : "pointer", border: picked ? "1px solid #1e293b" : `1px solid ${b.color}40`, background: picked ? "#0f172a" : `${b.color}12` }}
+                        onClick={() => !picked && handleBrawlerSelect(b)} disabled={picked}>
+                        <div style={{ ...styles.brawlerAvatar, background: `${b.color}25`, border: `1.5px solid ${b.color}60` }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: b.color }}>{b.initial}</span>
+                        </div>
+                        <span style={{ fontSize: 10, color: picked ? "#475569" : "#cbd5e1", fontWeight: 600 }}>{b.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* SIDEBAR AI MATCH RECOMMENDATIONS */}
+            <div style={styles.sidebar}>
+              <div style={styles.panelHeader}>
+                <Cpu size={15} color="#a78bfa" />
+                <span style={{ ...styles.panelTitle, color: "#a78bfa" }}>AI Engine Recommendations</span>
+              </div>
+              <div style={styles.suggestionList} key={animKey}>
+                {suggestions.map((s, i) => {
+                  const brawler = getBrawler(s.brawlerId);
+                  if (!brawler) return null;
+                  const bs = badgeStyles[s.badgeType] ?? badgeStyles.info;
+                  return (
+                    <div key={s.brawlerId} style={styles.suggestionCard} className="suggestion-anim">
+                      <div style={styles.suggAvatarWrap}><span style={{ fontSize: 11, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span></div>
+                      <div style={styles.suggInfo}>
+                        <span style={styles.suggName}>{brawler.name} <span style={{ color: TIER_COLORS[brawler.tier], fontSize: 10 }}>[{brawler.tier}]</span></span>
+                        <span style={{ ...styles.reasonBadge, background: bs.bg, color: bs.color, border: `1px solid ${bs.border}` }}>{s.reason}</span>
+                      </div>
+                      <div style={styles.winRateCol}><WinRateArc pct={s.winRate} color="#10b981" /></div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={styles.synergyPanel}><SynergyBar blueTeam={blueTeam} redTeam={redTeam} /></div>
+            </div>
+          </div>
+        )}
+        {activeTab === "brawlers" && (
+          <TierListView
+            rankBracket={rankBracket}
+            liveMatches={liveMatches}
+            liveLoading={liveLoading}
+            liveError={liveError}
+          />
+        )}
+        {activeTab === "premium" && <PremiumView />}
+      </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .suggestion-anim { animation: fadeUp 0.3s ease both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      `}</style>
+    </div>
+  );
+}
+
+/* ==========================================
+   SUB-VIEWS COMPONENT MODULES
+   ========================================== */
+
+function RankBracketSelector({ value, onChange }) {
+  return (
+    <div style={styles.rankBracketBar}>
+      <div style={styles.rankBracketLabel}>
+        <Crown size={14} color="#f59e0b" />
+        <span>Rank Bracket</span>
+      </div>
+      <div style={styles.rankBracketGroup}>
+        {RANK_BRACKETS.map((bracket) => {
+          const active = value === bracket.id;
+          return (
+            <button
+              key={bracket.id}
+              type="button"
+              style={{
+                ...styles.rankBracketBtn,
+                ...(active
+                  ? {
+                      background: `${bracket.accent}18`,
+                      border: `1px solid ${bracket.accent}70`,
+                      color: "#f8fafc",
+                      boxShadow: `0 0 12px ${bracket.accent}25`,
+                    }
+                  : {}),
+              }}
+              onClick={() => onChange(bracket.id)}
+            >
+              <Star size={12} color={active ? bracket.accent : "#475569"} fill={active ? bracket.accent : "none"} />
+              {bracket.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TrendingView({ rankBracket, liveMatches, liveLoading, liveError }) {
+  const bracketMeta = useMemo(() => {
+    const filtered = filterMatchesByBracket(liveMatches, rankBracket);
+    return { filtered, stats: computeMetaFromMatches(filtered) };
+  }, [liveMatches, rankBracket]);
+
+  const bracketLabel = RANK_BRACKETS.find((b) => b.id === rankBracket)?.label ?? rankBracket;
+  const trendingBrawlers = bracketMeta.stats.slice(0, 4);
+
+  return (
+    <div style={styles.viewPadding}>
+      <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Real-Time Meta Trends</h2>
+      <p style={styles.viewSubtext}>
+        Live ranked data for {bracketLabel} — {bracketMeta.filtered.length} matches in sample.
+      </p>
+      <RecentMatchesGrid
+        rankBracket={rankBracket}
+        matches={bracketMeta.filtered}
+        loading={liveLoading}
+        error={liveError}
+      />
+      <h3 style={{ ...styles.viewHeading, fontSize: 16, marginTop: 28 }}><TrendingUp size={16} color="#60a5fa" /> Top Performers</h3>
+      {liveLoading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Computing bracket stats…</p>}
+      {!liveLoading && trendingBrawlers.length === 0 && (
+        <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>
+          No matches for this bracket yet. Re-run the scraper after selecting mixed seed tags.
+        </p>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 16 }}>
+        {trendingBrawlers.map((b) => {
+          const visual = getBrawlerVisual(b.name);
+          return (
+            <div key={b.key} style={{ ...styles.suggestionCard, padding: 16, flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                <div style={{ ...styles.suggAvatarWrap, background: `${visual.color}20`, borderColor: visual.color }}>
+                  <span style={{ color: visual.color, fontWeight: 800 }}>{visual.initial}</span>
+                </div>
+                <div>
+                  <div style={styles.suggName}>{b.name}</div>
+                  <div style={{ fontSize: 11, color: TIER_COLORS[b.tier] }}>Tier {b.tier}</div>
+                </div>
+                <span style={{ marginLeft: "auto", fontSize: 11, color: "#10b981", background: "rgba(16,185,129,0.1)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>
+                  {b.picks} picks
+                </span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%", borderTop: "1px solid #1e293b", paddingTop: 8 }}>
+                <div><div style={{ fontSize: 9, color: "#475569" }}>WIN RATE</div><div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>{b.winRate}%</div></div>
+                <div><div style={{ fontSize: 9, color: "#475569" }}>PICK RATE</div><div style={{ fontSize: 14, fontWeight: 700, color: "#3b82f6" }}>{b.pickRate}%</div></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RecentMatchesGrid({ rankBracket, matches, loading, error }) {
+  const recentMatches = useMemo(() => matches.slice(-36).reverse(), [matches]);
+  const bracketLabel = RANK_BRACKETS.find((b) => b.id === rankBracket)?.label ?? rankBracket;
+
+  return (
+    <section style={{ marginTop: 20 }}>
+      <h3 style={{ ...styles.viewHeading, fontSize: 16 }}>
+        <Gamepad2 size={16} color="#10b981" /> Recent Matches — {bracketLabel}
+      </h3>
+      <p style={styles.viewSubtext}>Filtered battle log for the active rank bracket — maps, teams, and outcomes.</p>
+      {loading && <p style={{ fontSize: 12, color: "#475569", marginTop: 12 }}>Loading match feed…</p>}
+      {error && !loading && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 12 }}>{error}</p>}
+      {!loading && !error && recentMatches.length === 0 && (
+        <p style={{ fontSize: 12, color: "#475569", marginTop: 12 }}>No matches for this bracket. Run the scraper to populate your Supabase table.</p>
+      )}
+      <div style={styles.matchesGrid}>
+        {recentMatches.map((match, i) => {
+          const rs = getResultStyle(match.result);
+          const modeKey = match.mode?.replace(/\s/g, "") ?? "";
+          const modeColor = MODE_COLORS[modeKey] ?? MODE_COLORS[match.mode?.toLowerCase?.()] ?? "#64748b";
+          
+          // Supports both old static schema and new automated cloud schema
+          const displayWinners = Array.isArray(match.winners) ? match.winners : match.blue_team || [];
+          const displayLosers = Array.isArray(match.losers) ? match.losers : match.red_team || [];
+
+          return (
+            <div key={`${match.map}-${match.result}-${i}`} style={styles.matchCard}>
+              <div style={styles.matchCardHeader}>
+                <div>
+                  <div style={styles.matchMapName}>{match.map}</div>
+                  <span style={{ ...styles.modeBadge, background: modeColor + "25", color: modeColor, border: `1px solid ${modeColor}40` }}>
+                    {formatMode(match.mode)}
+                  </span>
+                </div>
+                <span style={{ ...styles.resultBadge, background: rs.bg, color: rs.color, border: `1px solid ${rs.border}` }}>
+                  {rs.label}
+                </span>
+              </div>
+              <div style={styles.matchTeams}>
+                <div style={styles.matchTeamRow}>
+                  <Shield size={11} color="#10b981" />
+                  <span style={{ ...styles.matchTeamLabel, color: "#10b981" }}>Winners</span>
+                  <div style={styles.matchBrawlerList}>
+                    {displayWinners.map((b, j) => (
+                      <span key={j} style={{ ...styles.matchBrawlerChip, borderColor: "#10b98140", color: "#6ee7b7" }}>
+                        {formatBrawlerName(b)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div style={styles.matchTeamRow}>
+                  <Swords size={11} color="#ef4444" />
+                  <span style={{ ...styles.matchTeamLabel, color: "#fca5a5" }}>Losers</span>
+                  <div style={styles.matchBrawlerList}>
+                    {displayLosers.map((b, j) => (
+                      <span key={j} style={{ ...styles.matchBrawlerChip, borderColor: "#ef444440", color: "#fca5a5" }}>
+                        {formatBrawlerName(b)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function TierListView({ rankBracket, liveMatches, liveLoading, liveError }) {
+  const tiers = ["S", "A", "B", "C"];
+  const bracketLabel = RANK_BRACKETS.find((b) => b.id === rankBracket)?.label ?? rankBracket;
+
+  const tierGroups = useMemo(() => {
+    const filtered = filterMatchesByBracket(liveMatches, rankBracket);
+    const stats = computeMetaFromMatches(filtered);
+    return tiers.reduce((acc, tier) => {
+      acc[tier] = stats.filter((b) => b.tier === tier);
+      return acc;
+    }, {});
+  }, [liveMatches, rankBracket]);
+
+  const matchCount = filterMatchesByBracket(liveMatches, rankBracket).length;
+
+  return (
+    <div style={styles.viewPadding}>
+      <h2 style={styles.viewHeading}><ListOrdered size={18} color="#60a5fa" /> Ranked Draft Power Tier List</h2>
+      <p style={styles.viewSubtext}>
+        Pick & win rates from {matchCount} live {bracketLabel} matches (synced directly from Cloud Database).
+      </p>
+      {liveLoading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Loading tier data…</p>}
+      {liveError && !liveLoading && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 8 }}>{liveError}</p>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+        {tiers.map((tier) => (
+          <div key={tier} style={{ display: "flex", background: "#0a1220", border: "1px solid #1e293b", borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ width: 60, background: TIER_COLORS[tier] + "15", display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid #1e293b", fontSize: 24, fontWeight: 900, color: TIER_COLORS[tier] }}>
+              {tier}
+            </div>
+            <div style={{ flex: 1, padding: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {!liveLoading && tierGroups[tier].length === 0 && (
+                <span style={{ fontSize: 11, color: "#475569" }}>No data for tier {tier}</span>
+              )}
+              {tierGroups[tier].map((b) => {
+                const visual = getBrawlerVisual(b.name);
+                return (
+                  <div key={b.key} style={{ background: "rgba(15,23,42,0.6)", padding: "4px 10px", borderRadius: 6, border: `1px solid ${visual.color}30`, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: visual.color, fontWeight: 800 }}>{visual.initial}</span>
+                    <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600 }}>{b.name}</span>
+                    <span style={{ fontSize: 9, color: "#64748b" }}>{b.winRate}% WR · {b.pickRate}% PR</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PremiumView() {
+  return (
+    <div style={{ ...styles.viewPadding, maxWidth: 500, margin: "40px auto", textAlign: "center" }}>
+      <div style={{ width: 48, height: 48, background: "rgba(245,158,11,0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <Crown size={24} color="#f59e0b" />
+      </div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif" }}>Unlock BrawlMeta Pro</h2>
+      <p style={{ color: "#64748b", fontSize: 13, marginTop: 6 }}>Gain deep access to the raw machine logs that global professional clubs utilize.</p>
+      <div style={{ background: "#0a1220", border: "1px solid #1e293b", borderRadius: 12, padding: 16, marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Real-time companion overlay linkage</span></div>
+        <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Hypercharge availability & matchup prediction maps</span></div>
+        <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Deep premium structural party counters (3v3 Synergy Maps)</span></div>
+        <button style={{ width: "100%", background: "#f59e0b", color: "#050b14", border: "none", padding: "10px", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8 }}>
+          Upgrade Now <ArrowUpRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================
+   SUPPORTING STRUCTURAL SUB-COMPONENTS
+   ========================================== */
+
+function DraftSlot({ brawler, team, idx, active, onClick, onRemove }) {
+  const teamColor = team === "blue" ? "#3b82f6" : "#ef4444";
+  return (
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, border: active ? `1.5px solid ${teamColor}` : `1px solid ${brawler ? teamColor + "40" : "#1e293b"}`, background: active ? `${teamColor}08` : brawler ? `${brawler.color}0a` : "rgba(15,23,42,0.6)", minHeight: 52, cursor: "pointer" }}>
+      {brawler ? (
+        <>
+          <div style={{ width: 32, height: 32, borderRadius: 6, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}70`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span>
+          </div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{brawler.name}</div></div>
+          <button style={{ background: "none", border: "none", color: "#475569", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onRemove(); }}><X size={12} /></button>
+        </>
+      ) : (
+        <span style={{ fontSize: 12, color: active ? teamColor : "#334155" }}>{active ? "Selecting..." : `Pick ${idx + 1}`}</span>
+      )}
+    </div>
+  );
+}
+
+function WinRateArc({ pct, color }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color }}>{pct}%</span>
+      <span style={{ fontSize: 8, color: "#475569", letterSpacing: "0.04em" }}>WIN</span>
+    </div>
+  );
+}
+
+function SynergyBar({ blueTeam, redTeam }) {
+  const bluePicked = blueTeam.filter(Boolean).length;
+  const redPicked = redTeam.filter(Boolean).length;
+  if (bluePicked + redPicked === 0) return <p style={{ fontSize: 11, color: "#334155", textAlign: "center" }}>Awaiting drafting initialization...</p>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", justify: "space-between", fontSize: 10 }}><span style={{ color: "#3b82f6" }}>Allies (68%)</span><span style={{ color: "#ef4444" }}>Enemies (52%)</span></div>
+      <div style={{ height: 4, background: "#0f172a", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+        <div style={{ width: "55%", background: "#3b82f6" }} /><div style={{ width: "45%", background: "#ef4444" }} />
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  root: { minHeight: "100vh", background: "#050b14", fontFamily: "'Barlow', sans-serif", color: "#e2e8f0", position: "relative" },
+  scanlines: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)" },
+  nav: { display: "flex", alignItems: "center", justify: "space-between", padding: "12px 20px", borderBottom: "1px solid #0f172a", background: "#050b14", position: "sticky", top: 0, zIndex: 100 },
+  navBrand: { display: "flex", alignItems: "center", gap: 8 },
+  brandIcon: { width: 32, height: 32, borderRadius: 8, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center" },
+  brandText: { fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.04em" },
+  brandAccent: { color: "#f59e0b" },
+  brandBadge: { fontSize: 8, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.15)", padding: "1px 5px", borderRadius: 4 },
+  tabGroup: { display: "flex", gap: 4, marginLeft: 24 },
+  tabBtn: { display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: "#64748b", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.15s" },
+  tabBtnActive: { background: "#0a1220", border: "1px solid #1e293b", color: "#e2e8f0" },
+  navRight: { marginLeft: "auto" },
+  resetBtn: { display: "flex", alignItems: "center", gap: 5, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  contentContainer: { position: "relative", zIndex: 1 },
+  rankBracketBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    padding: "12px 24px",
+    borderBottom: "1px solid #0f172a",
+    background: "linear-gradient(180deg, rgba(245,158,11,0.06) 0%, transparent 100%)",
+  },
+  rankBracketLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" },
+  rankBracketGroup: { display: "flex", gap: 8, flexWrap: "wrap" },
+  rankBracketBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 14px",
+    borderRadius: 10,
+    border: "1px solid #1e293b",
+    background: "#0a1220",
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    transition: "all 0.15s",
+  },
+  main: { display: "grid", gridTemplateColumns: "1fr 340px", minHeight: "calc(100vh - 57px)" },
+  draftPanel: { padding: 20, borderRight: "1px solid #0f172a", display: "flex", flexDirection: "column", gap: 16 },
+  sidebar: { padding: 16, background: "rgba(7,14,28,0.4)", display: "flex", flexDirection: "column", gap: 12 },
+  panelHeader: { display: "flex", alignItems: "center", gap: 12 },
+  panelTitle: { fontSize: 13, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.06em", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase" },
+  mapDropdownWrapper: { position: "relative" },
+  mapDropdown: { display: "flex", alignItems: "center", gap: 8, background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, padding: "4px 10px", cursor: "pointer" },
+  modeBadge: { fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4 },
+  pickCounter: { marginLeft: "auto", fontSize: 11, color: "#475569" },
+  teamsGrid: { display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 8, alignItems: "start" },
+  teamColumn: { display: "flex", flexDirection: "column", gap: 6 },
+  teamLabel: { display: "flex", alignItems: "center", gap: 6, pb: 4 },
+  vsDivider: { display: "flex", justifyContent: "center", paddingTop: 34 },
+  vsCircle: { width: 24, height: 24, borderRadius: "50%", background: "#0f172a", border: "1px solid #1e293b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#475569", fontWeight: 800 },
+  pickerSection: { borderTop: "1px solid #0f172a", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 },
+  pickerHeader: { display: "flex", gap: 8, alignItems: "center" },
+  searchWrapper: { position: "relative", width: 200 },
+  searchInput: { width: "100%", background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, padding: "5px 8px 5px 28px", color: "#cbd5e1", fontSize: 12 },
+  roleFilters: { display: "flex", gap: 4 },
+  roleBtn: { background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" },
+  roleBtnActive: { background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b" },
+  brawlerGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))", gap: 6, maxHeight: 240, overflowY: "auto" },
+  brawlerChip: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px", borderRadius: 8 },
+  brawlerAvatar: { width: 32, height: 32, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" },
+  suggestionList: { display: "flex", flexDirection: "column", gap: 6 },
+  suggestionCard: { display: "flex", alignItems: "center", gap: 10, padding: 12, background: "#0a1220", borderRadius: 10, border: "1px solid #1e293b" },
+  suggAvatarWrap: { width: 34, height: 34, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid" },
+  suggInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
+  suggName: { fontSize: 13, fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif" },
+  reasonBadge: { fontSize: 9, padding: "1px 5px", borderRadius: 4, display: "inline-block", width: "max-content" },
+  winRateCol: { marginLeft: "auto" },
+  synergyPanel: { background: "#0a1220", borderRadius: 10, border: "1px solid #1e293b", padding: 12, marginTop: "auto" },
+  dropdown: { position: "absolute", top: "100%", left: 0, background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, overflow: "hidden", zIndex: 200, minWidth: 160 },
+  dropdownItem: { display: "flex", justify: "space-between", width: "100%", padding: 8, background: "transparent", border: "none", color: "#cbd5e1", cursor: "pointer" },
+  viewPadding: { padding: 24 },
+  viewHeading: { fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", display: "flex", alignItems: "center", gap: 8 },
+  viewSubtext: { fontSize: 12, color: "#64748b", marginTop: 2 },
+  matchesGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginTop: 12, maxHeight: 520, overflowY: "auto", paddingRight: 4 },
+  matchCard: { background: "#0a1220", border: "1px solid #1e293b", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 10 },
+  matchCardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
+  matchMapName: { fontSize: 13, fontWeight: 700, color: "#e2e8f0", fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 },
+  resultBadge: { fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em", flexShrink: 0 },
+  matchTeams: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid #1e293b", paddingTop: 8 },
+  matchTeamRow: { display: "flex", alignItems: "flex-start", gap: 6 },
+  matchTeamLabel: { fontSize: 9, fontWeight: 800, color: "#3b82f6", letterSpacing: "0.06em", width: 45, flexShrink: 0, paddingTop: 2 },
+  matchBrawlerList: { display: "flex", flexWrap: "wrap", gap: 4, flex: 1 },
+  matchBrawlerChip: { fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, border: "1px solid", background: "rgba(15,23,42,0.8)" },
+};
