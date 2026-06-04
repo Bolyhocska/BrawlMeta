@@ -1,6 +1,5 @@
 import os
 import requests
-from supabase import create_client, Client
 
 # ==========================================
 # 🔑 API KEYS & CREDENTIALS (Secured)
@@ -111,9 +110,17 @@ def harvest_to_cloud():
 
     print("Connecting to Supabase...")
     try:
-        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        response = supabase.table("Matches").insert(extracted_data).execute()
-        print(f"✅ Success! Pushed {len(extracted_data)} live matches to Cloud Database.")
+        supabase_headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        url = f"{SUPABASE_URL}/rest/v1/Matches"
+        res = requests.post(url, json=extracted_data, headers=supabase_headers)
+        if res.status_code in [200, 201]:
+            print(f"✅ Success! Pushed {len(extracted_data)} live matches to Cloud Database.")
+        else:
+            print(f"❌ Failed to save to database: {res.status_code} {res.text}")
     except Exception as e:
         print(f"❌ Failed to save to database: {e}")
 
