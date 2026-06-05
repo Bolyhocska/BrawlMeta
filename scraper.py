@@ -40,7 +40,9 @@ COUNTRIES = [
 ]
 
 def make_hash(entry):
-    raw = f"{entry['map']}{entry['mode']}{entry['rank_bracket']}{''.join(sorted(entry['winners']))}{''.join(sorted(entry['losers']))}"
+    winners = sorted([w for w in entry['winners'] if w])
+    losers = sorted([l for l in entry['losers'] if l])
+    raw = f"{entry['map']}{entry['mode']}{entry['rank_bracket']}{''.join(winners)}{''.join(losers)}"
     return hashlib.md5(raw.encode()).hexdigest()
 
 def fetch_existing_hashes():
@@ -91,6 +93,7 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
             result = battle_data.get("result", "").lower()
 
             if len(teams) == 2 and result in ["victory", "defeat"]:
+                # Collect all player tags from this match for spidering
                 for team in teams:
                     for p in team:
                         tag = p.get("tag")
@@ -110,12 +113,18 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                     winning_team = teams[1 - player_team_idx]
                     losing_team = teams[player_team_idx]
 
+                winners = [p['brawler']['name'] for p in winning_team if p.get('brawler') and p['brawler'].get('name')]
+                losers = [p['brawler']['name'] for p in losing_team if p.get('brawler') and p['brawler'].get('name')]
+
+                if not winners or not losers:
+                    continue
+
                 match_entry = {
                     "map": event_data.get("map", "Unknown Map"),
                     "mode": battle_data.get("mode", "Unknown Mode"),
                     "rank_bracket": bracket,
-                    "winners": [p['brawler']['name'] for p in winning_team],
-                    "losers": [p['brawler']['name'] for p in losing_team],
+                    "winners": winners,
+                    "losers": losers,
                     "match_hash": None
                 }
                 match_entry["match_hash"] = make_hash(match_entry)
@@ -159,8 +168,12 @@ def harvest_to_cloud():
     print("Collecting Masters/Legendary players from leaderboards...")
     masters_tags = collect_players_from_leaderboards(limit=1000)
     print(f"Got {len(masters_tags)} unique Masters/Legendary players.")
-    for tag in masters_tags:
+    for i, tag in enumerate(masters_tags):
+        if i % 100 == 0:
+            print(f"  Processing Masters player {i+1}/{len(masters_tags)}...")
         fetch_player_battles(tag, "masters_legendary", extracted_data, seen_tags, existing_hashes)
+
+    print(f"Masters/Legendary done. {len(extracted_data)} new matches so far.")
 
     # ==========================================
     # PASS 2: Diamond & Mythic (spider from seeds)
@@ -178,6 +191,10 @@ def harvest_to_cloud():
         new_tags = fetch_player_battles(tag, "diamond_mythic", extracted_data, seen_tags, existing_hashes)
         spider_queue.extend(new_tags)
         mythic_count += 1
+        if mythic_count % 100 == 0:
+            print(f"  Spidered {mythic_count}/1000 Diamond/Mythic players...")
+
+    print(f"Diamond/Mythic done. {len(extracted_data)} total new matches.")
 
     # ==========================================
     # SAVE PIPELINE: SUPABASE CLOUD
