@@ -84,8 +84,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
     new_player_tags = []
     battles = log_res.json().get("items", [])
     for match in battles:
-        battle_data = match.get("battle", {})
-        event_data = match.get("event", {})
+        battle_data = match.get("battle", {}) or {}
+        event_data = match.get("event", {}) or {}
 
         match_type = battle_data.get("type", "").lower()
         if "ranked" in match_type or "solomode" in match_type:
@@ -93,7 +93,6 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
             result = battle_data.get("result", "").lower()
 
             if len(teams) == 2 and result in ["victory", "defeat"]:
-                # Collect all player tags from this match for spidering
                 for team in teams:
                     for p in team:
                         tag = p.get("tag")
@@ -119,9 +118,12 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                 if not winners or not losers:
                     continue
 
+                map_name = event_data.get("map") or "Unknown Map"
+                mode_name = battle_data.get("mode") or "Unknown Mode"
+
                 match_entry = {
-                    "map": event_data.get("map", "Unknown Map"),
-                    "mode": battle_data.get("mode", "Unknown Mode"),
+                    "map": map_name,
+                    "mode": mode_name,
                     "rank_bracket": bracket,
                     "winners": winners,
                     "losers": losers,
