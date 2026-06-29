@@ -213,23 +213,36 @@ const getBrawlerVisual = (name) => {
 };
 
 // ==========================================
-// 🛰️ DYNAMIC SUPABASE HOOK (Replaced Local JSON File)
+// 🛰️ DYNAMIC SUPABASE HOOK
 // ==========================================
-function useLiveMeta() {
+function usePatches() {
+  const [patches, setPatches] = useState([]);
+  useEffect(() => {
+    supabase.from("Matches").select("patch").then(({ data }) => {
+      if (!data) return;
+      const unique = [...new Set(data.map(r => r.patch).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+      setPatches(unique);
+    });
+  }, []);
+  return patches;
+}
+
+function useLiveMeta(selectedPatch) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    setLoading(true);
+    setMatches([]);
     async function getCloudMatches() {
       try {
         const PAGE = 1000;
 
-        // Get exact count for current patch only
         const { count, error: countErr } = await supabase
           .from("Matches")
           .select("*", { count: "exact", head: true })
-          .eq("patch", CURRENT_PATCH);
+          .eq("patch", selectedPatch);
 
         if (countErr) throw countErr;
 
@@ -239,11 +252,10 @@ function useLiveMeta() {
           supabase
             .from("Matches")
             .select("map,mode,rank_bracket,winners,losers")
-            .eq("patch", CURRENT_PATCH)
+            .eq("patch", selectedPatch)
             .range(i * PAGE, i * PAGE + PAGE - 1)
         );
 
-        // Fetch all pages in parallel batches of 10
         const BATCH = 10;
         let all = [];
         for (let i = 0; i < fetches.length; i += BATCH) {
@@ -264,7 +276,7 @@ function useLiveMeta() {
     }
 
     getCloudMatches();
-  }, []);
+  }, [selectedPatch]);
 
   return { matches, loading, error };
 }
@@ -278,9 +290,11 @@ const badgeStyles = {
 };
 
 export default function BrawlMeta() {
-  const [activeTab, setActiveTab] = useState("meta"); // meta, trending, brawlers, premium
+  const [activeTab, setActiveTab] = useState("meta");
   const [rankBracket, setRankBracket] = useState("masters_legendary");
-  const { matches: liveMatches, loading: liveLoading, error: liveError } = useLiveMeta();
+  const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
+  const patches = usePatches();
+  const { matches: liveMatches, loading: liveLoading, error: liveError } = useLiveMeta(selectedPatch);
   const [selectedMap, setSelectedMap] = useState(MAPS[0]);
   const [mapOpen, setMapOpen] = useState(false);
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
@@ -525,7 +539,7 @@ export default function BrawlMeta() {
 
       {/* MAIN LAYOUT GATEWAY */}
       <div style={styles.contentContainer}>
-        <RankBracketSelector value={rankBracket} onChange={setRankBracket} />
+        <RankBracketSelector value={rankBracket} onChange={setRankBracket} selectedPatch={selectedPatch} onPatchChange={setSelectedPatch} patches={patches} />
         {activeTab === "trending" && (
           <TrendingView
             rankBracket={rankBracket}
@@ -786,7 +800,8 @@ export default function BrawlMeta() {
    SUB-VIEWS COMPONENT MODULES
    ========================================== */
 
-function RankBracketSelector({ value, onChange }) {
+function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, patches }) {
+  const [patchOpen, setPatchOpen] = useState(false);
   return (
     <div style={styles.rankBracketBar}>
       <div style={styles.rankBracketLabel}>
@@ -818,6 +833,25 @@ function RankBracketSelector({ value, onChange }) {
             </button>
           );
         })}
+      </div>
+
+      {/* Patch dropdown */}
+      <div style={{ position: "relative", marginLeft: "auto" }}>
+        <button onClick={() => setPatchOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "1px solid #1e293b", background: "#0a1220", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+          <Star size={11} color="#f59e0b" fill="#f59e0b" />
+          Patch {selectedPatch}
+          <ChevronDown size={11} color="#64748b" style={{ transform: patchOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        </button>
+        {patchOpen && patches.length > 0 && (
+          <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, zIndex: 200, minWidth: 140, overflow: "hidden" }}>
+            {patches.map(p => (
+              <button key={p} onClick={() => { onPatchChange(p); setPatchOpen(false); }}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedPatch === p ? "rgba(245,158,11,0.1)" : "transparent", border: "none", color: selectedPatch === p ? "#f59e0b" : "#94a3b8", fontSize: 12, fontWeight: selectedPatch === p ? 700 : 400, cursor: "pointer" }}>
+                {p === CURRENT_PATCH ? `${p} ✦ Current` : p}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
