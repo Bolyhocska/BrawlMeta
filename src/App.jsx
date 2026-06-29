@@ -12,6 +12,7 @@ import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 // ==========================================
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
+const CURRENT_PATCH = "67.306";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MAPS = [
@@ -224,10 +225,11 @@ function useLiveMeta() {
       try {
         const PAGE = 1000;
 
-        // Get exact count first
+        // Get exact count for current patch only
         const { count, error: countErr } = await supabase
           .from("Matches")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("patch", CURRENT_PATCH);
 
         if (countErr) throw countErr;
 
@@ -237,6 +239,7 @@ function useLiveMeta() {
           supabase
             .from("Matches")
             .select("map,mode,rank_bracket,winners,losers")
+            .eq("patch", CURRENT_PATCH)
             .range(i * PAGE, i * PAGE + PAGE - 1)
         );
 

@@ -32,6 +32,8 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
+CURRENT_PATCH = "67.306"
+
 COUNTRIES = [
     "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
     "TR","MX","AR","PL","ES","IT","NL","SE","NO","FI",
@@ -127,6 +129,7 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                     "rank_bracket": bracket,
                     "winners": winners,
                     "losers": losers,
+                    "patch": CURRENT_PATCH,
                     "match_hash": None
                 }
                 match_entry["match_hash"] = make_hash(match_entry)
