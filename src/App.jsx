@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { 
-  Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check, 
-  RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight 
+import {
+  Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check,
+  RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight
 } from "lucide-react";
+import BrawlersPage from "./BrawlersPage";
+import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 // ==========================================
 // 🔌 SUPABASE CLOUD CONFIGURATION
 // ==========================================
-const SUPABASE_URL = "https://srvmcjoasywfegfnyyvr.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydm1jam9hc3l3ZmVnZm55eXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODk4ODcsImV4cCI6MjA5NjE2NTg4N30.Sgbh-ap_bvVVgPwKcEvQQts0QVUosoP0D5DlO-EbK1I"; // ⚠️ Paste your actual publishable key string here
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MAPS = [
@@ -220,13 +222,36 @@ function useLiveMeta() {
   useEffect(() => {
     async function getCloudMatches() {
       try {
-        // Fetch everything from your capitalized "Matches" table in Supabase
-        const { data, error: sbError } = await supabase
-          .from("Matches")
-          .select("*");
+        const PAGE = 1000;
 
-        if (sbError) throw sbError;
-        setMatches(data || []);
+        // Get exact count first
+        const { count, error: countErr } = await supabase
+          .from("Matches")
+          .select("*", { count: "exact", head: true });
+
+        if (countErr) throw countErr;
+
+        const total = count || 0;
+        const pages = Math.ceil(total / PAGE);
+        const fetches = Array.from({ length: pages }, (_, i) =>
+          supabase
+            .from("Matches")
+            .select("map,mode,rank_bracket,winners,losers")
+            .range(i * PAGE, i * PAGE + PAGE - 1)
+        );
+
+        // Fetch all pages in parallel batches of 10
+        const BATCH = 10;
+        let all = [];
+        for (let i = 0; i < fetches.length; i += BATCH) {
+          const batch = await Promise.all(fetches.slice(i, i + BATCH));
+          for (const { data, error: sbError } of batch) {
+            if (sbError) throw sbError;
+            if (data) all = all.concat(data);
+          }
+        }
+
+        setMatches(all);
       } catch (err) {
         console.error("Cloud Fetch Error:", err);
         setError("Could not sync data with Supabase Cloud archive.");
@@ -257,20 +282,139 @@ export default function BrawlMeta() {
   const [mapOpen, setMapOpen] = useState(false);
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
   const [redTeam, setRedTeam] = useState([null, null, null]);
-  const [activeSlot, setActiveSlot] = useState({ team: "blue", idx: 0 });
+  const [blueBans, setBlueBans] = useState([null, null, null]);
+  const [redBans, setRedBans] = useState([null, null, null]);
+  const [bansEnabled, setBansEnabled] = useState(false);
+  // phase: "setup" | "ban" | "pick"
+  const [phase, setPhase] = useState("setup");
+  // firstPick: "blue" | "red"
+  const [firstPick, setFirstPick] = useState(null);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("All");
   const [suggestions, setSuggestions] = useState([]);
   const [animKey, setAnimKey] = useState(0);
 
-  const allPicked = [...blueTeam, ...redTeam].filter(Boolean).map((b) => b.id);
+  // Pick sequence 1-2-2-1: first picker gets slots 0,2 / second picker gets slots 0,1,2
+  // blue first: B0, R0, R1, B1, B2, R2
+  // red first:  R0, B0, B1, R1, R2, B2
+  const pickSequence = useMemo(() => {
+    if (!firstPick) return [];
+    const a = firstPick;
+    const b = a === "blue" ? "red" : "blue";
+    return [
+      { team: a, idx: 0 },
+      { team: b, idx: 0 },
+      { team: b, idx: 1 },
+      { team: a, idx: 1 },
+      { team: a, idx: 2 },
+      { team: b, idx: 2 },
+    ];
+  }, [firstPick]);
 
+  // Ban sequence: team that picks SECOND bans first, alternating
+  // banFirst = opposite of firstPick
+  const banSequence = useMemo(() => {
+    if (!firstPick) return [];
+    const banFirst = firstPick === "blue" ? "red" : "blue";
+    const banSecond = firstPick;
+    return [
+      { team: banFirst, idx: 0 },
+      { team: banSecond, idx: 0 },
+      { team: banFirst, idx: 1 },
+      { team: banSecond, idx: 1 },
+      { team: banFirst, idx: 2 },
+      { team: banSecond, idx: 2 },
+    ];
+  }, [firstPick]);
+
+  // Current active slot derived from game state
+  const activeSlot = useMemo(() => {
+    if (phase === "ban") {
+      for (const slot of banSequence) {
+        const bans = slot.team === "blue" ? blueBans : redBans;
+        if (bans[slot.idx] === null) return { ...slot, phase: "ban" };
+      }
+      return null;
+    }
+    if (phase === "pick") {
+      for (const slot of pickSequence) {
+        const team = slot.team === "blue" ? blueTeam : redTeam;
+        if (team[slot.idx] === null) return { ...slot, phase: "pick" };
+      }
+      return null;
+    }
+    return null;
+  }, [phase, banSequence, pickSequence, blueBans, redBans, blueTeam, redTeam]);
+
+  // Auto-advance from ban to pick phase when all bans done
   useEffect(() => {
-    const pool = SUGGESTION_POOL.filter((s) => !allPicked.includes(s.brawlerId));
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
-    setSuggestions(shuffled.map((s, i) => ({ ...s, winRate: WIN_RATES[i] ?? 65 })));
-    setAnimKey((k) => k + 1);
-  }, [blueTeam, redTeam]);
+    if (phase === "ban" && bansEnabled) {
+      const allBansDone = [...blueBans, ...redBans].every(b => b !== null);
+      if (allBansDone) setPhase("pick");
+    }
+  }, [blueBans, redBans, phase, bansEnabled]);
+
+  const allBanned = [...blueBans, ...redBans].filter(Boolean).map(b => b.id);
+  const allPicked = [...blueTeam, ...redTeam].filter(Boolean).map((b) => b.id);
+  const allUsed = [...allBanned, ...allPicked];
+
+  // Data-driven suggestions: which brawlers win most on this map vs the enemy's current picks
+  useEffect(() => {
+    const pickerTeam = activeSlot?.team ?? (firstPick || "blue");
+    const enemyTeam = pickerTeam === "blue" ? redTeam : blueTeam;
+    const enemyKeys = enemyTeam.filter(Boolean).map(b => b.name.toUpperCase());
+    const mapName = selectedMap.name;
+    const allUsedNames = [
+      ...blueTeam.filter(Boolean).map(b => b.name.toUpperCase()),
+      ...redTeam.filter(Boolean).map(b => b.name.toUpperCase()),
+      ...blueBans.filter(Boolean).map(b => b.name.toUpperCase()),
+      ...redBans.filter(Boolean).map(b => b.name.toUpperCase()),
+    ];
+
+    const stats = {};
+    const bracketMatches = liveMatches.filter(m =>
+      m.map === mapName && resolveMatchBracket(m) === rankBracket
+    );
+
+    for (const match of bracketMatches) {
+      const winners = (match.winners || []).map(b => b.toUpperCase());
+      const losers = (match.losers || []).map(b => b.toUpperCase());
+
+      let myTeam = null;
+      if (enemyKeys.length === 0) {
+        // No enemy picks yet — just show best brawlers on this map overall
+        for (const b of winners) { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; stats[b].wins++; }
+        for (const b of losers)  { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; }
+      } else {
+        const enemyInLosers  = enemyKeys.every(e => losers.includes(e));
+        const enemyInWinners = enemyKeys.every(e => winners.includes(e));
+        if (enemyInLosers)  myTeam = { side: winners, won: true };
+        else if (enemyInWinners) myTeam = { side: losers, won: false };
+        if (myTeam) {
+          for (const b of myTeam.side) {
+            if (!stats[b]) stats[b] = { picks: 0, wins: 0 };
+            stats[b].picks++;
+            if (myTeam.won) stats[b].wins++;
+          }
+        }
+      }
+    }
+
+    const results = Object.entries(stats)
+      .filter(([key]) => !allUsedNames.includes(key))
+      .filter(([, s]) => s.picks >= 3)
+      .map(([key, s]) => ({
+        key,
+        name: formatBrawlerName(key),
+        winRate: Math.round((s.wins / s.picks) * 1000) / 10,
+        picks: s.picks,
+      }))
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 5);
+
+    setSuggestions(results);
+    setAnimKey(k => k + 1);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, liveMatches, rankBracket, activeSlot, firstPick]);
 
   const roles = ["All", ...Array.from(new Set(BRAWLERS.map((b) => b.role)))];
   const filtered = BRAWLERS.filter((b) => {
@@ -280,48 +424,50 @@ export default function BrawlMeta() {
   });
 
   const handleBrawlerSelect = (brawler) => {
-    if (allPicked.includes(brawler.id)) return;
-    const { team, idx } = activeSlot;
-    if (team === "blue") {
-      const next = [...blueTeam];
-      next[idx] = brawler;
-      setBlueTeam(next);
-      const nextIdx = next.findIndex((s, i) => s === null && i > idx);
-      if (nextIdx !== -1) setActiveSlot({ team: "blue", idx: nextIdx });
-      else {
-        const redIdx = redTeam.findIndex((s) => s === null);
-        if (redIdx !== -1) setActiveSlot({ team: "red", idx: redIdx });
+    if (allUsed.includes(brawler.id)) return;
+    if (!activeSlot) return;
+
+    if (activeSlot.phase === "ban") {
+      if (activeSlot.team === "blue") {
+        const next = [...blueBans]; next[activeSlot.idx] = brawler; setBlueBans(next);
+      } else {
+        const next = [...redBans]; next[activeSlot.idx] = brawler; setRedBans(next);
       }
     } else {
-      const next = [...redTeam];
-      next[idx] = brawler;
-      setRedTeam(next);
-      const nextIdx = next.findIndex((s, i) => s === null && i > idx);
-      if (nextIdx !== -1) setActiveSlot({ team: "red", idx: nextIdx });
-      else {
-        const blueIdx = blueTeam.findIndex((s) => s === null);
-        if (blueIdx !== -1) setActiveSlot({ team: "blue", idx: blueIdx });
+      if (activeSlot.team === "blue") {
+        const next = [...blueTeam]; next[activeSlot.idx] = brawler; setBlueTeam(next);
+      } else {
+        const next = [...redTeam]; next[activeSlot.idx] = brawler; setRedTeam(next);
       }
     }
   };
 
-  const removeSlot = (team, idx) => {
-    if (team === "blue") {
-      const next = [...blueTeam];
-      next[idx] = null;
-      setBlueTeam(next);
-    } else {
-      const next = [...redTeam];
-      next[idx] = null;
-      setRedTeam(next);
-    }
-    setActiveSlot({ team, idx });
+  const removePickSlot = (team, idx) => {
+    if (team === "blue") { const next = [...blueTeam]; next[idx] = null; setBlueTeam(next); }
+    else { const next = [...redTeam]; next[idx] = null; setRedTeam(next); }
+  };
+
+  const removeBanSlot = (team, idx) => {
+    if (team === "blue") { const next = [...blueBans]; next[idx] = null; setBlueBans(next); }
+    else { const next = [...redBans]; next[idx] = null; setRedBans(next); }
+    // If bans were done, revert to ban phase
+    if (phase === "pick") setPhase("ban");
+  };
+
+  const coinFlip = () => setFirstPick(Math.random() < 0.5 ? "blue" : "red");
+
+  const startDraft = () => {
+    if (!firstPick) return;
+    setPhase(bansEnabled ? "ban" : "pick");
   };
 
   const resetDraft = () => {
     setBlueTeam([null, null, null]);
     setRedTeam([null, null, null]);
-    setActiveSlot({ team: "blue", idx: 0 });
+    setBlueBans([null, null, null]);
+    setRedBans([null, null, null]);
+    setPhase("setup");
+    setFirstPick(null);
   };
 
   // 🌀 Show cloud connection layout loading
@@ -389,6 +535,7 @@ export default function BrawlMeta() {
           <div style={styles.main}>
             {/* LEFT — DRAFT PANELS */}
             <div style={styles.draftPanel}>
+              {/* MAP + STATUS BAR */}
               <div style={styles.panelHeader}>
                 <Map size={14} color="#94a3b8" />
                 <div style={styles.mapDropdownWrapper}>
@@ -411,99 +558,211 @@ export default function BrawlMeta() {
                     </div>
                   )}
                 </div>
-                <span style={styles.pickCounter}>{allPicked.length}/6 Picked</span>
+                {phase !== "setup" && (
+                  <span style={styles.pickCounter}>
+                    {phase === "ban" ? `Banning ${allBanned.length}/6` : `${allPicked.length}/6 Picked`}
+                  </span>
+                )}
               </div>
 
-              <div style={styles.teamsGrid}>
-                {/* BLUE */}
-                <div style={styles.teamColumn}>
-                  <div style={styles.teamLabel}>
-                    <Shield size={13} color="#3b82f6" />
-                    <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>BLUE TEAM</span>
-                  </div>
-                  {blueTeam.map((brawler, idx) => (
-                    <DraftSlot key={idx} brawler={brawler} team="blue" idx={idx} active={activeSlot.team === "blue" && activeSlot.idx === idx}
-                      onClick={() => !brawler && setActiveSlot({ team: "blue", idx })} onRemove={() => removeSlot("blue", idx)} />
-                  ))}
-                </div>
-                <div style={styles.vsDivider}><div style={styles.vsCircle}>VS</div></div>
-                {/* RED */}
-                <div style={styles.teamColumn}>
-                  <div style={{ ...styles.teamLabel, justifyContent: "flex-end" }}>
-                    <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>RED TEAM</span>
-                    <Swords size={13} color="#ef4444" />
-                  </div>
-                  {redTeam.map((brawler, idx) => (
-                    <DraftSlot key={idx} brawler={brawler} team="red" idx={idx} active={activeSlot.team === "red" && activeSlot.idx === idx}
-                      onClick={() => !brawler && setActiveSlot({ team: "red", idx })} onRemove={() => removeSlot("red", idx)} />
-                  ))}
-                </div>
-              </div>
+              {/* SETUP PHASE */}
+              {phase === "setup" && (
+                <div style={{ background: "#0a1220", border: "1px solid #1e293b", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Draft Setup</div>
 
-              {/* SELECTION GRID */}
-              <div style={styles.pickerSection}>
-                <div style={styles.pickerHeader}>
-                  <div style={styles.searchWrapper}>
-                    <Target size={13} color="#64748b" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
-                    <input style={styles.searchInput} placeholder="Search brawler…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  {/* Bans toggle */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#050b14", borderRadius: 8, border: "1px solid #1e293b" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>Enable Bans</div>
+                      <div style={{ fontSize: 11, color: "#475569" }}>3 bans per team before picking</div>
+                    </div>
+                    <button onClick={() => setBansEnabled(v => !v)} style={{
+                      width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", position: "relative",
+                      background: bansEnabled ? "#f59e0b" : "#1e293b", transition: "background 0.2s",
+                    }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: bansEnabled ? 23 : 3, transition: "left 0.2s" }} />
+                    </button>
                   </div>
-                  <div style={styles.roleFilters}>
-                    {roles.map((r) => (
-                      <button key={r} style={{ ...styles.roleBtn, ...(filterRole === r ? styles.roleBtnActive : {}) }} onClick={() => setFilterRole(r)}>{r}</button>
+
+                  {/* Coin flip */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>Who picks first?</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => setFirstPick("blue")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "blue" ? "#3b82f6" : "#1e293b"}`, background: firstPick === "blue" ? "rgba(59,130,246,0.15)" : "#050b14", color: firstPick === "blue" ? "#3b82f6" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        🔵 Blue Team
+                      </button>
+                      <button onClick={coinFlip} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #1e293b", background: "#050b14", color: "#f59e0b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        🎲 Random
+                      </button>
+                      <button onClick={() => setFirstPick("red")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "red" ? "#ef4444" : "#1e293b"}`, background: firstPick === "red" ? "rgba(239,68,68,0.15)" : "#050b14", color: firstPick === "red" ? "#ef4444" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        🔴 Red Team
+                      </button>
+                    </div>
+                    {firstPick && (
+                      <div style={{ fontSize: 11, color: "#64748b", textAlign: "center" }}>
+                        Pick order: {firstPick === "blue"
+                          ? "Blue → Red Red → Blue Blue → Red"
+                          : "Red → Blue Blue → Red Red → Blue"}
+                        {bansEnabled && <span style={{ color: "#f59e0b" }}> · {firstPick === "blue" ? "Red" : "Blue"} bans first</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  <button onClick={startDraft} disabled={!firstPick} style={{ padding: "12px", borderRadius: 8, border: "none", background: firstPick ? "#f59e0b" : "#1e293b", color: firstPick ? "#050b14" : "#475569", fontWeight: 800, fontSize: 13, cursor: firstPick ? "pointer" : "not-allowed", letterSpacing: "0.06em" }}>
+                    {firstPick ? `START DRAFT` : "SELECT WHO PICKS FIRST"}
+                  </button>
+                </div>
+              )}
+
+              {/* BAN PHASE indicator */}
+              {phase === "ban" && activeSlot && (
+                <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", animation: "pulse 1s infinite" }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: activeSlot.team === "blue" ? "#60a5fa" : "#f87171" }}>
+                    {activeSlot.team === "blue" ? "Blue" : "Red"} Team
+                  </span>
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>is banning (ban {allBanned.length + 1}/6)</span>
+                </div>
+              )}
+
+              {/* PICK PHASE indicator */}
+              {phase === "pick" && activeSlot && (
+                <div style={{ padding: "10px 14px", background: activeSlot.team === "blue" ? "rgba(59,130,246,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${activeSlot.team === "blue" ? "rgba(59,130,246,0.25)" : "rgba(239,68,68,0.25)"}`, borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: activeSlot.team === "blue" ? "#3b82f6" : "#ef4444", animation: "pulse 1s infinite" }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: activeSlot.team === "blue" ? "#60a5fa" : "#f87171" }}>
+                    {activeSlot.team === "blue" ? "Blue" : "Red"} Team
+                  </span>
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>is picking (pick {allPicked.length + 1}/6)</span>
+                </div>
+              )}
+
+              {/* TEAMS + BANS */}
+              {phase !== "setup" && (
+                <div style={styles.teamsGrid}>
+                  {/* BLUE */}
+                  <div style={styles.teamColumn}>
+                    <div style={styles.teamLabel}>
+                      <Shield size={13} color="#3b82f6" />
+                      <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>BLUE TEAM</span>
+                    </div>
+                    {/* Blue bans */}
+                    {bansEnabled && (
+                      <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                        {blueBans.map((b, idx) => (
+                          <BanSlot key={idx} brawler={b} active={phase === "ban" && activeSlot?.team === "blue" && activeSlot?.idx === idx} onRemove={() => removeBanSlot("blue", idx)} />
+                        ))}
+                      </div>
+                    )}
+                    {blueTeam.map((brawler, idx) => (
+                      <DraftSlot key={idx} brawler={brawler} team="blue" idx={idx}
+                        active={phase === "pick" && activeSlot?.team === "blue" && activeSlot?.idx === idx}
+                        onClick={() => {}} onRemove={() => removePickSlot("blue", idx)} />
+                    ))}
+                  </div>
+                  <div style={styles.vsDivider}><div style={styles.vsCircle}>VS</div></div>
+                  {/* RED */}
+                  <div style={styles.teamColumn}>
+                    <div style={{ ...styles.teamLabel, justifyContent: "flex-end" }}>
+                      <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>RED TEAM</span>
+                      <Swords size={13} color="#ef4444" />
+                    </div>
+                    {bansEnabled && (
+                      <div style={{ display: "flex", gap: 4, marginBottom: 4, justifyContent: "flex-end" }}>
+                        {redBans.map((b, idx) => (
+                          <BanSlot key={idx} brawler={b} active={phase === "ban" && activeSlot?.team === "red" && activeSlot?.idx === idx} onRemove={() => removeBanSlot("red", idx)} />
+                        ))}
+                      </div>
+                    )}
+                    {redTeam.map((brawler, idx) => (
+                      <DraftSlot key={idx} brawler={brawler} team="red" idx={idx}
+                        active={phase === "pick" && activeSlot?.team === "red" && activeSlot?.idx === idx}
+                        onClick={() => {}} onRemove={() => removePickSlot("red", idx)} />
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div style={styles.brawlerGrid}>
-                  {filtered.map((b) => {
-                    const picked = allPicked.includes(b.id);
-                    return (
-                      <button key={b.id} style={{ ...styles.brawlerChip, opacity: picked ? 0.35 : 1, cursor: picked ? "not-allowed" : "pointer", border: picked ? "1px solid #1e293b" : `1px solid ${b.color}40`, background: picked ? "#0f172a" : `${b.color}12` }}
-                        onClick={() => !picked && handleBrawlerSelect(b)} disabled={picked}>
-                        <div style={{ ...styles.brawlerAvatar, background: `${b.color}25`, border: `1.5px solid ${b.color}60` }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: b.color }}>{b.initial}</span>
-                        </div>
-                        <span style={{ fontSize: 10, color: picked ? "#475569" : "#cbd5e1", fontWeight: 600 }}>{b.name}</span>
-                      </button>
-                    );
-                  })}
+              {/* BRAWLER PICKER — only shown during ban/pick phases */}
+              {phase !== "setup" && (
+                <div style={styles.pickerSection}>
+                  <div style={styles.pickerHeader}>
+                    <div style={styles.searchWrapper}>
+                      <Target size={13} color="#64748b" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                      <input style={styles.searchInput} placeholder="Search brawler…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    <div style={styles.roleFilters}>
+                      {roles.map((r) => (
+                        <button key={r} style={{ ...styles.roleBtn, ...(filterRole === r ? styles.roleBtnActive : {}) }} onClick={() => setFilterRole(r)}>{r}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={styles.brawlerGrid}>
+                    {filtered.map((b) => {
+                      const used = allUsed.includes(b.id);
+                      const isBan = phase === "ban";
+                      return (
+                        <button key={b.id} style={{ ...styles.brawlerChip, opacity: used ? 0.3 : 1, cursor: used ? "not-allowed" : "pointer", border: used ? "1px solid #1e293b" : isBan ? `1px solid rgba(239,68,68,0.4)` : `1px solid ${b.color}40`, background: used ? "#0f172a" : isBan ? "rgba(239,68,68,0.06)" : `${b.color}12` }}
+                          onClick={() => !used && handleBrawlerSelect(b)} disabled={used}>
+                          <div style={{ ...styles.brawlerAvatar, background: `${b.color}25`, border: `1.5px solid ${b.color}60` }}>
+                            <span style={{ fontSize: 9, fontWeight: 800, color: b.color }}>{b.initial}</span>
+                          </div>
+                          <span style={{ fontSize: 10, color: used ? "#334155" : "#cbd5e1", fontWeight: 600 }}>{b.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* SIDEBAR AI MATCH RECOMMENDATIONS */}
             <div style={styles.sidebar}>
               <div style={styles.panelHeader}>
                 <Cpu size={15} color="#a78bfa" />
-                <span style={{ ...styles.panelTitle, color: "#a78bfa" }}>AI Engine Recommendations</span>
+                <span style={{ ...styles.panelTitle, color: "#a78bfa" }}>AI Pick Suggestions</span>
               </div>
+
+              {/* Context label */}
+              <div style={{ fontSize: 10, color: "#475569", lineHeight: 1.5, padding: "0 2px" }}>
+                {(() => {
+                  const pickerTeam = activeSlot?.team ?? (firstPick || "blue");
+                  const enemyTeam = pickerTeam === "blue" ? redTeam : blueTeam;
+                  const enemyPicks = enemyTeam.filter(Boolean);
+                  if (enemyPicks.length === 0)
+                    return <>Best on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> overall</>;
+                  return <>Wins on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> vs {enemyPicks.map(b => b.name).join(", ")}</>;
+                })()}
+              </div>
+
               <div style={styles.suggestionList} key={animKey}>
-                {suggestions.map((s, i) => {
-                  const brawler = getBrawler(s.brawlerId);
-                  if (!brawler) return null;
-                  const bs = badgeStyles[s.badgeType] ?? badgeStyles.info;
-                  return (
-                    <div key={s.brawlerId} style={styles.suggestionCard} className="suggestion-anim">
-                      <div style={styles.suggAvatarWrap}><span style={{ fontSize: 11, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span></div>
-                      <div style={styles.suggInfo}>
-                        <span style={styles.suggName}>{brawler.name} <span style={{ color: TIER_COLORS[brawler.tier], fontSize: 10 }}>[{brawler.tier}]</span></span>
-                        <span style={{ ...styles.reasonBadge, background: bs.bg, color: bs.color, border: `1px solid ${bs.border}` }}>{s.reason}</span>
-                      </div>
-                      <div style={styles.winRateCol}><WinRateArc pct={s.winRate} color="#10b981" /></div>
-                    </div>
-                  );
-                })}
+                {suggestions.length === 0 && phase !== "setup" && (
+                  <div style={{ fontSize: 11, color: "#334155", textAlign: "center", padding: "16px 0" }}>
+                    Not enough data for this matchup.<br />
+                    <span style={{ color: "#475569" }}>Try selecting a different map.</span>
+                  </div>
+                )}
+                {phase === "setup" && (
+                  <div style={{ fontSize: 11, color: "#334155", textAlign: "center", padding: "16px 0" }}>
+                    Start the draft to see suggestions.
+                  </div>
+                )}
+                {suggestions.map((s, i) => (
+                  <SuggestionCard key={s.key} s={s} i={i} />
+                ))}
               </div>
               <div style={styles.synergyPanel}><SynergyBar blueTeam={blueTeam} redTeam={redTeam} /></div>
             </div>
           </div>
         )}
         {activeTab === "brawlers" && (
-          <TierListView
+          <BrawlersPage
+            matches={liveMatches.filter(m => {
+              const b = m.rank_bracket;
+              return rankBracket === "masters_legendary" ? b === "masters_legendary" : b === "diamond_mythic";
+            })}
+            loading={liveLoading}
+            error={liveError}
             rankBracket={rankBracket}
-            liveMatches={liveMatches}
-            liveLoading={liveLoading}
-            liveError={liveError}
           />
         )}
         {activeTab === "premium" && <PremiumView />}
@@ -514,6 +773,7 @@ export default function BrawlMeta() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .suggestion-anim { animation: fadeUp 0.3s ease both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
     </div>
   );
@@ -761,6 +1021,46 @@ function PremiumView() {
 /* ==========================================
    SUPPORTING STRUCTURAL SUB-COMPONENTS
    ========================================== */
+
+function SuggestionCard({ s, i }) {
+  const [imgErr, setImgErr] = useState(false);
+  const meta = BRAWLER_META_IMPORT[s.key] || {};
+  const color = s.winRate >= 55 ? "#10b981" : s.winRate >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <div style={{ ...styles.suggestionCard, animationDelay: `${i * 0.05}s` }} className="suggestion-anim">
+      <div style={{ ...styles.suggAvatarWrap, width: 36, height: 36, overflow: "hidden", background: `${meta.rarityColor || "#475569"}20`, borderColor: meta.rarityColor || "#1e293b" }}>
+        {!imgErr && meta.imageUrl
+          ? <img src={meta.imageUrl} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
+          : <span style={{ fontSize: 10, fontWeight: 800, color: meta.rarityColor || "#94a3b8" }}>{s.name.slice(0, 2).toUpperCase()}</span>
+        }
+      </div>
+      <div style={styles.suggInfo}>
+        <span style={styles.suggName}>{s.name}</span>
+        <span style={{ fontSize: 10, color: "#475569" }}>{s.picks} matches on map</span>
+      </div>
+      <div style={{ ...styles.winRateCol, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color }}>{s.winRate}%</span>
+        <span style={{ fontSize: 8, color: "#475569", letterSpacing: "0.04em" }}>WIN</span>
+      </div>
+    </div>
+  );
+}
+
+function BanSlot({ brawler, active, onRemove }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0, height: 36, borderRadius: 6, border: `1px solid ${active ? "rgba(239,68,68,0.6)" : brawler ? "rgba(239,68,68,0.3)" : "#1e293b"}`, background: active ? "rgba(239,68,68,0.1)" : brawler ? "rgba(239,68,68,0.05)" : "#050b14", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+      {brawler ? (
+        <>
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#ef4444", textDecoration: "line-through", opacity: 0.8 }}>{brawler.name.slice(0, 4).toUpperCase()}</span>
+          <button onClick={onRemove} style={{ position: "absolute", top: 1, right: 1, background: "none", border: "none", color: "#475569", cursor: "pointer", padding: 1 }}><X size={9} /></button>
+          <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(239,68,68,0.06) 3px, rgba(239,68,68,0.06) 4px)" }} />
+        </>
+      ) : (
+        <span style={{ fontSize: 9, color: active ? "#ef4444" : "#334155", fontWeight: 700 }}>{active ? "BAN" : "—"}</span>
+      )}
+    </div>
+  );
+}
 
 function DraftSlot({ brawler, team, idx, active, onClick, onRemove }) {
   const teamColor = team === "blue" ? "#3b82f6" : "#ef4444";
