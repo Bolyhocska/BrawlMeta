@@ -213,12 +213,12 @@ const getBrawlerVisual = (name) => {
 };
 
 // ==========================================
-// 🛰️ DYNAMIC SUPABASE HOOK
+// 🛰️ DYNAMIC SUPABASE HOOKS
 // ==========================================
 function usePatches() {
   const [patches, setPatches] = useState([]);
   useEffect(() => {
-    supabase.from("Matches").select("patch").then(({ data }) => {
+    supabase.from("BrawlerStats").select("patch").then(({ data }) => {
       if (!data) return;
       const unique = [...new Set(data.map(r => r.patch).filter(Boolean))].sort((a, b) => b.localeCompare(a));
       setPatches(unique);
@@ -227,58 +227,48 @@ function usePatches() {
   return patches;
 }
 
-function useLiveMeta(selectedPatch) {
-  const [matches, setMatches] = useState([]);
+function useBrawlerStats(selectedPatch) {
+  const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
-    setMatches([]);
-    async function getCloudMatches() {
-      try {
-        const PAGE = 1000;
-
-        const { count, error: countErr } = await supabase
-          .from("Matches")
-          .select("*", { count: "exact", head: true })
-          .eq("patch", selectedPatch);
-
-        if (countErr) throw countErr;
-
-        const total = count || 0;
-        const pages = Math.ceil(total / PAGE);
-        const fetches = Array.from({ length: pages }, (_, i) =>
-          supabase
-            .from("Matches")
-            .select("map,mode,rank_bracket,winners,losers")
-            .eq("patch", selectedPatch)
-            .range(i * PAGE, i * PAGE + PAGE - 1)
-        );
-
-        const BATCH = 10;
-        let all = [];
-        for (let i = 0; i < fetches.length; i += BATCH) {
-          const batch = await Promise.all(fetches.slice(i, i + BATCH));
-          for (const { data, error: sbError } of batch) {
-            if (sbError) throw sbError;
-            if (data) all = all.concat(data);
-          }
-        }
-
-        setMatches(all);
-      } catch (err) {
-        console.error("Cloud Fetch Error:", err);
-        setError("Could not sync data with Supabase Cloud archive.");
-      } finally {
+    setStats([]);
+    supabase
+      .from("BrawlerStats")
+      .select("*")
+      .eq("patch", selectedPatch)
+      .then(({ data, error: err }) => {
+        if (err) setError("Could not load stats.");
+        else setStats(data || []);
         setLoading(false);
-      }
-    }
-
-    getCloudMatches();
+      });
   }, [selectedPatch]);
 
-  return { matches, loading, error };
+  return { stats, loading, error };
+}
+
+function useMapMatches(selectedPatch, mapName, enabled) {
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!enabled || !mapName) return;
+    setLoading(true);
+    setMatches([]);
+    supabase
+      .from("Matches")
+      .select("map,mode,rank_bracket,winners,losers")
+      .eq("patch", selectedPatch)
+      .eq("map", mapName)
+      .then(({ data }) => {
+        setMatches(data || []);
+        setLoading(false);
+      });
+  }, [selectedPatch, mapName, enabled]);
+
+  return { matches, loading };
 }
 
 const badgeStyles = {
@@ -293,10 +283,12 @@ export default function BrawlMeta() {
   const [activeTab, setActiveTab] = useState("meta");
   const [rankBracket, setRankBracket] = useState("masters_legendary");
   const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
-  const patches = usePatches();
-  const { matches: liveMatches, loading: liveLoading, error: liveError } = useLiveMeta(selectedPatch);
   const [selectedMap, setSelectedMap] = useState(MAPS[0]);
+  const patches = usePatches();
+  const { stats: brawlerStats, loading: statsLoading, error: statsError } = useBrawlerStats(selectedPatch);
+  const { matches: mapMatches } = useMapMatches(selectedPatch, selectedMap.name, activeTab === "meta");
   const [mapOpen, setMapOpen] = useState(false);
+
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
   const [redTeam, setRedTeam] = useState([null, null, null]);
   const [blueBans, setBlueBans] = useState([null, null, null]);
@@ -389,8 +381,8 @@ export default function BrawlMeta() {
     ];
 
     const stats = {};
-    const bracketMatches = liveMatches.filter(m =>
-      m.map === mapName && resolveMatchBracket(m) === rankBracket
+    const bracketMatches = mapMatches.filter(m =>
+      resolveMatchBracket(m) === rankBracket
     );
 
     for (const match of bracketMatches) {
@@ -431,7 +423,7 @@ export default function BrawlMeta() {
 
     setSuggestions(results);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, liveMatches, rankBracket, activeSlot, firstPick]);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick]);
 
   const roles = ["All", ...Array.from(new Set(BRAWLERS.map((b) => b.role)))];
   const filtered = BRAWLERS.filter((b) => {
@@ -487,17 +479,6 @@ export default function BrawlMeta() {
     setFirstPick(null);
   };
 
-  // 🌀 Show cloud connection layout loading
-  if (liveLoading) {
-    return (
-      <div style={{ minHeight: "100vh", backgroundColor: "#050b14", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 12, color: "#94a3b8", fontFamily: "sans-serif" }}>
-        <div style={{ width: 40, height: 40, border: "3px solid rgba(245,158,11,0.1)", borderTopColor: "#f59e0b", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: 14, letterSpacing: "0.05em", color: "#cbd5e1", fontWeight: 600 }}>SYNCING WITH SUPABASE ARCHIVE...</span>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.root}>
       <div style={styles.scanlines} />
@@ -543,9 +524,9 @@ export default function BrawlMeta() {
         {activeTab === "trending" && (
           <TrendingView
             rankBracket={rankBracket}
-            liveMatches={liveMatches}
-            liveLoading={liveLoading}
-            liveError={liveError}
+            brawlerStats={brawlerStats}
+            loading={statsLoading}
+            error={statsError}
           />
         )}
         {activeTab === "meta" && (
@@ -773,12 +754,9 @@ export default function BrawlMeta() {
         )}
         {activeTab === "brawlers" && (
           <BrawlersPage
-            matches={liveMatches.filter(m => {
-              const b = m.rank_bracket;
-              return rankBracket === "masters_legendary" ? b === "masters_legendary" : b === "diamond_mythic";
-            })}
-            loading={liveLoading}
-            error={liveError}
+            brawlerStats={brawlerStats}
+            loading={statsLoading}
+            error={statsError}
             rankBracket={rankBracket}
           />
         )}
@@ -857,32 +835,38 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
   );
 }
 
-function TrendingView({ rankBracket, liveMatches, liveLoading, liveError }) {
-  const bracketMeta = useMemo(() => {
-    const filtered = filterMatchesByBracket(liveMatches, rankBracket);
-    return { filtered, stats: computeMetaFromMatches(filtered) };
-  }, [liveMatches, rankBracket]);
+function TrendingView({ rankBracket, brawlerStats, loading, error }) {
+  const { trendingBrawlers, totalPicks } = useMemo(() => {
+    const overall = brawlerStats.filter(s => s.rank_bracket === rankBracket && s.map === null);
+    const totalPicks = overall.reduce((sum, s) => sum + s.picks, 0);
+    const trendingBrawlers = overall
+      .map(s => ({
+        key: s.brawler,
+        name: formatBrawlerName(s.brawler),
+        picks: s.picks,
+        winRate: parseFloat(s.win_rate),
+        pickRate: parseFloat(s.pick_rate),
+        tier: assignTier(s.picks, s.wins, totalPicks),
+      }))
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 8);
+    return { trendingBrawlers, totalPicks };
+  }, [brawlerStats, rankBracket]);
 
   const bracketLabel = RANK_BRACKETS.find((b) => b.id === rankBracket)?.label ?? rankBracket;
-  const trendingBrawlers = bracketMeta.stats.slice(0, 4);
 
   return (
     <div style={styles.viewPadding}>
       <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Real-Time Meta Trends</h2>
       <p style={styles.viewSubtext}>
-        Live ranked data for {bracketLabel} — {bracketMeta.filtered.length} matches in sample.
+        Pre-aggregated ranked data for {bracketLabel} — {totalPicks.toLocaleString()} total picks tracked.
       </p>
-      <RecentMatchesGrid
-        rankBracket={rankBracket}
-        matches={bracketMeta.filtered}
-        loading={liveLoading}
-        error={liveError}
-      />
       <h3 style={{ ...styles.viewHeading, fontSize: 16, marginTop: 28 }}><TrendingUp size={16} color="#60a5fa" /> Top Performers</h3>
-      {liveLoading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Computing bracket stats…</p>}
-      {!liveLoading && trendingBrawlers.length === 0 && (
+      {loading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Loading stats…</p>}
+      {error && !loading && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 8 }}>{error}</p>}
+      {!loading && trendingBrawlers.length === 0 && (
         <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>
-          No matches for this bracket yet. Re-run the scraper after selecting mixed seed tags.
+          No stats found. Run the aggregation function in Supabase.
         </p>
       )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 16 }}>
@@ -899,7 +883,7 @@ function TrendingView({ rankBracket, liveMatches, liveLoading, liveError }) {
                   <div style={{ fontSize: 11, color: TIER_COLORS[b.tier] }}>Tier {b.tier}</div>
                 </div>
                 <span style={{ marginLeft: "auto", fontSize: 11, color: "#10b981", background: "rgba(16,185,129,0.1)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>
-                  {b.picks} picks
+                  {b.picks.toLocaleString()} picks
                 </span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%", borderTop: "1px solid #1e293b", paddingTop: 8 }}>

@@ -215,6 +215,16 @@ def harvest_to_cloud():
         print(f"✅ Success! Pushed {len(extracted_data)} live matches to Cloud Database.")
     else:
         print(f"❌ Failed to save to database: {res.status_code} {res.text}")
+        return
+
+    # Re-aggregate stats for the current patch so the website stays fast
+    print(f"🔄 Re-aggregating BrawlerStats for patch {CURRENT_PATCH}...")
+    rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/aggregate_brawler_stats"
+    rpc_res = requests.post(rpc_url, json={"target_patch": CURRENT_PATCH}, headers=SUPABASE_HEADERS)
+    if rpc_res.status_code in [200, 204]:
+        print("✅ BrawlerStats aggregation complete.")
+    else:
+        print(f"⚠️ Aggregation failed: {rpc_res.status_code} {rpc_res.text}")
 
 if __name__ == "__main__":
     harvest_to_cloud()

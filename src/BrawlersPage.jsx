@@ -25,62 +25,24 @@ function toStars(winRate, pickRate, totalPicks, picks) {
   return Math.min(7, Math.max(1, Math.round(raw * 2) / 2)); // round to 0.5
 }
 
-function computeStats(matches) {
-  const overall = {};
-  const byMode = {};
-  const byMap = {};
-  let totalPicks = 0;
+function computeStatsFromAggregated(rows, rankBracket) {
+  const overall = rows.filter(r => r.rank_bracket === rankBracket && r.map === null);
+  const mapRows = rows.filter(r => r.rank_bracket === rankBracket && r.map !== null);
 
-  for (const match of matches) {
-    const winners = Array.isArray(match.winners) ? match.winners : [];
-    const losers = Array.isArray(match.losers) ? match.losers : [];
-    const mode = match.mode;
-    const map = match.map;
+  const totalPicks = overall.reduce((sum, r) => sum + r.picks, 0);
 
-    const process = (name, won) => {
-      const key = name.toUpperCase().trim();
-      if (!key) return;
-
-      // overall
-      if (!overall[key]) overall[key] = { picks: 0, wins: 0 };
-      overall[key].picks++;
-      if (won) overall[key].wins++;
-      totalPicks++;
-
-      // by mode
-      if (mode) {
-        if (!byMode[mode]) byMode[mode] = {};
-        if (!byMode[mode][key]) byMode[mode][key] = { picks: 0, wins: 0 };
-        byMode[mode][key].picks++;
-        if (won) byMode[mode][key].wins++;
-      }
-
-      // by map
-      if (map) {
-        if (!byMap[map]) byMap[map] = { mode, brawlers: {} };
-        if (!byMap[map].brawlers[key]) byMap[map].brawlers[key] = { picks: 0, wins: 0 };
-        byMap[map].brawlers[key].picks++;
-        if (won) byMap[map].brawlers[key].wins++;
-      }
-    };
-
-    for (const b of winners) process(b, true);
-    for (const b of losers) process(b, false);
-  }
-
-  // Build brawler list with overall stats
-  const brawlers = Object.entries(overall)
-    .filter(([, s]) => s.picks >= MIN_PICKS_OVERALL)
-    .map(([key, s]) => {
-      const wr = Math.round((s.wins / s.picks) * 1000) / 10;
-      const pr = Math.round((s.picks / totalPicks) * 1000) / 10;
-      const stars = toStars(wr, pr, totalPicks, s.picks);
-      const meta = BRAWLER_META[key] || {};
+  const brawlers = overall
+    .filter(r => r.picks >= MIN_PICKS_OVERALL)
+    .map(r => {
+      const wr = parseFloat(r.win_rate);
+      const pr = parseFloat(r.pick_rate);
+      const stars = toStars(wr, pr, totalPicks, r.picks);
+      const meta = BRAWLER_META[r.brawler] || {};
       return {
-        key,
-        name: FORMAT_NAME(key),
-        picks: s.picks,
-        wins: s.wins,
+        key: r.brawler,
+        name: FORMAT_NAME(r.brawler),
+        picks: r.picks,
+        wins: r.wins,
         winRate: wr,
         pickRate: pr,
         stars,
@@ -94,6 +56,21 @@ function computeStats(matches) {
       };
     })
     .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0) || b.winRate - a.winRate);
+
+  const byMap = {};
+  for (const r of mapRows) {
+    if (!byMap[r.map]) byMap[r.map] = { mode: r.mode, brawlers: {} };
+    byMap[r.map].brawlers[r.brawler] = { picks: r.picks, wins: r.wins };
+  }
+
+  const byMode = {};
+  for (const r of mapRows) {
+    if (!r.mode) continue;
+    if (!byMode[r.mode]) byMode[r.mode] = {};
+    if (!byMode[r.mode][r.brawler]) byMode[r.mode][r.brawler] = { picks: 0, wins: 0 };
+    byMode[r.mode][r.brawler].picks += r.picks;
+    byMode[r.mode][r.brawler].wins += r.wins;
+  }
 
   return { brawlers, byMode, byMap, totalPicks };
 }
@@ -201,9 +178,8 @@ function BrawlerPortrait({ brawler, size = 56, onClick }) {
 }
 
 // ─── Brawler detail modal ──────────────────────────────────────────────────────
-function BrawlerDetail({ brawler, matches, byMode, byMap, onClose }) {
+function BrawlerDetail({ brawler, byMode, byMap, onClose }) {
   const [activeSection, setActiveSection] = useState("overview");
-  const { synergies, counters } = useMemo(() => computeSynergies(matches, brawler.key), [matches, brawler.key]);
 
   const mapStats = useMemo(() => {
     return Object.entries(byMap)
@@ -362,29 +338,10 @@ function BrawlerDetail({ brawler, matches, byMode, byMap, onClose }) {
           )}
 
           {activeSection === "synergies" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-              <div>
-                <h3 style={{ ...sectionTitle, color: "#10b981" }}>
-                  <Users size={14} style={{ display: "inline", marginRight: 6 }} />
-                  Best Teammates
-                </h3>
-                <p style={{ ...emptyText, marginBottom: 10 }}>Win rate when paired with {brawler.name}</p>
-                {synergies.length === 0 && <p style={emptyText}>Not enough data.</p>}
-                {synergies.map(b => (
-                  <SynergyRow key={b.key} brawler={b} color="#10b981" />
-                ))}
-              </div>
-              <div>
-                <h3 style={{ ...sectionTitle, color: "#ef4444" }}>
-                  <TrendingUp size={14} style={{ display: "inline", marginRight: 6 }} />
-                  Wins Against
-                </h3>
-                <p style={{ ...emptyText, marginBottom: 10 }}>Win rate vs these enemies</p>
-                {counters.length === 0 && <p style={emptyText}>Not enough data.</p>}
-                {counters.map(b => (
-                  <SynergyRow key={b.key} brawler={b} color="#f59e0b" />
-                ))}
-              </div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
+              <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Synergy data coming soon</p>
+              <p style={{ fontSize: 12 }}>Teammate & counter stats require per-matchup aggregation which will be added in the next update.</p>
             </div>
           )}
 
@@ -457,7 +414,7 @@ const sectionTitle = { fontSize: 13, fontWeight: 800, color: "#94a3b8", letterSp
 const emptyText = { fontSize: 12, color: "#475569" };
 
 // ─── Main brawlers page ───────────────────────────────────────────────────────
-export default function BrawlersPage({ matches, loading, error, rankBracket }) {
+export default function BrawlersPage({ brawlerStats, loading, error, rankBracket }) {
   const [search, setSearch] = useState("");
   const [modeFilter, setModeFilter] = useState("all");
   const [mapFilter, setMapFilter] = useState("all");
@@ -465,7 +422,10 @@ export default function BrawlersPage({ matches, loading, error, rankBracket }) {
   const [selectedBrawler, setSelectedBrawler] = useState(null);
   const [sortBy, setSortBy] = useState("stars");
 
-  const { brawlers, byMode, byMap, totalPicks } = useMemo(() => computeStats(matches), [matches]);
+  const { brawlers, byMode, byMap, totalPicks } = useMemo(
+    () => computeStatsFromAggregated(brawlerStats || [], rankBracket),
+    [brawlerStats, rankBracket]
+  );
 
   const modes = useMemo(() => ["all", ...Object.keys(byMode)], [byMode]);
   const maps = useMemo(() => {
@@ -549,7 +509,7 @@ export default function BrawlersPage({ matches, loading, error, rankBracket }) {
           Brawler Rankings
         </h2>
         <p style={{ fontSize: 12, color: "#64748b" }}>
-          7-star ratings computed from {matches.length.toLocaleString()} {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} matches · {brawlers.length} brawlers tracked
+          7-star ratings from {totalPicks.toLocaleString()} {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} picks · {brawlers.length} brawlers tracked
         </p>
       </div>
 
@@ -633,7 +593,6 @@ export default function BrawlersPage({ matches, loading, error, rankBracket }) {
       {selectedBrawlerFull && (
         <BrawlerDetail
           brawler={selectedBrawlerFull}
-          matches={matches}
           byMode={byMode}
           byMap={byMap}
           onClose={() => setSelectedBrawler(null)}
