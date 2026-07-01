@@ -1,6 +1,7 @@
 import os
 import hashlib
 import requests
+from datetime import datetime, timezone
 
 # ==========================================
 # 🔑 API KEYS & CREDENTIALS (Secured)
@@ -33,6 +34,30 @@ SUPABASE_HEADERS = {
 }
 
 CURRENT_PATCH = "68.250"
+
+# Patch start times (UTC). Used to determine which patch a match actually
+# belongs to based on its own battleTime, instead of blindly stamping every
+# collected match with CURRENT_PATCH — a player's battlelog can still contain
+# battles from before the patch changed if they haven't played since.
+PATCH_START_TIMES = [
+    ("67.306", datetime(2000, 1, 1, tzinfo=timezone.utc)),   # earliest known patch, catch-all floor
+    ("68.250", datetime(2026, 6, 30, 8, 0, 0, tzinfo=timezone.utc)),  # 10:00 CET = 08:00 UTC
+]
+
+def determine_patch(battle_time_str):
+    """Given the API's battleTime (e.g. '20260630T101500.000Z'), return which
+    patch that match actually happened in."""
+    if not battle_time_str:
+        return CURRENT_PATCH
+    try:
+        dt = datetime.strptime(battle_time_str, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return CURRENT_PATCH
+    patch = PATCH_START_TIMES[0][0]
+    for name, start in PATCH_START_TIMES:
+        if dt >= start:
+            patch = name
+    return patch
 
 RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
@@ -149,8 +174,9 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
 
                 map_name = event_data.get("map") or "Unknown Map"
                 mode_name = battle_data.get("mode") or "Unknown Mode"
+                match_patch = determine_patch(match.get("battleTime"))
 
-                allowed_maps = RANKED_MAPS.get(CURRENT_PATCH)
+                allowed_maps = RANKED_MAPS.get(match_patch)
                 if allowed_maps is not None and map_name not in allowed_maps:
                     continue
 
@@ -160,7 +186,7 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                     "rank_bracket": bracket,
                     "winners": winners,
                     "losers": losers,
-                    "patch": CURRENT_PATCH,
+                    "patch": match_patch,
                     "match_hash": None
                 }
                 match_entry["match_hash"] = make_hash(match_entry)
@@ -248,14 +274,16 @@ def harvest_to_cloud():
         print(f"❌ Failed to save to database: {res.status_code} {res.text}")
         return
 
-    # Re-aggregate stats for the current patch so the website stays fast
-    print(f"🔄 Re-aggregating BrawlerStats for patch {CURRENT_PATCH}...")
+    # Re-aggregate stats for every patch actually touched by this batch
+    touched_patches = sorted({m["patch"] for m in extracted_data})
     rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/aggregate_brawler_stats"
-    rpc_res = requests.post(rpc_url, json={"target_patch": CURRENT_PATCH}, headers=SUPABASE_HEADERS)
-    if rpc_res.status_code in [200, 204]:
-        print("✅ BrawlerStats aggregation complete.")
-    else:
-        print(f"⚠️ Aggregation failed: {rpc_res.status_code} {rpc_res.text}")
+    for patch in touched_patches:
+        print(f"🔄 Re-aggregating BrawlerStats for patch {patch}...")
+        rpc_res = requests.post(rpc_url, json={"target_patch": patch}, headers=SUPABASE_HEADERS)
+        if rpc_res.status_code in [200, 204]:
+            print(f"✅ BrawlerStats aggregation complete for {patch}.")
+        else:
+            print(f"⚠️ Aggregation failed for {patch}: {rpc_res.status_code} {rpc_res.text}")
 
 if __name__ == "__main__":
     harvest_to_cloud()
