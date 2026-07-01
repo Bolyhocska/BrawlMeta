@@ -59,6 +59,13 @@ def determine_patch(battle_time_str):
             patch = name
     return patch
 
+# Patches that are fully finished — no more ranked matches will ever occur on
+# them again. Matches tagged with a closed patch are dropped entirely (not
+# inserted), and BrawlerStats is never re-aggregated for them, since their
+# data is final and re-running aggregation is just wasted DB load (and can
+# time out as the Matches table grows).
+CLOSED_PATCHES = {"67.306"}
+
 RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
 # Confirmed official ranked maps per patch. Any match on a map not in this
@@ -175,6 +182,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                 map_name = event_data.get("map") or "Unknown Map"
                 mode_name = battle_data.get("mode") or "Unknown Mode"
                 match_patch = determine_patch(match.get("battleTime"))
+                if match_patch in CLOSED_PATCHES:
+                    continue
 
                 allowed_maps = RANKED_MAPS.get(match_patch)
                 if allowed_maps is not None and map_name not in allowed_maps:
@@ -274,8 +283,9 @@ def harvest_to_cloud():
         print(f"❌ Failed to save to database: {res.status_code} {res.text}")
         return
 
-    # Re-aggregate stats for every patch actually touched by this batch
-    touched_patches = sorted({m["patch"] for m in extracted_data})
+    # Re-aggregate stats for every patch actually touched by this batch,
+    # skipping any patch that's been declared closed/finished
+    touched_patches = sorted({m["patch"] for m in extracted_data} - CLOSED_PATCHES)
     rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/aggregate_brawler_stats"
     for patch in touched_patches:
         print(f"🔄 Re-aggregating BrawlerStats for patch {patch}...")
