@@ -49,6 +49,15 @@ RANKED_MAPS = {
         "Quick Travel", "Ring Of Fire",
         "Belles Rock", "Flaring Phoenix", "New Horizons", "Out in the open",
     },
+    "68.250": {
+        "Dry Season", "Hideout", "Layer Cake", "Shooting Star",
+        "Center Stage", "Pinball Dreams", "Sneaky Fields", "Triple Dribble",
+        "Double Swoosh", "Gem Fort", "Hard Rock Mine", "Undermine",
+        "Bridge Too Far", "Hot Potato", "Kaboom Canyon", "Safe Zone", "Pit Stop",
+        "Dueling Beetles", "In The Liminal", "Open Business", "Parallel Plays",
+        "Quick Travel", "Ring Of Fire",
+        "Belles Rock", "Flaring Phoenix", "New Horizons", "Out in the open",
+    },
 }
 
 COUNTRIES = [
