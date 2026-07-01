@@ -212,7 +212,10 @@ function useMaps(selectedPatch) {
             unique.push({ name: r.map, mode: r.mode });
           }
         }
-        unique.sort((a, b) => a.name.localeCompare(b.name));
+        unique.sort((a, b) => {
+          const modeCompare = (a.mode || "").localeCompare(b.mode || "");
+          return modeCompare !== 0 ? modeCompare : a.name.localeCompare(b.name);
+        });
         setMaps(unique);
       });
   }, [selectedPatch]);
