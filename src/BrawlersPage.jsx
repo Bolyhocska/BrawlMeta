@@ -419,23 +419,13 @@ function AbilityCard({ name, desc, img, color }) {
 const sectionTitle = { fontSize: 13, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 };
 const emptyText = { fontSize: 12, color: "#475569" };
 
-// Accepts a full YouTube URL (watch, youtu.be, or already-embed) and returns an embeddable URL
-function toYoutubeEmbedUrl(url) {
-  if (!url) return null;
-  const watchMatch = url.match(/[?&]v=([^&]+)/);
-  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}`;
-  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
-  return url; // assume it's already an embed URL
-}
-
 function GuideSection({ guide }) {
   const [lightbox, setLightbox] = useState(null);
   const hasTips = guide?.tips?.length > 0;
   const hasScreenshots = guide?.screenshots?.length > 0;
-  const embedUrl = toYoutubeEmbedUrl(guide?.videoUrl);
+  const videoUrl = guide?.videoUrl || null;
 
-  if (!hasTips && !hasScreenshots && !embedUrl) {
+  if (!hasTips && !hasScreenshots && !videoUrl) {
     return (
       <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Guide coming soon</p>
@@ -446,18 +436,15 @@ function GuideSection({ guide }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {embedUrl && (
+      {videoUrl && (
         <div>
           <h3 style={sectionTitle}>Video Guide</h3>
-          <div style={{ marginTop: 10, position: "relative", paddingTop: "56.25%", borderRadius: 10, overflow: "hidden", border: "1px solid #1e293b" }}>
-            <iframe
-              src={embedUrl}
-              title="Brawler video guide"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-            />
-          </div>
+          <video
+            src={videoUrl}
+            controls
+            playsInline
+            style={{ width: "100%", borderRadius: 10, border: "1px solid #1e293b", marginTop: 10, background: "#000" }}
+          />
         </div>
       )}
 
