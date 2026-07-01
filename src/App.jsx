@@ -204,14 +204,17 @@ function useMaps(selectedPatch) {
       .limit(100000)
       .then(({ data }) => {
         if (!data) return;
-        const seen = new Set();
-        const unique = [];
+        // Count total picks per map, only include maps with enough data
+        const mapPicks = {};
+        const mapMode = {};
         for (const r of data) {
-          if (r.map && !seen.has(r.map)) {
-            seen.add(r.map);
-            unique.push({ name: r.map, mode: r.mode });
-          }
+          if (!r.map) continue;
+          mapPicks[r.map] = (mapPicks[r.map] || 0) + r.picks;
+          mapMode[r.map] = r.mode;
         }
+        const unique = Object.entries(mapPicks)
+          .filter(([, picks]) => picks >= 200)
+          .map(([name]) => ({ name, mode: mapMode[name] }));
         unique.sort((a, b) => {
           const modeCompare = (a.mode || "").localeCompare(b.mode || "");
           return modeCompare !== 0 ? modeCompare : a.name.localeCompare(b.name);
