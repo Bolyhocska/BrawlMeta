@@ -36,6 +36,21 @@ CURRENT_PATCH = "68.250"
 
 RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
+# Confirmed official ranked maps per patch. Any match on a map not in this
+# list for the current patch is dropped, since the API tags themed/event
+# reskins with the same mode as real ranked maps.
+RANKED_MAPS = {
+    "67.306": {
+        "Dry Season", "Hideout", "Layer Cake", "Shooting Star",
+        "Center Stage", "Pinball Dreams", "Sneaky Fields", "Triple Dribble",
+        "Double Swoosh", "Gem Fort", "Hard Rock Mine", "Undermine",
+        "Bridge Too Far", "Hot Potato", "Kaboom Canyon", "Safe Zone",
+        "Dueling Beetles", "In The Liminal", "Open Business", "Parallel Plays",
+        "Quick Travel", "Ring Of Fire",
+        "Belles Rock", "Flaring Phoenix", "New Horizons", "Out in the open",
+    },
+}
+
 COUNTRIES = [
     "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
     "TR","MX","AR","PL","ES","IT","NL","SE","NO","FI",
@@ -125,6 +140,10 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
 
                 map_name = event_data.get("map") or "Unknown Map"
                 mode_name = battle_data.get("mode") or "Unknown Mode"
+
+                allowed_maps = RANKED_MAPS.get(CURRENT_PATCH)
+                if allowed_maps is not None and map_name not in allowed_maps:
+                    continue
 
                 match_entry = {
                     "map": map_name,
