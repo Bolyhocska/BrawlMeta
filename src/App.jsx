@@ -192,10 +192,34 @@ function usePatches() {
   return patches;
 }
 
+const PATCH_MAPS = {
+  "67.306": [
+    { name: "Double Swoosh",   mode: "gemGrab" },
+    { name: "Hard Rock Mine",  mode: "gemGrab" },
+    { name: "Last Stop / Undermine", mode: "gemGrab" },
+    { name: "Center Stage",    mode: "brawlBall" },
+    { name: "Pinball Dreams",  mode: "brawlBall" },
+    { name: "Penalty Kick / Triple Dribble", mode: "brawlBall" },
+    { name: "Belle's Rock",    mode: "knockout" },
+    { name: "Flaring Phoenix", mode: "knockout" },
+    { name: "Out In The Open", mode: "knockout" },
+    { name: "Dueling Beetles", mode: "hotZone" },
+    { name: "Open Business",   mode: "hotZone" },
+    { name: "Ring of Fire",    mode: "hotZone" },
+    { name: "Bridge Too Far",  mode: "heist" },
+    { name: "Kaboom Canyon",   mode: "heist" },
+    { name: "Safe Zone",       mode: "heist" },
+    { name: "Canal Grande",    mode: "bounty" },
+    { name: "Hideout",         mode: "bounty" },
+    { name: "Shooting Star",   mode: "bounty" },
+  ],
+};
+
 function useMaps(selectedPatch) {
   const [maps, setMaps] = useState([]);
   useEffect(() => {
     if (!selectedPatch) return;
+    if (PATCH_MAPS[selectedPatch]) { setMaps(PATCH_MAPS[selectedPatch]); return; }
     supabase
       .from("BrawlerStats")
       .select("map,mode,picks")
