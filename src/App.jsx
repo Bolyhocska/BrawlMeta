@@ -286,21 +286,15 @@ export default function BrawlMeta() {
     ];
   }, [firstPick]);
 
-  // Ban sequence: team that picks SECOND bans first, alternating
-  // banFirst = opposite of firstPick
-  const banSequence = useMemo(() => {
-    if (!firstPick) return [];
-    const banFirst = firstPick === "blue" ? "red" : "blue";
-    const banSecond = firstPick;
-    return [
-      { team: banFirst, idx: 0 },
-      { team: banSecond, idx: 0 },
-      { team: banFirst, idx: 1 },
-      { team: banSecond, idx: 1 },
-      { team: banFirst, idx: 2 },
-      { team: banSecond, idx: 2 },
-    ];
-  }, [firstPick]);
+  // Ban sequence: blue bans all 3 first, then red bans all 3
+  const banSequence = useMemo(() => [
+    { team: "blue", idx: 0 },
+    { team: "blue", idx: 1 },
+    { team: "blue", idx: 2 },
+    { team: "red", idx: 0 },
+    { team: "red", idx: 1 },
+    { team: "red", idx: 2 },
+  ], []);
 
   // Current active slot derived from game state
   const activeSlot = useMemo(() => {
@@ -333,12 +327,17 @@ export default function BrawlMeta() {
   const allPicked = [...blueTeam, ...redTeam].filter(Boolean).map((b) => b.id);
   const allUsed = [...allBanned, ...allPicked];
 
-  // Data-driven suggestions: which brawlers win most on this map vs the enemy's current picks
+  // Confidence-weighted score: penalises small samples so niche brawlers don't dominate
+  const CONFIDENCE = 30;
+  const confidenceScore = (wins, picks) =>
+    picks === 0 ? 0 : (wins / picks) * 100 * (picks / (picks + CONFIDENCE));
+
+  // Data-driven suggestions + recommended bans
+  const [recommendedBans, setRecommendedBans] = useState([]);
   useEffect(() => {
     const pickerTeam = activeSlot?.team ?? (firstPick || "blue");
     const enemyTeam = pickerTeam === "blue" ? redTeam : blueTeam;
     const enemyKeys = enemyTeam.filter(Boolean).map(b => b.name.toUpperCase());
-    const mapName = selectedMap.name;
     const allUsedNames = [
       ...blueTeam.filter(Boolean).map(b => b.name.toUpperCase()),
       ...redTeam.filter(Boolean).map(b => b.name.toUpperCase()),
@@ -347,44 +346,67 @@ export default function BrawlMeta() {
     ];
 
     const stats = {};
-    const bracketMatches = mapMatches.filter(m =>
-      resolveMatchBracket(m) === rankBracket
-    );
+    const bracketMatches = mapMatches.filter(m => resolveMatchBracket(m) === rankBracket);
 
     for (const match of bracketMatches) {
       const winners = (match.winners || []).map(b => b.toUpperCase());
       const losers = (match.losers || []).map(b => b.toUpperCase());
 
-      let myTeam = null;
-      if (enemyKeys.length === 0) {
-        // No enemy picks yet — just show best brawlers on this map overall
-        for (const b of winners) { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; stats[b].wins++; }
-        for (const b of losers)  { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; }
-      } else {
-        const enemyInLosers  = enemyKeys.every(e => losers.includes(e));
-        const enemyInWinners = enemyKeys.every(e => winners.includes(e));
-        if (enemyInLosers)  myTeam = { side: winners, won: true };
-        else if (enemyInWinners) myTeam = { side: losers, won: false };
-        if (myTeam) {
-          for (const b of myTeam.side) {
-            if (!stats[b]) stats[b] = { picks: 0, wins: 0 };
-            stats[b].picks++;
-            if (myTeam.won) stats[b].wins++;
-          }
-        }
-      }
+      // Always collect overall map stats for ban recommendations
+      for (const b of winners) { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; stats[b].wins++; }
+      for (const b of losers)  { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; }
     }
 
-    const results = Object.entries(stats)
-      .filter(([key]) => !allUsedNames.includes(key))
-      .filter(([, s]) => s.picks >= 3)
+    // Recommended bans: top brawlers by confidence score on this map
+    const bans = Object.entries(stats)
+      .filter(([, s]) => s.picks >= 15)
       .map(([key, s]) => ({
         key,
         name: formatBrawlerName(key),
         winRate: Math.round((s.wins / s.picks) * 1000) / 10,
         picks: s.picks,
+        score: confidenceScore(s.wins, s.picks),
       }))
-      .sort((a, b) => b.winRate - a.winRate)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+    setRecommendedBans(bans);
+
+    // Pick suggestions
+    const pickStats = {};
+    for (const match of bracketMatches) {
+      const winners = (match.winners || []).map(b => b.toUpperCase());
+      const losers = (match.losers || []).map(b => b.toUpperCase());
+
+      if (enemyKeys.length === 0) {
+        for (const b of winners) { if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 }; pickStats[b].picks++; pickStats[b].wins++; }
+        for (const b of losers)  { if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 }; pickStats[b].picks++; }
+      } else {
+        const enemyInLosers  = enemyKeys.every(e => losers.includes(e));
+        const enemyInWinners = enemyKeys.every(e => winners.includes(e));
+        let myTeam = null;
+        if (enemyInLosers)  myTeam = { side: winners, won: true };
+        else if (enemyInWinners) myTeam = { side: losers, won: false };
+        if (myTeam) {
+          for (const b of myTeam.side) {
+            if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 };
+            pickStats[b].picks++;
+            if (myTeam.won) pickStats[b].wins++;
+          }
+        }
+      }
+    }
+
+    const results = Object.entries(pickStats)
+      .filter(([key]) => !allUsedNames.includes(key))
+      .filter(([, s]) => s.picks >= 15)
+      .map(([key, s]) => ({
+        key,
+        name: formatBrawlerName(key),
+        winRate: Math.round((s.wins / s.picks) * 1000) / 10,
+        picks: s.picks,
+        score: confidenceScore(s.wins, s.picks),
+      }))
+      .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
     setSuggestions(results);
@@ -675,6 +697,40 @@ export default function BrawlMeta() {
 
             {/* SIDEBAR AI MATCH RECOMMENDATIONS */}
             <div style={styles.sidebar}>
+
+              {/* RECOMMENDED BANS — shown during ban phase */}
+              {phase === "ban" && recommendedBans.length > 0 && (
+                <div>
+                  <div style={{ ...styles.panelHeader, marginBottom: 8 }}>
+                    <Shield size={15} color="#ef4444" />
+                    <span style={{ ...styles.panelTitle, color: "#ef4444" }}>Recommended Bans</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: "#475569", marginBottom: 8 }}>
+                    Strongest brawlers on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> — ban these first
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {recommendedBans.map((b, i) => {
+                      const meta = BRAWLER_META_IMPORT[b.key] || {};
+                      const [imgErr, setImgErr] = useState(false);
+                      return (
+                        <div key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#475569", width: 14 }}>#{i + 1}</span>
+                          <div style={{ width: 28, height: 28, borderRadius: 5, overflow: "hidden", background: `${meta.rarityColor || "#475569"}20`, border: `1.5px solid ${meta.rarityColor || "#475569"}50`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {!imgErr && meta.imageUrl
+                              ? <img src={meta.imageUrl} alt={b.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
+                              : <span style={{ fontSize: 8, fontWeight: 800, color: meta.rarityColor || "#94a3b8" }}>{b.key.slice(0, 2)}</span>
+                            }
+                          </div>
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{b.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: "#ef4444" }}>{b.winRate}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ borderTop: "1px solid #1e293b", marginTop: 12 }} />
+                </div>
+              )}
+
               <div style={styles.panelHeader}>
                 <Cpu size={15} color="#a78bfa" />
                 <span style={{ ...styles.panelTitle, color: "#a78bfa" }}>AI Pick Suggestions</span>
