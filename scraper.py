@@ -34,6 +34,8 @@ SUPABASE_HEADERS = {
 
 CURRENT_PATCH = "68.250"
 
+RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab", "wipeout", "duels"}
+
 COUNTRIES = [
     "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
     "TR","MX","AR","PL","ES","IT","NL","SE","NO","FI",
@@ -90,7 +92,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
         event_data = match.get("event", {}) or {}
 
         match_type = battle_data.get("type", "").lower()
-        if "ranked" in match_type or "solomode" in match_type:
+        mode_name = battle_data.get("mode", "")
+        if ("ranked" in match_type or "solomode" in match_type) and mode_name in RANKED_MODES:
             teams = battle_data.get("teams", [])
             result = battle_data.get("result", "").lower()
 
