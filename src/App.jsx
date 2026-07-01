@@ -15,14 +15,6 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const CURRENT_PATCH = "68.250";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const MAPS = [
-  { id: 1, name: "Belle's Rock",   mode: "Knockout",  modeColor: "#FF6B35" },
-  { id: 2, name: "Backyard Bowl",  mode: "Gem Grab",  modeColor: "#A855F7" },
-  { id: 3, name: "Super Stadium",  mode: "Brawl Ball", modeColor: "#3B82F6" },
-  { id: 4, name: "Kaboom Canyon",  mode: "Heist",     modeColor: "#F59E0B" },
-  { id: 5, name: "Snake Prairie",  mode: "Heist",     modeColor: "#F59E0B" },
-  { id: 6, name: "Galaxy Arena",   mode: "Hot Zone",  modeColor: "#EF4444" },
-];
 
 const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
   id: i + 1,
@@ -200,6 +192,33 @@ function usePatches() {
   return patches;
 }
 
+function useMaps(selectedPatch) {
+  const [maps, setMaps] = useState([]);
+  useEffect(() => {
+    if (!selectedPatch) return;
+    supabase
+      .from("BrawlerStats")
+      .select("map,mode")
+      .eq("patch", selectedPatch)
+      .not("map", "is", null)
+      .limit(100000)
+      .then(({ data }) => {
+        if (!data) return;
+        const seen = new Set();
+        const unique = [];
+        for (const r of data) {
+          if (r.map && !seen.has(r.map)) {
+            seen.add(r.map);
+            unique.push({ name: r.map, mode: r.mode });
+          }
+        }
+        unique.sort((a, b) => a.name.localeCompare(b.name));
+        setMaps(unique);
+      });
+  }, [selectedPatch]);
+  return maps;
+}
+
 function useBrawlerStats(selectedPatch) {
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,10 +275,11 @@ export default function BrawlMeta() {
   const [activeTab, setActiveTab] = useState("meta");
   const [rankBracket, setRankBracket] = useState("masters_legendary");
   const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
-  const [selectedMap, setSelectedMap] = useState(MAPS[0]);
+  const [selectedMap, setSelectedMap] = useState(null);
   const patches = usePatches();
+  const maps = useMaps(selectedPatch);
   const { stats: brawlerStats, loading: statsLoading, error: statsError } = useBrawlerStats(selectedPatch);
-  const { matches: mapMatches } = useMapMatches(selectedPatch, selectedMap.name, activeTab === "meta");
+  const { matches: mapMatches } = useMapMatches(selectedPatch, selectedMap?.name, activeTab === "meta" && !!selectedMap);
   const [mapOpen, setMapOpen] = useState(false);
 
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
@@ -275,6 +295,16 @@ export default function BrawlMeta() {
   const [filterRole, setFilterRole] = useState("All");
   const [suggestions, setSuggestions] = useState([]);
   const [animKey, setAnimKey] = useState(0);
+
+  // Auto-select first map when maps load or patch changes
+  useEffect(() => {
+    if (maps.length > 0) {
+      setSelectedMap(prev => {
+        if (!prev || !maps.find(m => m.name === prev.name)) return maps[0];
+        return prev;
+      });
+    }
+  }, [maps]);
 
   // Pick sequence 1-2-2-1: first picker gets slots 0,2 / second picker gets slots 0,1,2
   // blue first: B0, R0, R1, B1, B2, R2
@@ -532,22 +562,30 @@ export default function BrawlMeta() {
               <div style={styles.panelHeader}>
                 <Map size={14} color="#94a3b8" />
                 <div style={styles.mapDropdownWrapper}>
-                  <button style={styles.mapDropdown} onClick={() => setMapOpen(!mapOpen)}>
-                    <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{selectedMap.name}</span>
-                    <span style={{ ...styles.modeBadge, background: selectedMap.modeColor + "30", color: selectedMap.modeColor, border: `1px solid ${selectedMap.modeColor}50` }}>
-                      {selectedMap.mode}
-                    </span>
-                    <ChevronDown size={13} color="#64748b" style={{ transform: mapOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-                  </button>
-                  {mapOpen && (
+                  {selectedMap ? (() => {
+                    const mc = MODE_COLORS[selectedMap.mode?.replace(/\s/g, "")] ?? MODE_COLORS[selectedMap.mode?.toLowerCase?.()] ?? "#64748b";
+                    return (
+                      <button style={styles.mapDropdown} onClick={() => setMapOpen(!mapOpen)}>
+                        <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{selectedMap?.name}</span>
+                        <span style={{ ...styles.modeBadge, background: mc + "30", color: mc, border: `1px solid ${mc}50` }}>
+                          {formatMode(selectedMap.mode)}
+                        </span>
+                        <ChevronDown size={13} color="#64748b" style={{ transform: mapOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+                      </button>
+                    );
+                  })() : <span style={{ fontSize: 13, color: "#475569" }}>Loading maps…</span>}
+                  {mapOpen && maps.length > 0 && (
                     <div style={styles.dropdown}>
-                      {MAPS.map((m) => (
-                        <button key={m.id} style={{ ...styles.dropdownItem, background: selectedMap.id === m.id ? "rgba(245,158,11,0.1)" : "transparent" }}
-                          onClick={() => { setSelectedMap(m); setMapOpen(false); }}>
-                          <span style={{ color: "#cbd5e1", fontSize: 13 }}>{m.name}</span>
-                          <span style={{ ...styles.modeBadge, background: m.modeColor + "25", color: m.modeColor, border: `1px solid ${m.modeColor}40` }}>{m.mode}</span>
-                        </button>
-                      ))}
+                      {maps.map((m) => {
+                        const mc = MODE_COLORS[m.mode?.replace(/\s/g, "")] ?? MODE_COLORS[m.mode?.toLowerCase?.()] ?? "#64748b";
+                        return (
+                          <button key={m.name} style={{ ...styles.dropdownItem, background: selectedMap?.name === m.name ? "rgba(245,158,11,0.1)" : "transparent" }}
+                            onClick={() => { setSelectedMap(m); setMapOpen(false); }}>
+                            <span style={{ color: "#cbd5e1", fontSize: 13 }}>{m.name}</span>
+                            <span style={{ ...styles.modeBadge, background: mc + "25", color: mc, border: `1px solid ${mc}40` }}>{formatMode(m.mode)}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -713,7 +751,7 @@ export default function BrawlMeta() {
                     <span style={{ ...styles.panelTitle, color: "#ef4444" }}>Recommended Bans</span>
                   </div>
                   <div style={{ fontSize: 10, color: "#475569", marginBottom: 8 }}>
-                    Strongest brawlers on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> — ban these first
+                    Strongest brawlers on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> — ban these first
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     {recommendedBans.map((b, i) => {
@@ -750,8 +788,8 @@ export default function BrawlMeta() {
                   const enemyTeam = pickerTeam === "blue" ? redTeam : blueTeam;
                   const enemyPicks = enemyTeam.filter(Boolean);
                   if (enemyPicks.length === 0)
-                    return <>Best on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> overall</>;
-                  return <>Wins on <span style={{ color: "#f59e0b" }}>{selectedMap.name}</span> vs {enemyPicks.map(b => b.name).join(", ")}</>;
+                    return <>Best on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> overall</>;
+                  return <>Wins on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> vs {enemyPicks.map(b => b.name).join(", ")}</>;
                 })()}
               </div>
 
