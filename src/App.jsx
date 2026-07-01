@@ -216,11 +216,11 @@ const getBrawlerVisual = (name) => {
 // 🛰️ DYNAMIC SUPABASE HOOKS
 // ==========================================
 function usePatches() {
-  const [patches, setPatches] = useState([]);
+  const [patches, setPatches] = useState([CURRENT_PATCH]);
   useEffect(() => {
-    supabase.from("BrawlerStats").select("patch").then(({ data }) => {
+    supabase.from("BrawlerStats").select("patch").limit(100000).then(({ data }) => {
       if (!data) return;
-      const unique = [...new Set(data.map(r => r.patch).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+      const unique = [...new Set([CURRENT_PATCH, ...data.map(r => r.patch).filter(Boolean)])].sort((a, b) => b.localeCompare(a));
       setPatches(unique);
     });
   }, []);
