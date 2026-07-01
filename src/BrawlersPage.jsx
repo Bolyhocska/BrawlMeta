@@ -1,12 +1,30 @@
 import { useState, useMemo } from "react";
-import { Star, ChevronDown, ChevronLeft, Users, TrendingUp, Map, Gamepad2, X } from "lucide-react";
+import { Star, Users, Map, X } from "lucide-react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import BRAWLER_GUIDES from "./data/brawlerGuides.json";
+import GENERAL_TIER_LIST from "./data/generalTierList.json";
 
 const RARITY_ORDER = ["Trophy Road", "Rare", "Super Rare", "Epic", "Mythic", "Legendary", "Ultra Legendary"];
 
 const MIN_PICKS_OVERALL = 10;
 const MIN_PICKS_MAP = 3;
+const MIN_PICKS_TIER = 15; // minimum picks for a brawler to appear in a mode tier list
+
+// Tier bands by win rate (%). First tier whose `min` is met wins.
+const TIERS = [
+  { id: "S+", color: "#fbbf24", bg: "rgba(251,191,36,0.14)", border: "rgba(251,191,36,0.45)", min: 57 },
+  { id: "S",  color: "#f59e0b", bg: "rgba(245,158,11,0.13)", border: "rgba(245,158,11,0.40)", min: 54 },
+  { id: "A",  color: "#a855f7", bg: "rgba(168,85,247,0.13)", border: "rgba(168,85,247,0.40)", min: 52 },
+  { id: "B",  color: "#60a5fa", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.38)", min: 50 },
+  { id: "C",  color: "#94a3b8", bg: "rgba(148,163,184,0.10)", border: "rgba(148,163,184,0.35)", min: 47 },
+  { id: "D",  color: "#fb923c", bg: "rgba(251,146,60,0.11)", border: "rgba(251,146,60,0.38)", min: 44 },
+  { id: "F",  color: "#ef4444", bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.40)", min: -Infinity },
+];
+
+const tierForWinRate = (wr) => TIERS.find(t => wr >= t.min) || TIERS[TIERS.length - 1];
+
+// Canonical mode order for the tier-list tabs
+const MODE_ORDER = ["gemGrab", "brawlBall", "knockout", "heist", "hotZone", "bounty"];
 
 const FORMAT_MODE = (mode) => {
   if (!mode) return "Unknown";
@@ -491,85 +509,77 @@ function GuideSection({ guide }) {
 
 // ─── Main brawlers page ───────────────────────────────────────────────────────
 export default function BrawlersPage({ brawlerStats, loading, error, rankBracket }) {
-  const [search, setSearch] = useState("");
-  const [modeFilter, setModeFilter] = useState("all");
-  const [mapFilter, setMapFilter] = useState("all");
-  const [mapDropOpen, setMapDropOpen] = useState(false);
+  const [tierMode, setTierMode] = useState("general");
   const [selectedBrawler, setSelectedBrawler] = useState(null);
-  const [sortBy, setSortBy] = useState("stars");
 
   const { brawlers, byMode, byMap, totalPicks } = useMemo(
     () => computeStatsFromAggregated(brawlerStats || [], rankBracket),
     [brawlerStats, rankBracket]
   );
 
-  const modes = useMemo(() => ["all", ...Object.keys(byMode)], [byMode]);
-  const maps = useMemo(() => {
-    const eligible = Object.entries(byMap)
-      .filter(([, d]) => Object.values(d.brawlers).reduce((s, b) => s + b.picks, 0) >= 20)
-      .map(([name]) => name)
-      .sort();
-    return ["all", ...eligible];
-  }, [byMap]);
+  // Modes that actually have data, in canonical order
+  const tierModes = useMemo(() => {
+    const present = new Set(Object.keys(byMode));
+    return ["general", ...MODE_ORDER.filter(m => present.has(m))];
+  }, [byMode]);
 
-  const filtered = useMemo(() => {
-    let list = brawlers;
+  // Quick lookup of a brawler's live overall stats (for the hardcoded General tab)
+  const brawlerByKey = useMemo(() => {
+    const m = {};
+    for (const b of brawlers) m[b.key] = b;
+    return m;
+  }, [brawlers]);
 
-    // mode filter — recompute stats for that mode
-    if (modeFilter !== "all" && byMode[modeFilter]) {
-      const modeData = byMode[modeFilter];
-      let modeTotalPicks = 0;
-      for (const s of Object.values(modeData)) modeTotalPicks += s.picks;
+  // Build tier -> [brawlers sorted by win rate desc] for the active mode
+  const tierRows = useMemo(() => {
+    const rows = {};
+    for (const t of TIERS) rows[t.id] = [];
 
-      list = Object.entries(modeData)
-        .filter(([, s]) => s.picks >= MIN_PICKS_MAP)
-        .map(([key, s]) => {
-          const wr = Math.round((s.wins / s.picks) * 1000) / 10;
-          const pr = Math.round((s.picks / modeTotalPicks) * 1000) / 10;
-          const stars = toStars(wr, pr, modeTotalPicks, s.picks);
-          const base = brawlers.find(b => b.key === key) || {};
-          return { ...base, key, name: base.name || FORMAT_NAME(key), winRate: wr, pickRate: pr, stars, picks: s.picks };
+    if (tierMode === "general") {
+      for (const t of TIERS) {
+        const keys = GENERAL_TIER_LIST[t.id] || [];
+        rows[t.id] = keys.map(key => {
+          const k = key.toUpperCase().trim();
+          const live = brawlerByKey[k];
+          const meta = BRAWLER_META[k] || {};
+          return {
+            key: k,
+            name: FORMAT_NAME(k),
+            winRate: live?.winRate ?? null,
+            picks: live?.picks ?? 0,
+            imageUrl: meta.imageUrl || null,
+            rarityColor: meta.rarityColor || "#94a3b8",
+            class: meta.class || "Unknown",
+          };
         });
+      }
+      return rows;
     }
 
-    // map filter
-    if (mapFilter !== "all" && byMap[mapFilter]) {
-      const mapData = byMap[mapFilter].brawlers;
-      let mapTotalPicks = 0;
-      for (const s of Object.values(mapData)) mapTotalPicks += s.picks;
+    const modeData = byMode[tierMode] || {};
+    const entries = Object.entries(modeData)
+      .filter(([, s]) => s.picks >= MIN_PICKS_TIER)
+      .map(([key, s]) => {
+        const wr = Math.round((s.wins / s.picks) * 1000) / 10;
+        const meta = BRAWLER_META[key] || {};
+        return {
+          key, name: FORMAT_NAME(key), winRate: wr, picks: s.picks,
+          imageUrl: meta.imageUrl || null,
+          rarityColor: meta.rarityColor || "#94a3b8",
+          class: meta.class || "Unknown",
+        };
+      });
 
-      list = Object.entries(mapData)
-        .filter(([, s]) => s.picks >= MIN_PICKS_MAP)
-        .map(([key, s]) => {
-          const wr = Math.round((s.wins / s.picks) * 1000) / 10;
-          const pr = Math.round((s.picks / mapTotalPicks) * 1000) / 10;
-          const stars = toStars(wr, pr, mapTotalPicks, s.picks);
-          const base = brawlers.find(b => b.key === key) || {};
-          return { ...base, key, name: base.name || FORMAT_NAME(key), winRate: wr, pickRate: pr, stars, picks: s.picks };
-        });
-    }
-
-    // search
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(b => b.name?.toLowerCase().includes(q));
-    }
-
-    // sort
-    list = [...list].sort((a, b) => {
-      if (sortBy === "stars") return (b.stars ?? 0) - (a.stars ?? 0) || b.winRate - a.winRate;
-      if (sortBy === "winRate") return b.winRate - a.winRate;
-      if (sortBy === "pickRate") return b.pickRate - a.pickRate;
-      if (sortBy === "picks") return b.picks - a.picks;
-      return 0;
-    });
-
-    return list;
-  }, [brawlers, modeFilter, mapFilter, search, sortBy, byMode, byMap]);
+    for (const b of entries) rows[tierForWinRate(b.winRate).id].push(b);
+    for (const t of TIERS) rows[t.id].sort((a, b) => b.winRate - a.winRate);
+    return rows;
+  }, [tierMode, byMode, brawlerByKey]);
 
   const selectedBrawlerFull = useMemo(() =>
     selectedBrawler ? brawlers.find(b => b.key === selectedBrawler.key) || selectedBrawler : null,
     [selectedBrawler, brawlers]);
+
+  const totalRanked = TIERS.reduce((sum, t) => sum + tierRows[t.id].length, 0);
 
   if (loading) return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300, color: "#475569", fontSize: 13 }}>
@@ -580,90 +590,72 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
   return (
     <div style={{ padding: 24 }}>
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc", marginBottom: 4 }}>
-          Brawler Rankings
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'Space Mono', monospace", marginBottom: 6 }}>
+          02 / Meta Tier List
+        </div>
+        <h2 style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc", marginBottom: 4 }}>
+          Draft power rankings
         </h2>
         <p style={{ fontSize: 12, color: "#64748b" }}>
-          7-star ratings from {Math.round(totalPicks / 6).toLocaleString()} {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} matches · {brawlers.length} brawlers tracked
+          {tierMode === "general"
+            ? "Hand-curated general meta ranking across all ranked modes."
+            : <>Ranked by win rate on <span style={{ color: "#c084fc" }}>{FORMAT_MODE(tierMode)}</span> · {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} · min {MIN_PICKS_TIER} games</>}
         </p>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        {/* Search */}
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search brawler…"
-          style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "7px 12px", color: "#cbd5e1", fontSize: 12, width: 180 }}
-        />
-
-        {/* Mode filter */}
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-          {modes.map(m => (
-            <button key={m} onClick={() => { setModeFilter(m); setMapFilter("all"); }}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                background: modeFilter === m ? "rgba(245,158,11,0.15)" : "#150f22",
-                borderColor: modeFilter === m ? "rgba(245,158,11,0.5)" : "#2c2140",
-                color: modeFilter === m ? "#f59e0b" : "#64748b",
+      {/* Mode tabs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+        {tierModes.map(m => {
+          const active = tierMode === m;
+          return (
+            <button key={m} onClick={() => setTierMode(m)}
+              style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                fontFamily: "'Space Mono', monospace", letterSpacing: "0.04em", textTransform: "uppercase",
+                background: active ? "rgba(168,85,247,0.14)" : "#150f22",
+                borderColor: active ? "rgba(168,85,247,0.45)" : "#2c2140",
+                color: active ? "#e9d5ff" : "#7c7490",
               }}>
-              {m === "all" ? "All Modes" : FORMAT_MODE(m)}
+              {m === "general" ? "General" : FORMAT_MODE(m)}
             </button>
-          ))}
-        </div>
-
-        {/* Map dropdown */}
-        <div style={{ position: "relative" }}>
-          <button onClick={() => setMapDropOpen(o => !o)}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "1px solid", cursor: "pointer", fontSize: 11, fontWeight: 600,
-              background: mapFilter !== "all" ? "rgba(96,165,250,0.15)" : "#150f22",
-              borderColor: mapFilter !== "all" ? "rgba(96,165,250,0.5)" : "#2c2140",
-              color: mapFilter !== "all" ? "#60a5fa" : "#64748b",
-            }}>
-            <Map size={12} />
-            {mapFilter === "all" ? "All Maps" : mapFilter}
-            <ChevronDown size={11} style={{ transform: mapDropOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-          </button>
-          {mapDropOpen && (
-            <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, zIndex: 50, minWidth: 200, maxHeight: 260, overflowY: "auto" }}>
-              {maps.map(m => (
-                <button key={m} onClick={() => { setMapFilter(m); setMapDropOpen(false); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: mapFilter === m ? "rgba(96,165,250,0.1)" : "transparent", border: "none", color: mapFilter === m ? "#60a5fa" : "#94a3b8", fontSize: 12, cursor: "pointer" }}>
-                  {m === "all" ? "All Maps" : m}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sort */}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
-          <span style={{ fontSize: 11, color: "#475569" }}>Sort:</span>
-          {[["stars", "Rating"], ["winRate", "Win Rate"], ["pickRate", "Pick Rate"], ["picks", "Picks"]].map(([val, label]) => (
-            <button key={val} onClick={() => setSortBy(val)}
-              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid", fontSize: 10, fontWeight: 600, cursor: "pointer",
-                background: sortBy === val ? "rgba(167,139,250,0.15)" : "#150f22",
-                borderColor: sortBy === val ? "rgba(167,139,250,0.5)" : "#2c2140",
-                color: sortBy === val ? "#a78bfa" : "#475569",
-              }}>
-              {label}
-            </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Brawler grid */}
-      {filtered.length === 0 && (
+      {/* Tier rows */}
+      {tierMode !== "general" && totalRanked === 0 ? (
         <div style={{ textAlign: "center", color: "#475569", fontSize: 13, padding: 40 }}>
-          No brawlers found with enough data for this filter.
+          Not enough data for this mode yet (min {MIN_PICKS_TIER} games per brawler).
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {TIERS.map(t => (
+            <div key={t.id} style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+              {/* Tier label box */}
+              <div style={{
+                width: 60, flexShrink: 0, borderRadius: 10, background: t.bg, border: `1px solid ${t.border}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: t.color,
+              }}>
+                {t.id}
+              </div>
+              {/* Brawler chips */}
+              <div style={{
+                flex: 1, minHeight: 60, borderRadius: 10, background: "#120d1e", border: "1px solid #221a33",
+                padding: 8, display: "flex", flexWrap: "wrap", gap: 6, alignContent: "flex-start",
+              }}>
+                {tierRows[t.id].length === 0 ? (
+                  <span style={{ fontSize: 11, color: "#3f3654", alignSelf: "center", paddingLeft: 6 }}>—</span>
+                ) : (
+                  tierRows[t.id].map(b => (
+                    <TierChip key={b.key} brawler={b} onClick={() => setSelectedBrawler(b)} />
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
-        {filtered.map(b => (
-          <BrawlerCard key={b.key} brawler={b} onClick={() => setSelectedBrawler(b)} />
-        ))}
-      </div>
 
       {/* Detail modal */}
       {selectedBrawlerFull && (
@@ -675,6 +667,24 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
         />
       )}
     </div>
+  );
+}
+
+function TierChip({ brawler, onClick }) {
+  return (
+    <button onClick={onClick} title={brawler.winRate != null ? `${brawler.name} · ${brawler.winRate}% WR · ${brawler.picks} picks` : brawler.name}
+      style={{
+        display: "flex", alignItems: "center", gap: 7, padding: "5px 10px 5px 5px",
+        background: "#1a1329", border: `1px solid ${brawler.rarityColor}44`, borderRadius: 8, cursor: "pointer",
+      }}>
+      <BrawlerPortrait brawler={brawler} size={30} />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.15 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{brawler.name}</span>
+        <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#fbbf24" : "#f87171") : "#64748b" }}>
+          {brawler.winRate != null ? `${brawler.winRate}%` : "—"}
+        </span>
+      </div>
+    </button>
   );
 }
 

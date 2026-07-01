@@ -1,0 +1,10 @@
+{
+  "_note": "Hardcoded general-meta tier list. Fill each tier with UPPERCASE brawler keys (e.g. \"MINA\", \"KENJI\") matching brawlerMeta.json. Order within a tier is preserved as written.",
+  "S+": [],
+  "S": [],
+  "A": [],
+  "B": [],
+  "C": [],
+  "D": [],
+  "F": []
+}
