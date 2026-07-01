@@ -578,18 +578,11 @@ export default function BrawlMeta() {
                     );
                   })() : <span style={{ fontSize: 13, color: "#475569" }}>Loading maps…</span>}
                   {mapOpen && maps.length > 0 && (
-                    <div style={styles.dropdown}>
-                      {maps.map((m) => {
-                        const mc = MODE_COLORS[m.mode?.replace(/\s/g, "")] ?? MODE_COLORS[m.mode?.toLowerCase?.()] ?? "#64748b";
-                        return (
-                          <button key={m.name} style={{ ...styles.dropdownItem, background: selectedMap?.name === m.name ? "rgba(245,158,11,0.1)" : "transparent" }}
-                            onClick={() => { setSelectedMap(m); setMapOpen(false); }}>
-                            <span style={{ color: "#cbd5e1", fontSize: 13 }}>{m.name}</span>
-                            <span style={{ ...styles.modeBadge, background: mc + "25", color: mc, border: `1px solid ${mc}40` }}>{formatMode(m.mode)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <MapFlyoutMenu
+                      maps={maps}
+                      selectedMap={selectedMap}
+                      onSelect={(m) => { setSelectedMap(m); setMapOpen(false); }}
+                    />
                   )}
                 </div>
                 {phase !== "setup" && (
@@ -841,6 +834,67 @@ export default function BrawlMeta() {
 /* ==========================================
    SUB-VIEWS COMPONENT MODULES
    ========================================== */
+
+function MapFlyoutMenu({ maps, selectedMap, onSelect }) {
+  const [hoveredMode, setHoveredMode] = useState(null);
+
+  const grouped = maps.reduce((acc, m) => {
+    const mode = m.mode || "Unknown";
+    if (!acc[mode]) acc[mode] = [];
+    acc[mode].push(m);
+    return acc;
+  }, {});
+
+  const modes = Object.keys(grouped).sort();
+
+  return (
+    <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 300, display: "flex" }}>
+      {/* Mode list */}
+      <div style={{ background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, overflow: "hidden", minWidth: 160 }}>
+        {modes.map(mode => {
+          const mc = MODE_COLORS[mode?.replace(/\s/g, "")] ?? MODE_COLORS[mode?.toLowerCase?.()] ?? "#64748b";
+          const isHovered = hoveredMode === mode;
+          return (
+            <button
+              key={mode}
+              onMouseEnter={() => setHoveredMode(mode)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", padding: "9px 14px", background: isHovered ? `${mc}15` : "transparent",
+                border: "none", cursor: "pointer", gap: 10,
+              }}
+            >
+              <span style={{ ...styles.modeBadge, background: mc + "25", color: mc, border: `1px solid ${mc}40`, fontSize: 11, padding: "2px 8px" }}>
+                {formatMode(mode)}
+              </span>
+              <span style={{ color: "#475569", fontSize: 11 }}>›</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Maps submenu */}
+      {hoveredMode && (
+        <div style={{ background: "#0a1220", border: "1px solid #1e293b", borderRadius: 8, overflow: "hidden", minWidth: 200, marginLeft: 4, maxHeight: 320, overflowY: "auto" }}>
+          {grouped[hoveredMode].map(m => (
+            <button
+              key={m.name}
+              onClick={() => onSelect(m)}
+              style={{
+                display: "block", width: "100%", textAlign: "left", padding: "8px 14px",
+                background: selectedMap?.name === m.name ? "rgba(245,158,11,0.1)" : "transparent",
+                border: "none", color: selectedMap?.name === m.name ? "#f59e0b" : "#cbd5e1",
+                fontSize: 12, fontWeight: selectedMap?.name === m.name ? 700 : 400, cursor: "pointer",
+              }}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, patches }) {
   const [patchOpen, setPatchOpen] = useState(false);
