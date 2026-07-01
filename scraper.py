@@ -32,7 +32,7 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-CURRENT_PATCH = "67.306"
+CURRENT_PATCH = "68.250"
 
 COUNTRIES = [
     "global","US","GB","DE","FR","BR","KR","JP","CN","RU",

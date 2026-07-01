@@ -12,7 +12,7 @@ import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 // ==========================================
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-const CURRENT_PATCH = "67.306";
+const CURRENT_PATCH = "68.250";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MAPS = [
