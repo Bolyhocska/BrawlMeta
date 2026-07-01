@@ -859,7 +859,7 @@ function TrendingView({ rankBracket, brawlerStats, loading, error }) {
     <div style={styles.viewPadding}>
       <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Real-Time Meta Trends</h2>
       <p style={styles.viewSubtext}>
-        Pre-aggregated ranked data for {bracketLabel} — {totalPicks.toLocaleString()} total picks tracked.
+        Pre-aggregated ranked data for {bracketLabel} — {Math.round(totalPicks / 6).toLocaleString()} matches tracked.
       </p>
       <h3 style={{ ...styles.viewHeading, fontSize: 16, marginTop: 28 }}><TrendingUp size={16} color="#60a5fa" /> Top Performers</h3>
       {loading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Loading stats…</p>}

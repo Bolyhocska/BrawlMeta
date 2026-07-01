@@ -509,7 +509,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
           Brawler Rankings
         </h2>
         <p style={{ fontSize: 12, color: "#64748b" }}>
-          7-star ratings from {totalPicks.toLocaleString()} {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} picks · {brawlers.length} brawlers tracked
+          7-star ratings from {Math.round(totalPicks / 6).toLocaleString()} {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} matches · {brawlers.length} brawlers tracked
         </p>
       </div>
 
