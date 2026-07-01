@@ -16,12 +16,12 @@ const CURRENT_PATCH = "68.250";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MAPS = [
-  { id: 1, name: "Belle's Rock", mode: "Knockout", modeColor: "#f59e0b" },
-  { id: 2, name: "Backyard Bowl", mode: "Gem Grab", modeColor: "#8b5cf6" },
-  { id: 3, name: "Super Stadium", mode: "Brawl Ball", modeColor: "#3b82f6" },
-  { id: 4, name: "Kaboom Canyon", mode: "Bounty", modeColor: "#ef4444" },
-  { id: 5, name: "Snake Prairie", mode: "Heist", modeColor: "#10b981" },
-  { id: 6, name: "Galaxy Arena", mode: "Hot Zone", modeColor: "#ec4899" },
+  { id: 1, name: "Belle's Rock",   mode: "Knockout",  modeColor: "#FF6B35" },
+  { id: 2, name: "Backyard Bowl",  mode: "Gem Grab",  modeColor: "#A855F7" },
+  { id: 3, name: "Super Stadium",  mode: "Brawl Ball", modeColor: "#3B82F6" },
+  { id: 4, name: "Kaboom Canyon",  mode: "Heist",     modeColor: "#F59E0B" },
+  { id: 5, name: "Snake Prairie",  mode: "Heist",     modeColor: "#F59E0B" },
+  { id: 6, name: "Galaxy Arena",   mode: "Hot Zone",  modeColor: "#EF4444" },
 ];
 
 const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
@@ -37,13 +37,20 @@ const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
 const TIER_COLORS = { S: "#f59e0b", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };
 
 const MODE_COLORS = {
-  brawlBall: "#3b82f6",
-  brawlball: "#3b82f6",
-  gemGrab: "#8b5cf6",
-  knockout: "#f59e0b",
-  bounty: "#ef4444",
-  heist: "#10b981",
-  hotZone: "#ec4899",
+  brawlBall:   "#3B82F6",
+  brawlball:   "#3B82F6",
+  gemGrab:     "#A855F7",
+  gemgrab:     "#A855F7",
+  knockout:    "#FF6B35",
+  bounty:      "#06B6D4",
+  heist:       "#F59E0B",
+  hotZone:     "#EF4444",
+  hotzone:     "#EF4444",
+  wipeout:     "#FF6B35",
+  duels:       "#DC2626",
+  showdown:    "#92400E",
+  soloShowdown:"#92400E",
+  duoShowdown: "#B45309",
 };
 
 const RESULT_STYLES = {
