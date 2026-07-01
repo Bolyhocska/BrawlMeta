@@ -198,7 +198,7 @@ function useMaps(selectedPatch) {
     if (!selectedPatch) return;
     supabase
       .from("BrawlerStats")
-      .select("map,mode")
+      .select("map,mode,picks")
       .eq("patch", selectedPatch)
       .not("map", "is", null)
       .limit(100000)
