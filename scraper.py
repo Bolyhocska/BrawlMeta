@@ -227,6 +227,30 @@ def collect_players_from_leaderboards(limit=1000):
             break
     return player_tags[:limit]
 
+TARGET_MATCHES_PER_BRACKET = 20000
+MAX_PLAYERS_PER_BRACKET = 8000  # safety cap so a run can't spider forever if the target is unreachable
+
+def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hashes,
+                     target_matches=TARGET_MATCHES_PER_BRACKET, max_players=MAX_PLAYERS_PER_BRACKET):
+    # Every entry fetch_player_battles appends during this call carries this
+    # bracket, so tracking the growth of extracted_data's length is equivalent
+    # to (and much cheaper than) recounting matches for this bracket each time.
+    queue = list(seed_tags)
+    processed = 0
+    collected = 0
+    while queue and processed < max_players and collected < target_matches:
+        tag = queue.pop(0)
+        before = len(extracted_data)
+        new_tags = fetch_player_battles(tag, bracket, extracted_data, seen_tags, existing_hashes)
+        collected += len(extracted_data) - before
+        queue.extend(new_tags)
+        processed += 1
+        if processed % 100 == 0:
+            print(f"  {bracket}: {processed} players processed, {collected} matches collected...")
+
+    reason = "reached target" if collected >= target_matches else ("ran out of players" if not queue else "hit player safety cap")
+    print(f"{bracket} done. {collected} matches from {processed} players ({reason}).")
+
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
     extracted_data = []
@@ -234,38 +258,24 @@ def harvest_to_cloud():
     existing_hashes = fetch_existing_hashes()
 
     # ==========================================
-    # PASS 1: Masters & Legendary (1000 players)
+    # PASS 1: Masters & Legendary — spider from leaderboard seeds until
+    # TARGET_MATCHES_PER_BRACKET matches are collected for this bracket
     # ==========================================
-    print("Collecting Masters/Legendary players from leaderboards...")
-    masters_tags = collect_players_from_leaderboards(limit=1000)
-    print(f"Got {len(masters_tags)} unique Masters/Legendary players.")
-    for i, tag in enumerate(masters_tags):
-        if i % 100 == 0:
-            print(f"  Processing Masters player {i+1}/{len(masters_tags)}...")
-        fetch_player_battles(tag, "masters_legendary", extracted_data, seen_tags, existing_hashes)
-
-    print(f"Masters/Legendary done. {len(extracted_data)} new matches so far.")
+    print("Collecting Masters/Legendary seed players from leaderboards...")
+    masters_seed_tags = collect_players_from_leaderboards(limit=1000)
+    print(f"Got {len(masters_seed_tags)} unique Masters/Legendary seed players.")
+    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes)
 
     # ==========================================
     # PASS 2: Diamond & Mythic (spider from seeds)
     # ==========================================
     print("Gathering Diamond/Mythic seed data via spidering...")
-    seed_tags = [
+    diamond_seed_tags = [
         "#2Y9RV2RGR",
         "#2JJPLROYGY",
         "#RYRU2L2UV"
     ]
-    spider_queue = list(seed_tags)
-    mythic_count = 0
-    while spider_queue and mythic_count < 1000:
-        tag = spider_queue.pop(0)
-        new_tags = fetch_player_battles(tag, "diamond_mythic", extracted_data, seen_tags, existing_hashes)
-        spider_queue.extend(new_tags)
-        mythic_count += 1
-        if mythic_count % 100 == 0:
-            print(f"  Spidered {mythic_count}/1000 Diamond/Mythic players...")
-
-    print(f"Diamond/Mythic done. {len(extracted_data)} total new matches.")
+    harvest_bracket("diamond_mythic", diamond_seed_tags, extracted_data, seen_tags, existing_hashes)
 
     # ==========================================
     # SAVE PIPELINE: SUPABASE CLOUD
