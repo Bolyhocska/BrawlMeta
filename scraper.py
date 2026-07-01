@@ -34,7 +34,7 @@ SUPABASE_HEADERS = {
 
 CURRENT_PATCH = "68.250"
 
-RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab", "wipeout", "duels"}
+RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
 COUNTRIES = [
     "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
