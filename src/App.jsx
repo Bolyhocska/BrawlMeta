@@ -24,51 +24,17 @@ const MAPS = [
   { id: 6, name: "Galaxy Arena", mode: "Hot Zone", modeColor: "#ec4899" },
 ];
 
-const BRAWLERS = [
-  { id: 1,  name: "Shelly",    role: "Fighter",    tier: "A", color: "#f97316", initial: "SH", winRate: 54, banRate: 12, pickRate: 24, range: "Short",  tags: ["Frontline", "Reliable"] },
-  { id: 2,  name: "Nita",     role: "Fighter",    tier: "B", color: "#a78bfa", initial: "NI", winRate: 51, banRate: 4,  pickRate: 11, range: "Mid",    tags: ["Tank", "Summoner"] },
-  { id: 3,  name: "Colt",     role: "Sharpshooter",tier:"A", color: "#60a5fa", initial: "CO", winRate: 53, banRate: 18, pickRate: 35, range: "Long",   tags: ["Lane Control", "Wall Breaker"] },
-  { id: 4,  name: "Bull",     role: "Tank",        tier: "S", color: "#ef4444", initial: "BU", winRate: 58, banRate: 32, pickRate: 14, range: "Short",  tags: ["Hard Counter Snipers", "Brute Force"] },
-  { id: 5,  name: "Jessie",   role: "Fighter",    tier: "B", color: "#fbbf24", initial: "JE", winRate: 49, banRate: 5,  pickRate: 19, range: "Mid",    tags: ["Turret Control", "Area Denial"] },
-  { id: 6,  name: "Brock",    role: "Sharpshooter",tier:"A", color: "#f472b6", initial: "BR", winRate: 52, banRate: 8,  pickRate: 28, range: "Long",   tags: ["Sniper", "Long Range Poke"] },
-  { id: 7,  name: "Dynamike", role: "Thrower",    tier: "A", color: "#fb923c", initial: "DY", winRate: 55, banRate: 45, pickRate: 31, range: "Mid",    tags: ["Thrower", "Wall Ignorer"] },
-  { id: 8,  name: "Tick",     role: "Thrower",    tier: "B", color: "#4ade80", initial: "TI", winRate: 50, banRate: 22, pickRate: 9,  range: "Long",   tags: ["Area Control", "Thrower"] },
-  { id: 9,  name: "8-Bit",    role: "Sharpshooter",tier:"B", color: "#818cf8", initial: "8B", winRate: 48, banRate: 2,  pickRate: 7,  range: "Long",   tags: ["Support DPS", "Buff Zone"] },
-  { id: 10, name: "Emz",      role: "Fighter",    tier: "A", color: "#c084fc", initial: "EM", winRate: 53, banRate: 14, pickRate: 18, range: "Mid",    tags: ["Lane Denial", "Area Control"] },
-  { id: 11, name: "Piper",    role: "Sharpshooter",tier:"S", color: "#f9a8d4", initial: "PI", winRate: 57, banRate: 52, pickRate: 41, range: "Long",   tags: ["S-Tier Sniper", "Burst Damage"] },
-  { id: 12, name: "Pam",      role: "Support",    tier: "C", color: "#6ee7b7", initial: "PA", winRate: 46, banRate: 1,  pickRate: 4,  range: "Mid",    tags: ["Healer", "Tank Support"] },
-  { id: 13, name: "Frank",    role: "Tank",        tier: "A", color: "#94a3b8", initial: "FR", winRate: 54, banRate: 28, pickRate: 15, range: "Short",  tags: ["CC Machine", "Frontline"] },
-  { id: 14, name: "Bibi",     role: "Fighter",    tier: "A", color: "#fb7185", initial: "BI", winRate: 53, banRate: 9,  pickRate: 16, range: "Short",  tags: ["Bounce Attack", "Frontline"] },
-  { id: 15, name: "Bea",      role: "Sharpshooter",tier:"B", color: "#fde68a", initial: "BE", winRate: 51, banRate: 3,  pickRate: 12, range: "Long",   tags: ["Charged Shot", "Lane Control"] },
-  { id: 16, name: "Nani",     role: "Sharpshooter",tier:"S", color: "#7dd3fc", initial: "NA", winRate: 56, banRate: 38, pickRate: 22, range: "Long",   tags: ["S-Tier Lane Control", "Peep Burst"] },
-  { id: 17, name: "Edgar",    role: "Fighter",    tier: "B", color: "#f87171", initial: "ED", winRate: 49, banRate: 65, pickRate: 48, range: "Short",  tags: ["Self-Heal Rush", "Flanker"] },
-  { id: 18, name: "Griff",    role: "Fighter",    tier: "A", color: "#fcd34d", initial: "GR", winRate: 52, banRate: 6,  pickRate: 14, range: "Mid",    tags: ["Coin Splash", "Area Clear"] },
-  { id: 19, name: "Grom",     role: "Thrower",    tier: "C", color: "#86efac", initial: "GO", winRate: 47, banRate: 4,  pickRate: 8,  range: "Long",   tags: ["Thrower", "Map Control"] },
-  { id: 20, name: "Bonnie",   role: "Fighter",    tier: "B", color: "#fdba74", initial: "BO", winRate: 50, banRate: 2,  pickRate: 10, range: "Mid",    tags: ["Dual Form", "Versatile"] },
-  { id: 21, name: "Gale",     role: "Support",    tier: "A", color: "#bfdbfe", initial: "GA", winRate: 54, banRate: 19, pickRate: 20, range: "Mid",    tags: ["Knockback CC", "Support"] },
-  { id: 22, name: "Colette",  role: "Fighter",    tier: "A", color: "#f9a8d4", initial: "CL", winRate: 54, banRate: 25, pickRate: 23, range: "Mid",    tags: ["Tank Shredder", "HP Damage"] },
-  { id: 23, name: "Crow",     role: "Assassin",    tier: "S", color: "#a3e635", initial: "CR", winRate: 58, banRate: 44, pickRate: 33, range: "Long",   tags: ["S-Tier Poison", "Anti-Healer"] },
-  { id: 24, name: "Leon",     role: "Assassin",    tier: "S", color: "#34d399", initial: "LE", winRate: 57, banRate: 41, pickRate: 29, range: "Mid",    tags: ["Invisible Flanker", "Burst Kill"] },
-  { id: 25, name: "Sandy",    role: "Support",    tier: "A", color: "#fde68a", initial: "SA", winRate: 55, banRate: 15, pickRate: 17, range: "Mid",    tags: ["Sand Storm Vision", "Area Cover"] },
-  { id: 26, name: "Amber",    role: "Fighter",    tier: "A", color: "#fb923c", initial: "AM", winRate: 54, banRate: 11, pickRate: 15, range: "Mid",    tags: ["DoT Fire", "Area Denial"] },
-  { id: 27, name: "Meg",      role: "Tank",        tier: "A", color: "#c4b5fd", initial: "ME", winRate: 53, banRate: 21, pickRate: 13, range: "Mid",    tags: ["Mech Form", "Dual HP"] },
-  { id: 28, name: "Surge",    role: "Fighter",    tier: "S", color: "#38bdf8", initial: "SU", winRate: 56, banRate: 39, pickRate: 30, range: "Mid",    tags: ["S-Tier Scaling", "Upgrade Threat"] },
-  { id: 29, name: "Mortis",   role: "Assassin",    tier: "B", color: "#a78bfa", initial: "MO", winRate: 50, banRate: 34, pickRate: 42, range: "Short",  tags: ["Dash Flanker", "Low HP Threat"] },
-  { id: 30, name: "Tara",     role: "Support",    tier: "B", color: "#818cf8", initial: "TA", winRate: 51, banRate: 8,  pickRate: 12, range: "Mid",    tags: ["Black Hole Super", "Support CC"] },
-];
+const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
+  id: i + 1,
+  key,
+  name: key.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+  role: meta.class || "Fighter",
+  color: meta.rarityColor || "#94a3b8",
+  initial: key.slice(0, 2),
+  imageUrl: meta.imageUrl || null,
+})).sort((a, b) => a.name.localeCompare(b.name));
 
-const SUGGESTION_POOL = [
-  { brawlerId: 4,  reason: "Hard Counter to Snipers",    badge: "Hard Counter",   badgeType: "danger" },
-  { brawlerId: 16, reason: "S-Tier Lane Control",        badge: "S-Tier",         badgeType: "gold" },
-  { brawlerId: 24, reason: "Counters Throwers + CC",     badge: "Flanker Pick",   badgeType: "success" },
-  { brawlerId: 23, reason: "Neutralizes Healers",        badge: "Anti-Support",   badgeType: "warning" },
-  { brawlerId: 21, reason: "Enables Team Comp Synergy",  badge: "Synergy Pick",   badgeType: "info" },
-  { brawlerId: 11, reason: "Dominates Open Maps",        badge: "Map Specialist", badgeType: "gold" },
-];
-
-const WIN_RATES = [78, 74, 71, 68, 65, 72];
 const TIER_COLORS = { S: "#f59e0b", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };
-const getBrawler = (id) => BRAWLERS.find((b) => b.id === id);
 
 const MODE_COLORS = {
   brawlBall: "#3b82f6",
@@ -205,11 +171,11 @@ const computeMetaFromMatches = (matches) => {
 
 const getBrawlerVisual = (name) => {
   const key = normalizeBrawlerKey(name);
-  const found = BRAWLERS.find((b) => normalizeBrawlerKey(b.name) === key);
-  if (found) return { color: found.color, initial: found.initial };
+  const found = BRAWLERS.find((b) => b.key === key);
+  if (found) return { color: found.color, initial: found.initial, imageUrl: found.imageUrl };
   const hash = [...key].reduce((sum, c) => sum + c.charCodeAt(0), 0);
   const palette = ["#60a5fa", "#a78bfa", "#f97316", "#34d399", "#f472b6"];
-  return { color: palette[hash % palette.length], initial: key.slice(0, 2) };
+  return { color: palette[hash % palette.length], initial: key.slice(0, 2), imageUrl: null };
 };
 
 // ==========================================
@@ -425,7 +391,7 @@ export default function BrawlMeta() {
     setAnimKey(k => k + 1);
   }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick]);
 
-  const roles = ["All", ...Array.from(new Set(BRAWLERS.map((b) => b.role)))];
+  const roles = ["All", ...Array.from(new Set(BRAWLERS.map((b) => b.role))).sort()];
   const filtered = BRAWLERS.filter((b) => {
     const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
     const matchRole = filterRole === "All" || b.role === filterRole;
@@ -699,13 +665,7 @@ export default function BrawlMeta() {
                       const used = allUsed.includes(b.id);
                       const isBan = phase === "ban";
                       return (
-                        <button key={b.id} style={{ ...styles.brawlerChip, opacity: used ? 0.3 : 1, cursor: used ? "not-allowed" : "pointer", border: used ? "1px solid #1e293b" : isBan ? `1px solid rgba(239,68,68,0.4)` : `1px solid ${b.color}40`, background: used ? "#0f172a" : isBan ? "rgba(239,68,68,0.06)" : `${b.color}12` }}
-                          onClick={() => !used && handleBrawlerSelect(b)} disabled={used}>
-                          <div style={{ ...styles.brawlerAvatar, background: `${b.color}25`, border: `1.5px solid ${b.color}60` }}>
-                            <span style={{ fontSize: 9, fontWeight: 800, color: b.color }}>{b.initial}</span>
-                          </div>
-                          <span style={{ fontSize: 10, color: used ? "#334155" : "#cbd5e1", fontWeight: 600 }}>{b.name}</span>
-                        </button>
+                        <BrawlerChip key={b.id} brawler={b} used={used} isBan={isBan} onSelect={handleBrawlerSelect} />
                       );
                     })}
                   </div>
@@ -1067,6 +1027,23 @@ function SuggestionCard({ s, i }) {
   );
 }
 
+function BrawlerChip({ brawler, used, isBan, onSelect }) {
+  const [imgErr, setImgErr] = useState(false);
+  return (
+    <button
+      style={{ ...styles.brawlerChip, opacity: used ? 0.3 : 1, cursor: used ? "not-allowed" : "pointer", border: used ? "1px solid #1e293b" : isBan ? `1px solid rgba(239,68,68,0.4)` : `1px solid ${brawler.color}40`, background: used ? "#0f172a" : isBan ? "rgba(239,68,68,0.06)" : `${brawler.color}12` }}
+      onClick={() => !used && onSelect(brawler)} disabled={used}>
+      <div style={{ ...styles.brawlerAvatar, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}60`, overflow: "hidden" }}>
+        {!imgErr && brawler.imageUrl
+          ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
+          : <span style={{ fontSize: 9, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span>
+        }
+      </div>
+      <span style={{ fontSize: 10, color: used ? "#334155" : "#cbd5e1", fontWeight: 600, lineHeight: 1.1, textAlign: "center" }}>{brawler.name}</span>
+    </button>
+  );
+}
+
 function BanSlot({ brawler, active, onRemove }) {
   return (
     <div style={{ flex: 1, minWidth: 0, height: 36, borderRadius: 6, border: `1px solid ${active ? "rgba(239,68,68,0.6)" : brawler ? "rgba(239,68,68,0.3)" : "#1e293b"}`, background: active ? "rgba(239,68,68,0.1)" : brawler ? "rgba(239,68,68,0.05)" : "#050b14", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
@@ -1084,13 +1061,17 @@ function BanSlot({ brawler, active, onRemove }) {
 }
 
 function DraftSlot({ brawler, team, idx, active, onClick, onRemove }) {
+  const [imgErr, setImgErr] = useState(false);
   const teamColor = team === "blue" ? "#3b82f6" : "#ef4444";
   return (
     <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, border: active ? `1.5px solid ${teamColor}` : `1px solid ${brawler ? teamColor + "40" : "#1e293b"}`, background: active ? `${teamColor}08` : brawler ? `${brawler.color}0a` : "rgba(15,23,42,0.6)", minHeight: 52, cursor: "pointer" }}>
       {brawler ? (
         <>
-          <div style={{ width: 32, height: 32, borderRadius: 6, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}70`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span>
+          <div style={{ width: 32, height: 32, borderRadius: 6, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}70`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {!imgErr && brawler.imageUrl
+              ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
+              : <span style={{ fontSize: 11, fontWeight: 800, color: brawler.color }}>{brawler.initial}</span>
+            }
           </div>
           <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{brawler.name}</div></div>
           <button style={{ background: "none", border: "none", color: "#475569", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onRemove(); }}><X size={12} /></button>
