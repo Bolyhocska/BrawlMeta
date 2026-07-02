@@ -752,7 +752,8 @@ export default function BrawlMeta() {
                     {blueTeam.map((brawler, idx) => (
                       <DraftSlot key={idx} brawler={brawler} team="blue" idx={idx}
                         active={phase === "pick" && activeSlot?.team === "blue" && activeSlot?.idx === idx}
-                        onClick={() => {}} onRemove={() => removePickSlot("blue", idx)} />
+                        onClick={() => brawler && setQuickInfoBrawler({ key: brawler.key, name: brawler.name, winRate: null, picks: null })}
+                        onRemove={() => removePickSlot("blue", idx)} />
                     ))}
                   </div>
                   <div style={styles.vsDivider}><div style={styles.vsCircle}>VS</div></div>
@@ -772,7 +773,8 @@ export default function BrawlMeta() {
                     {redTeam.map((brawler, idx) => (
                       <DraftSlot key={idx} brawler={brawler} team="red" idx={idx}
                         active={phase === "pick" && activeSlot?.team === "red" && activeSlot?.idx === idx}
-                        onClick={() => {}} onRemove={() => removePickSlot("red", idx)} />
+                        onClick={() => brawler && setQuickInfoBrawler({ key: brawler.key, name: brawler.name, winRate: null, picks: null })}
+                        onRemove={() => removePickSlot("red", idx)} />
                     ))}
                   </div>
                 </div>
@@ -871,7 +873,10 @@ export default function BrawlMeta() {
                   </div>
                 )}
                 {suggestions.map((s, i) => (
-                  <SuggestionCard key={s.key} s={s} i={i} onClick={() => setQuickInfoBrawler(s)} />
+                  <SuggestionCard key={s.key} s={s} i={i} onClick={() => {
+                    const full = BRAWLERS.find(b => b.key === s.key);
+                    if (full) handleBrawlerSelect(full);
+                  }} />
                 ))}
               </div>
               <div style={styles.synergyPanel}><SynergyBar blueTeam={blueTeam} redTeam={redTeam} /></div>
@@ -1317,12 +1322,14 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
           <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>{meta.description}</p>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#10b981" }}>{suggestion.winRate}%</div>
-            <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.05em" }}>WIN RATE ON MAP</div>
-            <div style={{ fontSize: 9, color: "#334155", marginTop: 2 }}>{suggestion.picks} games</div>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: suggestion.winRate != null ? "1fr 1fr" : "1fr", gap: 8 }}>
+          {suggestion.winRate != null && (
+            <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#10b981" }}>{suggestion.winRate}%</div>
+              <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.05em" }}>WIN RATE ON MAP</div>
+              <div style={{ fontSize: 9, color: "#334155", marginTop: 2 }}>{suggestion.picks} games</div>
+            </div>
+          )}
           <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
             {overall ? (
               <>
