@@ -581,7 +581,7 @@ export default function BrawlMeta() {
       <div style={styles.scanlines} />
 
       {/* NAVBAR */}
-      <nav style={styles.nav}>
+      <nav style={styles.nav} className="app-nav">
         <div style={styles.navBrand}>
           <div style={styles.brandIcon}>
             <div style={styles.brandDiamond} />
@@ -591,7 +591,7 @@ export default function BrawlMeta() {
         </div>
 
         {/* TAB NAVIGATION */}
-        <div style={styles.tabGroup}>
+        <div style={styles.tabGroup} className="tab-group">
           <button style={{ ...styles.tabBtn, ...(activeTab === "trending" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("trending")}>
             <Flame size={14} /> Trending
           </button>
@@ -627,9 +627,9 @@ export default function BrawlMeta() {
           />
         )}
         {activeTab === "meta" && (
-          <div style={styles.main}>
+          <div style={styles.main} className="main-grid">
             {/* LEFT — DRAFT PANELS */}
-            <div style={styles.draftPanel}>
+            <div style={styles.draftPanel} className="draft-panel">
               {/* MAP + STATUS BAR */}
               <div style={styles.panelHeader}>
                 <Map size={14} color="#94a3b8" />
@@ -734,7 +734,7 @@ export default function BrawlMeta() {
 
               {/* TEAMS + BANS */}
               {phase !== "setup" && (
-                <div style={styles.teamsGrid}>
+                <div style={styles.teamsGrid} className="teams-grid">
                   {/* BLUE */}
                   <div style={styles.teamColumn}>
                     <div style={styles.teamLabel}>
@@ -808,7 +808,7 @@ export default function BrawlMeta() {
             </div>
 
             {/* SIDEBAR AI MATCH RECOMMENDATIONS */}
-            <div style={styles.sidebar}>
+            <div style={styles.sidebar} className="draft-sidebar">
 
               {/* RECOMMENDED BANS — shown during ban phase */}
               {phase === "ban" && recommendedBans.length > 0 && (
@@ -908,6 +908,21 @@ export default function BrawlMeta() {
         .suggestion-anim { animation: fadeUp 0.3s ease both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ===== Responsive: tablet & phone ===== */
+        @media (max-width: 900px) {
+          .main-grid { grid-template-columns: 1fr !important; }
+          .draft-sidebar { border-left: none !important; border-top: 1px solid #1b1329 !important; }
+          .teams-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .app-nav { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
+          .tab-group { margin-left: 0 !important; gap: 2px; overflow-x: auto; }
+          .tab-group button { padding: 6px 9px !important; font-size: 10px !important; white-space: nowrap; }
+          .rank-bracket-bar { flex-wrap: wrap; gap: 10px !important; padding: 10px 14px !important; }
+          .draft-panel { padding: 12px !important; }
+          .guide-header { flex-direction: column !important; align-items: flex-start !important; }
+        }
       `}</style>
     </div>
   );
@@ -981,7 +996,7 @@ function MapFlyoutMenu({ maps, selectedMap, onSelect }) {
 function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, patches }) {
   const [patchOpen, setPatchOpen] = useState(false);
   return (
-    <div style={styles.rankBracketBar}>
+    <div style={styles.rankBracketBar} className="rank-bracket-bar">
       <div style={styles.rankBracketLabel}>
         <Crown size={14} color="#a855f7" />
         <span>Rank Bracket</span>

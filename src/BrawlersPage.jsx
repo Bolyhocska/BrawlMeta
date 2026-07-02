@@ -437,7 +437,7 @@ function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
       </button>
 
       {/* Quick info header */}
-      <div style={{
+      <div className="guide-header" style={{
         display: "flex", gap: 20, alignItems: "center", padding: 24, borderRadius: 14,
         background: `linear-gradient(135deg, ${brawler.rarityColor}12 0%, transparent 60%)`,
         border: "1px solid #2c2140", marginBottom: 24,
