@@ -298,6 +298,7 @@ function useBrawlerStats(selectedPatch) {
       .from("BrawlerStats")
       .select("*")
       .eq("patch", selectedPatch)
+      .limit(100000)
       .then(({ data, error: err }) => {
         if (err) setError("Could not load stats.");
         else setStats(data || []);
