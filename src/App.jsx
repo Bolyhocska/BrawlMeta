@@ -362,6 +362,7 @@ export default function BrawlMeta() {
   const [filterRole, setFilterRole] = useState("All");
   const [suggestions, setSuggestions] = useState([]);
   const [animKey, setAnimKey] = useState(0);
+  const [quickInfoBrawler, setQuickInfoBrawler] = useState(null);
 
   // Auto-select first map when maps load or patch changes
   useEffect(() => {
@@ -500,9 +501,13 @@ export default function BrawlMeta() {
       }
     }
 
+    // Min picks raised to cut noisy low-sample suggestions (see confidenceScore
+    // discussion — 15 picks carries a ±25% margin of error, not trustworthy).
+    // Top 3 only: the assistant should give a confident short-list, not a long tail.
+    const MIN_PICKS_SUGGESTION = 50;
     const results = Object.entries(pickStats)
       .filter(([key]) => !allUsedNames.includes(key))
-      .filter(([, s]) => s.picks >= 15)
+      .filter(([, s]) => s.picks >= MIN_PICKS_SUGGESTION)
       .map(([key, s]) => ({
         key,
         name: formatBrawlerName(key),
@@ -511,7 +516,7 @@ export default function BrawlMeta() {
         score: confidenceScore(s.wins, s.picks),
       }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+      .slice(0, 3);
 
     setSuggestions(results);
     setAnimKey(k => k + 1);
@@ -866,12 +871,20 @@ export default function BrawlMeta() {
                   </div>
                 )}
                 {suggestions.map((s, i) => (
-                  <SuggestionCard key={s.key} s={s} i={i} />
+                  <SuggestionCard key={s.key} s={s} i={i} onClick={() => setQuickInfoBrawler(s)} />
                 ))}
               </div>
               <div style={styles.synergyPanel}><SynergyBar blueTeam={blueTeam} redTeam={redTeam} /></div>
             </div>
           </div>
+        )}
+        {quickInfoBrawler && (
+          <SuggestionQuickInfo
+            suggestion={quickInfoBrawler}
+            brawlerStats={brawlerStats}
+            rankBracket={rankBracket}
+            onClose={() => setQuickInfoBrawler(null)}
+          />
         )}
         {activeTab === "brawlers" && (
           <BrawlersPage
@@ -1225,12 +1238,16 @@ function PremiumView() {
    SUPPORTING STRUCTURAL SUB-COMPONENTS
    ========================================== */
 
-function SuggestionCard({ s, i }) {
+function SuggestionCard({ s, i, onClick }) {
   const [imgErr, setImgErr] = useState(false);
   const meta = BRAWLER_META_IMPORT[s.key] || {};
   const color = s.winRate >= 55 ? "#10b981" : s.winRate >= 50 ? "#f59e0b" : "#ef4444";
   return (
-    <div style={{ ...styles.suggestionCard, animationDelay: `${i * 0.05}s` }} className="suggestion-anim">
+    <div
+      style={{ ...styles.suggestionCard, animationDelay: `${i * 0.05}s`, cursor: onClick ? "pointer" : "default" }}
+      className="suggestion-anim"
+      onClick={onClick}
+    >
       <div style={{ ...styles.suggAvatarWrap, width: 36, height: 36, overflow: "hidden", background: `${meta.rarityColor || "#475569"}20`, borderColor: meta.rarityColor || "#2c2140" }}>
         {!imgErr && meta.imageUrl
           ? <img src={meta.imageUrl} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
@@ -1244,6 +1261,80 @@ function SuggestionCard({ s, i }) {
       <div style={{ ...styles.winRateCol, display: "flex", flexDirection: "column", alignItems: "center" }}>
         <span style={{ fontSize: 14, fontWeight: 800, color }}>{s.winRate}%</span>
         <span style={{ fontSize: 8, color: "#475569", letterSpacing: "0.04em" }}>WIN</span>
+      </div>
+    </div>
+  );
+}
+
+function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose }) {
+  const [imgErr, setImgErr] = useState(false);
+  const meta = BRAWLER_META_IMPORT[suggestion.key] || {};
+  const overall = brawlerStats.find(
+    (r) => r.rank_bracket === rankBracket && r.map === null && r.brawler === suggestion.key
+  );
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(5,4,10,0.75)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 380, background: "#0f0b18", border: "1px solid #2c2140",
+          borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14,
+        }}
+      >
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0,
+            background: `${meta.rarityColor || "#475569"}20`, border: `2px solid ${meta.rarityColor || "#2c2140"}80`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {!imgErr && meta.imageUrl
+              ? <img src={meta.imageUrl} alt={suggestion.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
+              : <span style={{ fontSize: 16, fontWeight: 800, color: meta.rarityColor || "#94a3b8" }}>{suggestion.name.slice(0, 2).toUpperCase()}</span>
+            }
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc" }}>{suggestion.name}</div>
+            {meta.rarity && (
+              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: `${meta.rarityColor || "#94a3b8"}20`, color: meta.rarityColor || "#94a3b8", border: `1px solid ${meta.rarityColor || "#94a3b8"}40` }}>
+                {meta.rarity}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: 6, cursor: "pointer" }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        {meta.description && (
+          <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>{meta.description}</p>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#10b981" }}>{suggestion.winRate}%</div>
+            <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.05em" }}>WIN RATE ON MAP</div>
+            <div style={{ fontSize: 9, color: "#334155", marginTop: 2 }}>{suggestion.picks} games</div>
+          </div>
+          <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+            {overall ? (
+              <>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#3b82f6" }}>{parseFloat(overall.win_rate)}%</div>
+                <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.05em" }}>OVERALL WIN RATE</div>
+                <div style={{ fontSize: 9, color: "#334155", marginTop: 2 }}>{overall.picks} games</div>
+              </>
+            ) : (
+              <div style={{ fontSize: 11, color: "#475569" }}>No overall data</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
