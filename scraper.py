@@ -343,18 +343,33 @@ def harvest_to_cloud():
         print("⚠️ No new matches found to save.")
         return
 
-    print(f"Connecting to Supabase... pushing {len(extracted_data)} new matches")
+    # Insert in batches — a single request with tens of thousands of rows can
+    # exceed Supabase's statement timeout (57014) and roll back with zero rows
+    # written, even though the whole run otherwise succeeded.
+    INSERT_BATCH_SIZE = 2000
+    print(f"Connecting to Supabase... pushing {len(extracted_data)} new matches in batches of {INSERT_BATCH_SIZE}")
     url = f"{SUPABASE_URL}/rest/v1/Matches"
-    res = requests.post(url, json=extracted_data, headers=SUPABASE_HEADERS)
-    if res.status_code in [200, 201]:
-        print(f"✅ Success! Pushed {len(extracted_data)} live matches to Cloud Database.")
-    else:
-        print(f"❌ Failed to save to database: {res.status_code} {res.text}")
-        return
+    pushed = 0
+    for i in range(0, len(extracted_data), INSERT_BATCH_SIZE):
+        batch = extracted_data[i:i + INSERT_BATCH_SIZE]
+        res = requests.post(url, json=batch, headers=SUPABASE_HEADERS)
+        if res.status_code in [200, 201]:
+            pushed += len(batch)
+            print(f"  Pushed batch {i // INSERT_BATCH_SIZE + 1} ({len(batch)} matches, {pushed}/{len(extracted_data)} total)")
+        else:
+            print(f"❌ Failed to save batch starting at {i}: {res.status_code} {res.text}")
+            print(f"⚠️ Stopping insert — {pushed} matches were saved before the failure.")
+            break
 
-    # Re-aggregate stats for every patch actually touched by this batch,
+    if pushed == 0:
+        print("❌ No matches were saved.")
+        return
+    print(f"✅ Success! Pushed {pushed}/{len(extracted_data)} live matches to Cloud Database.")
+
+    # Re-aggregate stats for every patch actually touched by the successfully
+    # saved matches (not the full extracted set, in case a later batch failed),
     # skipping any patch that's been declared closed/finished
-    touched_patches = sorted({m["patch"] for m in extracted_data} - CLOSED_PATCHES)
+    touched_patches = sorted({m["patch"] for m in extracted_data[:pushed]} - CLOSED_PATCHES)
     rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/aggregate_brawler_stats"
     for patch in touched_patches:
         print(f"🔄 Re-aggregating BrawlerStats for patch {patch}...")
