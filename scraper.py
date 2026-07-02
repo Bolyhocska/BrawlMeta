@@ -1,6 +1,8 @@
 import os
 import hashlib
+import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 # ==========================================
@@ -99,6 +101,19 @@ COUNTRIES = [
     "HU","CZ","RO","PT","BE","CH","AT","GR","IL","SA"
 ]
 
+def get_stored_match_count(rank_bracket):
+    """Count of matches already stored for this bracket on the current patch."""
+    url = f"{SUPABASE_URL}/rest/v1/Matches?select=id&rank_bracket=eq.{rank_bracket}&patch=eq.{CURRENT_PATCH}"
+    headers = {**SUPABASE_HEADERS, "Prefer": "count=exact", "Range": "0-0"}
+    res = requests.get(url, headers=headers)
+    if res.status_code not in (200, 206):
+        print(f"⚠️ Could not get match count for {rank_bracket}: {res.status_code} {res.text}")
+        return 0
+    content_range = res.headers.get("Content-Range", "")
+    if "/" in content_range:
+        return int(content_range.split("/")[-1])
+    return 0
+
 def make_hash(entry):
     winners = sorted([w for w in entry['winners'] if w])
     losers = sorted([l for l in entry['losers'] if l])
@@ -129,10 +144,19 @@ def fetch_existing_hashes():
     print(f"Found {len(hashes)} existing matches in database.")
     return hashes
 
-def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existing_hashes):
-    if player_tag in seen_tags:
-        return []
-    seen_tags.add(player_tag)
+def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existing_hashes, lock=None):
+    # lock guards all shared-state mutations (seen_tags/extracted_data/existing_hashes)
+    # so this function is safe to call from multiple threads concurrently — only the
+    # network request itself runs unlocked, which is the whole point of parallelizing.
+    if lock:
+        with lock:
+            if player_tag in seen_tags:
+                return []
+            seen_tags.add(player_tag)
+    else:
+        if player_tag in seen_tags:
+            return []
+        seen_tags.add(player_tag)
 
     player_url_tag = player_tag.replace("#", "%23")
     log_url = f"{BASE_URL}/players/{player_url_tag}/battlelog"
@@ -141,7 +165,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
     if log_res.status_code != 200:
         return []
 
-    new_player_tags = []
+    candidate_tags = []
+    candidate_entries = []
     battles = log_res.json().get("items", [])
     for match in battles:
         battle_data = match.get("battle", {}) or {}
@@ -157,8 +182,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                 for team in teams:
                     for p in team:
                         tag = p.get("tag")
-                        if tag and tag not in seen_tags:
-                            new_player_tags.append(tag)
+                        if tag:
+                            candidate_tags.append(tag)
 
                 player_team_idx = 0
                 for idx, team in enumerate(teams):
@@ -199,12 +224,22 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
                     "match_hash": None
                 }
                 match_entry["match_hash"] = make_hash(match_entry)
+                candidate_entries.append(match_entry)
 
-                if match_entry["match_hash"] not in existing_hashes:
-                    extracted_data.append(match_entry)
-                    existing_hashes.add(match_entry["match_hash"])
+    # All shared-state reads/writes happen here under lock, in one short critical
+    # section, rather than scattered through the parsing above.
+    def merge():
+        new_player_tags = [t for t in candidate_tags if t not in seen_tags]
+        for entry in candidate_entries:
+            if entry["match_hash"] not in existing_hashes:
+                extracted_data.append(entry)
+                existing_hashes.add(entry["match_hash"])
+        return new_player_tags
 
-    return new_player_tags
+    if lock:
+        with lock:
+            return merge()
+    return merge()
 
 def collect_players_from_leaderboards(limit=1000):
     player_tags = []
@@ -227,29 +262,46 @@ def collect_players_from_leaderboards(limit=1000):
             break
     return player_tags[:limit]
 
-TARGET_MATCHES_PER_BRACKET = 20000
-MAX_PLAYERS_PER_BRACKET = 8000  # safety cap so a run can't spider forever if the target is unreachable
+BASELINE_TARGET_PER_BRACKET = 100000   # one-time fill target before switching to steady increments
+STEADY_INCREMENT_PER_PUSH = 10000      # per-run target once the baseline has been reached
+MAX_PLAYERS_PER_BRACKET = 20000        # safety cap so a run can't spider forever if the target is unreachable
+CONCURRENCY = 12                       # parallel battlelog requests — the real fix for the 35min -> 3hr slowdown
 
 def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hashes,
-                     target_matches=TARGET_MATCHES_PER_BRACKET, max_players=MAX_PLAYERS_PER_BRACKET):
+                     target_matches, max_players=MAX_PLAYERS_PER_BRACKET):
     # Every entry fetch_player_battles appends during this call carries this
     # bracket, so tracking the growth of extracted_data's length is equivalent
     # to (and much cheaper than) recounting matches for this bracket each time.
+    lock = threading.Lock()
     queue = list(seed_tags)
     processed = 0
-    collected = 0
-    while queue and processed < max_players and collected < target_matches:
-        tag = queue.pop(0)
-        before = len(extracted_data)
-        new_tags = fetch_player_battles(tag, bracket, extracted_data, seen_tags, existing_hashes)
-        collected += len(extracted_data) - before
-        queue.extend(new_tags)
-        processed += 1
-        if processed % 100 == 0:
-            print(f"  {bracket}: {processed} players processed, {collected} matches collected...")
+    collected_start = len(extracted_data)
 
+    with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
+        while queue and processed < max_players and (len(extracted_data) - collected_start) < target_matches:
+            batch = queue[:CONCURRENCY]
+            queue = queue[CONCURRENCY:]
+            futures = [pool.submit(fetch_player_battles, tag, bracket, extracted_data, seen_tags, existing_hashes, lock) for tag in batch]
+            for f in futures:
+                queue.extend(f.result())
+            processed += len(batch)
+            if processed % 200 < CONCURRENCY:
+                print(f"  {bracket}: {processed} players processed, {len(extracted_data) - collected_start} matches collected...")
+
+    collected = len(extracted_data) - collected_start
     reason = "reached target" if collected >= target_matches else ("ran out of players" if not queue else "hit player safety cap")
     print(f"{bracket} done. {collected} matches from {processed} players ({reason}).")
+
+def bracket_target(bracket):
+    """Baseline-fill this bracket to BASELINE_TARGET_PER_BRACKET first; once
+    reached, only collect a small steady increment per run."""
+    stored = get_stored_match_count(bracket)
+    if stored < BASELINE_TARGET_PER_BRACKET:
+        remaining = BASELINE_TARGET_PER_BRACKET - stored
+        print(f"{bracket}: {stored} stored, still filling baseline ({remaining} to go).")
+        return min(remaining, MAX_PLAYERS_PER_BRACKET)  # cap per-run effort even while filling baseline
+    print(f"{bracket}: {stored} stored, baseline met — steady +{STEADY_INCREMENT_PER_PUSH} increment.")
+    return STEADY_INCREMENT_PER_PUSH
 
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
@@ -258,24 +310,31 @@ def harvest_to_cloud():
     existing_hashes = fetch_existing_hashes()
 
     # ==========================================
-    # PASS 1: Masters & Legendary — spider from leaderboard seeds until
-    # TARGET_MATCHES_PER_BRACKET matches are collected for this bracket
+    # PASS 1: Masters & Legendary — always prioritized. Fills to a 100k
+    # baseline first, then only tops up 10k per run once that's reached.
     # ==========================================
+    masters_target = bracket_target("masters_legendary")
     print("Collecting Masters/Legendary seed players from leaderboards...")
     masters_seed_tags = collect_players_from_leaderboards(limit=1000)
     print(f"Got {len(masters_seed_tags)} unique Masters/Legendary seed players.")
-    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes)
+    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=masters_target)
 
     # ==========================================
-    # PASS 2: Diamond & Mythic (spider from seeds)
+    # PASS 2: Diamond & Mythic — only collected once Masters & Legendary has
+    # met its own baseline, so early runs put full budget into Masters first.
     # ==========================================
-    print("Gathering Diamond/Mythic seed data via spidering...")
-    diamond_seed_tags = [
-        "#2Y9RV2RGR",
-        "#2JJPLROYGY",
-        "#RYRU2L2UV"
-    ]
-    harvest_bracket("diamond_mythic", diamond_seed_tags, extracted_data, seen_tags, existing_hashes)
+    masters_stored_after = get_stored_match_count("masters_legendary")
+    if masters_stored_after < BASELINE_TARGET_PER_BRACKET:
+        print(f"Skipping Diamond/Mythic this run — Masters & Legendary baseline not yet met ({masters_stored_after}/{BASELINE_TARGET_PER_BRACKET}).")
+    else:
+        diamond_target = bracket_target("diamond_mythic")
+        print("Gathering Diamond/Mythic seed data via spidering...")
+        diamond_seed_tags = [
+            "#2Y9RV2RGR",
+            "#2JJPLROYGY",
+            "#RYRU2L2UV"
+        ]
+        harvest_bracket("diamond_mythic", diamond_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=diamond_target)
 
     # ==========================================
     # SAVE PIPELINE: SUPABASE CLOUD
