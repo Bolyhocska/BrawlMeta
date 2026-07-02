@@ -1,9 +1,16 @@
 import os
+import json
 import hashlib
 import threading
 import requests
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+
+# One-time debug flag: dump the raw JSON of the first ranked battle seen, so we
+# can check whether Supercell's API exposes a per-match ranked-tier field
+# (e.g. "rank": "Masters") that would let us filter Masters-only vs Legendary.
+# Remove this block once the question is answered.
+_DEBUG_DUMPED_SAMPLE = threading.Event()
 
 # ==========================================
 # 🔑 API KEYS & CREDENTIALS (Secured)
@@ -175,6 +182,10 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
         match_type = battle_data.get("type", "").lower()
         mode_name = battle_data.get("mode", "")
         if ("ranked" in match_type or "solomode" in match_type) and mode_name in RANKED_MODES:
+            if not _DEBUG_DUMPED_SAMPLE.is_set():
+                _DEBUG_DUMPED_SAMPLE.set()
+                print("🔍 DEBUG sample ranked battle JSON:")
+                print(json.dumps(match, indent=2))
             teams = battle_data.get("teams", [])
             result = battle_data.get("result", "").lower()
 
