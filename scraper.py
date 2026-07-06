@@ -94,13 +94,6 @@ RANKED_MAPS = {
     },
 }
 
-COUNTRIES = [
-    "global","US","GB","DE","FR","BR","KR","JP","CN","RU",
-    "TR","MX","AR","PL","ES","IT","NL","SE","NO","FI",
-    "DK","AU","CA","IN","ID","TH","VN","PH","MY","SG",
-    "HU","CZ","RO","PT","BE","CH","AT","GR","IL","SA"
-]
-
 def get_stored_match_count(rank_bracket):
     """Count of matches already stored for this bracket on the current patch."""
     url = f"{SUPABASE_URL}/rest/v1/Matches?select=id&rank_bracket=eq.{rank_bracket}&patch=eq.{CURRENT_PATCH}"
@@ -241,27 +234,6 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
             return merge()
     return merge()
 
-def collect_players_from_leaderboards(limit=1000):
-    player_tags = []
-    seen = set()
-    for country in COUNTRIES:
-        if len(player_tags) >= limit:
-            break
-        if country == "global":
-            url = f"{BASE_URL}/rankings/global/players?limit=200"
-        else:
-            url = f"{BASE_URL}/rankings/{country}/players?limit=200"
-        response = requests.get(url, headers=HEADERS, proxies=PROXIES)
-        if response.status_code == 200:
-            for player in response.json().get("items", []):
-                tag = player["tag"]
-                if tag not in seen:
-                    seen.add(tag)
-                    player_tags.append(tag)
-        if len(player_tags) >= limit:
-            break
-    return player_tags[:limit]
-
 BASELINE_TARGET_PER_BRACKET = 100000   # one-time fill target before switching to steady increments
 STEADY_INCREMENT_PER_PUSH = 10000      # per-run target once the baseline has been reached
 MAX_PLAYERS_PER_BRACKET = 20000        # safety cap so a run can't spider forever if the target is unreachable
@@ -303,20 +275,8 @@ def bracket_target(bracket):
     print(f"{bracket}: {stored} stored, baseline met — steady +{STEADY_INCREMENT_PER_PUSH} increment.")
     return STEADY_INCREMENT_PER_PUSH
 
-def debug_probe_seasons_endpoint():
-    """One-time check: does /rankings/{country}/seasons/{seasonId} (legacy Power
-    League ranking) still return real data now that Ranked replaced Power
-    League? If so it may expose an actual Masters+ leaderboard. Remove once
-    the question is answered."""
-    for season_id in ["latest", "current"]:
-        url = f"{BASE_URL}/rankings/global/seasons/{season_id}"
-        res = requests.get(url, headers=HEADERS, proxies=PROXIES)
-        print(f"🔍 DEBUG seasons endpoint probe [{season_id}]: {res.status_code}")
-        print(res.text[:2000])
-
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
-    debug_probe_seasons_endpoint()
     extracted_data = []
     seen_tags = set()
     existing_hashes = fetch_existing_hashes()
@@ -324,11 +284,23 @@ def harvest_to_cloud():
     # ==========================================
     # PASS 1: Masters & Legendary — always prioritized. Fills to a 100k
     # baseline first, then only tops up 10k per run once that's reached.
+    #
+    # Seeded from player tags confirmed to be genuinely Masters+ ranked
+    # (found via powerleagueprodigy.com), spidered the same way as
+    # Diamond/Mythic — NOT from Trophy Road leaderboards, since the public
+    # API has no per-match rank-tier field and the legacy Power League
+    # /rankings/{country}/seasons/{id} endpoint was confirmed dead (404,
+    # both "latest" and "current") after Ranked replaced Power League.
     # ==========================================
     masters_target = bracket_target("masters_legendary")
-    print("Collecting Masters/Legendary seed players from leaderboards...")
-    masters_seed_tags = collect_players_from_leaderboards(limit=1000)
-    print(f"Got {len(masters_seed_tags)} unique Masters/Legendary seed players.")
+    masters_seed_tags = [
+        "#J2RJ8Y",
+        "#22LURJ9JY",
+        "#8J8V2RUGO",
+        "#YPUJUORC8",
+        "#2C20JJRGJJ",
+        "#VU9CRLP8",
+    ]
     harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=masters_target)
 
     # ==========================================
