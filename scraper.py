@@ -303,8 +303,20 @@ def bracket_target(bracket):
     print(f"{bracket}: {stored} stored, baseline met — steady +{STEADY_INCREMENT_PER_PUSH} increment.")
     return STEADY_INCREMENT_PER_PUSH
 
+def debug_probe_seasons_endpoint():
+    """One-time check: does /rankings/{country}/seasons/{seasonId} (legacy Power
+    League ranking) still return real data now that Ranked replaced Power
+    League? If so it may expose an actual Masters+ leaderboard. Remove once
+    the question is answered."""
+    for season_id in ["latest", "current"]:
+        url = f"{BASE_URL}/rankings/global/seasons/{season_id}"
+        res = requests.get(url, headers=HEADERS, proxies=PROXIES)
+        print(f"🔍 DEBUG seasons endpoint probe [{season_id}]: {res.status_code}")
+        print(res.text[:2000])
+
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
+    debug_probe_seasons_endpoint()
     extracted_data = []
     seen_tags = set()
     existing_hashes = fetch_existing_hashes()
