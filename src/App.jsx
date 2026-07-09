@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { Routes, Route, useParams, useNavigate } from "react-router-dom";
+import { Routes, Route, useParams, useNavigate, Link } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import {
   Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check,
   RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight
 } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
+import HomePage from "./HomePage";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 // ==========================================
@@ -584,13 +585,13 @@ function BrawlMeta() {
 
       {/* NAVBAR */}
       <nav style={styles.nav} className="app-nav">
-        <div style={styles.navBrand}>
+        <Link to="/" style={{ ...styles.navBrand, textDecoration: "none" }}>
           <div style={styles.brandIcon}>
             <div style={styles.brandDiamond} />
           </div>
           <span style={styles.brandText}>BRAWL<span style={styles.brandAccent}>//</span>META</span>
           <span style={styles.brandBadge}>RANKED INTEL</span>
-        </div>
+        </Link>
 
         {/* TAB NAVIGATION */}
         <div style={styles.tabGroup} className="tab-group">
@@ -1599,7 +1600,7 @@ function BrawlerGuideRoute() {
           <span style={styles.brandText}>BRAWL<span style={styles.brandAccent}>//</span>META</span>
         </div>
       </nav>
-      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} onBack={() => navigate("/")} />
+      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} onBack={() => navigate("/app")} />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>
   );
@@ -1608,6 +1609,8 @@ function BrawlerGuideRoute() {
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/app" element={<BrawlMeta />} />
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
       <Route path="*" element={<BrawlMeta />} />
     </Routes>
