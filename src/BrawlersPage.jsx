@@ -1,8 +1,16 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Star, Users, Map, X } from "lucide-react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
+
+// URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
+export const slugifyBrawlerKey = (key) =>
+  key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+export const findBrawlerKeyBySlug = (slug) =>
+  Object.keys(BRAWLER_META).find(key => slugifyBrawlerKey(key) === slug) || null;
 
 const RARITY_ORDER = ["Trophy Road", "Rare", "Super Rare", "Epic", "Mythic", "Legendary", "Ultra Legendary"];
 
@@ -44,7 +52,7 @@ function toStars(winRate, pickRate, totalPicks, picks) {
   return Math.min(7, Math.max(1, Math.round(raw * 2) / 2)); // round to 0.5
 }
 
-function computeStatsFromAggregated(rows, rankBracket) {
+export function computeStatsFromAggregated(rows, rankBracket) {
   const overall = rows.filter(r => r.rank_bracket === rankBracket && r.map === null);
   const mapRows = rows.filter(r => r.rank_bracket === rankBracket && r.map !== null);
 
@@ -420,7 +428,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
 }
 
 // ─── Full-page brawler guide (quick info + abilities + in-depth guide) ────────
-function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
+export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
   const { mapStats, modeStats } = useMapModeStats(brawler, byMode, byMap);
 
   return (
@@ -651,9 +659,9 @@ function GuideSection({ guide }) {
 
 // ─── Main brawlers page ───────────────────────────────────────────────────────
 export default function BrawlersPage({ brawlerStats, loading, error, rankBracket }) {
+  const navigate = useNavigate();
   const [tierMode, setTierMode] = useState("general");
   const [selectedBrawler, setSelectedBrawler] = useState(null);
-  const [fullGuideBrawler, setFullGuideBrawler] = useState(null);
 
   const { brawlers, byMode, byMap, totalPicks } = useMemo(
     () => computeStatsFromAggregated(brawlerStats || [], rankBracket),
@@ -729,18 +737,6 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
       Computing brawler ratings…
     </div>
   );
-
-  if (fullGuideBrawler) {
-    const live = brawlerByKey[fullGuideBrawler.key] || fullGuideBrawler;
-    return (
-      <BrawlerGuidePage
-        brawler={live}
-        byMode={byMode}
-        byMap={byMap}
-        onBack={() => setFullGuideBrawler(null)}
-      />
-    );
-  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -819,7 +815,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
           byMode={byMode}
           byMap={byMap}
           onClose={() => setSelectedBrawler(null)}
-          onOpenFullGuide={(b) => { setSelectedBrawler(null); setFullGuideBrawler(b); }}
+          onOpenFullGuide={(b) => { setSelectedBrawler(null); navigate(`/brawlers/${slugifyBrawlerKey(b.key)}`); }}
         />
       )}
     </div>

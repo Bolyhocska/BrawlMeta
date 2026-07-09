@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
+import { Routes, Route, useParams, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import {
   Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check,
   RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight
 } from "lucide-react";
-import BrawlersPage from "./BrawlersPage";
+import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 // ==========================================
@@ -339,7 +340,7 @@ const badgeStyles = {
   info:    { bg: "rgba(96,165,250,0.18)",  color: "#93c5fd", border: "rgba(96,165,250,0.4)" },
 };
 
-export default function BrawlMeta() {
+function BrawlMeta() {
   const [activeTab, setActiveTab] = useState("meta");
   const [rankBracket, setRankBracket] = useState("masters_legendary");
   const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
@@ -1531,3 +1532,84 @@ const styles = {
   matchBrawlerList: { display: "flex", flexWrap: "wrap", gap: 4, flex: 1 },
   matchBrawlerChip: { fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, border: "1px solid", background: "rgba(15,23,42,0.8)" },
 };
+// ─── Standalone, crawlable brawler guide page (real URL for SEO/prerendering) ──
+function BrawlerGuideRoute() {
+  const { brawlerSlug } = useParams();
+  const navigate = useNavigate();
+  const brawlerKey = findBrawlerKeyBySlug(brawlerSlug);
+  const { stats: brawlerStats, loading } = useBrawlerStats(CURRENT_PATCH);
+
+  const { brawlers, byMode, byMap } = useMemo(
+    () => computeStatsFromAggregated(brawlerStats || [], "masters_legendary"),
+    [brawlerStats]
+  );
+
+  const brawler = useMemo(() => {
+    if (!brawlerKey) return null;
+    const meta = BRAWLER_META_IMPORT[brawlerKey] || {};
+    const live = brawlers.find(b => b.key === brawlerKey);
+    if (live) return live;
+    return {
+      key: brawlerKey,
+      name: brawlerKey.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      picks: 0, wins: 0, winRate: null, pickRate: null, stars: null,
+      imageUrl: meta.imageUrl || null,
+      rarity: meta.rarity || "Common",
+      rarityColor: meta.rarityColor || "#94a3b8",
+      class: meta.class || "Unknown",
+      description: meta.description || "",
+      starPowers: meta.starPowers || [],
+      gadgets: meta.gadgets || [],
+      guide: null,
+    };
+  }, [brawlerKey, brawlers]);
+
+  useEffect(() => {
+    if (!brawler) return;
+    document.title = `${brawler.name} Guide — BrawlMeta`;
+    const setMeta = (name, content) => {
+      let tag = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute(name.startsWith("og:") ? "property" : "name", name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    };
+    const description = brawler.description || `${brawler.name} ranked stats, win rate, and draft guide on BrawlMeta.`;
+    setMeta("description", description);
+    setMeta("og:title", `${brawler.name} Guide — BrawlMeta`);
+    setMeta("og:description", description);
+    if (brawler.imageUrl) setMeta("og:image", brawler.imageUrl);
+  }, [brawler]);
+
+  if (loading || !brawler) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0a0711", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Barlow', sans-serif" }}>
+        {brawlerKey ? "Loading brawler guide…" : "Brawler not found."}
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.root}>
+      <nav style={styles.nav} className="app-nav">
+        <div style={styles.navBrand}>
+          <div style={styles.brandIcon}><div style={styles.brandDiamond} /></div>
+          <span style={styles.brandText}>BRAWL<span style={styles.brandAccent}>//</span>META</span>
+        </div>
+      </nav>
+      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} onBack={() => navigate("/")} />
+      <style>{`* { box-sizing: border-box; }`}</style>
+    </div>
+  );
+}
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
+      <Route path="*" element={<BrawlMeta />} />
+    </Routes>
+  );
+}
