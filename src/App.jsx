@@ -30,7 +30,7 @@ const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
   imageUrl: meta.imageUrl || null,
 })).sort((a, b) => a.name.localeCompare(b.name));
 
-const TIER_COLORS = { S: "#f59e0b", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };
+const TIER_COLORS = { S: "#ffb43d", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };
 
 const MODE_COLORS = {
   brawlBall:   "#3B82F6",
@@ -71,8 +71,8 @@ const formatBrawlerName = (name) =>
 const getResultStyle = (result) => RESULT_STYLES[result?.toLowerCase()] ?? { label: result ?? "—", color: "#64748b", bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.35)" };
 
 const RANK_BRACKETS = [
-  { id: "masters_legendary", label: "Masters & Legendary", accent: "#f59e0b" },
-  { id: "diamond_mythic", label: "Diamond & Mythic", accent: "#a78bfa" },
+  { id: "masters_legendary", label: "Masters & Legendary", accent: "#ffb43d" },
+  { id: "diamond_mythic", label: "Diamond & Mythic", accent: "#c98bff" },
 ];
 
 const normalizeBrawlerKey = (name) => (name || "").toUpperCase().trim();
@@ -177,7 +177,7 @@ const getBrawlerVisual = (name) => {
   const found = BRAWLERS.find((b) => b.key === key);
   if (found) return { color: found.color, initial: found.initial, imageUrl: found.imageUrl };
   const hash = [...key].reduce((sum, c) => sum + c.charCodeAt(0), 0);
-  const palette = ["#60a5fa", "#a78bfa", "#f97316", "#34d399", "#f472b6"];
+  const palette = ["#60a5fa", "#c98bff", "#f97316", "#34d399", "#f472b6"];
   return { color: palette[hash % palette.length], initial: key.slice(0, 2), imageUrl: null };
 };
 
@@ -337,7 +337,7 @@ function useMapMatches(selectedPatch, mapName, enabled) {
 
 const badgeStyles = {
   danger:  { bg: "rgba(239,68,68,0.18)",   color: "#fca5a5", border: "rgba(239,68,68,0.4)" },
-  gold:    { bg: "rgba(245,158,11,0.18)",  color: "#fcd34d", border: "rgba(245,158,11,0.4)" },
+  gold:    { bg: "rgba(245,158,11,0.18)",  color: "#ffce7a", border: "rgba(245,158,11,0.4)" },
   success: { bg: "rgba(16,185,129,0.18)",  color: "#6ee7b7", border: "rgba(16,185,129,0.4)" },
   warning: { bg: "rgba(251,191,36,0.18)",  color: "#fde68a", border: "rgba(251,191,36,0.4)" },
   info:    { bg: "rgba(96,165,250,0.18)",  color: "#93c5fd", border: "rgba(96,165,250,0.4)" },
@@ -650,18 +650,18 @@ function BrawlMeta() {
 
               {/* SETUP PHASE */}
               {phase === "setup" && (
-                <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Draft Setup</div>
 
                   {/* Bans toggle */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#0a0711", borderRadius: 8, border: "1px solid #2c2140" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#08080c", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)" }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>Enable Bans</div>
                       <div style={{ fontSize: 11, color: "#475569" }}>3 bans per team before picking</div>
                     </div>
                     <button onClick={() => setBansEnabled(v => !v)} style={{
                       width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", position: "relative",
-                      background: bansEnabled ? "#f59e0b" : "#2c2140", transition: "background 0.2s",
+                      background: bansEnabled ? "#ffb43d" : "rgba(255,255,255,.1)", transition: "background 0.2s",
                     }}>
                       <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: bansEnabled ? 23 : 3, transition: "left 0.2s" }} />
                     </button>
@@ -671,13 +671,13 @@ function BrawlMeta() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ fontSize: 11, color: "#64748b" }}>Who picks first?</div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => setFirstPick("blue")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "blue" ? "#3b82f6" : "#2c2140"}`, background: firstPick === "blue" ? "rgba(59,130,246,0.15)" : "#0a0711", color: firstPick === "blue" ? "#3b82f6" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      <button onClick={() => setFirstPick("blue")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "blue" ? "#3b82f6" : "rgba(255,255,255,.1)"}`, background: firstPick === "blue" ? "rgba(59,130,246,0.15)" : "#08080c", color: firstPick === "blue" ? "#3b82f6" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         🔵 Blue Team
                       </button>
-                      <button onClick={coinFlip} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #2c2140", background: "#0a0711", color: "#f59e0b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      <button onClick={coinFlip} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)", background: "#08080c", color: "#ffb43d", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         🎲 Random
                       </button>
-                      <button onClick={() => setFirstPick("red")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "red" ? "#ef4444" : "#2c2140"}`, background: firstPick === "red" ? "rgba(239,68,68,0.15)" : "#0a0711", color: firstPick === "red" ? "#ef4444" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      <button onClick={() => setFirstPick("red")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${firstPick === "red" ? "#ef4444" : "rgba(255,255,255,.1)"}`, background: firstPick === "red" ? "rgba(239,68,68,0.15)" : "#08080c", color: firstPick === "red" ? "#ef4444" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         🔴 Red Team
                       </button>
                     </div>
@@ -686,12 +686,12 @@ function BrawlMeta() {
                         Pick order: {firstPick === "blue"
                           ? "Blue → Red Red → Blue Blue → Red"
                           : "Red → Blue Blue → Red Red → Blue"}
-                        {bansEnabled && <span style={{ color: "#f59e0b" }}> · {firstPick === "blue" ? "Red" : "Blue"} bans first</span>}
+                        {bansEnabled && <span style={{ color: "#ffb43d" }}> · {firstPick === "blue" ? "Red" : "Blue"} bans first</span>}
                       </div>
                     )}
                   </div>
 
-                  <button onClick={startDraft} disabled={!firstPick} style={{ padding: "12px", borderRadius: 8, border: "none", background: firstPick ? "#f59e0b" : "#2c2140", color: firstPick ? "#0a0711" : "#475569", fontWeight: 800, fontSize: 13, cursor: firstPick ? "pointer" : "not-allowed", letterSpacing: "0.06em" }}>
+                  <button onClick={startDraft} disabled={!firstPick} style={{ padding: "12px", borderRadius: 8, border: "none", background: firstPick ? "#ffb43d" : "rgba(255,255,255,.1)", color: firstPick ? "#08080c" : "#475569", fontWeight: 800, fontSize: 13, cursor: firstPick ? "pointer" : "not-allowed", letterSpacing: "0.06em" }}>
                     {firstPick ? `START DRAFT` : "SELECT WHO PICKS FIRST"}
                   </button>
                 </div>
@@ -805,7 +805,7 @@ function BrawlMeta() {
                     <span style={{ ...styles.panelTitle, color: "#ef4444" }}>Recommended Bans</span>
                   </div>
                   <div style={{ fontSize: 10, color: "#475569", marginBottom: 8 }}>
-                    Strongest brawlers on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> — ban these first
+                    Strongest brawlers on <span style={{ color: "#ffb43d" }}>{selectedMap?.name}</span> — ban these first
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     {recommendedBans.map((b, i) => {
@@ -826,13 +826,13 @@ function BrawlMeta() {
                       );
                     })}
                   </div>
-                  <div style={{ borderTop: "1px solid #2c2140", marginTop: 12 }} />
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 12 }} />
                 </div>
               )}
 
               <div style={styles.panelHeader}>
-                <Cpu size={15} color="#a78bfa" />
-                <span style={{ ...styles.panelTitle, color: "#a78bfa" }}>AI Pick Suggestions</span>
+                <Cpu size={15} color="#c98bff" />
+                <span style={{ ...styles.panelTitle, color: "#c98bff" }}>AI Pick Suggestions</span>
               </div>
 
               {/* Context label */}
@@ -842,8 +842,8 @@ function BrawlMeta() {
                   const enemyTeam = pickerTeam === "blue" ? redTeam : blueTeam;
                   const enemyPicks = enemyTeam.filter(Boolean);
                   if (enemyPicks.length === 0)
-                    return <>Best on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> overall</>;
-                  return <>Wins on <span style={{ color: "#f59e0b" }}>{selectedMap?.name}</span> vs {enemyPicks.map(b => b.name).join(", ")}</>;
+                    return <>Best on <span style={{ color: "#ffb43d" }}>{selectedMap?.name}</span> overall</>;
+                  return <>Wins on <span style={{ color: "#ffb43d" }}>{selectedMap?.name}</span> vs {enemyPicks.map(b => b.name).join(", ")}</>;
                 })()}
               </div>
 
@@ -899,7 +899,7 @@ function BrawlMeta() {
         /* ===== Responsive: tablet & phone ===== */
         @media (max-width: 900px) {
           .main-grid { grid-template-columns: 1fr !important; }
-          .draft-sidebar { border-left: none !important; border-top: 1px solid #1b1329 !important; }
+          .draft-sidebar { border-left: none !important; border-top: 1px solid #15151f !important; }
           .teams-grid { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 640px) {
@@ -932,7 +932,7 @@ function MapFlyoutMenu({ maps, selectedMap, onSelect }) {
   return (
     <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 300, display: "flex" }}>
       {/* Mode list */}
-      <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, overflow: "hidden", minWidth: 160 }}>
+      <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, overflow: "hidden", minWidth: 160 }}>
         {modes.map(mode => {
           const mc = MODE_COLORS[mode?.replace(/\s/g, "")] ?? MODE_COLORS[mode?.toLowerCase?.()] ?? "#64748b";
           const isHovered = hoveredMode === mode;
@@ -957,7 +957,7 @@ function MapFlyoutMenu({ maps, selectedMap, onSelect }) {
 
       {/* Maps submenu */}
       {hoveredMode && (
-        <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, overflow: "hidden", minWidth: 200, marginLeft: 4, maxHeight: 320, overflowY: "auto" }}>
+        <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, overflow: "hidden", minWidth: 200, marginLeft: 4, maxHeight: 320, overflowY: "auto" }}>
           {grouped[hoveredMode].map(m => (
             <button
               key={m.name}
@@ -965,7 +965,7 @@ function MapFlyoutMenu({ maps, selectedMap, onSelect }) {
               style={{
                 display: "block", width: "100%", textAlign: "left", padding: "8px 14px",
                 background: selectedMap?.name === m.name ? "rgba(245,158,11,0.1)" : "transparent",
-                border: "none", color: selectedMap?.name === m.name ? "#f59e0b" : "#cbd5e1",
+                border: "none", color: selectedMap?.name === m.name ? "#ffb43d" : "#cbd5e1",
                 fontSize: 12, fontWeight: selectedMap?.name === m.name ? 700 : 400, cursor: "pointer",
               }}
             >
@@ -983,7 +983,7 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
   return (
     <div style={styles.rankBracketBar} className="rank-bracket-bar">
       <div style={styles.rankBracketLabel}>
-        <Crown size={14} color="#a855f7" />
+        <Crown size={14} color="#b36bff" />
         <span>Rank Bracket</span>
       </div>
       <div style={styles.rankBracketGroup}>
@@ -1015,16 +1015,16 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
 
       {/* Patch dropdown */}
       <div style={{ position: "relative", marginLeft: "auto" }}>
-        <button onClick={() => setPatchOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "1px solid #2c2140", background: "#150f22", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-          <Star size={11} color="#f59e0b" fill="#f59e0b" />
+        <button onClick={() => setPatchOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)", background: "#12121b", color: "#ffb43d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+          <Star size={11} color="#ffb43d" fill="#ffb43d" />
           Patch {selectedPatch}
           <ChevronDown size={11} color="#64748b" style={{ transform: patchOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
         </button>
         {patchOpen && patches.length > 0 && (
-          <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, zIndex: 200, minWidth: 140, overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, zIndex: 200, minWidth: 140, overflow: "hidden" }}>
             {patches.map(p => (
               <button key={p} onClick={() => { onPatchChange(p); setPatchOpen(false); }}
-                style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedPatch === p ? "rgba(245,158,11,0.1)" : "transparent", border: "none", color: selectedPatch === p ? "#f59e0b" : "#94a3b8", fontSize: 12, fontWeight: selectedPatch === p ? 700 : 400, cursor: "pointer" }}>
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedPatch === p ? "rgba(245,158,11,0.1)" : "transparent", border: "none", color: selectedPatch === p ? "#ffb43d" : "#94a3b8", fontSize: 12, fontWeight: selectedPatch === p ? 700 : 400, cursor: "pointer" }}>
                 {p === CURRENT_PATCH ? `${p} ✦ Current` : p}
               </button>
             ))}
@@ -1057,7 +1057,7 @@ function TrendingView({ rankBracket, brawlerStats, loading, error }) {
 
   return (
     <div style={styles.viewPadding}>
-      <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Leaderboards</h2>
+      <h2 style={styles.viewHeading}><LineChart size={18} color="#ffb43d" /> Leaderboards</h2>
       <p style={styles.viewSubtext}>
         Pre-aggregated ranked data for {bracketLabel} — {Math.round(totalPicks / 6).toLocaleString()} matches tracked.
       </p>
@@ -1086,7 +1086,7 @@ function TrendingView({ rankBracket, brawlerStats, loading, error }) {
                   {b.picks.toLocaleString()} picks
                 </span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%", borderTop: "1px solid #2c2140", paddingTop: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%", borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 8 }}>
                 <div><div style={{ fontSize: 9, color: "#475569" }}>WIN RATE</div><div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>{b.winRate}%</div></div>
                 <div><div style={{ fontSize: 9, color: "#475569" }}>PICK RATE</div><div style={{ fontSize: 14, fontWeight: 700, color: "#3b82f6" }}>{b.pickRate}%</div></div>
               </div>
@@ -1193,8 +1193,8 @@ function TierListView({ rankBracket, liveMatches, liveLoading, liveError }) {
       {liveError && !liveLoading && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 8 }}>{liveError}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
         {tiers.map((tier) => (
-          <div key={tier} style={{ display: "flex", background: "#150f22", border: "1px solid #2c2140", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ width: 60, background: TIER_COLORS[tier] + "15", display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid #2c2140", fontSize: 24, fontWeight: 900, color: TIER_COLORS[tier] }}>
+          <div key={tier} style={{ display: "flex", background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ width: 60, background: TIER_COLORS[tier] + "15", display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid rgba(255,255,255,.1)", fontSize: 24, fontWeight: 900, color: TIER_COLORS[tier] }}>
               {tier}
             </div>
             <div style={{ flex: 1, padding: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -1223,15 +1223,15 @@ function PremiumView() {
   return (
     <div style={{ ...styles.viewPadding, maxWidth: 500, margin: "40px auto", textAlign: "center" }}>
       <div style={{ width: 48, height: 48, background: "rgba(245,158,11,0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <Crown size={24} color="#f59e0b" />
+        <Crown size={24} color="#ffb43d" />
       </div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif" }}>Unlock BrawlMeta Pro</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif" }}>Unlock BrawlMeta Pro</h2>
       <p style={{ color: "#64748b", fontSize: 13, marginTop: 6 }}>Gain deep access to the raw machine logs that global professional clubs utilize.</p>
-      <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 12, padding: 16, marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: 16, marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Real-time companion overlay linkage</span></div>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Hypercharge availability & matchup prediction maps</span></div>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Deep premium structural party counters (3v3 Synergy Maps)</span></div>
-        <button style={{ width: "100%", background: "#f59e0b", color: "#0a0711", border: "none", padding: "10px", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8 }}>
+        <button style={{ width: "100%", background: "#ffb43d", color: "#08080c", border: "none", padding: "10px", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8 }}>
           Upgrade Now <ArrowUpRight size={14} />
         </button>
       </div>
@@ -1246,14 +1246,14 @@ function PremiumView() {
 function SuggestionCard({ s, i, onClick }) {
   const [imgErr, setImgErr] = useState(false);
   const meta = BRAWLER_META_IMPORT[s.key] || {};
-  const color = s.winRate >= 55 ? "#10b981" : s.winRate >= 50 ? "#f59e0b" : "#ef4444";
+  const color = s.winRate >= 55 ? "#10b981" : s.winRate >= 50 ? "#ffb43d" : "#ef4444";
   return (
     <div
       style={{ ...styles.suggestionCard, animationDelay: `${i * 0.05}s`, cursor: onClick ? "pointer" : "default" }}
       className="suggestion-anim"
       onClick={onClick}
     >
-      <div style={{ ...styles.suggAvatarWrap, width: 36, height: 36, overflow: "hidden", background: `${meta.rarityColor || "#475569"}20`, borderColor: meta.rarityColor || "#2c2140" }}>
+      <div style={{ ...styles.suggAvatarWrap, width: 36, height: 36, overflow: "hidden", background: `${meta.rarityColor || "#475569"}20`, borderColor: meta.rarityColor || "rgba(255,255,255,.1)" }}>
         {!imgErr && meta.imageUrl
           ? <img src={meta.imageUrl} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
           : <span style={{ fontSize: 10, fontWeight: 800, color: meta.rarityColor || "#94a3b8" }}>{s.name.slice(0, 2).toUpperCase()}</span>
@@ -1290,14 +1290,14 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "100%", maxWidth: 380, background: "#0f0b18", border: "1px solid #2c2140",
+          width: "100%", maxWidth: 380, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)",
           borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14,
         }}
       >
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <div style={{
             width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0,
-            background: `${meta.rarityColor || "#475569"}20`, border: `2px solid ${meta.rarityColor || "#2c2140"}80`,
+            background: `${meta.rarityColor || "#475569"}20`, border: `2px solid ${meta.rarityColor || "rgba(255,255,255,.1)"}80`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             {!imgErr && meta.imageUrl
@@ -1306,7 +1306,7 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
             }
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc" }}>{suggestion.name}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc" }}>{suggestion.name}</div>
             {meta.rarity && (
               <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: `${meta.rarityColor || "#94a3b8"}20`, color: meta.rarityColor || "#94a3b8", border: `1px solid ${meta.rarityColor || "#94a3b8"}40` }}>
                 {meta.rarity}
@@ -1324,13 +1324,13 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
 
         <div style={{ display: "grid", gridTemplateColumns: suggestion.winRate != null ? "1fr 1fr" : "1fr", gap: 8 }}>
           {suggestion.winRate != null && (
-            <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: "#10b981" }}>{suggestion.winRate}%</div>
               <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.05em" }}>WIN RATE ON MAP</div>
               <div style={{ fontSize: 9, color: "#334155", marginTop: 2 }}>{suggestion.picks} games</div>
             </div>
           )}
-          <div style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+          <div style={{ background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
             {overall ? (
               <>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#3b82f6" }}>{parseFloat(overall.win_rate)}%</div>
@@ -1351,7 +1351,7 @@ function BrawlerChip({ brawler, used, isBan, onSelect }) {
   const [imgErr, setImgErr] = useState(false);
   return (
     <button
-      style={{ ...styles.brawlerChip, opacity: used ? 0.3 : 1, cursor: used ? "not-allowed" : "pointer", border: used ? "1px solid #2c2140" : isBan ? `1px solid rgba(239,68,68,0.4)` : `1px solid ${brawler.color}40`, background: used ? "#1b1329" : isBan ? "rgba(239,68,68,0.06)" : `${brawler.color}12` }}
+      style={{ ...styles.brawlerChip, opacity: used ? 0.3 : 1, cursor: used ? "not-allowed" : "pointer", border: used ? "1px solid rgba(255,255,255,.1)" : isBan ? `1px solid rgba(239,68,68,0.4)` : `1px solid ${brawler.color}40`, background: used ? "#15151f" : isBan ? "rgba(239,68,68,0.06)" : `${brawler.color}12` }}
       onClick={() => !used && onSelect(brawler)} disabled={used}>
       <div style={{ ...styles.brawlerAvatar, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}60`, overflow: "hidden" }}>
         {!imgErr && brawler.imageUrl
@@ -1366,7 +1366,7 @@ function BrawlerChip({ brawler, used, isBan, onSelect }) {
 
 function BanSlot({ brawler, active, onRemove }) {
   return (
-    <div style={{ flex: 1, minWidth: 0, height: 36, borderRadius: 6, border: `1px solid ${active ? "rgba(239,68,68,0.6)" : brawler ? "rgba(239,68,68,0.3)" : "#2c2140"}`, background: active ? "rgba(239,68,68,0.1)" : brawler ? "rgba(239,68,68,0.05)" : "#0a0711", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+    <div style={{ flex: 1, minWidth: 0, height: 36, borderRadius: 6, border: `1px solid ${active ? "rgba(239,68,68,0.6)" : brawler ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,.1)"}`, background: active ? "rgba(239,68,68,0.1)" : brawler ? "rgba(239,68,68,0.05)" : "#08080c", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
       {brawler ? (
         <>
           <span style={{ fontSize: 9, fontWeight: 800, color: "#ef4444", textDecoration: "line-through", opacity: 0.8 }}>{brawler.name.slice(0, 4).toUpperCase()}</span>
@@ -1384,7 +1384,7 @@ function DraftSlot({ brawler, team, idx, active, onClick, onRemove }) {
   const [imgErr, setImgErr] = useState(false);
   const teamColor = team === "blue" ? "#3b82f6" : "#ef4444";
   return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, border: active ? `1.5px solid ${teamColor}` : `1px solid ${brawler ? teamColor + "40" : "#2c2140"}`, background: active ? `${teamColor}08` : brawler ? `${brawler.color}0a` : "rgba(15,23,42,0.6)", minHeight: 52, cursor: "pointer" }}>
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, border: active ? `1.5px solid ${teamColor}` : `1px solid ${brawler ? teamColor + "40" : "rgba(255,255,255,.1)"}`, background: active ? `${teamColor}08` : brawler ? `${brawler.color}0a` : "rgba(15,23,42,0.6)", minHeight: 52, cursor: "pointer" }}>
       {brawler ? (
         <>
           <div style={{ width: 32, height: 32, borderRadius: 6, background: `${brawler.color}25`, border: `1.5px solid ${brawler.color}70`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1419,7 +1419,7 @@ function SynergyBar({ blueTeam, redTeam }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justify: "space-between", fontSize: 10 }}><span style={{ color: "#3b82f6" }}>Allies (68%)</span><span style={{ color: "#ef4444" }}>Enemies (52%)</span></div>
-      <div style={{ height: 4, background: "#1b1329", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+      <div style={{ height: 4, background: "#15151f", borderRadius: 2, overflow: "hidden", display: "flex" }}>
         <div style={{ width: "55%", background: "#3b82f6" }} /><div style={{ width: "45%", background: "#ef4444" }} />
       </div>
     </div>
@@ -1427,9 +1427,13 @@ function SynergyBar({ blueTeam, redTeam }) {
 }
 
 const styles = {
-  root: { minHeight: "100vh", background: "#0a0711", fontFamily: "'Barlow', sans-serif", color: "#e2e8f0", position: "relative" },
-  scanlines: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "radial-gradient(1200px 500px at 70% -10%, rgba(168,85,247,0.10), transparent 70%), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)" },
-  resetBtn: { display: "flex", alignItems: "center", gap: 5, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  root: {
+    minHeight: "100vh", background: "#08080c", fontFamily: "'Chakra Petch', sans-serif", color: "#e9e9f2", position: "relative",
+    backgroundImage: "linear-gradient(rgba(179,107,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(179,107,255,.04) 1px, transparent 1px)",
+    backgroundSize: "44px 44px",
+  },
+  scanlines: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "radial-gradient(1200px 500px at 70% -10%, rgba(179,107,255,0.14), transparent 70%), radial-gradient(900px 500px at 0% 110%, rgba(255,180,61,0.07), transparent 70%)" },
+  resetBtn: { display: "flex", alignItems: "center", gap: 5, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 999, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
   contentContainer: { position: "relative", zIndex: 1 },
   rankBracketBar: {
     display: "flex",
@@ -1437,19 +1441,19 @@ const styles = {
     justifyContent: "space-between",
     gap: 16,
     padding: "12px 24px",
-    borderBottom: "1px solid #1b1329",
+    borderBottom: "1px solid #15151f",
     background: "linear-gradient(180deg, rgba(168,85,247,0.07) 0%, transparent 100%)",
   },
-  rankBracketLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'Space Mono', monospace" },
+  rankBracketLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" },
   rankBracketGroup: { display: "flex", gap: 8, flexWrap: "wrap" },
   rankBracketBtn: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     padding: "8px 14px",
-    borderRadius: 10,
-    border: "1px solid #2c2140",
-    background: "#150f22",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,.1)",
+    background: "#12121b",
     color: "#64748b",
     fontSize: 12,
     fontWeight: 700,
@@ -1457,52 +1461,52 @@ const styles = {
     transition: "all 0.15s",
   },
   main: { display: "grid", gridTemplateColumns: "1fr 340px", minHeight: "calc(100vh - 57px)" },
-  draftPanel: { padding: 20, borderRight: "1px solid #1b1329", display: "flex", flexDirection: "column", gap: 16 },
+  draftPanel: { padding: 20, borderRight: "1px solid #15151f", display: "flex", flexDirection: "column", gap: 16 },
   sidebar: { padding: 16, background: "rgba(7,14,28,0.4)", display: "flex", flexDirection: "column", gap: 12 },
   panelHeader: { display: "flex", alignItems: "center", gap: 12 },
-  panelTitle: { fontSize: 11, fontWeight: 700, color: "#c084fc", letterSpacing: "0.12em", fontFamily: "'Space Mono', monospace", textTransform: "uppercase" },
+  panelTitle: { fontSize: 11, fontWeight: 700, color: "#c98bff", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" },
   mapDropdownWrapper: { position: "relative" },
-  mapDropdown: { display: "flex", alignItems: "center", gap: 8, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "4px 10px", cursor: "pointer" },
-  modeBadge: { fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4 },
+  mapDropdown: { display: "flex", alignItems: "center", gap: 8, background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 999, padding: "6px 14px", cursor: "pointer" },
+  modeBadge: { fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 999 },
   pickCounter: { marginLeft: "auto", fontSize: 11, color: "#475569" },
   teamsGrid: { display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 8, alignItems: "start" },
   teamColumn: { display: "flex", flexDirection: "column", gap: 6 },
   teamLabel: { display: "flex", alignItems: "center", gap: 6, pb: 4 },
   vsDivider: { display: "flex", justifyContent: "center", paddingTop: 34 },
-  vsCircle: { width: 24, height: 24, borderRadius: "50%", background: "#1b1329", border: "1px solid #2c2140", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#475569", fontWeight: 800 },
-  pickerSection: { borderTop: "1px solid #1b1329", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 },
+  vsCircle: { width: 24, height: 24, borderRadius: "50%", background: "#15151f", border: "1px solid rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#475569", fontWeight: 800 },
+  pickerSection: { borderTop: "1px solid #15151f", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 },
   pickerHeader: { display: "flex", gap: 8, alignItems: "center" },
   searchWrapper: { position: "relative", width: 200 },
-  searchInput: { width: "100%", background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "5px 8px 5px 28px", color: "#cbd5e1", fontSize: 12 },
+  searchInput: { width: "100%", background: "#12121b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 999, padding: "5px 8px 5px 28px", color: "#cbd5e1", fontSize: 12 },
   roleFilters: { display: "flex", gap: 4 },
-  roleBtn: { background: "transparent", border: "1px solid #2c2140", color: "#475569", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" },
-  roleBtnActive: { background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b" },
+  roleBtn: { background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "#475569", borderRadius: 999, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" },
+  roleBtnActive: { background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", color: "#ffb43d" },
   brawlerGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))", gap: 6, maxHeight: 240, overflowY: "auto" },
-  brawlerChip: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px", borderRadius: 8 },
+  brawlerChip: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px", borderRadius: 12 },
   brawlerAvatar: { width: 32, height: 32, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" },
   suggestionList: { display: "flex", flexDirection: "column", gap: 6 },
-  suggestionCard: { display: "flex", alignItems: "center", gap: 10, padding: 12, background: "#150f22", borderRadius: 10, border: "1px solid #2c2140" },
-  suggAvatarWrap: { width: 34, height: 34, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid" },
+  suggestionCard: { display: "flex", alignItems: "center", gap: 10, padding: 12, background: "rgba(255,255,255,.04)", borderRadius: 16, border: "1px solid rgba(255,255,255,.1)" },
+  suggAvatarWrap: { width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid" },
   suggInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
-  suggName: { fontSize: 13, fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif" },
-  reasonBadge: { fontSize: 9, padding: "1px 5px", borderRadius: 4, display: "inline-block", width: "max-content" },
+  suggName: { fontSize: 13, fontWeight: 700, fontFamily: "'Baloo 2', sans-serif" },
+  reasonBadge: { fontSize: 9, padding: "2px 8px", borderRadius: 999, display: "inline-block", width: "max-content" },
   winRateCol: { marginLeft: "auto" },
-  synergyPanel: { background: "#150f22", borderRadius: 10, border: "1px solid #2c2140", padding: 12, marginTop: "auto" },
-  dropdown: { position: "absolute", top: "100%", left: 0, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, overflow: "hidden", zIndex: 200, minWidth: 160 },
+  synergyPanel: { background: "rgba(255,255,255,.04)", borderRadius: 16, border: "1px solid rgba(255,255,255,.1)", padding: 12, marginTop: "auto" },
+  dropdown: { position: "absolute", top: "100%", left: 0, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, overflow: "hidden", zIndex: 200, minWidth: 160 },
   dropdownItem: { display: "flex", justify: "space-between", width: "100%", padding: 8, background: "transparent", border: "none", color: "#cbd5e1", cursor: "pointer" },
   viewPadding: { padding: 24 },
-  viewHeading: { fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", display: "flex", alignItems: "center", gap: 8 },
+  viewHeading: { fontSize: 20, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", display: "flex", alignItems: "center", gap: 8 },
   viewSubtext: { fontSize: 12, color: "#64748b", marginTop: 2 },
   matchesGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginTop: 12, maxHeight: 520, overflowY: "auto", paddingRight: 4 },
-  matchCard: { background: "#150f22", border: "1px solid #2c2140", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 10 },
+  matchCard: { background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 18, padding: 12, display: "flex", flexDirection: "column", gap: 10 },
   matchCardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
-  matchMapName: { fontSize: 13, fontWeight: 700, color: "#e2e8f0", fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 },
-  resultBadge: { fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em", flexShrink: 0 },
-  matchTeams: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid #2c2140", paddingTop: 8 },
+  matchMapName: { fontSize: 13, fontWeight: 700, color: "#e2e8f0", fontFamily: "'Baloo 2', sans-serif", marginBottom: 4 },
+  resultBadge: { fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 999, letterSpacing: "0.04em", flexShrink: 0 },
+  matchTeams: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 8 },
   matchTeamRow: { display: "flex", alignItems: "flex-start", gap: 6 },
   matchTeamLabel: { fontSize: 9, fontWeight: 800, color: "#3b82f6", letterSpacing: "0.06em", width: 45, flexShrink: 0, paddingTop: 2 },
   matchBrawlerList: { display: "flex", flexWrap: "wrap", gap: 4, flex: 1 },
-  matchBrawlerChip: { fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, border: "1px solid", background: "rgba(15,23,42,0.8)" },
+  matchBrawlerChip: { fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: "1px solid", background: "rgba(15,23,42,0.8)" },
 };
 // ─── Standalone, crawlable brawler guide page (real URL for SEO/prerendering) ──
 function BrawlerGuideRoute() {
@@ -1557,7 +1561,7 @@ function BrawlerGuideRoute() {
 
   if (loading || !brawler) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0711", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Barlow', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "#08080c", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Chakra Petch', sans-serif" }}>
         {brawlerKey ? "Loading brawler guide…" : "Brawler not found."}
       </div>
     );

@@ -20,9 +20,9 @@ const MIN_PICKS_TIER = 15; // minimum picks for a brawler to appear in a mode ti
 
 // Tier bands by win rate (%). First tier whose `min` is met wins.
 const TIERS = [
-  { id: "S+", color: "#fbbf24", bg: "rgba(251,191,36,0.14)", border: "rgba(251,191,36,0.45)", min: 57 },
-  { id: "S",  color: "#f59e0b", bg: "rgba(245,158,11,0.13)", border: "rgba(245,158,11,0.40)", min: 54 },
-  { id: "A",  color: "#a855f7", bg: "rgba(168,85,247,0.13)", border: "rgba(168,85,247,0.40)", min: 52 },
+  { id: "S+", color: "#ffc663", bg: "rgba(251,191,36,0.14)", border: "rgba(251,191,36,0.45)", min: 57 },
+  { id: "S",  color: "#ffb43d", bg: "rgba(245,158,11,0.13)", border: "rgba(245,158,11,0.40)", min: 54 },
+  { id: "A",  color: "#b36bff", bg: "rgba(168,85,247,0.13)", border: "rgba(168,85,247,0.40)", min: 52 },
   { id: "B",  color: "#60a5fa", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.38)", min: 50 },
   { id: "C",  color: "#94a3b8", bg: "rgba(148,163,184,0.10)", border: "rgba(148,163,184,0.35)", min: 47 },
   { id: "D",  color: "#fb923c", bg: "rgba(251,146,60,0.11)", border: "rgba(251,146,60,0.38)", min: 44 },
@@ -158,7 +158,7 @@ function StarRating({ stars, size = "md" }) {
       {[1, 2, 3, 4, 5, 6, 7].map(i => {
         const filled = stars >= i;
         const half = !filled && stars >= i - 0.5;
-        const color = stars >= 6 ? "#f59e0b" : stars >= 4 ? "#60a5fa" : stars >= 2 ? "#94a3b8" : "#ef4444";
+        const color = stars >= 6 ? "#ffb43d" : stars >= 4 ? "#60a5fa" : stars >= 2 ? "#94a3b8" : "#ef4444";
         return (
           <svg key={i} width={sz} height={sz} viewBox="0 0 24 24" fill={filled ? color : half ? "url(#half)" : "none"} stroke={color} strokeWidth={1.5}>
             {half && (
@@ -247,19 +247,19 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         width: "100%", maxWidth: 760, maxHeight: "90vh",
-        background: "#0f0b18", border: "1px solid #2c2140",
+        background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)",
         borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column",
       }}>
         {/* Header */}
         <div style={{
-          padding: "20px 24px", borderBottom: "1px solid #2c2140",
+          padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,.1)",
           background: `linear-gradient(135deg, ${brawler.rarityColor}10 0%, transparent 60%)`,
           display: "flex", gap: 16, alignItems: "center",
         }}>
           <BrawlerPortrait brawler={brawler} size={80} />
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc" }}>
+              <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc" }}>
                 {brawler.name}
               </h2>
               <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${brawler.rarityColor}20`, color: brawler.rarityColor, border: `1px solid ${brawler.rarityColor}40` }}>
@@ -272,7 +272,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                 onClick={() => onOpenFullGuide?.(brawler)}
                 style={{
                   display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-                  color: "#c084fc", fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace",
+                  color: "#c98bff", fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer", padding: 0,
                 }}
               >
@@ -284,16 +284,16 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, textAlign: "center", flexShrink: 0 }}>
-            <div style={{ background: "#150f22", borderRadius: 8, padding: "8px 16px", border: "1px solid #2c2140" }}>
+            <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>{brawler.winRate}%</div>
               <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
             </div>
-            <div style={{ background: "#150f22", borderRadius: 8, padding: "8px 16px", border: "1px solid #2c2140" }}>
+            <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
               <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
             </div>
-            <div style={{ background: "#150f22", borderRadius: 8, padding: "8px 16px", border: "1px solid #2c2140", gridColumn: "1/-1" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#f59e0b" }}>{brawler.picks}</div>
+            <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)", gridColumn: "1/-1" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#ffb43d" }}>{brawler.picks}</div>
               <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>TOTAL PICKS</div>
             </div>
           </div>
@@ -303,12 +303,12 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
         </div>
 
         {/* Section tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #2c2140", padding: "0 24px" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,.1)", padding: "0 24px" }}>
           {sections.map(s => (
             <button key={s} onClick={() => setActiveSection(s)} style={{
               padding: "10px 16px", background: "none", border: "none",
-              borderBottom: activeSection === s ? "2px solid #f59e0b" : "2px solid transparent",
-              color: activeSection === s ? "#f59e0b" : "#64748b",
+              borderBottom: activeSection === s ? "2px solid #ffb43d" : "2px solid transparent",
+              color: activeSection === s ? "#ffb43d" : "#64748b",
               fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "capitalize",
               letterSpacing: "0.04em",
             }}>{s}</button>
@@ -325,9 +325,9 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                 {modeStats.length === 0 && <p style={emptyText}>Not enough data across modes.</p>}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
                   {modeStats.map(m => (
-                    <div key={m.mode} style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: 12 }}>
+                    <div key={m.mode} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 12 }}>
                       <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>{FORMAT_MODE(m.mode)}</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#f59e0b" : "#ef4444" }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444" }}>
                         {m.winRate}%
                       </div>
                       <div style={{ fontSize: 10, color: "#475569" }}>{m.picks} picks</div>
@@ -341,11 +341,11 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                 {mapStats.length === 0 && <p style={emptyText}>Not enough map data.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
                   {mapStats.slice(0, 8).map(m => (
-                    <div key={m.map} style={{ display: "flex", alignItems: "center", gap: 12, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "8px 12px" }}>
+                    <div key={m.map} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "8px 12px" }}>
                       <Map size={12} color="#475569" />
                       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{m.map}</span>
                       <span style={{ fontSize: 10, color: "#64748b" }}>{FORMAT_MODE(m.mode)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#f59e0b" : "#ef4444", minWidth: 44, textAlign: "right" }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444", minWidth: 44, textAlign: "right" }}>
                         {m.winRate}%
                       </span>
                       <span style={{ fontSize: 10, color: "#475569", minWidth: 52, textAlign: "right" }}>{m.picks} picks</span>
@@ -364,16 +364,16 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                 {mapStats.map(m => {
                   const pct = Math.max(0, Math.min(100, (m.winRate - 40) / 25 * 100));
                   return (
-                    <div key={m.map} style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "10px 14px" }}>
+                    <div key={m.map} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "10px 14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{m.map}</span>
                         <span style={{ fontSize: 10, color: "#475569" }}>{FORMAT_MODE(m.mode)} · {m.picks} picks</span>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: m.winRate >= 55 ? "#10b981" : m.winRate >= 50 ? "#f59e0b" : "#ef4444" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: m.winRate >= 55 ? "#10b981" : m.winRate >= 50 ? "#ffb43d" : "#ef4444" }}>
                           {m.winRate}%
                         </span>
                       </div>
-                      <div style={{ height: 4, background: "#2c2140", borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: m.winRate >= 55 ? "#10b981" : m.winRate >= 50 ? "#f59e0b" : "#ef4444", borderRadius: 2, transition: "width 0.5s ease" }} />
+                      <div style={{ height: 4, background: "rgba(255,255,255,.1)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: m.winRate >= 55 ? "#10b981" : m.winRate >= 50 ? "#ffb43d" : "#ef4444", borderRadius: 2, transition: "width 0.5s ease" }} />
                       </div>
                     </div>
                   );
@@ -397,7 +397,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                   <h3 style={sectionTitle}>Star Powers</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
                     {brawler.starPowers.map((sp, i) => (
-                      <AbilityCard key={i} name={sp.name} desc={sp.desc} img={sp.img} color="#f59e0b" />
+                      <AbilityCard key={i} name={sp.name} desc={sp.desc} img={sp.img} color="#ffb43d" />
                     ))}
                   </div>
                 </div>
@@ -407,7 +407,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                   <h3 style={sectionTitle}>Gadgets</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
                     {brawler.gadgets.map((g, i) => (
-                      <AbilityCard key={i} name={g.name} desc={g.desc} img={g.img} color="#a78bfa" />
+                      <AbilityCard key={i} name={g.name} desc={g.desc} img={g.img} color="#c98bff" />
                     ))}
                   </div>
                 </div>
@@ -437,7 +437,7 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
         onClick={onBack}
         style={{
           display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-          color: "#8a7fa6", fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace",
+          color: "#8a7fa6", fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer", padding: 0, marginBottom: 20,
         }}
       >
@@ -448,12 +448,12 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
       <div className="guide-header" style={{
         display: "flex", gap: 20, alignItems: "center", padding: 24, borderRadius: 14,
         background: `linear-gradient(135deg, ${brawler.rarityColor}12 0%, transparent 60%)`,
-        border: "1px solid #2c2140", marginBottom: 24,
+        border: "1px solid rgba(255,255,255,.1)", marginBottom: 24,
       }}>
         <BrawlerPortrait brawler={brawler} size={100} />
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc" }}>
+            <h1 style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc" }}>
               {brawler.name}
             </h1>
             <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 20, background: `${brawler.rarityColor}20`, color: brawler.rarityColor, border: `1px solid ${brawler.rarityColor}40` }}>
@@ -466,16 +466,16 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, textAlign: "center", flexShrink: 0 }}>
-          <div style={{ background: "#150f22", borderRadius: 8, padding: "10px 18px", border: "1px solid #2c2140" }}>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{brawler.winRate}%</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
           </div>
-          <div style={{ background: "#150f22", borderRadius: 8, padding: "10px 18px", border: "1px solid #2c2140" }}>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
           </div>
-          <div style={{ background: "#150f22", borderRadius: 8, padding: "10px 18px", border: "1px solid #2c2140", gridColumn: "1/-1" }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#f59e0b" }}>{brawler.picks}</div>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)", gridColumn: "1/-1" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#ffb43d" }}>{brawler.picks}</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>TOTAL PICKS</div>
           </div>
         </div>
@@ -488,7 +488,7 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
             <h3 style={sectionTitle}>Star Powers</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
               {brawler.starPowers.map((sp, i) => (
-                <AbilityCard key={i} name={sp.name} desc={sp.desc} img={sp.img} color="#f59e0b" />
+                <AbilityCard key={i} name={sp.name} desc={sp.desc} img={sp.img} color="#ffb43d" />
               ))}
             </div>
           </div>
@@ -498,7 +498,7 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
             <h3 style={sectionTitle}>Gadgets</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
               {brawler.gadgets.map((g, i) => (
-                <AbilityCard key={i} name={g.name} desc={g.desc} img={g.img} color="#a78bfa" />
+                <AbilityCard key={i} name={g.name} desc={g.desc} img={g.img} color="#c98bff" />
               ))}
             </div>
           </div>
@@ -511,9 +511,9 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
         {modeStats.length === 0 && <p style={emptyText}>Not enough data across modes.</p>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
           {modeStats.map(m => (
-            <div key={m.mode} style={{ background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: 12 }}>
+            <div key={m.mode} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 12 }}>
               <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>{FORMAT_MODE(m.mode)}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#f59e0b" : "#ef4444" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444" }}>
                 {m.winRate}%
               </div>
               <div style={{ fontSize: 10, color: "#475569" }}>{m.picks} picks</div>
@@ -528,11 +528,11 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
         {mapStats.length === 0 && <p style={emptyText}>Not enough map data.</p>}
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
           {mapStats.slice(0, 10).map(m => (
-            <div key={m.map} style={{ display: "flex", alignItems: "center", gap: 12, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, padding: "8px 12px" }}>
+            <div key={m.map} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "8px 12px" }}>
               <Map size={12} color="#475569" />
               <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{m.map}</span>
               <span style={{ fontSize: 10, color: "#64748b" }}>{FORMAT_MODE(m.mode)}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#f59e0b" : "#ef4444", minWidth: 44, textAlign: "right" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444", minWidth: 44, textAlign: "right" }}>
                 {m.winRate}%
               </span>
               <span style={{ fontSize: 10, color: "#475569", minWidth: 52, textAlign: "right" }}>{m.picks} picks</span>
@@ -543,7 +543,7 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
 
       {/* In-depth guide: tips, screenshots, video */}
       <div>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'Space Mono', monospace", marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
           In-Depth Guide
         </div>
         <GuideSection guide={brawler.guide} />
@@ -555,7 +555,7 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
 function SynergyRow({ brawler, color }) {
   const [imgErr, setImgErr] = useState(false);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, marginBottom: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, marginBottom: 6 }}>
       <div style={{ width: 32, height: 32, borderRadius: 6, overflow: "hidden", background: `${brawler.rarityColor}20`, border: `1.5px solid ${brawler.rarityColor}50`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {!imgErr && brawler.imageUrl
           ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
@@ -571,7 +571,7 @@ function SynergyRow({ brawler, color }) {
 
 function AbilityCard({ name, desc, img, color }) {
   return (
-    <div style={{ display: "flex", gap: 12, padding: 12, background: "#150f22", border: "1px solid #2c2140", borderRadius: 8, alignItems: "flex-start" }}>
+    <div style={{ display: "flex", gap: 12, padding: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, alignItems: "flex-start" }}>
       {img && (
         <img src={img} alt={name} style={{ width: 40, height: 40, objectFit: "contain", flexShrink: 0, borderRadius: 6 }}
           onError={e => { e.target.style.display = "none"; }} />
@@ -611,7 +611,7 @@ function GuideSection({ guide }) {
             src={videoUrl}
             controls
             playsInline
-            style={{ width: "100%", borderRadius: 10, border: "1px solid #2c2140", marginTop: 10, background: "#000" }}
+            style={{ width: "100%", borderRadius: 10, border: "1px solid rgba(255,255,255,.1)", marginTop: 10, background: "#000" }}
           />
         </div>
       )}
@@ -637,7 +637,7 @@ function GuideSection({ guide }) {
                 src={src}
                 alt={`Guide screenshot ${i + 1}`}
                 onClick={() => setLightbox(src)}
-                style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid #2c2140", cursor: "pointer" }}
+                style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)", cursor: "pointer" }}
                 onError={e => { e.target.style.display = "none"; }}
               />
             ))}
@@ -742,16 +742,16 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
     <div style={{ padding: 24 }}>
       {/* Header */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'Space Mono', monospace", marginBottom: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>
           02 / Meta Tier List
         </div>
-        <h2 style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc", marginBottom: 4 }}>
+        <h2 style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc", marginBottom: 4 }}>
           Draft power rankings
         </h2>
         <p style={{ fontSize: 12, color: "#64748b" }}>
           {tierMode === "general"
             ? "Hand-curated general meta ranking across all ranked modes."
-            : <>Ranked by win rate on <span style={{ color: "#c084fc" }}>{FORMAT_MODE(tierMode)}</span> · {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} · min {MIN_PICKS_TIER} games</>}
+            : <>Ranked by win rate on <span style={{ color: "#c98bff" }}>{FORMAT_MODE(tierMode)}</span> · {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} · min {MIN_PICKS_TIER} games</>}
         </p>
       </div>
 
@@ -762,9 +762,9 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
           return (
             <button key={m} onClick={() => setTierMode(m)}
               style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Space Mono', monospace", letterSpacing: "0.04em", textTransform: "uppercase",
-                background: active ? "rgba(168,85,247,0.14)" : "#150f22",
-                borderColor: active ? "rgba(168,85,247,0.45)" : "#2c2140",
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.04em", textTransform: "uppercase",
+                background: active ? "rgba(168,85,247,0.14)" : "#12121b",
+                borderColor: active ? "rgba(168,85,247,0.45)" : "rgba(255,255,255,.1)",
                 color: active ? "#e9d5ff" : "#7c7490",
               }}>
               {m === "general" ? "General" : FORMAT_MODE(m)}
@@ -784,15 +784,15 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
             <div key={t.id} style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
               {/* Tier label box */}
               <div style={{
-                width: 60, flexShrink: 0, borderRadius: 10, background: t.bg, border: `1px solid ${t.border}`,
+                width: 60, flexShrink: 0, borderRadius: 16, background: t.bg, border: `1px solid ${t.border}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 22, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", color: t.color,
+                fontSize: 22, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: t.color,
               }}>
                 {t.id}
               </div>
               {/* Brawler chips */}
               <div style={{
-                flex: 1, minHeight: 60, borderRadius: 10, background: "#120d1e", border: "1px solid #221a33",
+                flex: 1, minHeight: 60, borderRadius: 16, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
                 padding: 8, display: "flex", flexWrap: "wrap", gap: 6, alignContent: "flex-start",
               }}>
                 {tierRows[t.id].length === 0 ? (
@@ -826,13 +826,13 @@ function TierChip({ brawler, onClick }) {
   return (
     <button onClick={onClick} title={brawler.winRate != null ? `${brawler.name} · ${brawler.winRate}% WR · ${brawler.picks} picks` : brawler.name}
       style={{
-        display: "flex", alignItems: "center", gap: 7, padding: "5px 10px 5px 5px",
-        background: "#1a1329", border: `1px solid ${brawler.rarityColor}44`, borderRadius: 8, cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 7, padding: "5px 12px 5px 5px",
+        background: "rgba(255,255,255,.05)", border: `1px solid ${brawler.rarityColor}44`, borderRadius: 999, cursor: "pointer",
       }}>
       <BrawlerPortrait brawler={brawler} size={30} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.15 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{brawler.name}</span>
-        <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#fbbf24" : "#f87171") : "#64748b" }}>
+        <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#ffc663" : "#f87171") : "#64748b" }}>
           {brawler.winRate != null ? `${brawler.winRate}%` : "—"}
         </span>
       </div>
@@ -841,10 +841,10 @@ function TierChip({ brawler, onClick }) {
 }
 
 function BrawlerCard({ brawler, onClick }) {
-  const starColor = brawler.stars >= 6 ? "#f59e0b" : brawler.stars >= 4 ? "#60a5fa" : brawler.stars >= 2 ? "#94a3b8" : "#ef4444";
+  const starColor = brawler.stars >= 6 ? "#ffb43d" : brawler.stars >= 4 ? "#60a5fa" : brawler.stars >= 2 ? "#94a3b8" : "#ef4444";
   return (
     <div onClick={onClick} style={{
-      background: "#150f22", border: `1px solid ${brawler.rarityColor}30`,
+      background: "#12121b", border: `1px solid ${brawler.rarityColor}30`,
       borderRadius: 12, overflow: "hidden", cursor: "pointer",
       transition: "transform 0.15s, box-shadow 0.15s",
       position: "relative",
@@ -853,7 +853,7 @@ function BrawlerCard({ brawler, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
     >
       {/* Portrait */}
-      <div style={{ height: 120, background: `linear-gradient(135deg, ${brawler.rarityColor}15 0%, #0a0711 100%)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      <div style={{ height: 120, background: `linear-gradient(135deg, ${brawler.rarityColor}15 0%, #08080c 100%)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         <BrawlerPortrait brawler={brawler} size={80} />
         {/* Stars badge */}
         {brawler.stars !== null && (
@@ -868,16 +868,16 @@ function BrawlerCard({ brawler, onClick }) {
 
       {/* Info */}
       <div style={{ padding: "10px 12px" }}>
-        <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", color: "#f8fafc", marginBottom: 2 }}>{brawler.name}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc", marginBottom: 2 }}>{brawler.name}</div>
         <div style={{ fontSize: 10, color: brawler.rarityColor, marginBottom: 8 }}>{brawler.rarity}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          <div style={{ background: "#0a0711", borderRadius: 6, padding: "5px 8px", textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: brawler.winRate >= 52 ? "#10b981" : brawler.winRate >= 48 ? "#f59e0b" : "#ef4444" }}>
+          <div style={{ background: "#08080c", borderRadius: 6, padding: "5px 8px", textAlign: "center" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: brawler.winRate >= 52 ? "#10b981" : brawler.winRate >= 48 ? "#ffb43d" : "#ef4444" }}>
               {brawler.winRate}%
             </div>
             <div style={{ fontSize: 8, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
           </div>
-          <div style={{ background: "#0a0711", borderRadius: 6, padding: "5px 8px", textAlign: "center" }}>
+          <div style={{ background: "#08080c", borderRadius: 6, padding: "5px 8px", textAlign: "center" }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
             <div style={{ fontSize: 8, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
           </div>
