@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Routes, Route, useParams, useNavigate, Link } from "react-router-dom";
+import { Routes, Route, useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import {
   Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check,
@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
+import SiteHeader from "./SiteHeader";
+import ComingSoonPage from "./ComingSoonPage";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 // ==========================================
@@ -341,8 +343,12 @@ const badgeStyles = {
   info:    { bg: "rgba(96,165,250,0.18)",  color: "#93c5fd", border: "rgba(96,165,250,0.4)" },
 };
 
+const VALID_TABS = ["trending", "meta", "brawlers", "premium"];
+
 function BrawlMeta() {
-  const [activeTab, setActiveTab] = useState("meta");
+  const [searchParams] = useSearchParams();
+  const initialTab = VALID_TABS.includes(searchParams.get("tab")) ? searchParams.get("tab") : "meta";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [rankBracket, setRankBracket] = useState("masters_legendary");
   const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
   const [selectedMap, setSelectedMap] = useState(null);
@@ -583,17 +589,11 @@ function BrawlMeta() {
     <div style={styles.root}>
       <div style={styles.scanlines} />
 
-      {/* NAVBAR */}
-      <nav style={styles.nav} className="app-nav">
-        <Link to="/" style={{ ...styles.navBrand, textDecoration: "none" }}>
-          <div style={styles.brandIcon}>
-            <div style={styles.brandDiamond} />
-          </div>
-          <span style={styles.brandText}>BRAWL<span style={styles.brandAccent}>//</span>META</span>
-          <span style={styles.brandBadge}>RANKED INTEL</span>
-        </Link>
+      {/* NAVBAR — master header shared across every page */}
+      <SiteHeader />
 
-        {/* TAB NAVIGATION */}
+      {/* App-specific tab switcher, second row */}
+      <div style={styles.appTabRow} className="app-tab-row">
         <div style={styles.tabGroup} className="tab-group">
           <button style={{ ...styles.tabBtn, ...(activeTab === "trending" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("trending")}>
             <Flame size={14} /> Trending
@@ -616,7 +616,7 @@ function BrawlMeta() {
             </button>
           )}
         </div>
-      </nav>
+      </div>
 
       {/* MAIN LAYOUT GATEWAY */}
       <div style={styles.contentContainer}>
@@ -919,8 +919,9 @@ function BrawlMeta() {
           .teams-grid { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 640px) {
-          .app-nav { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
-          .tab-group { margin-left: 0 !important; gap: 2px; overflow-x: auto; }
+          .site-header { gap: 10px !important; padding: 14px 5vw !important; }
+          .app-tab-row { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
+          .tab-group { gap: 2px; overflow-x: auto; }
           .tab-group button { padding: 6px 9px !important; font-size: 10px !important; white-space: nowrap; }
           .rank-bracket-bar { flex-wrap: wrap; gap: 10px !important; padding: 10px 14px !important; }
           .draft-panel { padding: 12px !important; }
@@ -1447,14 +1448,8 @@ function SynergyBar({ blueTeam, redTeam }) {
 const styles = {
   root: { minHeight: "100vh", background: "#0a0711", fontFamily: "'Barlow', sans-serif", color: "#e2e8f0", position: "relative" },
   scanlines: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "radial-gradient(1200px 500px at 70% -10%, rgba(168,85,247,0.10), transparent 70%), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)" },
-  nav: { display: "flex", alignItems: "center", justify: "space-between", padding: "12px 22px", borderBottom: "1px solid #1b1329", background: "rgba(10,7,17,0.82)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 100 },
-  navBrand: { display: "flex", alignItems: "center", gap: 10 },
-  brandIcon: { width: 30, height: 30, borderRadius: 7, background: "rgba(168,85,247,0.14)", border: "1px solid rgba(168,85,247,0.35)", display: "flex", alignItems: "center", justifyContent: "center" },
-  brandDiamond: { width: 11, height: 11, background: "linear-gradient(135deg, #c084fc, #a855f7)", transform: "rotate(45deg)", borderRadius: 2 },
-  brandText: { fontSize: 15, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: "#f1edf7" },
-  brandAccent: { color: "#a855f7" },
-  brandBadge: { fontSize: 8, fontWeight: 700, color: "#c084fc", fontFamily: "'Space Mono', monospace", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.25)", padding: "2px 6px", borderRadius: 4, letterSpacing: "0.1em" },
-  tabGroup: { display: "flex", gap: 4, marginLeft: 26 },
+  appTabRow: { display: "flex", alignItems: "center", padding: "10px 22px", borderBottom: "1px solid #1b1329", background: "rgba(10,7,17,0.82)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 90 },
+  tabGroup: { display: "flex", gap: 4 },
   tabBtn: { display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid transparent", color: "#7c7490", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.04em", transition: "all 0.15s" },
   tabBtnActive: { background: "rgba(168,85,247,0.10)", border: "1px solid rgba(168,85,247,0.35)", color: "#e9d5ff" },
   navRight: { marginLeft: "auto" },
@@ -1594,12 +1589,7 @@ function BrawlerGuideRoute() {
 
   return (
     <div style={styles.root}>
-      <nav style={styles.nav} className="app-nav">
-        <div style={styles.navBrand}>
-          <div style={styles.brandIcon}><div style={styles.brandDiamond} /></div>
-          <span style={styles.brandText}>BRAWL<span style={styles.brandAccent}>//</span>META</span>
-        </div>
-      </nav>
+      <SiteHeader />
       <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} onBack={() => navigate("/app")} />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>
@@ -1612,6 +1602,8 @@ export default function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/app" element={<BrawlMeta />} />
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
+      <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlMeta soon." />} />
+      <Route path="/scrims" element={<ComingSoonPage eyebrow="SCRIM FINDER · COMING SOON" title="Scrims are on the way" description="Matching with teams for practice scrims before tournament day is coming to BrawlMeta soon." />} />
       <Route path="*" element={<BrawlMeta />} />
     </Routes>
   );
