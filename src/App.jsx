@@ -346,9 +346,12 @@ const badgeStyles = {
 const VALID_TABS = ["trending", "meta", "brawlers", "premium"];
 
 function BrawlMeta() {
+  // Derived directly from the URL on every render, not stored in state —
+  // navigating between /app?tab=X and /app?tab=Y stays on the same route, so
+  // React Router doesn't remount this component; a useState initial value
+  // would never update when only the query string changes.
   const [searchParams] = useSearchParams();
-  const initialTab = VALID_TABS.includes(searchParams.get("tab")) ? searchParams.get("tab") : "meta";
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = VALID_TABS.includes(searchParams.get("tab")) ? searchParams.get("tab") : "meta";
   const [rankBracket, setRankBracket] = useState("masters_legendary");
   const [selectedPatch, setSelectedPatch] = useState(CURRENT_PATCH);
   const [selectedMap, setSelectedMap] = useState(null);
