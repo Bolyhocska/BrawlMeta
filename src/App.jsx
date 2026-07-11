@@ -3,7 +3,7 @@ import { Routes, Route, useParams, useNavigate, useSearchParams, Link } from "re
 import { createClient } from "@supabase/supabase-js";
 import {
   Swords, Shield, Zap, ChevronDown, Star, Target, TrendingUp, X, Check,
-  RotateCcw, Map, Gamepad2, Cpu, Flame, ListOrdered, Crown, LineChart, ArrowUpRight
+  RotateCcw, Map, Gamepad2, Cpu, ListOrdered, Crown, LineChart, ArrowUpRight
 } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
@@ -589,34 +589,10 @@ function BrawlMeta() {
     <div style={styles.root}>
       <div style={styles.scanlines} />
 
-      {/* NAVBAR — master header shared across every page */}
+      {/* NAVBAR — master header shared across every page. This is the only
+          way to switch between app sections now (Tier List, Leaderboards,
+          Ranked/Draft Assistant, Premium) — no secondary in-app tab row. */}
       <SiteHeader />
-
-      {/* App-specific tab switcher, second row */}
-      <div style={styles.appTabRow} className="app-tab-row">
-        <div style={styles.tabGroup} className="tab-group">
-          <button style={{ ...styles.tabBtn, ...(activeTab === "trending" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("trending")}>
-            <Flame size={14} /> Trending
-          </button>
-          <button style={{ ...styles.tabBtn, ...(activeTab === "meta" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("meta")}>
-            <Cpu size={14} /> Draft Assistant
-          </button>
-          <button style={{ ...styles.tabBtn, ...(activeTab === "brawlers" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("brawlers")}>
-            <ListOrdered size={14} /> Tier List
-          </button>
-          <button style={{ ...styles.tabBtn, ...(activeTab === "premium" ? styles.tabBtnActive : {}) }} onClick={() => setActiveTab("premium")}>
-            <Crown size={14} color={activeTab === "premium" ? "#f59e0b" : "#64748b"} /> Premium
-          </button>
-        </div>
-
-        <div style={styles.navRight}>
-          {activeTab === "meta" && (
-            <button style={styles.resetBtn} onClick={resetDraft}>
-              <RotateCcw size={13} /> Reset
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* MAIN LAYOUT GATEWAY */}
       <div style={styles.contentContainer}>
@@ -657,11 +633,16 @@ function BrawlMeta() {
                     />
                   )}
                 </div>
-                {phase !== "setup" && (
-                  <span style={styles.pickCounter}>
-                    {phase === "ban" ? `Banning ${allBanned.length}/6` : `${allPicked.length}/6 Picked`}
-                  </span>
-                )}
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+                  {phase !== "setup" && (
+                    <span style={{ fontSize: 11, color: "#475569" }}>
+                      {phase === "ban" ? `Banning ${allBanned.length}/6` : `${allPicked.length}/6 Picked`}
+                    </span>
+                  )}
+                  <button style={styles.resetBtn} onClick={resetDraft}>
+                    <RotateCcw size={13} /> Reset
+                  </button>
+                </div>
               </div>
 
               {/* SETUP PHASE */}
@@ -920,9 +901,6 @@ function BrawlMeta() {
         }
         @media (max-width: 640px) {
           .site-header { gap: 10px !important; padding: 14px 5vw !important; }
-          .app-tab-row { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
-          .tab-group { gap: 2px; overflow-x: auto; }
-          .tab-group button { padding: 6px 9px !important; font-size: 10px !important; white-space: nowrap; }
           .rank-bracket-bar { flex-wrap: wrap; gap: 10px !important; padding: 10px 14px !important; }
           .draft-panel { padding: 12px !important; }
           .guide-header { flex-direction: column !important; align-items: flex-start !important; }
@@ -1076,7 +1054,7 @@ function TrendingView({ rankBracket, brawlerStats, loading, error }) {
 
   return (
     <div style={styles.viewPadding}>
-      <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Real-Time Meta Trends</h2>
+      <h2 style={styles.viewHeading}><LineChart size={18} color="#f59e0b" /> Leaderboards</h2>
       <p style={styles.viewSubtext}>
         Pre-aggregated ranked data for {bracketLabel} — {Math.round(totalPicks / 6).toLocaleString()} matches tracked.
       </p>
@@ -1448,11 +1426,6 @@ function SynergyBar({ blueTeam, redTeam }) {
 const styles = {
   root: { minHeight: "100vh", background: "#0a0711", fontFamily: "'Barlow', sans-serif", color: "#e2e8f0", position: "relative" },
   scanlines: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "radial-gradient(1200px 500px at 70% -10%, rgba(168,85,247,0.10), transparent 70%), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)" },
-  appTabRow: { display: "flex", alignItems: "center", padding: "10px 22px", borderBottom: "1px solid #1b1329", background: "rgba(10,7,17,0.82)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 90 },
-  tabGroup: { display: "flex", gap: 4 },
-  tabBtn: { display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid transparent", color: "#7c7490", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.04em", transition: "all 0.15s" },
-  tabBtnActive: { background: "rgba(168,85,247,0.10)", border: "1px solid rgba(168,85,247,0.35)", color: "#e9d5ff" },
-  navRight: { marginLeft: "auto" },
   resetBtn: { display: "flex", alignItems: "center", gap: 5, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
   contentContainer: { position: "relative", zIndex: 1 },
   rankBracketBar: {

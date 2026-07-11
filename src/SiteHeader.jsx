@@ -9,11 +9,15 @@ const NAV_STYLE = {
 // Master top-row navigation, shared across every page (Home, Draft Assistant,
 // Tier List, brawler guides, etc). Nav pills route to real pages now — not
 // same-page anchors — since this header lives on more than just the homepage.
+// This is the ONLY navigation into the app's tabs; there's no secondary
+// in-app tab switcher anymore.
 const NAV_ITEMS = [
   { label: "News", to: "/news" },
   { label: "Tier List", to: "/app?tab=brawlers" },
-  { label: "Scrims", to: "/scrims" },
+  { label: "Leaderboards", to: "/app?tab=trending" },
   { label: "Ranked", to: "/app?tab=meta" },
+  { label: "Scrims", to: "/scrims" },
+  { label: "Premium", to: "/app?tab=premium" },
 ];
 
 function NavLink({ to, children }) {
