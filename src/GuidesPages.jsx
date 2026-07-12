@@ -79,6 +79,35 @@ function BrawlerChipRow({ names }) {
   );
 }
 
+// Embedded creator guide clip — privacy-enhanced YouTube embed with a visible
+// watch-on-YouTube fallback link (some channels disable embedding).
+export function VideoClip({ videoId, title, note }) {
+  return (
+    <div style={{ borderRadius: 24, overflow: "hidden", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" }}>
+      <div style={{ position: "relative", paddingTop: "56.25%" }}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+          title={title}
+          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+        />
+      </div>
+      <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa" }}>{title}</div>
+          {note && <div style={{ fontSize: 11.5, color: "#8b8b9c", marginTop: 2 }}>{note}</div>}
+        </div>
+        <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" style={{
+          fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#c98bff", textDecoration: "none",
+          padding: "7px 14px", borderRadius: 999, border: "1px solid rgba(179,107,255,.3)", background: "rgba(179,107,255,.08)", whiteSpace: "nowrap",
+        }}>WATCH ON YOUTUBE ↗</a>
+      </div>
+    </div>
+  );
+}
+
 // Renders **bold** spans inside guide copy.
 function RichText({ text, style }) {
   const parts = text.split("**");
@@ -100,6 +129,7 @@ const bodyStyle = { fontSize: 15.5, lineHeight: 1.7, color: "#b0b0c0" };
 export const MODE_GUIDES = {
   heist: {
     name: "Heist", accent: "#ffb43d",
+    video: { id: "W7TvxadZCNM", title: "How To Play Heist (2025) — Full Guide", note: "Recent full-mode walkthrough — rotations, comps, and safe-race decisions." },
     intro: "Two teams of three, two safes, one objective: destroy the enemy safe before yours goes down. No control point, no gems, no ball — just a damage race.",
     stats: [
       { value: "3v3", label: "TEAM SIZE", color: "#f4f4fa" },
@@ -140,6 +170,7 @@ export const MODE_GUIDES = {
 
   gemGrab: {
     name: "Gem Grab", accent: "#b36bff",
+    video: { id: "jsMIyZN7IXQ", title: "Gem Grab Guide — The Strategy Pros Use", note: "Mid control, carrier discipline, and the 15-second countdown game." },
     intro: "A gem mine in the center of the map produces gems one at a time. Hold ten between your team and survive the countdown — die carrying them and they scatter for anyone to take.",
     stats: [
       { value: "10", label: "GEMS TO WIN", color: "#c98bff" },
@@ -180,6 +211,7 @@ export const MODE_GUIDES = {
 
   brawlBall: {
     name: "Brawl Ball", accent: "#3B82F6",
+    video: { id: "7jZGa7lejRE", title: "The Only Brawl Ball Guide You'll Ever Need", note: "Pro tips & strategies — the newest full Brawl Ball breakdown." },
     intro: "Football with fights. Carry or pass the ball into the enemy goal — two goals wins outright, and holding the ball means you can't attack.",
     stats: [
       { value: "2", label: "GOALS TO WIN", color: "#60a5fa" },
@@ -220,6 +252,7 @@ export const MODE_GUIDES = {
 
   knockout: {
     name: "Knockout", accent: "#FF6B35",
+    video: { id: "kTLAfsS0_Uw", title: "Knockout Guide — Best Brawlers for Every Map", note: "Range wars, super economy, and poison positioning." },
     intro: "Best-of-three elimination rounds with no respawns. Win a round by wiping the enemy team — and survive the poison clouds that shrink the arena as time runs on.",
     stats: [
       { value: "Bo3", label: "ROUND FORMAT", color: "#ffb43d" },
@@ -260,6 +293,7 @@ export const MODE_GUIDES = {
 
   hotZone: {
     name: "Hot Zone", accent: "#EF4444",
+    video: { id: "8tgKC69EQfY", title: "Never Lose Hot Zone Again — 5 Pro Tips", note: "Zone math, contesting with one toe, and when to reset." },
     intro: "Stand in the marked zones to fill your team's capture meter. First team to 100% — or the higher percentage when time expires — takes the win.",
     stats: [
       { value: "100%", label: "CAPTURE TO WIN", color: "#ff8f8f" },
@@ -300,6 +334,7 @@ export const MODE_GUIDES = {
 
   bounty: {
     name: "Bounty", accent: "#06B6D4",
+    video: { id: "xfn9VBdA_Uk", title: "Bounty Tips — How to Win More in Bounty", note: "Star economy, the blue star, and playing the clock." },
     intro: "Every kill drops stars, every death gives them away. Hold the higher star count when the clock hits zero — no objective, no cashing in, just a running scoreboard of who's winning the fights.",
     stats: [
       { value: "★7", label: "MAX BOUNTY PER PLAYER", color: "#ffce7a" },
@@ -395,6 +430,7 @@ export function SkillsGuidePage() {
   const sections = [
     {
       tag: "SHOOTING", accent: "#ffb43d", title: "Aim: auto vs. manual",
+      video: { id: "9Cd8wttsIqI", title: "Pro Aim Guide", note: "Leading shots, reading strafe rhythms, and when auto-aim is actually correct." },
       paras: [
         "Auto-aim isn't a crutch — it's a tool with a spec sheet. It snaps to the nearest visible target, which makes it correct at point-blank range, against slow targets, and when you need to fire mid-juke without losing movement control. It's wrong at range, against strafing enemies, and any time a better target exists behind the closest one.",
         "Manual aim wins everything else. The core skill is **leading the shot**: aim where the enemy is going, not where they are. Watch two or three of their dodges first — most players strafe on a rhythm, and once you've read it, you're aiming at a schedule, not a person.",
@@ -402,6 +438,7 @@ export function SkillsGuidePage() {
     },
     {
       tag: "MOVEMENT", accent: "#b36bff", title: "Strafing & juking",
+      video: { id: "vHuMVWNyaHc", title: "Top Movement Secrets Every Player Needs", note: "Watch the jukes from this section performed at a high level." },
       paras: [
         "Standing still is the only real mistake in Brawl Stars. Between every shot you fire there's a movement window — good players **strafe unpredictably** through it: short zigzags with irregular timing, not smooth side-to-side sways that are trivial to lead.",
         "Juking projectiles is rhythm-breaking: walk one direction just long enough for the enemy to commit their shot, then cut the opposite way as it fires. Against long-range brawlers this alone makes you nearly unhittable — their projectile travel time is your reaction budget.",
@@ -442,6 +479,7 @@ export function SkillsGuidePage() {
               <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: s.accent }}>{s.tag}</span>
               <h2 style={h2Style}>{s.title}</h2>
               {s.paras.map((p, i) => <RichText key={i} text={p} style={bodyStyle} />)}
+              {s.video && <VideoClip videoId={s.video.id} title={s.video.title} note={s.video.note} />}
             </Panel>
           ))}
         </div>
@@ -524,6 +562,7 @@ export function ModeGuidePage() {
   const sideNav = [
     { label: "Overview", href: "#overview" },
     { label: "How It Works", href: "#how-it-works" },
+    ...(m.video ? [{ label: "Watch", href: "#watch" }] : []),
     { label: "Roles", href: "#roles" },
     { label: "Drafting", href: "#drafting" },
     { label: "Mistakes", href: "#mistakes" },
@@ -572,6 +611,16 @@ export function ModeGuidePage() {
             {m.how.map((p, i) => <RichText key={i} text={p} style={bodyStyle} />)}
           </Panel>
         </section>
+
+        {/* Watch — creator guide clip */}
+        {m.video && (
+          <section id="watch" style={{ scrollMarginTop: 110, paddingBottom: 60, maxWidth: 860, margin: "0 auto" }}>
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffb43d" }}>WATCH · PRO GUIDE</span>
+            </div>
+            <VideoClip videoId={m.video.id} title={m.video.title} note={m.video.note} />
+          </section>
+        )}
 
         {/* Roles */}
         <section id="roles" style={{ scrollMarginTop: 110, paddingBottom: 60 }}>

@@ -5,6 +5,7 @@ import BRAWLER_META from "./data/brawlerMeta.json";
 import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
+import { getExtendedGuide } from "./data/extendedGuides";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -539,12 +540,88 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
         </div>
       </div>
 
+      {/* Extended guide — game plan, strengths/weaknesses, draft timing, loadout, video */}
+      <ExtendedGuideSections brawler={brawler} />
+
       {/* In-depth guide: tips, screenshots, video */}
       <div>
         <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
-          In-Depth Guide
+          Community Additions
         </div>
         <GuideSection guide={brawler.guide} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Extended written guide (every brawler) ──────────────────────────────────
+function ExtendedGuideSections({ brawler }) {
+  const g = getExtendedGuide(brawler.key);
+  const MONO = "'JetBrains Mono', monospace";
+  const panel = { borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", padding: 28 };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
+      {/* Game plan */}
+      <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 12 }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>GAME PLAN · {g.class.toUpperCase()}</span>
+        {g.gameplan.map((p, i) => (
+          <p key={i} style={{ fontSize: 14.5, lineHeight: 1.7, color: "#b0b0c0" }}>{p}</p>
+        ))}
+      </div>
+
+      {/* Strengths / weaknesses */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+        <div style={{ ...panel, padding: 22 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8ee6b0" }}>STRENGTHS</span>
+          <ul style={{ marginTop: 10, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 7 }}>
+            {g.strengths.map((s, i) => <li key={i} style={{ fontSize: 13.5, lineHeight: 1.5, color: "#b0b0c0" }}>{s}</li>)}
+          </ul>
+        </div>
+        <div style={{ ...panel, padding: 22 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ff8f8f" }}>WEAKNESSES</span>
+          <ul style={{ marginTop: 10, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 7 }}>
+            {g.weaknesses.map((s, i) => <li key={i} style={{ fontSize: 13.5, lineHeight: 1.5, color: "#b0b0c0" }}>{s}</li>)}
+          </ul>
+        </div>
+      </div>
+
+      {/* Draft timing */}
+      <div style={{ borderRadius: 24, padding: 28, background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.4))", border: "1px solid rgba(179,107,255,.22)", display: "flex", flexDirection: "column", gap: 10 }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>DRAFT TIMING</span>
+        <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "#c9c9d6" }}>{g.draftTiming}</p>
+        {g.counterText && <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#9a9aab" }}>{g.counterText}</p>}
+      </div>
+
+      {/* Video: verified embed when we have one + always the newest via search */}
+      <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 14 }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffb43d" }}>WATCH · PRO GUIDES</span>
+        {g.video && (
+          <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,.08)" }}>
+            <div style={{ position: "relative", paddingTop: "56.25%" }}>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${g.video.id}`}
+                title={g.video.title}
+                allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+              />
+            </div>
+            <div style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#f4f4fa" }}>{g.video.title}</div>
+          </div>
+        )}
+        <a href={g.videoSearchUrl} target="_blank" rel="noreferrer" style={{
+          alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8,
+          padding: "12px 24px", borderRadius: 999, textDecoration: "none",
+          background: "rgba(255,180,61,.1)", border: "1px solid rgba(255,180,61,.3)",
+          color: "#ffce7a", fontWeight: 700, fontSize: 13,
+        }}>
+          Find the newest {brawler.name} guides on YouTube ↗
+        </a>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: .5, color: "#5a5a6a" }}>
+          METAS SHIFT EVERY PATCH — THE SEARCH ALWAYS SURFACES THE LATEST CREATOR GUIDES.
+        </p>
       </div>
     </div>
   );
