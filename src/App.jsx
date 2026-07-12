@@ -10,6 +10,7 @@ import HomePage from "./HomePage";
 import SiteHeader from "./SiteHeader";
 import ComingSoonPage from "./ComingSoonPage";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
+import { blindPickFactor, blindPickLabel, matchupAdjustment, getDraftProfile } from "./data/draftMeta";
 
 // ==========================================
 // 🔌 SUPABASE CLOUD CONFIGURATION
@@ -488,16 +489,14 @@ function BrawlMeta() {
       .slice(0, 6);
     setRecommendedBans(bans);
 
-    // Pick suggestions
-    const pickStats = {};
-    for (const match of bracketMatches) {
-      const winners = (match.winners || []).map(b => b.toUpperCase());
-      const losers = (match.losers || []).map(b => b.toUpperCase());
-
-      if (enemyKeys.length === 0) {
-        for (const b of winners) { if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 }; pickStats[b].picks++; pickStats[b].wins++; }
-        for (const b of losers)  { if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 }; pickStats[b].picks++; }
-      } else {
+    // Empirical matchup stats: performance of each brawler in games where every
+    // revealed enemy pick was on the opposing team. Often a small sample — used
+    // as a blend-in signal, never as the only source.
+    const matchupStats = {};
+    if (enemyKeys.length > 0) {
+      for (const match of bracketMatches) {
+        const winners = (match.winners || []).map(b => b.toUpperCase());
+        const losers = (match.losers || []).map(b => b.toUpperCase());
         const enemyInLosers  = enemyKeys.every(e => losers.includes(e));
         const enemyInWinners = enemyKeys.every(e => winners.includes(e));
         let myTeam = null;
@@ -505,28 +504,59 @@ function BrawlMeta() {
         else if (enemyInWinners) myTeam = { side: losers, won: false };
         if (myTeam) {
           for (const b of myTeam.side) {
-            if (!pickStats[b]) pickStats[b] = { picks: 0, wins: 0 };
-            pickStats[b].picks++;
-            if (myTeam.won) pickStats[b].wins++;
+            if (!matchupStats[b]) matchupStats[b] = { picks: 0, wins: 0 };
+            matchupStats[b].picks++;
+            if (myTeam.won) matchupStats[b].wins++;
           }
         }
       }
     }
 
-    // Min picks raised to cut noisy low-sample suggestions (see confidenceScore
-    // discussion — 15 picks carries a ±25% margin of error, not trustworthy).
-    // Top 3 only: the assistant should give a confident short-list, not a long tail.
+    // Suggestion scoring — three layers:
+    //  1. Base: confidence-weighted win rate on this map (solid sample).
+    //  2. Draft knowledge: blind picks get scaled by first-pick safety (a 60%
+    //     win-rate Edgar is NOT a good first pick — his wins come from favorable
+    //     matchups, and picking him blind lets the enemy answer him); once enemy
+    //     picks are revealed, class counter relationships adjust the score.
+    //  3. Empirical matchup data blended in when its sample is large enough.
     const MIN_PICKS_SUGGESTION = 50;
-    const results = Object.entries(pickStats)
+    const MIN_MATCHUP_SAMPLE = 20;
+    const results = Object.entries(stats)
       .filter(([key]) => !allUsedNames.includes(key))
       .filter(([, s]) => s.picks >= MIN_PICKS_SUGGESTION)
-      .map(([key, s]) => ({
-        key,
-        name: formatBrawlerName(key),
-        winRate: Math.round((s.wins / s.picks) * 1000) / 10,
-        picks: s.picks,
-        score: confidenceScore(s.wins, s.picks),
-      }))
+      .map(([key, s]) => {
+        let score = confidenceScore(s.wins, s.picks);
+        const reasons = [];
+        let matchupWinRate = null;
+        let matchupPicks = null;
+
+        if (enemyKeys.length === 0) {
+          score *= blindPickFactor(key);
+          const bl = blindPickLabel(key);
+          if (bl) reasons.push(bl);
+        } else {
+          const adj = matchupAdjustment(key, enemyKeys, formatBrawlerName);
+          score *= adj.factor;
+          reasons.push(...adj.reasons.slice(0, 2));
+          const emp = matchupStats[key];
+          if (emp && emp.picks >= MIN_MATCHUP_SAMPLE) {
+            matchupWinRate = Math.round((emp.wins / emp.picks) * 1000) / 10;
+            matchupPicks = emp.picks;
+            score = score * 0.6 + confidenceScore(emp.wins, emp.picks) * adj.factor * 0.4;
+          }
+        }
+
+        return {
+          key,
+          name: formatBrawlerName(key),
+          winRate: Math.round((s.wins / s.picks) * 1000) / 10,
+          picks: s.picks,
+          matchupWinRate,
+          matchupPicks,
+          reasons,
+          score,
+        };
+      })
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
 
@@ -1261,10 +1291,29 @@ function SuggestionCard({ s, i, onClick }) {
       </div>
       <div style={styles.suggInfo}>
         <span style={styles.suggName}>{s.name}</span>
-        <span style={{ fontSize: 10, color: "#475569" }}>{s.picks} matches on map</span>
+        <span style={{ fontSize: 10, color: "#6f7180" }}>
+          {s.matchupWinRate != null
+            ? `${s.matchupWinRate}% in this matchup (${s.matchupPicks} games)`
+            : `${s.picks} matches on map`}
+        </span>
+        {s.reasons?.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>
+            {s.reasons.map((r, idx) => (
+              <span key={idx} style={{
+                ...styles.reasonBadge,
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: ".04em", fontWeight: 700,
+                color: r.tone === "good" ? "#8ee6b0" : "#ff8f8f",
+                background: r.tone === "good" ? "rgba(142,230,176,.12)" : "rgba(255,122,122,.12)",
+                border: `1px solid ${r.tone === "good" ? "rgba(142,230,176,.3)" : "rgba(255,122,122,.3)"}`,
+              }}>
+                {r.label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div style={{ ...styles.winRateCol, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color }}>{s.winRate}%</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{s.winRate}%</span>
         <span style={{ fontSize: 8, color: "#475569", letterSpacing: "0.04em" }}>WIN</span>
       </div>
     </div>
@@ -1277,6 +1326,10 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
   const overall = brawlerStats.find(
     (r) => r.rank_bracket === rankBracket && r.map === null && r.brawler === suggestion.key
   );
+  const draftProfile = getDraftProfile(suggestion.key);
+  const safetyLabel = draftProfile.firstPickSafety >= 0.75 ? { text: "Safe early pick", color: "#8ee6b0" }
+    : draftProfile.firstPickSafety <= 0.42 ? { text: "Save for late pick — counterable", color: "#ff8f8f" }
+    : { text: "Flexible pick timing", color: "#ffce7a" };
 
   return (
     <div
@@ -1307,11 +1360,19 @@ function SuggestionQuickInfo({ suggestion, brawlerStats, rankBracket, onClose })
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc" }}>{suggestion.name}</div>
-            {meta.rarity && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: `${meta.rarityColor || "#94a3b8"}20`, color: meta.rarityColor || "#94a3b8", border: `1px solid ${meta.rarityColor || "#94a3b8"}40` }}>
-                {meta.rarity}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              {meta.rarity && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: `${meta.rarityColor || "#94a3b8"}20`, color: meta.rarityColor || "#94a3b8", border: `1px solid ${meta.rarityColor || "#94a3b8"}40` }}>
+                  {meta.rarity}
+                </span>
+              )}
+              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>
+                {draftProfile.class}
               </span>
-            )}
+              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, background: `${safetyLabel.color}18`, color: safetyLabel.color, border: `1px solid ${safetyLabel.color}40` }}>
+                {safetyLabel.text}
+              </span>
+            </div>
           </div>
           <button onClick={onClose} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: 6, cursor: "pointer" }}>
             <X size={14} />
