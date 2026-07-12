@@ -107,6 +107,35 @@ def get_stored_match_count(rank_bracket):
         return int(content_range.split("/")[-1])
     return 0
 
+def refresh_site_feed():
+    """Refresh the SiteFeed table powering the Leaderboards tab: the global
+    top-200 trophy leaderboard and the live event/map rotation. Both come from
+    the official Supercell API (browser clients can't call it — key + IP
+    allowlist — so the scraper relays them into Supabase on every run)."""
+    feeds = [
+        ("player_rankings", "global", f"{BASE_URL}/rankings/global/players?limit=200"),
+        ("event_rotation", "global", f"{BASE_URL}/events/rotation"),
+    ]
+    for kind, region, url in feeds:
+        try:
+            res = requests.get(url, headers=HEADERS, proxies=PROXIES, timeout=30)
+            if res.status_code != 200:
+                print(f"⚠️ SiteFeed fetch failed for {kind}: {res.status_code}")
+                continue
+            payload = res.json()
+            row = {"kind": kind, "region": region, "payload": payload, "fetched_at": datetime.now(timezone.utc).isoformat()}
+            up = requests.post(
+                f"{SUPABASE_URL}/rest/v1/SiteFeed?on_conflict=kind,region",
+                json=row,
+                headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
+            )
+            if up.status_code in (200, 201, 204):
+                print(f"✅ SiteFeed updated: {kind}")
+            else:
+                print(f"⚠️ SiteFeed store failed for {kind}: {up.status_code} {up.text[:200]}")
+        except Exception as e:
+            print(f"⚠️ SiteFeed error for {kind}: {e}")
+
 def make_hash(entry):
     winners = sorted([w for w in entry['winners'] if w])
     losers = sorted([l for l in entry['losers'] if l])
@@ -287,6 +316,7 @@ def bracket_target(bracket):
 
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
+    refresh_site_feed()
     extracted_data = []
     seen_tags = set()
     existing_hashes = fetch_existing_hashes()
