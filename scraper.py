@@ -240,12 +240,20 @@ MAX_PLAYERS_PER_BRACKET = 20000        # safety cap so a run can't spider foreve
 CONCURRENCY = 12                       # parallel battlelog requests — the real fix for the 35min -> 3hr slowdown
 
 def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hashes,
-                     target_matches, max_players=MAX_PLAYERS_PER_BRACKET):
+                     target_matches, max_players=MAX_PLAYERS_PER_BRACKET, max_depth=None):
     # Every entry fetch_player_battles appends during this call carries this
     # bracket, so tracking the growth of extracted_data's length is equivalent
     # to (and much cheaper than) recounting matches for this bracket each time.
+    #
+    # max_depth limits how many spider hops away from the verified seed players
+    # we collect. The public API has no per-match rank-tier field, so rank
+    # purity can only be controlled by proximity to verified players: at
+    # Masters I+ everyone queues solo and matchmaking is rank-tight, so players
+    # found in a verified Masters player's games (depth 1) and their games'
+    # players (depth 2) are Masters-adjacent. Unlimited spidering drifts far
+    # below the intended rank — that's what this cap prevents.
     lock = threading.Lock()
-    queue = list(seed_tags)
+    queue = [(tag, 0) for tag in seed_tags]
     processed = 0
     collected_start = len(extracted_data)
 
@@ -253,9 +261,11 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hash
         while queue and processed < max_players and (len(extracted_data) - collected_start) < target_matches:
             batch = queue[:CONCURRENCY]
             queue = queue[CONCURRENCY:]
-            futures = [pool.submit(fetch_player_battles, tag, bracket, extracted_data, seen_tags, existing_hashes, lock) for tag in batch]
-            for f in futures:
-                queue.extend(f.result())
+            futures = [(depth, pool.submit(fetch_player_battles, tag, bracket, extracted_data, seen_tags, existing_hashes, lock)) for tag, depth in batch]
+            for depth, f in futures:
+                new_tags = f.result()
+                if max_depth is None or depth < max_depth:
+                    queue.extend((t, depth + 1) for t in new_tags)
             processed += len(batch)
             if processed % 200 < CONCURRENCY:
                 print(f"  {bracket}: {processed} players processed, {len(extracted_data) - collected_start} matches collected...")
@@ -282,15 +292,18 @@ def harvest_to_cloud():
     existing_hashes = fetch_existing_hashes()
 
     # ==========================================
-    # PASS 1: Masters & Legendary — always prioritized. Fills to a 100k
-    # baseline first, then only tops up 10k per run once that's reached.
+    # PASS 1: Masters (1+) — always prioritized. Fills to a 100k baseline
+    # first, then only tops up 10k per run once that's reached.
     #
     # Seeded from player tags confirmed to be genuinely Masters+ ranked
-    # (found via powerleagueprodigy.com), spidered the same way as
-    # Diamond/Mythic — NOT from Trophy Road leaderboards, since the public
-    # API has no per-match rank-tier field and the legacy Power League
-    # /rankings/{country}/seasons/{id} endpoint was confirmed dead (404,
-    # both "latest" and "current") after Ranked replaced Power League.
+    # (found via powerleagueprodigy.com). The public API has no per-match
+    # rank-tier field (confirmed by dumping raw battle JSON) and the legacy
+    # Power League /rankings/{country}/seasons/{id} endpoint is dead (404),
+    # so Masters-only collection is enforced by spider proximity instead:
+    # max_depth=2 keeps collection within two matchmaking hops of verified
+    # Masters players. At Masters I+ queue is solo-only and matchmaking is
+    # rank-tight, so those hops stay Masters-adjacent instead of drifting
+    # down the ladder like unlimited spidering does.
     # ==========================================
     masters_target = bracket_target("masters_legendary")
     masters_seed_tags = [
@@ -301,7 +314,7 @@ def harvest_to_cloud():
         "#2C20JJRGJJ",
         "#VU9CRLP8",
     ]
-    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=masters_target)
+    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=masters_target, max_depth=2)
 
     # ==========================================
     # PASS 2: Diamond & Mythic — only collected once Masters & Legendary has
