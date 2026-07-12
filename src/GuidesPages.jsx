@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { slugifyBrawlerKey } from "./BrawlersPage";
+import { tileStyles } from "./data/brawlerTile";
 
 // ─── Shared shell + primitives (from the cyberpunk design handoff) ───────────
 
@@ -818,15 +819,15 @@ export function BrawlerGuidesPage() {
             borderRadius: 20, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
             padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textDecoration: "none",
           }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 16, overflow: "hidden",
-              background: `${b.rarityColor}20`, border: `2px solid ${b.rarityColor}60`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              {b.imageUrl
-                ? <img src={b.imageUrl} alt={b.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span style={{ fontWeight: 800, color: b.rarityColor }}>{b.name.slice(0, 2)}</span>}
-            </div>
+            {(() => { const t = tileStyles({ key: b.key, rarity: b.rarity, rarityColor: b.rarityColor, size: 64, radius: 16 }); return (
+              <div style={t.outer}>
+                <div style={t.inner}>
+                  {b.imageUrl
+                    ? <img src={b.imageUrl} alt={b.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ fontWeight: 800, color: b.rarityColor }}>{b.name.slice(0, 2)}</span>}
+                </div>
+              </div>
+            ); })()}
             <span style={{ fontSize: 13, fontWeight: 700, color: "#e9e9f2", textAlign: "center", fontFamily: DISPLAY }}>{b.name}</span>
             <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: b.rarityColor }}>{b.rarity.toUpperCase()}</span>
           </Link>

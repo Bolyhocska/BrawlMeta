@@ -4,6 +4,7 @@ import { Star, Users, Map, X } from "lucide-react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
+import { tileStyles } from "./data/brawlerTile";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -52,9 +53,13 @@ function toStars(winRate, pickRate, totalPicks, picks) {
   return Math.min(7, Math.max(1, Math.round(raw * 2) / 2)); // round to 0.5
 }
 
+// Collab brawlers removed from the game — excluded from every stats-derived
+// list even though old match rows in the DB may still reference them.
+const EXCLUDED_BRAWLERS = new Set(["BUZZ LIGHTYEAR"]);
+
 export function computeStatsFromAggregated(rows, rankBracket) {
-  const overall = rows.filter(r => r.rank_bracket === rankBracket && r.map === null);
-  const mapRows = rows.filter(r => r.rank_bracket === rankBracket && r.map !== null);
+  const overall = rows.filter(r => r.rank_bracket === rankBracket && r.map === null && !EXCLUDED_BRAWLERS.has(r.brawler));
+  const mapRows = rows.filter(r => r.rank_bracket === rankBracket && r.map !== null && !EXCLUDED_BRAWLERS.has(r.brawler));
 
   const totalPicks = overall.reduce((sum, r) => sum + r.picks, 0);
 
@@ -181,26 +186,19 @@ function StarRating({ stars, size = "md" }) {
 // ─── Brawler portrait ─────────────────────────────────────────────────────────
 function BrawlerPortrait({ brawler, size = 56, onClick }) {
   const [imgErr, setImgErr] = useState(false);
+  const { outer, inner } = tileStyles({ key: brawler.key || brawler.name, rarity: brawler.rarity, rarityColor: brawler.rarityColor, size });
   return (
-    <div
-      onClick={onClick}
-      style={{
-        width: size, height: size, borderRadius: size * 0.18,
-        background: imgErr || !brawler.imageUrl ? `${brawler.rarityColor}20` : "transparent",
-        border: `2px solid ${brawler.rarityColor}60`,
-        overflow: "hidden", cursor: onClick ? "pointer" : "default",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      {!imgErr && brawler.imageUrl ? (
-        <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={() => setImgErr(true)} />
-      ) : (
-        <span style={{ fontSize: size * 0.22, fontWeight: 800, color: brawler.rarityColor }}>
-          {brawler.name.slice(0, 2).toUpperCase()}
-        </span>
-      )}
+    <div onClick={onClick} style={{ ...outer, cursor: onClick ? "pointer" : "default" }}>
+      <div style={inner}>
+        {!imgErr && brawler.imageUrl ? (
+          <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={() => setImgErr(true)} />
+        ) : (
+          <span style={{ fontSize: size * 0.22, fontWeight: 800, color: brawler.rarityColor }}>
+            {brawler.name.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

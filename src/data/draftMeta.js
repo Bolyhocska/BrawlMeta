@@ -31,7 +31,6 @@ const CLASS_OVERRIDES = {
   "FINX": "Controller",
   "OLLIE": "Tank",
   "MEEPLE": "Controller",
-  "BUZZ LIGHTYEAR": "Tank",
 };
 
 // ── Class-level draft profiles ───────────────────────────────────────────────
