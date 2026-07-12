@@ -9,6 +9,7 @@ import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawler
 import HomePage from "./HomePage";
 import SiteHeader from "./SiteHeader";
 import ComingSoonPage from "./ComingSoonPage";
+import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, SafeZoneGuidePage, BrawlerGuidesPage } from "./GuidesPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { blindPickFactor, blindPickLabel, matchupAdjustment, getDraftProfile } from "./data/draftMeta";
 
@@ -1645,6 +1646,12 @@ export default function AppRoutes() {
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
       <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlMeta soon." />} />
       <Route path="/scrims" element={<ComingSoonPage eyebrow="SCRIM FINDER · COMING SOON" title="Scrims are on the way" description="Matching with teams for practice scrims before tournament day is coming to BrawlMeta soon." />} />
+      <Route path="/guides" element={<GuidesLandingPage />} />
+      <Route path="/guides/skills" element={<SkillsGuidePage />} />
+      <Route path="/guides/modes" element={<ModesGuidesPage />} />
+      <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
+      <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
+      <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
       <Route path="*" element={<BrawlMeta />} />
     </Routes>
   );

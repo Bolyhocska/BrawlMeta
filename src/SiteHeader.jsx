@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 const NAV_STYLE = {
@@ -15,6 +16,11 @@ const NAV_ITEMS = [
   { label: "News", to: "/news" },
   { label: "Tier List", to: "/app?tab=brawlers" },
   { label: "Leaderboards", to: "/app?tab=trending" },
+  { label: "Guides", dropdown: [
+    { label: "Skills Guide", desc: "Movement & shooting fundamentals", to: "/guides/skills" },
+    { label: "Mode Guides", desc: "Every ranked mode + map guides", to: "/guides/modes" },
+    { label: "Brawler Guides", desc: "Full guide for every brawler", to: "/guides/brawlers" },
+  ] },
   { label: "Ranked", to: "/app?tab=meta" },
   { label: "Scrims", to: "/scrims" },
   { label: "Premium", to: "/app?tab=premium" },
@@ -30,6 +36,67 @@ function NavLink({ to, children }) {
     >
       {children}
     </Link>
+  );
+}
+
+function NavDropdown({ item }) {
+  // The dropdown panel uses position:fixed with coordinates measured from the
+  // trigger button — the nav pill is a horizontal scroll container on small
+  // screens (overflow-x), which would clip an absolutely-positioned child.
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const ref = useRef(null);
+
+  const toggle = () => {
+    if (!open && ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      const width = 270;
+      const left = Math.max(10, Math.min(window.innerWidth - width - 10, r.left + r.width / 2 - width / 2));
+      setPos({ top: r.bottom + 10, left });
+    }
+    setOpen(o => !o);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target) && !e.target.closest?.(".nav-dropdown-panel")) setOpen(false); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={ref}
+        onClick={toggle}
+        style={{ ...NAV_STYLE, background: open ? "rgba(179,107,255,.16)" : "transparent", color: open ? "#f4f4fa" : "#b7b7c6", border: "none", cursor: "pointer", gap: 6 }}
+        onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.16)"; e.currentTarget.style.color = "#f4f4fa"; }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#b7b7c6"; } }}
+      >
+        {item.label}
+        <span style={{ fontSize: 9, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▼</span>
+      </button>
+      {open && (
+        <div className="nav-dropdown-panel" style={{
+          position: "fixed", top: pos.top, left: pos.left, width: 270, padding: 10, borderRadius: 20, zIndex: 200,
+          background: "rgba(13,13,20,.92)", border: "1px solid rgba(255,255,255,.1)",
+          backdropFilter: "blur(14px)", boxShadow: "0 24px 60px rgba(0,0,0,.5)",
+          display: "flex", flexDirection: "column", gap: 2,
+        }}>
+          {item.dropdown.map(d => (
+            <Link key={d.to} to={d.to} onClick={() => setOpen(false)} style={{
+              display: "flex", flexDirection: "column", gap: 2, padding: "12px 16px", borderRadius: 14, textDecoration: "none",
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.14)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa" }}>{d.label}</span>
+              <span style={{ fontSize: 12, color: "#9a9aab" }}>{d.desc}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -56,7 +123,9 @@ export default function SiteHeader() {
       </Link>
 
       <nav className="site-nav" style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 6, padding: 6, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", overflowX: "auto" }}>
-        {NAV_ITEMS.map(n => <NavLink key={n.label} to={n.to}>{n.label}</NavLink>)}
+        {NAV_ITEMS.map(n => n.dropdown
+          ? <NavDropdown key={n.label} item={n} />
+          : <NavLink key={n.label} to={n.to}>{n.label}</NavLink>)}
       </nav>
 
       <div className="site-header-right" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
