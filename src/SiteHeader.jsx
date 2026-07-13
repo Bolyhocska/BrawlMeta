@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "./auth";
 
 const NAV_STYLE = {
   display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#b7b7c6",
@@ -101,6 +102,70 @@ function NavDropdown({ item }) {
   );
 }
 
+// Right-side account control: opens the login modal when signed out, or shows
+// an avatar/name pill with a Profile + Sign-out menu when signed in.
+function AccountMenu() {
+  const { user, profile, openAuth, signOut } = useAuth();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  if (!user) {
+    return (
+      <button
+        onClick={() => openAuth("signin")}
+        style={{ display: "inline-flex", alignItems: "center", padding: "12px 26px", borderRadius: 999, background: "#ffb43d", color: "#1a1206", fontWeight: 700, fontSize: 14, letterSpacing: .5, border: "none", cursor: "pointer", boxShadow: "0 0 26px rgba(255,180,61,.4)", whiteSpace: "nowrap", fontFamily: "'Chakra Petch', sans-serif" }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#ffc663"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "#ffb43d"; }}
+      >
+        Sign In
+      </button>
+    );
+  }
+
+  const name = profile?.display_name || user.email?.split("@")[0] || "Player";
+  const initial = name.charAt(0).toUpperCase();
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 14px 7px 8px", borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#f4f4fa", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
+      >
+        {profile?.avatar_url
+          ? <img src={profile.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} onError={e => { e.currentTarget.style.display = "none"; }} />
+          : <span style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#b36bff,#ffb43d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0d14", fontWeight: 800 }}>{initial}</span>}
+        <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        {profile?.is_premium && <span style={{ fontSize: 11 }}>👑</span>}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 210, padding: 8, borderRadius: 16, background: "rgba(13,13,20,.96)", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", zIndex: 200, backdropFilter: "blur(12px)" }}>
+          <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#8a7fa6" }}>{profile?.player_tag || "no tag set"}</div>
+          </div>
+          <Link to="/tournaments/profile" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#d9d9e6", fontSize: 13, fontWeight: 600 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.14)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+            My profile
+          </Link>
+          <button onClick={() => { setOpen(false); signOut(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 10, background: "none", border: "none", color: "#ff8f8f", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,143,143,.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SiteHeader() {
   return (
     <header className="site-header" style={{ position: "relative", zIndex: 40, display: "flex", alignItems: "center", gap: 22, padding: "22px 5vw", flexWrap: "wrap" }}>
@@ -138,18 +203,7 @@ export default function SiteHeader() {
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
           LIVE
         </div>
-        <a
-          href="#"
-          style={{
-            display: "inline-flex", alignItems: "center", padding: "12px 26px", borderRadius: 999,
-            background: "#ffb43d", color: "#1a1206", fontWeight: 700, fontSize: 14, letterSpacing: .5,
-            textDecoration: "none", boxShadow: "0 0 26px rgba(255,180,61,.4)", whiteSpace: "nowrap",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#ffc663"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "#ffb43d"; }}
-        >
-          Sign Up
-        </a>
+        <AccountMenu />
       </div>
 
       {/* Self-contained responsive rules — SiteHeader is used on multiple

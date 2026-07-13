@@ -9,9 +9,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn } from "lucide-react";
 import SiteHeader from "./SiteHeader";
 import { supabase } from "./appCore";
+import { useAuth } from "./auth";
 import { groupIntoTeams, totalRoundsFor, roundLabel, nextPowerOfTwo, byesNeeded } from "./data/bracket";
 import { normalizeTag } from "./data/verifyLogic";
 
@@ -44,12 +45,6 @@ const page = {
     color: "#d9b8ff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
   },
 };
-
-// Local identity: remembered after registration so check-in / verify buttons
-// know which player is pressing them. Not auth — just convenience; the
-// backend re-validates the tag against the match manifest on every action.
-const loadMe = () => { try { return JSON.parse(localStorage.getItem("bm_player")) || null; } catch { return null; } };
-const saveMe = (me) => localStorage.setItem("bm_player", JSON.stringify(me));
 
 const STATUS_STYLE = {
   registration: { label: "REGISTRATION OPEN", color: "#8ee6b0" },
@@ -172,36 +167,64 @@ export function TournamentLandingPage() {
 
 // ─── Registration form ───────────────────────────────────────────────────────
 function RegistrationForm({ tournament, onRegistered, showToast }) {
-  const me = loadMe();
-  const [form, setForm] = useState({ email: me?.email || "", tag: me?.tag || "", name: me?.name || "", team: "" });
+  const { user, profile, openAuth, updateProfile } = useAuth();
+  const [form, setForm] = useState({ tag: "", name: "", team: "" });
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  // Prefill from the signed-in profile once it loads.
+  useEffect(() => {
+    if (profile) setForm(f => ({ ...f, tag: f.tag || profile.player_tag || "", name: f.name || profile.display_name || "" }));
+  }, [profile]);
+
+  if (!user) {
+    return (
+      <div style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 14, alignItems: "flex-start" }}>
+        <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
+        <p style={{ fontSize: 13, color: "#8b8b9c", margin: 0 }}>
+          Sign in to register your trio. Your account remembers your player tag and tracks every tournament you enter.
+        </p>
+        <button onClick={() => openAuth("signup")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <LogIn size={15} /> Sign in to register
+        </button>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a" }}>NO ENTRY FEE · EVER</span>
+      </div>
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     const { data, error } = await supabase.rpc("tournament_register", {
       p_tournament_id: tournament.id,
-      p_email: form.email,
+      p_email: user.email,
       p_player_tag: form.tag,
       p_display_name: form.name,
       p_team_name: form.team,
-      p_is_premium: false,
+      p_is_premium: false, // ignored server-side; premium is read from the profile
     });
-    setBusy(false);
     if (error) {
+      setBusy(false);
+      const code = error.message?.match(/[A-Z_]{4,}/)?.[0];
       const msg = {
+        LOGIN_REQUIRED: "Please sign in again — your session expired.",
+        ALREADY_REGISTERED: "You're already registered for this tournament.",
         INVALID_TAG: "That player tag doesn't look right — copy it from your in-game profile (e.g. #2C20JJRG).",
-        INVALID_EMAIL: "Please enter a valid email address.",
+        INVALID_EMAIL: "Your account email looks invalid.",
         MISSING_FIELDS: "Fill in every field.",
         REGISTRATION_CLOSED: "Registration is closed for this tournament.",
         TEAM_FULL: "That team already has 3 players — pick a different team name.",
-      }[Object.keys(error).length && error.message?.match(/[A-Z_]{4,}/)?.[0]] ||
-        (error.message?.includes("duplicate") ? "This player tag is already registered." : `Registration failed: ${error.message}`);
+      }[code] || (error.message?.includes("duplicate") ? "This player tag is already registered." : `Registration failed: ${error.message}`);
       showToast(msg, "error");
       return;
     }
-    saveMe({ email: form.email.trim().toLowerCase(), tag: normalizeTag(form.tag), name: form.name.trim() });
+    // Persist tag / name to the profile so check-in & verify buttons target this
+    // player everywhere, without re-typing it next time.
+    const patch = {};
+    if (normalizeTag(form.tag) !== (profile?.player_tag || "")) patch.player_tag = normalizeTag(form.tag);
+    if (form.name.trim() && form.name.trim() !== (profile?.display_name || "")) patch.display_name = form.name.trim();
+    if (Object.keys(patch).length) await updateProfile(patch);
+    setBusy(false);
     showToast("Registered! Get 2 teammates to join with the same team name.", "success");
     onRegistered?.(data);
   };
@@ -210,9 +233,11 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
     <form onSubmit={submit} style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
       <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: "2px 0 6px" }}>
-        Enter your email and in-game player tag. Teammates register with the <strong style={{ color: "#c9c9d6" }}>same team name</strong> — a team locks in at 3 players.
+        Confirm your in-game player tag. Teammates register with the <strong style={{ color: "#c9c9d6" }}>same team name</strong> — a team locks in at 3 players.
       </p>
-      <input style={page.input} type="email" placeholder="Email address" value={form.email} onChange={set("email")} required />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11, color: "#8a7fa6", padding: "2px 4px" }}>
+        <CheckCircle2 size={13} color="#8ee6b0" /> Registering as {user.email}
+      </div>
       <input style={page.input} placeholder="Player tag (e.g. #2C20JJRG)" value={form.tag} onChange={set("tag")} required />
       <input style={page.input} placeholder="Display name" value={form.name} onChange={set("name")} required maxLength={30} />
       <input style={page.input} placeholder="Team name" value={form.team} onChange={set("team")} required maxLength={30} />
@@ -328,8 +353,8 @@ export function TournamentDetailPage() {
   const [matches, setMatches] = useState([]);
   const [toast, showToast] = useToast();
   const [refresh, setRefresh] = useState(0);
-  const me = loadMe();
-  const myTag = me?.tag || null;
+  const { profile } = useAuth();
+  const myTag = profile?.player_tag || null;
 
   const reload = useCallback(() => setRefresh(x => x + 1), []);
 
@@ -470,38 +495,66 @@ export function TournamentDetailPage() {
   );
 }
 
-// ─── Player profile: identity, wallet, history ───────────────────────────────
+// ─── Player profile: account, identity, wallet, history ──────────────────────
 export function TournamentProfilePage() {
-  const [me, setMe] = useState(loadMe());
-  const [tagInput, setTagInput] = useState(me?.tag || "");
+  const { user, profile, loading, openAuth, updateProfile } = useAuth();
+  const [tagInput, setTagInput] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [saved, setSaved] = useState(false);
   const [wallet, setWallet] = useState(null);
   const [history, setHistory] = useState([]);
   const [matchHistory, setMatchHistory] = useState([]);
 
+  const myTag = profile?.player_tag || null;
+
   useEffect(() => {
-    if (!me?.tag) return;
-    supabase.from("UserWallets").select("*").eq("player_tag", me.tag).maybeSingle()
+    if (profile) { setTagInput(profile.player_tag || ""); setNameInput(profile.display_name || ""); }
+  }, [profile]);
+
+  useEffect(() => {
+    if (!myTag) { setWallet(null); setHistory([]); setMatchHistory([]); return; }
+    supabase.from("UserWallets").select("*").eq("player_tag", myTag).maybeSingle()
       .then(({ data }) => setWallet(data));
-    supabase.from("Registrations").select("*, Tournaments(name,status,prize_pool_total)").eq("player_tag", me.tag)
+    supabase.from("Registrations").select("*, Tournaments(name,status,prize_pool_total)").eq("player_tag", myTag)
       .order("joined_at", { ascending: false })
       .then(({ data }) => setHistory(data || []));
     supabase.from("TournamentMatches").select("*")
-      .or(`team_a_tags.cs.{"${me.tag}"},team_b_tags.cs.{"${me.tag}"}`)
+      .or(`team_a_tags.cs.{"${myTag}"},team_b_tags.cs.{"${myTag}"}`)
       .eq("status", "completed")
       .then(({ data }) => setMatchHistory(data || []));
-  }, [me?.tag]);
+  }, [myTag]);
 
   const wins = matchHistory.filter(m =>
-    (m.result === "team_a" && (m.team_a_tags || []).includes(me?.tag)) ||
-    (m.result === "team_b" && (m.team_b_tags || []).includes(me?.tag))
+    (m.result === "team_a" && (m.team_a_tags || []).includes(myTag)) ||
+    (m.result === "team_b" && (m.team_b_tags || []).includes(myTag))
   ).length;
 
-  const saveTag = (e) => {
+  const saveIdentity = async (e) => {
     e.preventDefault();
-    const next = { ...(me || {}), tag: normalizeTag(tagInput) };
-    saveMe(next);
-    setMe(next);
+    await updateProfile({ player_tag: normalizeTag(tagInput), display_name: nameInput.trim() || null });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   };
+
+  // Gate the whole page behind login.
+  if (!loading && !user) {
+    return (
+      <div style={page.root}>
+        <div style={page.glow} />
+        <SiteHeader />
+        <div style={{ ...page.wrap, maxWidth: 440, textAlign: "center" }}>
+          <div style={{ ...page.card, padding: "44px 30px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 40 }}>
+            <Trophy size={30} color={GOLD} />
+            <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, color: "#f4f4fa", margin: 0 }}>Your tournament hub</h1>
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0 }}>Sign in to set your player tag, track your wallet, and see every tournament you've entered.</p>
+            <button onClick={() => openAuth("signin")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <LogIn size={15} /> Sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={page.root}>
@@ -509,15 +562,25 @@ export function TournamentProfilePage() {
       <SiteHeader />
       <div style={page.wrap}>
         <span style={page.eyebrow}>◈ PLAYER PROFILE</span>
-        <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 24px" }}>
-          {me?.name || "Your"} <span style={{ color: VIOLET }}>tournament hub</span>
+        <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 6px" }}>
+          {profile?.display_name || "Your"} <span style={{ color: VIOLET }}>tournament hub</span>
         </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, fontFamily: MONO, fontSize: 11, color: "#8a7fa6" }}>
+          {user?.email}
+          {profile?.is_premium && <span style={{ color: GOLD, fontWeight: 700 }}>👑 PREMIUM</span>}
+        </div>
 
-        <form onSubmit={saveTag} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#9a9aab" }}>PLAYER TAG</span>
-          <input style={{ ...page.input, maxWidth: 240 }} placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)} />
-          <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Save</button>
-          {me?.tag && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0" }}>ACTIVE: {me.tag}</span>}
+        <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME</span>
+            <input style={{ ...page.input, maxWidth: 200 }} placeholder="Your name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG</span>
+            <input style={{ ...page.input, maxWidth: 200 }} placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)} />
+          </div>
+          <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12, alignSelf: "flex-end" }}>Save</button>
+          {saved && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", alignSelf: "flex-end", paddingBottom: 12 }}>SAVED ✔</span>}
         </form>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
@@ -536,7 +599,7 @@ export function TournamentProfilePage() {
         </div>
 
         <span style={page.eyebrow}>◈ TOURNAMENT HISTORY</span>
-        {!me?.tag ? (
+        {!myTag ? (
           <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>Save your player tag above to load your history.</p>
         ) : history.length === 0 ? (
           <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>
