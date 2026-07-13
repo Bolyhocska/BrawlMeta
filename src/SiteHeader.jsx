@@ -22,6 +22,7 @@ const NAV_ITEMS = [
     { label: "Brawler Guides", desc: "Full guide for every brawler", to: "/guides/brawlers" },
   ] },
   { label: "Ranked", to: "/app?tab=meta" },
+  { label: "Tournaments", to: "/tournaments" },
   { label: "Scrims", to: "/scrims" },
   { label: "Premium", to: "/app?tab=premium" },
 ];
