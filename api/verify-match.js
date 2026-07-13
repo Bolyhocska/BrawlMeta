@@ -17,11 +17,9 @@ import {
   normalizeTag, encodeTag, findTournamentMatch, rateLimited, rateLimitRemaining,
 } from "../src/data/verifyLogic.js";
 import { assertEnv, dbSelect, dbInsert, dbUpdate, advanceWinner, creditWallets, json } from "./_lib/db.js";
+import { supercellFetch } from "./_lib/proxyFetch.js";
 
 const SUPERCELL_API_KEY = process.env.SUPERCELL_API_KEY;
-// Supercell keys are IP-allowlisted and Vercel IPs are dynamic — point this
-// at a static-IP relay (e.g. https://bsproxy.royaleapi.dev/v1) and allowlist
-// the relay's IP on the key. Defaults to the official API.
 const API_BASE = process.env.SUPERCELL_API_BASE || "https://api.brawlstars.com/v1";
 const WINDOW_MS = 45 * 60 * 1000;
 
@@ -55,8 +53,11 @@ export default async function handler(req, res) {
     }
 
     // Target player = first tag of team A; one battle-log call verifies all 6.
+    // Routed through the same static-IP proxy scraper.py uses — Supercell
+    // keys are locked to an allowlisted IP, and Vercel's outbound IP isn't
+    // static, so a direct call would be rejected.
     const targetTag = normalizeTag(match.team_a_tags[0]);
-    const scRes = await fetch(
+    const scRes = await supercellFetch(
       `${API_BASE}/players/${encodeTag(targetTag)}/battlelog`,
       { headers: { Authorization: `Bearer ${SUPERCELL_API_KEY}` }, signal: AbortSignal.timeout(15000) }
     );
