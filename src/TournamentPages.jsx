@@ -193,6 +193,23 @@ export function TournamentLandingPage() {
   );
 }
 
+// ─── Example "add a friend" screenshots ──────────────────────────────────────
+// Referenced from /public/help. Each slot hides itself if the file is missing,
+// so the layout stays clean until the images are dropped in.
+function ExampleShots() {
+  const imgStyle = { width: "100%", borderRadius: 10, border: "1px solid rgba(255,255,255,.1)", display: "block" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <a href="/help/add-friend-id.png" target="_blank" rel="noreferrer">
+        <img src="/help/add-friend-id.png" alt="Where to find your player ID" style={imgStyle} onError={e => { e.currentTarget.parentElement.style.display = "none"; }} />
+      </a>
+      <a href="/help/add-friend-qr.png" target="_blank" rel="noreferrer">
+        <img src="/help/add-friend-qr.png" alt="Add Friend QR / share link" style={imgStyle} onError={e => { e.currentTarget.parentElement.style.display = "none"; }} />
+      </a>
+    </div>
+  );
+}
+
 // ─── Tournament rules / info modal ───────────────────────────────────────────
 // The universal rules every entrant must accept, plus the creator's own notes.
 const UNIVERSAL_RULES = [
@@ -360,23 +377,39 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
     fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
   });
 
-  // Shared friend-contact fields — captured so matched teams can add each other
-  // in-game. Player ID is required; the QR screenshot is a helpful extra.
+  // Shared add-friend section — how matched teams reach each other in-game.
+  // Optional (a lobby host can share a team invite in the match instead), but
+  // crucial for solo players. Inputs on the left, example screenshots on the right.
   const friendFields = (
-    <>
-      <input style={page.input} placeholder="Your Brawl Stars player ID (so opponents can add you)" value={friendId} onChange={e => setFriendId(e.target.value)} required maxLength={40} />
-      {friendQrUrl ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
-          ✓ Add Friend QR uploaded
-          <button type="button" onClick={() => setFriendQrUrl("")} style={{ background: "none", border: "none", color: "#ff8f8f", cursor: "pointer", fontSize: 11, fontFamily: MONO }}>remove</button>
+    <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#c98bff" }}>◈ ADD-FRIEND INFO</span>
+        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>OPTIONAL</span>
+      </div>
+      <p style={{ fontSize: 11.5, color: "#8b8b9c", margin: 0, lineHeight: 1.5 }}>
+        So opponents can add you in-game — <strong style={{ color: "#c9c9d6" }}>crucial if you're joining solo</strong>. Alternatively, the lobby host can share a team invite link inside the match once the bracket is live.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <input style={page.input} placeholder="Captain's player ID" value={friendId} onChange={e => setFriendId(e.target.value)} maxLength={40} />
+          {friendQrUrl ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
+              ✓ QR uploaded
+              <button type="button" onClick={() => setFriendQrUrl("")} style={{ background: "none", border: "none", color: "#ff8f8f", cursor: "pointer", fontSize: 11, fontFamily: MONO }}>remove</button>
+            </div>
+          ) : (
+            <label style={{ ...page.input, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: qrUploading ? "wait" : "pointer", color: "#8b8b9c", border: "1px dashed rgba(255,255,255,.18)", fontSize: 11.5, textAlign: "center" }}>
+              {qrUploading ? "Uploading…" : "＋ Upload Add Friend QR code"}
+              <input type="file" accept="image/*" onChange={uploadQr} disabled={qrUploading} style={{ display: "none" }} />
+            </label>
+          )}
         </div>
-      ) : (
-        <label style={{ ...page.input, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: qrUploading ? "wait" : "pointer", color: "#8b8b9c", border: "1px dashed rgba(255,255,255,.18)" }}>
-          {qrUploading ? "Uploading…" : "＋ Upload your Add Friend QR screenshot (optional)"}
-          <input type="file" accept="image/*" onChange={uploadQr} disabled={qrUploading} style={{ display: "none" }} />
-        </label>
-      )}
-    </>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>WHERE TO FIND THESE ↓</span>
+          <ExampleShots />
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -396,9 +429,9 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
             Enter your whole roster at once — teammates don't need their own accounts. You're the captain (slot 1).
           </p>
           <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
-          <input style={page.input} placeholder="Team display name — the EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
+          <input style={page.input} placeholder="Captain display name — the EXACT in-game name of your captain" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
           <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: -4 }}>
-            One per team. Must match a player's Brawl Stars name EXACTLY — this is how we auto-verify your match screenshots.
+            One per team. Must match your captain's Brawl Stars name EXACTLY — this is how we auto-verify your match screenshots.
           </span>
           {players.map((p, i) => (
             <input key={i} style={page.input} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
@@ -433,8 +466,11 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showDodgeModal, setShowDodgeModal] = useState(false);
+  const [inviteInput, setInviteInput] = useState("");
   const mine = myTag && [...(match.team_a_tags || []), ...(match.team_b_tags || [])].includes(myTag);
   const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
+  // Team A (shown on top of the matchup) hosts the lobby and shares the invite.
+  const iAmHost = mySide === "A";
   // The opponent's in-game contact so the two matched teams can add each other.
   const oppTags = mySide === "A" ? (match.team_b_tags || []) : mySide === "B" ? (match.team_a_tags || []) : [];
   const oppContact = oppTags.map(t => contactByTag?.[normalizeTag(t)]).find(c => c && (c.friendId || c.qr));
@@ -499,6 +535,17 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
     if (!ok) { showToast(body.message || "Couldn't attach proof.", "error"); return; }
     // OCR may auto-confirm the moment the screenshot lands — surface its message.
     showToast(body.message || "Screenshot attached ✔", "success");
+    onAction();
+  };
+
+  const shareInvite = async () => {
+    if (!inviteInput.trim()) return;
+    setBusy(true);
+    const { ok, body } = await authedFetch("/api/set-lobby-invite", { matchId: match.id, invite: inviteInput.trim() });
+    setBusy(false);
+    if (!ok) { showToast(body.message || body.error || "Couldn't share invite.", "error"); return; }
+    showToast(body.message, "success");
+    setInviteInput("");
     onAction();
   };
 
@@ -571,6 +618,28 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
           <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#c98bff" }}>ADD YOUR OPPONENT IN-GAME</span>
           {oppContact.friendId && <span style={{ fontSize: 12.5, color: "#e9e9f2", fontWeight: 700 }}>ID: {oppContact.friendId}</span>}
           {oppContact.qr && <a href={oppContact.qr} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 10.5, color: "#c98bff", textDecoration: "none" }}>view Add Friend QR →</a>}
+        </div>
+      )}
+
+      {/* Lobby host + team-invite sharing — the top team (A) creates the lobby */}
+      {mine && ["pending", "checkin", "active"].includes(match.status) && (
+        <div style={{ borderRadius: 12, background: "rgba(255,180,61,.07)", border: "1px solid rgba(255,180,61,.22)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#ffce7a" }}>🎮 {(match.team_a_name || "TOP TEAM").toUpperCase()} CREATES THE LOBBY</span>
+          {match.lobby_invite && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <a href={match.lobby_invite} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "#ffce7a", textDecoration: "none", wordBreak: "break-all" }}>▶ Open team invite</a>
+              {match.lobby_invite_by && <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>shared by {match.lobby_invite_by}</span>}
+            </div>
+          )}
+          {iAmHost ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              <input value={inviteInput} onChange={e => setInviteInput(e.target.value)} placeholder={match.lobby_invite ? "Replace invite link…" : "Paste your team invite link"}
+                style={{ ...page.input, flex: 1, padding: "8px 12px", fontSize: 11.5 }} />
+              <button type="button" onClick={shareInvite} disabled={busy || !inviteInput.trim()} style={{ ...page.btn, padding: "8px 14px", fontSize: 11, opacity: busy || !inviteInput.trim() ? .6 : 1 }}>Share</button>
+            </div>
+          ) : !match.lobby_invite && (
+            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#9a9aab" }}>Waiting for {match.team_a_name || "the top team"} to share the lobby invite…</span>
+          )}
         </div>
       )}
 
@@ -1289,6 +1358,24 @@ export function ManageTournamentPage() {
   const [teamTags, setTeamTags] = useState("");
   const [teamDisplayName, setTeamDisplayName] = useState("");
   const [teamFriendId, setTeamFriendId] = useState("");
+  const [teamFriendQrUrl, setTeamFriendQrUrl] = useState("");
+  const [qrUploading, setQrUploading] = useState(false);
+
+  const uploadTeamQr = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { showToast("QR image must be under 5 MB.", "error"); return; }
+    setQrUploading(true);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${user.id}/qr-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("match-proof").upload(path, file, { contentType: file.type });
+    if (up.error) { setQrUploading(false); showToast(`Upload failed: ${up.error.message}`, "error"); return; }
+    const { data } = supabase.storage.from("match-proof").getPublicUrl(path);
+    setTeamFriendQrUrl(data.publicUrl);
+    setQrUploading(false);
+    showToast("QR uploaded ✔", "success");
+  };
+
   const addTeam = async (e) => {
     e.preventDefault();
     const size = tournament?.team_size || 3;
@@ -1304,6 +1391,7 @@ export function ManageTournamentPage() {
       p_players: rows,
       p_team_display_name: teamDisplayName.trim() || null,
       p_friend_id: teamFriendId.trim() || null,
+      p_friend_qr_url: teamFriendQrUrl || null,
     });
     setBusy(false);
     if (error) {
@@ -1312,7 +1400,7 @@ export function ManageTournamentPage() {
       return;
     }
     showToast(`Added team "${teamName}".`, "success");
-    setTeamName(""); setTeamTags(""); setTeamDisplayName(""); setTeamFriendId("");
+    setTeamName(""); setTeamTags(""); setTeamDisplayName(""); setTeamFriendId(""); setTeamFriendQrUrl("");
     reload();
   };
 
@@ -1430,14 +1518,33 @@ export function ManageTournamentPage() {
             {/* Creator adds teams directly (e.g. tags collected in Discord) */}
             <form onSubmit={addTeam} style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: "#c98bff" }}>◈ ADD A TEAM YOURSELF</span>
-              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Team name, one team display name (the EXACT in-game name of a player — used to auto-verify results), then {teamSize} player tags — one per line.</p>
+              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Team name, one captain display name (the EXACT in-game name of a player — used to auto-verify results), then {teamSize} player tags — one per line.</p>
               <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
-              <input style={page.input} placeholder="Team display name — EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
-              <input style={page.input} placeholder="Team's Brawl Stars player ID (optional — for opponents to add them)" value={teamFriendId} onChange={e => setTeamFriendId(e.target.value)} maxLength={40} />
+              <input style={page.input} placeholder="Captain display name — EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAGS</span>
                 <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG\n#9YQ8RLP0\n#8UVP2QQL"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />
               </div>
+
+              {/* Add-friend info (optional) — how opponents reach this team in-game */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+                <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>ADD-FRIEND INFO</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>OPTIONAL</span>
+              </div>
+              <input style={page.input} placeholder="Captain's player ID" value={teamFriendId} onChange={e => setTeamFriendId(e.target.value)} maxLength={40} />
+              {teamFriendQrUrl ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
+                  ✓ Add Friend QR uploaded
+                  <button type="button" onClick={() => setTeamFriendQrUrl("")} style={{ background: "none", border: "none", color: "#ff8f8f", cursor: "pointer", fontSize: 11, fontFamily: MONO }}>remove</button>
+                </div>
+              ) : (
+                <label style={{ ...page.input, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: qrUploading ? "wait" : "pointer", color: "#8b8b9c", border: "1px dashed rgba(255,255,255,.18)", fontSize: 11.5 }}>
+                  {qrUploading ? "Uploading…" : "＋ Upload Add Friend QR code"}
+                  <input type="file" accept="image/*" onChange={uploadTeamQr} disabled={qrUploading} style={{ display: "none" }} />
+                </label>
+              )}
+              <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>Alternatively, the lobby host shares a team invite link inside the match.</span>
+
               <button type="submit" disabled={busy} style={{ ...page.btnGhost, alignSelf: "flex-start", opacity: busy ? .6 : 1 }}>Add team</button>
             </form>
           </div>
