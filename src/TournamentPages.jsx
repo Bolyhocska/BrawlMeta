@@ -203,7 +203,6 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   const teamSize = tournament.team_size || 3;
 
   const [teamName, setTeamName] = useState("");
-  const [teamDisplayName, setTeamDisplayName] = useState("");
   const [players, setPlayers] = useState(() => Array.from({ length: teamSize }, () => ({ tag: "", name: "" })));
   const [soloTag, setSoloTag] = useState("");
   const [soloName, setSoloName] = useState("");
@@ -254,7 +253,6 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       p_tournament_id: tournament.id,
       p_team_name: teamName,
       p_players: players.map(p => ({ tag: p.tag, name: p.name })),
-      p_team_display_name: teamDisplayName.trim() || null,
     });
     setBusy(false);
     if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
@@ -306,7 +304,6 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
             Enter your whole roster at once — teammates don't need their own accounts. You're the captain (slot 1).
           </p>
           <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
-          <input style={page.input} placeholder="Team display name (optional, e.g., team tag or acronym — used for verification)" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} maxLength={20} />
           {players.map((p, i) => (
             <div key={i} style={{ display: "flex", gap: 8 }}>
               <input style={{ ...page.input, flex: 1 }} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
