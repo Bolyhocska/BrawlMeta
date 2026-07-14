@@ -150,7 +150,10 @@ export function TournamentLandingPage() {
               const st = STATUS_STYLE[t.status] || STATUS_STYLE.registration;
               const players = counts[t.id] || 0;
               return (
-                <Link key={t.id} to={`/tournaments/${t.id}`} style={{ ...page.card, overflow: "hidden", textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", transition: "border-color .15s" }}>
+                <Link key={t.id} to={`/tournaments/${t.id}`}
+                  style={{ ...page.card, overflow: "hidden", textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", transition: "border-color .18s, transform .18s, box-shadow .18s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(179,107,255,.45)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 14px 40px rgba(0,0,0,.45)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.08)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                   {/* Banner header — the uploaded image, or a branded gradient
                       fallback so cards stay uniform height with/without art. */}
                   <div style={{ position: "relative", height: 130, background: "linear-gradient(135deg, rgba(179,107,255,.25), rgba(255,180,61,.15))" }}>
@@ -189,6 +192,168 @@ export function TournamentLandingPage() {
         </div>
       </div>
       <SiteFooter />
+    </div>
+  );
+}
+
+// ─── Champion celebration ─────────────────────────────────────────────────────
+// Full-viewport takeover when a tournament completes: CSS confetti in the brand
+// palette, a pulsing gold aura, and the winners' name front and centre. Shown
+// once per tournament per browser session, then dismissible back to the page.
+const CONFETTI_COLORS = [GOLD, VIOLET, "#8ee6b0", "#ffce7a", "#c98bff", "#f4f4fa"];
+
+function ChampionCelebration({ name, tournamentId, prize }) {
+  const seenKey = `bm-champ-seen-${tournamentId}`;
+  const [open, setOpen] = useState(() => {
+    try { return !sessionStorage.getItem(seenKey); } catch { return true; }
+  });
+  const confetti = useMemo(() =>
+    Array.from({ length: 70 }, (_, i) => ({
+      left: Math.random() * 100,
+      delay: Math.random() * 4,
+      duration: 3.4 + Math.random() * 3,
+      size: 7 + Math.random() * 8,
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      round: Math.random() > 0.7,
+      sway: 20 + Math.random() * 50,
+    })), []);
+
+  if (!open || !name) return null;
+  const dismiss = () => {
+    try { sessionStorage.setItem(seenKey, "1"); } catch { /* private mode */ }
+    setOpen(false);
+  };
+
+  return (
+    <div onClick={dismiss} style={{
+      position: "fixed", inset: 0, zIndex: 1200, cursor: "pointer", overflow: "hidden",
+      background: "radial-gradient(ellipse 80% 60% at 50% 42%, rgba(30,20,6,.97), rgba(8,8,12,.985))",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {/* confetti field */}
+      {confetti.map((c, i) => (
+        <span key={i} style={{
+          position: "absolute", top: -20, left: `${c.left}%`, width: c.size, height: c.size * (c.round ? 1 : 0.45),
+          background: c.color, borderRadius: c.round ? "50%" : 2, opacity: 0,
+          animation: `bm-confetti ${c.duration}s linear ${c.delay}s infinite`,
+          "--sway": `${c.sway}px`,
+        }} />
+      ))}
+      {/* pulsing gold aura */}
+      <div style={{
+        position: "absolute", width: 680, height: 680, borderRadius: "50%", pointerEvents: "none",
+        background: "radial-gradient(circle, rgba(255,180,61,.22), transparent 62%)",
+        animation: "bm-aura 2.6s ease-in-out infinite",
+      }} />
+      <div style={{ position: "relative", textAlign: "center", padding: "0 6vw", animation: "bm-champ-rise .7s cubic-bezier(.2,.9,.3,1.2) both" }}>
+        <div style={{ fontSize: "clamp(64px, 10vw, 110px)", filter: "drop-shadow(0 0 34px rgba(255,180,61,.55))", animation: "bm-trophy 2.2s ease-in-out infinite" }}>🏆</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 6, color: "#ffce7a", marginTop: 18 }}>◈ CHAMPIONS ◈</div>
+        <div style={{
+          fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(44px, 8vw, 96px)", lineHeight: 1.02, marginTop: 10,
+          color: GOLD, textShadow: "0 0 60px rgba(255,180,61,.6), 0 0 130px rgba(255,180,61,.3)",
+        }}>{name}</div>
+        {Number(prize) > 0 && (
+          <div style={{ fontFamily: MONO, fontSize: 13, color: "#8ee6b0", marginTop: 16 }}>
+            ${Number(prize).toLocaleString()} PRIZE POOL → WINNERS' WALLETS
+          </div>
+        )}
+        <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6", marginTop: 30, letterSpacing: 1.5 }}>CLICK ANYWHERE TO CONTINUE</div>
+      </div>
+      <style>{`
+        @keyframes bm-confetti {
+          0%   { transform: translate3d(0, -4vh, 0) rotate(0deg); opacity: 0; }
+          6%   { opacity: 1; }
+          100% { transform: translate3d(var(--sway), 106vh, 0) rotate(660deg); opacity: .85; }
+        }
+        @keyframes bm-aura { 0%, 100% { transform: scale(1); opacity: .8; } 50% { transform: scale(1.14); opacity: 1; } }
+        @keyframes bm-trophy { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-12px) rotate(3deg); } }
+        @keyframes bm-champ-rise { from { transform: translateY(34px) scale(.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── Post-tournament feedback ─────────────────────────────────────────────────
+// Every participant of a completed tournament can rate it (1–5 stars + note).
+// Stored in TournamentFeedback keyed on (tournament_id, user_id); submitting
+// again updates the existing entry, so it's safe to change your mind.
+function Stars({ value, hover, onHover, onPick, size = 26 }) {
+  return (
+    <div style={{ display: "flex", gap: 6, justifyContent: "center" }} onMouseLeave={() => onHover?.(0)}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} type="button" onClick={() => onPick(n)} onMouseEnter={() => onHover?.(n)} style={{
+          background: "none", border: "none", cursor: "pointer", padding: 2, fontSize: size, lineHeight: 1,
+          color: n <= (hover || value) ? GOLD : "rgba(255,255,255,.16)",
+          textShadow: n <= (hover || value) ? "0 0 14px rgba(255,180,61,.5)" : "none",
+          transition: "color .12s, transform .12s", transform: n === hover ? "scale(1.18)" : "scale(1)",
+        }}>★</button>
+      ))}
+    </div>
+  );
+}
+
+function FeedbackCard({ tournamentId, registrations, showToast }) {
+  const { user, profile } = useAuth();
+  const myTag = profile?.player_tag || null;
+  const [mine, setMine] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("TournamentFeedback").select("*").eq("tournament_id", tournamentId).eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => { if (data) { setMine(data); setRating(data.rating); setComment(data.comment || ""); } });
+  }, [user, tournamentId]);
+
+  const participant = user && registrations.some(r => r.user_id === user.id || (myTag && r.player_tag === myTag));
+  if (!participant) return null;
+
+  const submit = async () => {
+    if (!rating) { showToast("Pick a star rating first.", "error"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("TournamentFeedback").upsert(
+      { tournament_id: tournamentId, user_id: user.id, player_tag: myTag, rating, comment: comment.trim() || null },
+      { onConflict: "tournament_id,user_id" },
+    );
+    setBusy(false);
+    if (error) { showToast(`Couldn't save feedback: ${error.message}`, "error"); return; }
+    setMine({ rating, comment });
+    setOpen(false);
+    showToast("Thanks — your feedback helps the organizer! 💜", "success");
+  };
+
+  return (
+    <div style={{ ...page.card, padding: "20px 24px", marginBottom: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ ...page.eyebrow }}>◈ HOW WAS THIS TOURNAMENT?</div>
+          <div style={{ fontSize: 12.5, color: "#8b8b9c", marginTop: 4 }}>
+            {mine ? <>You rated it <span style={{ color: GOLD, fontWeight: 700 }}>{"★".repeat(mine.rating)}</span> — tap to change.</> : "You played in it — tell the organizer how it went."}
+          </div>
+        </div>
+        {!open && (
+          <button type="button" onClick={() => setOpen(true)} style={{ ...page.btnGhost, padding: "9px 18px", fontSize: 12 }}>
+            {mine ? "Edit feedback" : "✦ Submit feedback"}
+          </button>
+        )}
+      </div>
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 14 }}>
+          <Stars value={rating} hover={hover} onHover={setHover} onPick={setRating} />
+          <textarea value={comment} onChange={e => setComment(e.target.value)} maxLength={500}
+            placeholder="What went well? What should improve next time? (optional)"
+            style={{ ...page.input, minHeight: 76, borderRadius: 14, resize: "vertical" }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={submit} disabled={busy} style={{ ...page.btn, flex: 1, padding: "10px", fontSize: 12, opacity: busy ? .6 : 1 }}>
+              {busy ? "Saving…" : "Send feedback"}
+            </button>
+            <button type="button" onClick={() => setOpen(false)} style={{ ...page.btnGhost, padding: "10px 16px", fontSize: 12 }}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -392,6 +557,9 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
           <input style={page.input} placeholder="Captain's player ID" value={friendId} onChange={e => setFriendId(e.target.value)} maxLength={40} />
+          <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", marginTop: -4, lineHeight: 1.5 }}>
+            Advised to upload in case a streamer wants to watch and cast your games!
+          </span>
           {friendQrUrl ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
               ✓ QR uploaded
@@ -600,14 +768,18 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
       <div style={sideStyle(match.result === "team_a", match.team_a_name)}>
         {match.team_a_name || "TBD"}
         {(match.team_a_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
-          <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>{checkedIn(match.team_a_tags)}/{match.team_a_tags.length} ✓</span>
+          checkedIn(match.team_a_tags) >= 1
+            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
+            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>waiting…</span>
         )}
         {match.status === "active" && reportMark("A")}
       </div>
       <div style={sideStyle(match.result === "team_b", match.team_b_name)}>
         {match.team_b_name || (match.status === "bye" ? "—" : "TBD")}
         {(match.team_b_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
-          <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>{checkedIn(match.team_b_tags)}/{match.team_b_tags.length} ✓</span>
+          checkedIn(match.team_b_tags) >= 1
+            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
+            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>waiting…</span>
         )}
         {match.status === "active" && reportMark("B")}
       </div>
@@ -638,17 +810,21 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
               <button type="button" onClick={shareInvite} disabled={busy || !inviteInput.trim()} style={{ ...page.btn, padding: "8px 14px", fontSize: 11, opacity: busy || !inviteInput.trim() ? .6 : 1 }}>Share</button>
             </div>
           ) : !match.lobby_invite && (
-            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#9a9aab" }}>Waiting for {match.team_a_name || "the top team"} to share the lobby invite…</span>
+            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#9a9aab", lineHeight: 1.5 }}>
+              Waiting for the opposing team to generate and upload the lobby invite link…
+              <br /><span style={{ color: "#6f7180" }}>If they share it late, you automatically get a 3-minute grace window to join.</span>
+            </span>
           )}
         </div>
       )}
 
-      {/* Check-in */}
+      {/* Check-in — one player per team is enough; it readies the whole squad */}
       {mine && ["pending", "checkin"].includes(match.status) && !iCheckedIn && (
         <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
           <button style={{ ...page.btn, padding: "10px 18px", fontSize: 12, opacity: busy ? .6 : 1 }} disabled={busy} onClick={checkin}>
             {busy ? "…" : "CHECK IN"}
           </button>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", textAlign: "center" }}>one check-in readies your whole team</span>
           <button type="button" style={{ ...page.btnGhost, padding: "8px 12px", fontSize: 11 }} onClick={() => setShowDodgeModal(true)}>
             📹 Report a dodge
           </button>
@@ -656,7 +832,7 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
       )}
       {mine && ["pending", "checkin"].includes(match.status) && iCheckedIn && (
         <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
-          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ You're checked in — waiting on the lobby</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ Your team is checked in — match goes live when the opponent checks in</span>
           <button type="button" style={{ ...page.btnGhost, padding: "8px 12px", fontSize: 11 }} onClick={() => setShowDodgeModal(true)}>
             📹 Report a dodge
           </button>
@@ -902,11 +1078,23 @@ export function TournamentDetailPage() {
         )}
 
         {champion && (
-          <div style={{ ...page.card, padding: "26px 30px", marginBottom: 26, textAlign: "center", background: "linear-gradient(160deg, rgba(255,180,61,.12), rgba(13,13,20,.5))", border: "1px solid rgba(255,180,61,.4)" }}>
-            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>◈ CHAMPIONS</div>
-            <div style={{ fontFamily: DISPLAY, fontSize: 36, fontWeight: 700, color: GOLD, textShadow: "0 0 40px rgba(255,180,61,.5)" }}>🏆 {champion}</div>
-            <div style={{ fontSize: 12.5, color: "#9a9aab" }}>Prize pool credited to the winners' wallets.</div>
-          </div>
+          <>
+            <ChampionCelebration name={champion} tournamentId={tournamentId} prize={tournament.prize_pool_total} />
+            <div style={{
+              ...page.card, padding: "30px 30px", marginBottom: 26, textAlign: "center", position: "relative", overflow: "hidden",
+              background: "linear-gradient(160deg, rgba(255,180,61,.14), rgba(13,13,20,.55))", border: "1px solid rgba(255,180,61,.45)",
+              boxShadow: "0 0 46px rgba(255,180,61,.14), inset 0 0 60px rgba(255,180,61,.05)",
+            }}>
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,180,61,.14), transparent 70%)" }} />
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "#ffce7a" }}>◈ CHAMPIONS ◈</div>
+              <div style={{ fontFamily: DISPLAY, fontSize: "clamp(34px,5vw,52px)", fontWeight: 700, color: GOLD, textShadow: "0 0 48px rgba(255,180,61,.55)", margin: "6px 0 2px" }}>🏆 {champion}</div>
+              <div style={{ fontSize: 12.5, color: "#9a9aab" }}>Prize pool credited to the winners' wallets.</div>
+            </div>
+          </>
+        )}
+
+        {tournament.status === "completed" && (
+          <FeedbackCard tournamentId={tournamentId} registrations={registrations} showToast={showToast} />
         )}
 
         {tournament.status === "registration" && (
@@ -1314,11 +1502,13 @@ export function ManageTournamentPage() {
   const [refresh, setRefresh] = useState(0);
   const reload = () => setRefresh(x => x + 1);
 
+  const [feedback, setFeedback] = useState([]);
   useEffect(() => {
     supabase.from("Tournaments").select("*").eq("id", tournamentId).maybeSingle().then(({ data }) => setTournament(data));
     // Fetch registrations with team_display_name for OCR info on manage page
     supabase.from("Registrations").select("*").eq("tournament_id", tournamentId).order("joined_at").then(({ data }) => setRegistrations(data || []));
     supabase.from("TournamentMatches").select("*").eq("tournament_id", tournamentId).order("round").order("match_number").then(({ data }) => setMatches(data || []));
+    supabase.from("TournamentFeedback").select("*").eq("tournament_id", tournamentId).order("created_at", { ascending: false }).then(({ data }) => setFeedback(data || []));
   }, [tournamentId, refresh]);
 
   const authedFetch = (url, body) => {
@@ -1444,6 +1634,21 @@ export function ManageTournamentPage() {
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).color, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.06)" }}>MANAGE MODE</span>
         </div>
 
+        {/* Homepage-style stat chips — the dashboard's vital signs at a glance */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, margin: "16px 0 26px" }}>
+          {[
+            { value: registeredCount, label: "PLAYERS SIGNED UP", color: "#f4f4fa" },
+            { value: `$${Number(tournament.prize_pool_total || 0).toLocaleString()}`, label: "PRIZE POOL", color: GOLD },
+            { value: matches.filter(m => m.status === "completed").length + "/" + (matches.length || "—"), label: "MATCHES PLAYED", color: "#c98bff" },
+            { value: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).label, label: "STATUS", color: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).color, small: true },
+          ].map(s => (
+            <div key={s.label} style={{ padding: "18px 20px", borderRadius: 20, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", fontFamily: MONO }}>
+              <div style={{ fontSize: s.small ? 15 : 26, fontWeight: 700, color: s.color, fontFamily: s.small ? MONO : DISPLAY, letterSpacing: s.small ? 1 : 0 }}>{s.value}</div>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "#6f7180", marginTop: 4 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
         {/* Dodge reports — teams reporting opponent no-shows */}
         {dodges.length > 0 && (
           <section style={{ marginBottom: 26 }}>
@@ -1532,6 +1737,9 @@ export function ManageTournamentPage() {
                 <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>OPTIONAL</span>
               </div>
               <input style={page.input} placeholder="Captain's player ID" value={teamFriendId} onChange={e => setTeamFriendId(e.target.value)} maxLength={40} />
+              <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", marginTop: -4 }}>
+                Advised to upload in case a streamer wants to watch and cast your games!
+              </span>
               {teamFriendQrUrl ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
                   ✓ Add Friend QR uploaded
@@ -1548,6 +1756,32 @@ export function ManageTournamentPage() {
               <button type="submit" disabled={busy} style={{ ...page.btnGhost, alignSelf: "flex-start", opacity: busy ? .6 : 1 }}>Add team</button>
             </form>
           </div>
+        )}
+
+        {/* Participant feedback — what players thought of your event */}
+        {feedback.length > 0 && (
+          <section style={{ marginBottom: 26 }}>
+            <span style={page.eyebrow}>◈ PLAYER FEEDBACK — {feedback.length} RESPONSE{feedback.length === 1 ? "" : "S"}</span>
+            <div style={{ ...page.card, padding: "18px 22px", marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <span style={{ fontFamily: DISPLAY, fontSize: 34, fontWeight: 700, color: GOLD }}>
+                  {(feedback.reduce((s, f) => s + f.rating, 0) / feedback.length).toFixed(1)}
+                </span>
+                <span style={{ color: GOLD, fontSize: 16, letterSpacing: 2 }}>
+                  {"★".repeat(Math.round(feedback.reduce((s, f) => s + f.rating, 0) / feedback.length))}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#6f7180" }}>AVERAGE RATING</span>
+              </div>
+              {feedback.filter(f => f.comment).map(f => (
+                <div key={f.id} style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: "#8a7fa6", marginBottom: 3 }}>
+                    <span style={{ color: GOLD }}>{"★".repeat(f.rating)}</span> · {f.player_tag || "player"} · {new Date(f.created_at).toLocaleDateString()}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#c9c9d6", lineHeight: 1.5 }}>{f.comment}</div>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {rounds.length > 0 && (

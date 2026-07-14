@@ -12,6 +12,11 @@ const checkinsFor = (match, side) => {
   return (tags || []).filter(t => match.checkin_status?.[t] === true).length;
 };
 
+// Captain-level check-in: a side is PRESENT when at least one of its players
+// has checked in. Teammates registered by their captain have no accounts, so
+// requiring the whole roster used to block matches from ever going active —
+// which is why the old sweep "randomly" declared winners at the deadline and
+// the report button never appeared.
 async function sweepExpiredCheckins(matches) {
   const now = Date.now();
   const resolved = [];
@@ -20,21 +25,30 @@ async function sweepExpiredCheckins(matches) {
     if (!m.checkin_deadline || Date.parse(m.checkin_deadline) > now) continue;
     if (!(m.team_a_tags || []).length || !(m.team_b_tags || []).length) continue;
 
-    const aIn = checkinsFor(m, "A");
-    const bIn = checkinsFor(m, "B");
-    const aFull = aIn === m.team_a_tags.length;
-    const bFull = bIn === m.team_b_tags.length;
+    const aPresent = checkinsFor(m, "A") >= 1;
+    const bPresent = checkinsFor(m, "B") >= 1;
 
-    if (aFull && bFull) {
-      // Everyone made it right at the wire — the flip to active raced the
-      // deadline; just activate.
-      await dbUpdate("TournamentMatches", `id=eq.${m.id}`, { status: "active" });
-      resolved.push({ id: m.id, action: "activated" });
+    if (aPresent && bPresent) {
+      // Both captains showed. Team A hosts the lobby — if they never shared
+      // the invite before the master timer hit 0, THEY forfeit, so the host
+      // can't grief the opponent by withholding the lobby link until the end.
+      if (!m.lobby_invite) {
+        const [updated] = await dbUpdate("TournamentMatches", `id=eq.${m.id}`, {
+          status: "completed", result: "team_b", verified: true, verified_at: new Date().toISOString(),
+        });
+        if (updated) await advanceWinner(updated, "B");
+        resolved.push({ id: m.id, action: "host_forfeit_no_lobby", winner: m.team_b_name });
+      } else {
+        // Deadline raced the activation flip — go live; the match is now in
+        // the disputable reporting state, never a silent random walkover.
+        await dbUpdate("TournamentMatches", `id=eq.${m.id}`, { status: "active" });
+        resolved.push({ id: m.id, action: "activated" });
+      }
       continue;
     }
-    // Walkover: the side with the stronger check-in record advances
-    // (deterministic team_a fallback when both sides fully no-showed).
-    const winningSide = aIn >= bIn ? "A" : "B";
+    // Walkover: the side whose captain checked in advances (deterministic
+    // team_a fallback when both sides fully no-showed).
+    const winningSide = aPresent || !bPresent ? "A" : "B";
     const [updated] = await dbUpdate("TournamentMatches", `id=eq.${m.id}`, {
       status: "completed",
       result: winningSide === "A" ? "team_a" : "team_b",

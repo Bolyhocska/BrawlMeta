@@ -32,12 +32,29 @@ export default async function handler(req, res) {
     const onB = (match.team_b_tags || []).includes(myTag);
     if (!onA && !onB) return json(res, 403, { error: "not_in_match" });
 
-    await dbUpdate("TournamentMatches", `id=eq.${match.id}`, {
+    const patch = {
       lobby_invite: clean || null,
       lobby_invite_by: clean ? (profile.display_name || myTag) : null,
       lobby_invite_at: clean ? new Date().toISOString() : null,
+    };
+
+    // Anti-grief grace period: if the host shares the invite with under 3
+    // minutes left on the check-in clock, the opponent gets a fresh 3-minute
+    // window to join the lobby — a last-second link can't force a forfeit.
+    const GRACE_MS = 3 * 60 * 1000;
+    if (clean && ["pending", "checkin"].includes(match.status) && match.checkin_deadline) {
+      const remaining = Date.parse(match.checkin_deadline) - Date.now();
+      if (remaining < GRACE_MS) patch.checkin_deadline = new Date(Date.now() + GRACE_MS).toISOString();
+    }
+
+    await dbUpdate("TournamentMatches", `id=eq.${match.id}`, patch);
+    const graced = !!patch.checkin_deadline;
+    return json(res, 200, {
+      ok: true,
+      message: clean
+        ? (graced ? "Lobby invite shared — your opponent got a 3-minute grace window to join." : "Lobby invite shared with your opponent.")
+        : "Lobby invite cleared.",
     });
-    return json(res, 200, { ok: true, message: clean ? "Lobby invite shared with your opponent." : "Lobby invite cleared." });
   } catch (e) {
     console.error("set-lobby-invite error:", e);
     return json(res, e.status || 500, { error: e.message });
