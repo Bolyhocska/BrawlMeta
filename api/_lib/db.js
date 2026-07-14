@@ -101,3 +101,17 @@ export const json = (res, status, body) => {
   res.status(status).setHeader("Content-Type", "application/json");
   res.json(body);
 };
+
+// Resolves the Supabase user for a request's Bearer token — used to let a
+// tournament's creator trigger their own bracket generation without needing
+// the global admin key. Returns null for a missing/invalid/expired token.
+export async function getUserFromRequest(req) {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return null;
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}

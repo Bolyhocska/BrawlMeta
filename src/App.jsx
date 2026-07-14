@@ -8,7 +8,7 @@ import ComingSoonPage from "./ComingSoonPage";
 import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, SafeZoneGuidePage, BrawlerGuidesPage } from "./GuidesPages";
 import ScrimsPage from "./ScrimsPage";
 import DraftAssistant from "./DraftAssistant";
-import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage } from "./TournamentPages";
+import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { supabase, CURRENT_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS } from "./appCore";
 import { tileStyles } from "./data/brawlerTile";
@@ -624,7 +624,9 @@ export default function AppRoutes() {
       <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlMeta soon." />} />
       <Route path="/scrims" element={<ScrimsPage />} />
       <Route path="/tournaments" element={<TournamentLandingPage />} />
+      <Route path="/tournaments/create" element={<CreateTournamentPage />} />
       <Route path="/tournaments/profile" element={<TournamentProfilePage />} />
+      <Route path="/tournaments/:tournamentId/manage" element={<ManageTournamentPage />} />
       <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
       <Route path="/guides" element={<GuidesLandingPage />} />
       <Route path="/guides/skills" element={<SkillsGuidePage />} />

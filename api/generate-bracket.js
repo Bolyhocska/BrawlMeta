@@ -1,31 +1,70 @@
 // ─── POST /api/generate-bracket ──────────────────────────────────────────────
-// Locks registration and builds the single-elimination bracket: groups
-// registrations into complete teams, seeds premium teams first (they absorb
-// the mathematically-required byes — never extra wins), shuffles the rest,
-// writes every round's matches, auto-advances bye teams, and opens the
-// round-1 check-in window.
+// Locks registration and builds the single-elimination bracket: auto-groups
+// any solo-queue registrations into synthetic teams, groups registrations into
+// complete teams, seeds premium teams first (they absorb the mathematically-
+// required byes — never extra wins), shuffles the rest, writes every round's
+// matches, auto-advances bye teams, and opens the round-1 check-in window.
 //
-// Body: { tournamentId, adminKey }
-// Admin-gated via TOURNAMENT_ADMIN_KEY env var.
+// Body: { tournamentId, adminKey? }
+// Callable by either the global TOURNAMENT_ADMIN_KEY, or a signed-in user who
+// created the tournament and still holds premium (creating a tournament is a
+// premium-gated action; premium is re-checked here too so a lapsed
+// subscription can't keep generating brackets).
 
 import { groupIntoTeams, seedTeams, generateBracket, nextSlot, totalRoundsFor } from "../src/data/bracket.js";
-import { assertEnv, dbSelect, dbInsert, dbUpdate, json } from "./_lib/db.js";
+import { assertEnv, dbSelect, dbInsert, dbUpdate, json, getUserFromRequest } from "./_lib/db.js";
+
+// Simple shuffle for grouping non-premium solo queue players into teams.
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "POST only" });
   try {
     assertEnv();
     const { tournamentId, adminKey } = req.body ?? {};
-    if (!process.env.TOURNAMENT_ADMIN_KEY || adminKey !== process.env.TOURNAMENT_ADMIN_KEY) {
-      return json(res, 403, { error: "forbidden" });
-    }
     if (!tournamentId) return json(res, 400, { error: "tournamentId required" });
 
     const [tournament] = await dbSelect("Tournaments", `id=eq.${encodeURIComponent(tournamentId)}&select=*`);
     if (!tournament) return json(res, 404, { error: "tournament_not_found" });
+
+    const isAdmin = process.env.TOURNAMENT_ADMIN_KEY && adminKey === process.env.TOURNAMENT_ADMIN_KEY;
+    if (!isAdmin) {
+      const user = await getUserFromRequest(req);
+      if (!user || user.id !== tournament.created_by) return json(res, 403, { error: "forbidden" });
+      const [profile] = await dbSelect("Profiles", `id=eq.${user.id}&select=is_premium`);
+      if (!profile?.is_premium) return json(res, 403, { error: "premium_required" });
+    }
+
     if (tournament.status !== "registration") return json(res, 409, { error: `tournament_status_${tournament.status}` });
 
-    const registrations = await dbSelect("Registrations", `tournament_id=eq.${encodeURIComponent(tournamentId)}&select=*`);
+    let registrations = await dbSelect("Registrations", `tournament_id=eq.${encodeURIComponent(tournamentId)}&select=*`);
+
+    // Auto-group solo-queue players into full teams: premium solos get
+    // priority seats (consistent with the byes-only integrity rule — this
+    // only decides who gets grouped into a complete team, never who wins).
+    // Leftover players who don't fill a complete team sit out this bracket.
+    const solos = registrations.filter(r => r.is_solo && !r.team_name);
+    if (solos.length >= tournament.team_size) {
+      const size = tournament.team_size;
+      const ordered = [...solos.filter(s => s.is_premium), ...shuffle(solos.filter(s => !s.is_premium))];
+      const fullGroupCount = Math.floor(ordered.length / size);
+      for (let g = 0; g < fullGroupCount; g++) {
+        const group = ordered.slice(g * size, g * size + size);
+        const teamName = `Solo Squad ${g + 1}`;
+        for (const member of group) {
+          await dbUpdate("Registrations", `id=eq.${member.id}`, { team_name: teamName });
+          member.team_name = teamName; // reflect in the in-memory copy used below
+        }
+      }
+    }
+
     const teams = groupIntoTeams(registrations, tournament.team_size);
     if (teams.length < 2) return json(res, 422, { error: "need_at_least_2_complete_teams", completeTeams: teams.length });
 

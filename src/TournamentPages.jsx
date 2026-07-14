@@ -121,6 +121,9 @@ export function TournamentLandingPage() {
             100% free to enter — always. Register your trio, check in, play, and the engine verifies
             results straight from the official battle log. No mods, no screenshots, no disputes.
           </p>
+          <Link to="/tournaments/create" style={{ ...page.btnGhost, marginTop: 18, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Trophy size={13} /> Run your own tournament
+          </Link>
         </div>
 
         {tournaments === null ? (
@@ -166,15 +169,26 @@ export function TournamentLandingPage() {
 }
 
 // ─── Registration form ───────────────────────────────────────────────────────
+// Two paths: a captain registers their whole roster in one submission (no
+// teammate accounts required), or a player queues solo and gets auto-grouped
+// with other solo players into a full team when the bracket generates.
 function RegistrationForm({ tournament, onRegistered, showToast }) {
   const { user, profile, openAuth, updateProfile } = useAuth();
-  const [form, setForm] = useState({ tag: "", name: "", team: "" });
-  const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const [mode, setMode] = useState("team"); // "team" | "solo"
+  const teamSize = tournament.team_size || 3;
 
-  // Prefill from the signed-in profile once it loads.
+  const [teamName, setTeamName] = useState("");
+  const [players, setPlayers] = useState(() => Array.from({ length: teamSize }, () => ({ tag: "", name: "" })));
+  const [soloTag, setSoloTag] = useState("");
+  const [soloName, setSoloName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Prefill slot 1 (the captain) and the solo form from the signed-in profile.
   useEffect(() => {
-    if (profile) setForm(f => ({ ...f, tag: f.tag || profile.player_tag || "", name: f.name || profile.display_name || "" }));
+    if (!profile) return;
+    setPlayers(p => p.map((pl, i) => i === 0 ? { tag: pl.tag || profile.player_tag || "", name: pl.name || profile.display_name || "" } : pl));
+    setSoloTag(t => t || profile.player_tag || "");
+    setSoloName(n => n || profile.display_name || "");
   }, [profile]);
 
   if (!user) {
@@ -182,7 +196,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       <div style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 14, alignItems: "flex-start" }}>
         <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
         <p style={{ fontSize: 13, color: "#8b8b9c", margin: 0 }}>
-          Sign in to register your trio. Your account remembers your player tag and tracks every tournament you enter.
+          Sign in to register your team — one account can enter your whole roster. Your player tag is remembered for next time.
         </p>
         <button onClick={() => openAuth("signup")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}>
           <LogIn size={15} /> Sign in to register
@@ -192,60 +206,103 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
     );
   }
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setBusy(true);
-    const { data, error } = await supabase.rpc("tournament_register", {
-      p_tournament_id: tournament.id,
-      p_email: user.email,
-      p_player_tag: form.tag,
-      p_display_name: form.name,
-      p_team_name: form.team,
-      p_is_premium: false, // ignored server-side; premium is read from the profile
-    });
-    if (error) {
-      setBusy(false);
-      const code = error.message?.match(/[A-Z_]{4,}/)?.[0];
-      const msg = {
-        LOGIN_REQUIRED: "Please sign in again — your session expired.",
-        ALREADY_REGISTERED: "You're already registered for this tournament.",
-        INVALID_TAG: "That player tag doesn't look right — copy it from your in-game profile (e.g. #2C20JJRG).",
-        INVALID_EMAIL: "Your account email looks invalid.",
-        MISSING_FIELDS: "Fill in every field.",
-        REGISTRATION_CLOSED: "Registration is closed for this tournament.",
-        TEAM_FULL: "That team already has 3 players — pick a different team name.",
-      }[code] || (error.message?.includes("duplicate") ? "This player tag is already registered." : `Registration failed: ${error.message}`);
-      showToast(msg, "error");
-      return;
-    }
-    // Persist tag / name to the profile so check-in & verify buttons target this
-    // player everywhere, without re-typing it next time.
-    const patch = {};
-    if (normalizeTag(form.tag) !== (profile?.player_tag || "")) patch.player_tag = normalizeTag(form.tag);
-    if (form.name.trim() && form.name.trim() !== (profile?.display_name || "")) patch.display_name = form.name.trim();
-    if (Object.keys(patch).length) await updateProfile(patch);
-    setBusy(false);
-    showToast("Registered! Get 2 teammates to join with the same team name.", "success");
-    onRegistered?.(data);
+  const setPlayer = (i, k, v) => setPlayers(p => p.map((pl, idx) => idx === i ? { ...pl, [k]: v } : pl));
+
+  const errMsg = (error, fallback) => {
+    const code = error.message?.match(/[A-Z_]{4,}/)?.[0];
+    return {
+      LOGIN_REQUIRED: "Please sign in again — your session expired.",
+      TAG_ALREADY_REGISTERED: "One of those player tags is already registered for this tournament.",
+      INVALID_TAG: "A player tag doesn't look right — copy it from the in-game profile (e.g. #2C20JJRG).",
+      MISSING_FIELDS: "Fill in every field.",
+      REGISTRATION_CLOSED: "Registration is closed for this tournament.",
+      WRONG_PLAYER_COUNT: `This tournament needs exactly ${teamSize} players per team.`,
+      TEAM_NAME_TAKEN: "That team name is already taken — pick a different one.",
+    }[code] || fallback;
   };
 
+  const submitTeam = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.rpc("tournament_register_team", {
+      p_tournament_id: tournament.id,
+      p_team_name: teamName,
+      p_players: players.map(p => ({ tag: p.tag, name: p.name })),
+    });
+    setBusy(false);
+    if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
+    // Remember the captain's own tag/name (slot 1) on their profile.
+    const captain = players[0];
+    const patch = {};
+    if (normalizeTag(captain.tag) !== (profile?.player_tag || "")) patch.player_tag = normalizeTag(captain.tag);
+    if (captain.name.trim() && captain.name.trim() !== (profile?.display_name || "")) patch.display_name = captain.name.trim();
+    if (Object.keys(patch).length) await updateProfile(patch);
+    showToast(`Team "${teamName}" registered — all ${teamSize} players locked in!`, "success");
+    onRegistered?.();
+  };
+
+  const submitSolo = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.rpc("tournament_register_solo", {
+      p_tournament_id: tournament.id,
+      p_player_tag: soloTag,
+      p_display_name: soloName,
+    });
+    setBusy(false);
+    if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
+    const patch = {};
+    if (normalizeTag(soloTag) !== (profile?.player_tag || "")) patch.player_tag = normalizeTag(soloTag);
+    if (soloName.trim() && soloName.trim() !== (profile?.display_name || "")) patch.display_name = soloName.trim();
+    if (Object.keys(patch).length) await updateProfile(patch);
+    showToast("Queued! You'll be auto-teamed with other solo players once the bracket is generated.", "success");
+    onRegistered?.();
+  };
+
+  const tabBtn = (active) => ({
+    flex: 1, padding: "9px 14px", borderRadius: 999, border: "1px solid " + (active ? "rgba(255,180,61,.4)" : "rgba(255,255,255,.1)"),
+    background: active ? "rgba(255,180,61,.12)" : "transparent", color: active ? "#ffce7a" : "#8b8b9c",
+    fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
+  });
+
   return (
-    <form onSubmit={submit} style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 14 }}>
       <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
-      <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: "2px 0 6px" }}>
-        Confirm your in-game player tag. Teammates register with the <strong style={{ color: "#c9c9d6" }}>same team name</strong> — a team locks in at 3 players.
-      </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11, color: "#8a7fa6", padding: "2px 4px" }}>
-        <CheckCircle2 size={13} color="#8ee6b0" /> Registering as {user.email}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="button" style={tabBtn(mode === "team")} onClick={() => setMode("team")}>REGISTER A TEAM</button>
+        <button type="button" style={tabBtn(mode === "solo")} onClick={() => setMode("solo")}>JOIN SOLO</button>
       </div>
-      <input style={page.input} placeholder="Player tag (e.g. #2C20JJRG)" value={form.tag} onChange={set("tag")} required />
-      <input style={page.input} placeholder="Display name" value={form.name} onChange={set("name")} required maxLength={30} />
-      <input style={page.input} placeholder="Team name" value={form.team} onChange={set("team")} required maxLength={30} />
-      <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
-        {busy ? "Registering…" : "Register — Free"}
-      </button>
+
+      {mode === "team" ? (
+        <form onSubmit={submitTeam} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: "2px 0 4px" }}>
+            Enter your whole roster at once — teammates don't need their own accounts. You're the captain (slot 1).
+          </p>
+          <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
+          {players.map((p, i) => (
+            <div key={i} style={{ display: "flex", gap: 8 }}>
+              <input style={{ ...page.input, flex: 1 }} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
+              <input style={{ ...page.input, flex: 1 }} placeholder={i === 0 ? "Your name" : `Teammate ${i + 1} name`} value={p.name} onChange={e => setPlayer(i, "name", e.target.value)} required maxLength={30} />
+            </div>
+          ))}
+          <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
+            {busy ? "Registering…" : `Register Team of ${teamSize} — Free`}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={submitSolo} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: "2px 0 4px" }}>
+            No squad? Queue solo and we'll auto-group you with other solo players into a full team of {teamSize} once the bracket generates.
+          </p>
+          <input style={page.input} placeholder="Player tag (e.g. #2C20JJRG)" value={soloTag} onChange={e => setSoloTag(e.target.value)} required />
+          <input style={page.input} placeholder="Display name" value={soloName} onChange={e => setSoloName(e.target.value)} required maxLength={30} />
+          <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
+            {busy ? "Joining queue…" : "Join Solo Queue — Free"}
+          </button>
+        </form>
+      )}
       <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", textAlign: "center" }}>NO ENTRY FEE · EVER</span>
-    </form>
+    </div>
   );
 }
 
@@ -379,12 +436,15 @@ export function TournamentDetailPage() {
   }, [tournament?.status, reload]);
 
   const teams = useMemo(() => groupIntoTeams(registrations, tournament?.team_size || 3), [registrations, tournament]);
+  const soloQueue = useMemo(() => registrations.filter(r => r.is_solo && !r.team_name), [registrations]);
   const incomplete = useMemo(() => {
     const full = new Set(teams.map(t => t.name.toLowerCase()));
     const partial = new Map();
     for (const r of registrations) {
-      const k = r.team_name.trim().toLowerCase();
-      if (!full.has(k)) partial.set(k, [...(partial.get(k) || []), r]);
+      if (r.is_solo && !r.team_name) continue; // shown separately in the solo queue list
+      const k = (r.team_name || "").trim().toLowerCase();
+      if (!k || full.has(k)) continue;
+      partial.set(k, [...(partial.get(k) || []), r]);
     }
     return [...partial.values()];
   }, [registrations, teams]);
@@ -461,6 +521,13 @@ export function TournamentDetailPage() {
                     <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>{members.length}/{tournament.team_size} — needs {tournament.team_size - members.length} more</span>
                   </div>
                 ))}
+                {soloQueue.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(179,107,255,.06)", border: "1px solid rgba(179,107,255,.2)" }}>
+                    <Users size={13} color={VIOLET} />
+                    <span style={{ fontWeight: 700, fontSize: 13.5, color: "#d9b8ff" }}>Solo queue</span>
+                    <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>{soloQueue.length} player{soloQueue.length === 1 ? "" : "s"} waiting to be auto-teamed</span>
+                  </div>
+                )}
               </div>
               {teams.length >= 2 && (
                 <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 14 }}>
@@ -622,6 +689,219 @@ export function TournamentProfilePage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Create tournament (premium-gated) ───────────────────────────────────────
+export function CreateTournamentPage() {
+  const { user, loading, isPremium, openAuth } = useAuth();
+  const [form, setForm] = useState({ name: "", prizePool: "0", teamSize: "3", maxTeams: "16" });
+  const [busy, setBusy] = useState(false);
+  const [toast, showToast] = useToast();
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  if (!loading && !user) {
+    return (
+      <div style={page.root}>
+        <div style={page.glow} /><SiteHeader />
+        <div style={{ ...page.wrap, maxWidth: 440, textAlign: "center" }}>
+          <div style={{ ...page.card, padding: "44px 30px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 40 }}>
+            <Trophy size={30} color={GOLD} />
+            <h1 style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, color: "#f4f4fa", margin: 0 }}>Sign in to create a tournament</h1>
+            <button onClick={() => openAuth("signin")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}><LogIn size={15} /> Sign in</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && user && !isPremium) {
+    return (
+      <div style={page.root}>
+        <div style={page.glow} /><SiteHeader />
+        <div style={{ ...page.wrap, maxWidth: 480, textAlign: "center" }}>
+          <div style={{ ...page.card, padding: "44px 30px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 40 }}>
+            <span style={{ fontSize: 32 }}>👑</span>
+            <h1 style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, color: "#f4f4fa", margin: 0 }}>Creating tournaments is a Premium feature</h1>
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0 }}>Upgrade to run your own bracket, fund the prize pool, and manage it from your dashboard — check-in, verification, and payouts are all automated for you.</p>
+            <Link to="/app?tab=premium" style={{ ...page.btn, textDecoration: "none" }}>Upgrade to Premium</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const { data, error } = await supabase.rpc("tournament_create", {
+      p_name: form.name,
+      p_prize_pool_total: Number(form.prizePool) || 0,
+      p_team_size: Number(form.teamSize) || 3,
+      p_max_teams: Number(form.maxTeams) || 16,
+    });
+    setBusy(false);
+    if (error) {
+      const code = error.message?.match(/[A-Z_]{4,}/)?.[0];
+      showToast({
+        PREMIUM_REQUIRED: "Your premium status lapsed — refresh and try again.",
+        MISSING_FIELDS: "Give your tournament a name.",
+        INVALID_TEAM_SIZE: "Team size must be between 1 and 5.",
+        INVALID_PRIZE_POOL: "Prize pool can't be negative.",
+      }[code] || `Couldn't create tournament: ${error.message}`, "error");
+      return;
+    }
+    window.location.href = `/tournaments/${data}/manage`;
+  };
+
+  return (
+    <div style={page.root}>
+      <div style={page.glow} />
+      <SiteHeader />
+      <div style={{ ...page.wrap, maxWidth: 560 }}>
+        <span style={page.eyebrow}>◈ CREATE TOURNAMENT</span>
+        <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,44px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 24px" }}>
+          Set it up — <span style={{ color: VIOLET }}>we run it</span>
+        </h1>
+        <form onSubmit={submit} style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+          <input style={page.input} placeholder="Tournament name" value={form.name} onChange={set("name")} required maxLength={60} />
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PRIZE POOL ($)</label>
+              <input style={page.input} type="number" min="0" step="1" value={form.prizePool} onChange={set("prizePool")} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>TEAM SIZE</label>
+              <select style={page.input} value={form.teamSize} onChange={set("teamSize")}>
+                <option value="1">1 (solo)</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>MAX TEAMS</label>
+              <input style={page.input} type="number" min="2" step="1" value={form.maxTeams} onChange={set("maxTeams")} />
+            </div>
+          </div>
+          <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
+            {busy ? "Creating…" : "Create Tournament"}
+          </button>
+        </form>
+        <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 14 }}>
+          After creation you'll land on your management dashboard — generate the bracket whenever registration is full.
+        </p>
+      </div>
+      <Toast {...(toast || {})} />
+    </div>
+  );
+}
+
+// ─── Manage tournament (creator-only dashboard) ──────────────────────────────
+export function ManageTournamentPage() {
+  const { tournamentId } = useParams();
+  const { user, session } = useAuth();
+  const [tournament, setTournament] = useState(null);
+  const [registrations, setRegistrations] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [toast, showToast] = useToast();
+  const [refresh, setRefresh] = useState(0);
+  const reload = () => setRefresh(x => x + 1);
+
+  useEffect(() => {
+    supabase.from("Tournaments").select("*").eq("id", tournamentId).maybeSingle().then(({ data }) => setTournament(data));
+    supabase.from("Registrations").select("*").eq("tournament_id", tournamentId).order("joined_at").then(({ data }) => setRegistrations(data || []));
+    supabase.from("TournamentMatches").select("*").eq("tournament_id", tournamentId).order("round").order("match_number").then(({ data }) => setMatches(data || []));
+  }, [tournamentId, refresh]);
+
+  const authedFetch = (url, body) => {
+    const token = session?.access_token;
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    }).then(r => r.json().then(j => ({ ok: r.ok, body: j })));
+  };
+
+  const generateBracket = async () => {
+    setBusy(true);
+    const { ok, body } = await authedFetch("/api/generate-bracket", { tournamentId });
+    setBusy(false);
+    if (!ok) { showToast(body.error === "premium_required" ? "Your premium status lapsed." : `Failed: ${body.error}`, "error"); return; }
+    showToast(`Bracket live — ${body.teams} teams, ${body.rounds} rounds.`, "success");
+    reload();
+  };
+
+  const resetMatch = async (matchId) => {
+    const { ok, body } = await authedFetch("/api/reset-match", { matchId });
+    if (!ok) { showToast(`Failed: ${body.error}`, "error"); return; }
+    showToast("Match reset — both teams get a fresh check-in window.", "success");
+    reload();
+  };
+
+  if (!tournament) {
+    return <div style={page.root}><div style={page.glow} /><SiteHeader /><div style={{ ...page.wrap, textAlign: "center", color: "#475569" }}>Loading…</div></div>;
+  }
+
+  if (user && tournament.created_by && user.id !== tournament.created_by) {
+    return (
+      <div style={page.root}><div style={page.glow} /><SiteHeader />
+        <div style={{ ...page.wrap, textAlign: "center", color: "#ff8f8f" }}>Only the tournament's creator can manage it.</div>
+      </div>
+    );
+  }
+
+  const registeredCount = registrations.length;
+  const rounds = (() => {
+    const byRound = new Map();
+    for (const m of matches) byRound.set(m.round, [...(byRound.get(m.round) || []), m]);
+    return [...byRound.entries()].sort((a, b) => a[0] - b[0]);
+  })();
+
+  return (
+    <div style={page.root}>
+      <div style={page.glow} />
+      <SiteHeader />
+      <div style={page.wrap}>
+        <Link to={`/tournaments/${tournamentId}`} style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6", textDecoration: "none" }}>← VIEW PUBLIC PAGE</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginTop: 16, marginBottom: 8 }}>
+          <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(28px,4vw,42px)", fontWeight: 700, color: "#f4f4fa", margin: 0 }}>{tournament.name}</h1>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).color, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.06)" }}>MANAGE MODE</span>
+        </div>
+
+        {tournament.status === "registration" && (
+          <div style={{ ...page.card, padding: 26, marginBottom: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+            <span style={page.eyebrow}>◈ REGISTRATION — {registeredCount} PLAYERS SIGNED UP</span>
+            <p style={{ fontSize: 13, color: "#8b8b9c", margin: 0 }}>Share the tournament link. When you've got enough teams, generate the bracket — check-in windows and match verification run automatically from there.</p>
+            <button onClick={generateBracket} disabled={busy} style={{ ...page.btn, opacity: busy ? .6 : 1, alignSelf: "flex-start" }}>
+              {busy ? "Generating…" : "Generate Bracket & Go Live"}
+            </button>
+          </div>
+        )}
+
+        {rounds.length > 0 && (
+          <section>
+            <span style={page.eyebrow}>◈ MATCHES — DISPUTE OVERRIDE</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+              {matches.map(m => (
+                <div key={m.id} style={{ ...page.card, padding: 16, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#6f7180" }}>R{m.round} M{m.match_number + 1}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>{m.team_a_name || "TBD"} vs {m.team_b_name || (m.status === "bye" ? "—" : "TBD")}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#9a9aab" }}>{m.status.toUpperCase()}</span>
+                  {m.result && <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>WINNER: {m.result === "team_a" ? m.team_a_name : m.team_b_name}</span>}
+                  {m.team_a_tags?.length > 0 && m.team_b_tags?.length > 0 && (
+                    <button onClick={() => resetMatch(m.id)} style={{ ...page.btnGhost, marginLeft: "auto", padding: "8px 16px", fontSize: 11 }}>
+                      Force Rematch
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+      <Toast {...(toast || {})} />
     </div>
   );
 }

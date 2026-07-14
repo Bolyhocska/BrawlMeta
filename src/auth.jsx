@@ -43,6 +43,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    session,
     profile,
     loading,
     isPremium: !!profile?.is_premium,
