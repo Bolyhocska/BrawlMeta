@@ -104,17 +104,20 @@ export default async function handler(req, res) {
     // timer below — OCR only ever accelerates, never blocks.
     if (proofUrl) {
       const winTags = (winner === "team_a" ? afterReport.team_a_tags : afterReport.team_b_tags) || [];
+      const loseTags = (winner === "team_a" ? afterReport.team_b_tags : afterReport.team_a_tags) || [];
       const winTeamName = winner === "team_a" ? afterReport.team_a_name : afterReport.team_b_name;
+      const loseTeamName = winner === "team_a" ? afterReport.team_b_name : afterReport.team_a_name;
       const regs = await dbSelect("Registrations", `tournament_id=eq.${match.tournament_id}&select=player_tag,display_name,team_name,team_display_name`);
-      const nameByTag = {}, teamNameByTeam = {};
+      const nameByTag = {}, teamDisplayByTeam = {};
       for (const r of regs) {
         nameByTag[normalizeTag(r.player_tag || "")] = r.display_name;
-        if (r.team_name) teamNameByTeam[r.team_name] = r.team_display_name;
+        if (r.team_name && r.team_display_name) teamDisplayByTeam[r.team_name] = r.team_display_name;
       }
-      const expectedNames = winTags.map((t) => nameByTag[normalizeTag(t)]).filter(Boolean);
-      const expectedTeamName = teamNameByTeam[winTeamName] || null;
+      // Accept either the team's registered display name or any player name.
+      const winnerNames = [teamDisplayByTeam[winTeamName], ...winTags.map((t) => nameByTag[normalizeTag(t)])].filter(Boolean);
+      const loserNames = [teamDisplayByTeam[loseTeamName], ...loseTags.map((t) => nameByTag[normalizeTag(t)])].filter(Boolean);
 
-      const ocr = await verifyVictoryScreenshot({ imageUrl: proofUrl, expectedNames, expectedTeamName });
+      const ocr = await verifyVictoryScreenshot({ imageUrl: proofUrl, winnerNames, loserNames });
       if (ocr.confident) {
         const winningSide = winner === "team_a" ? "A" : "B";
         await dbUpdate("TournamentMatches", `id=eq.${match.id}`, {

@@ -203,7 +203,8 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   const teamSize = tournament.team_size || 3;
 
   const [teamName, setTeamName] = useState("");
-  const [players, setPlayers] = useState(() => Array.from({ length: teamSize }, () => ({ tag: "", name: "" })));
+  const [teamDisplayName, setTeamDisplayName] = useState("");
+  const [players, setPlayers] = useState(() => Array.from({ length: teamSize }, () => ({ tag: "" })));
   const [soloTag, setSoloTag] = useState("");
   const [soloName, setSoloName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -211,7 +212,8 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   // Prefill slot 1 (the captain) and the solo form from the signed-in profile.
   useEffect(() => {
     if (!profile) return;
-    setPlayers(p => p.map((pl, i) => i === 0 ? { tag: pl.tag || profile.player_tag || "", name: pl.name || profile.display_name || "" } : pl));
+    setPlayers(p => p.map((pl, i) => i === 0 ? { tag: pl.tag || profile.player_tag || "" } : pl));
+    setTeamDisplayName(n => n || profile.display_name || "");
     setSoloTag(t => t || profile.player_tag || "");
     setSoloName(n => n || profile.display_name || "");
   }, [profile]);
@@ -249,18 +251,21 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   const submitTeam = async (e) => {
     e.preventDefault();
     setBusy(true);
+    // One exact in-game display name identifies the team; each player's roster
+    // name defaults to their tag (we only collect tags per player now).
     const { error } = await supabase.rpc("tournament_register_team", {
       p_tournament_id: tournament.id,
       p_team_name: teamName,
-      p_players: players.map(p => ({ tag: p.tag, name: p.name })),
+      p_players: players.map(p => ({ tag: p.tag, name: p.tag })),
+      p_team_display_name: teamDisplayName.trim(),
     });
     setBusy(false);
     if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
-    // Remember the captain's own tag/name (slot 1) on their profile.
+    // Remember the captain's own tag (slot 1) and display name on their profile.
     const captain = players[0];
     const patch = {};
     if (normalizeTag(captain.tag) !== (profile?.player_tag || "")) patch.player_tag = normalizeTag(captain.tag);
-    if (captain.name.trim() && captain.name.trim() !== (profile?.display_name || "")) patch.display_name = captain.name.trim();
+    if (teamDisplayName.trim() && teamDisplayName.trim() !== (profile?.display_name || "")) patch.display_name = teamDisplayName.trim();
     if (Object.keys(patch).length) await updateProfile(patch);
     showToast(`Team "${teamName}" registered — all ${teamSize} players locked in!`, "success");
     onRegistered?.();
@@ -304,11 +309,12 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
             Enter your whole roster at once — teammates don't need their own accounts. You're the captain (slot 1).
           </p>
           <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
+          <input style={page.input} placeholder="Team display name — the EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
+          <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: -4 }}>
+            One per team. Must match a player's Brawl Stars name EXACTLY — this is how we auto-verify your match screenshots.
+          </span>
           {players.map((p, i) => (
-            <div key={i} style={{ display: "flex", gap: 8 }}>
-              <input style={{ ...page.input, flex: 1 }} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
-              <input style={{ ...page.input, flex: 1 }} placeholder={i === 0 ? "Your name" : `Teammate ${i + 1} name`} value={p.name} onChange={e => setPlayer(i, "name", e.target.value)} required maxLength={30} />
-            </div>
+            <input key={i} style={page.input} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
           ))}
           <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
             {busy ? "Registering…" : `Register Team of ${teamSize} — Free`}
@@ -320,7 +326,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
             No squad? Queue solo and we'll auto-group you with other solo players into a full team of {teamSize} once the bracket generates.
           </p>
           <input style={page.input} placeholder="Player tag (e.g. #2C20JJRG)" value={soloTag} onChange={e => setSoloTag(e.target.value)} required />
-          <input style={page.input} placeholder="Display name" value={soloName} onChange={e => setSoloName(e.target.value)} required maxLength={30} />
+          <input style={page.input} placeholder="Display name — your EXACT in-game name" value={soloName} onChange={e => setSoloName(e.target.value)} required maxLength={30} />
           <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
             {busy ? "Joining queue…" : "Join Solo Queue — Free"}
           </button>
@@ -1308,9 +1314,9 @@ export function ManageTournamentPage() {
             {/* Creator adds teams directly (e.g. tags collected in Discord) */}
             <form onSubmit={addTeam} style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: "#c98bff" }}>◈ ADD A TEAM YOURSELF</span>
-              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Enter a team name, one team display name for verification, then {teamSize} player tags — one per line.</p>
-              <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={30} />
-              <input style={page.input} placeholder="Team display name (e.g. team tag or acronym — used for verification)" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} maxLength={20} />
+              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Team name, one team display name (the EXACT in-game name of a player — used to auto-verify results), then {teamSize} player tags — one per line.</p>
+              <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
+              <input style={page.input} placeholder="Team display name — EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAGS</span>
                 <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG\n#9YQ8RLP0\n#8UVP2QQL"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />

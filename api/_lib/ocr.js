@@ -52,11 +52,11 @@ function nameMatches(expected, found) {
   return false;
 }
 
-export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expectedTeamName }) {
+export async function verifyVictoryScreenshot({ imageUrl, winnerNames, loserNames }) {
   const key = process.env.ANTHROPIC_API_KEY;
-  const expected = (expectedNames || []).filter(Boolean);
-  const teamName = (expectedTeamName || "").trim();
-  if (!key || !imageUrl || !expected.length) {
+  const winners = (winnerNames || []).filter(Boolean);
+  const losers = (loserNames || []).filter(Boolean);
+  if (!key || !imageUrl || !winners.length) {
     return { confident: false, reason: "ocr_disabled_or_no_names" };
   }
   try {
@@ -66,15 +66,17 @@ export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expecte
       "",
       "1) END-OF-GAME SCREEN: a large 'VICTORY!' or 'DEFEAT!' banner in the TOP-LEFT.",
       "   The blue team on the LEFT is the submitter. 'VICTORY!' = the left team won; 'DEFEAT!' = the left team lost.",
+      "   The left/blue team's players are the winners on VICTORY; the right/red team are the losers.",
       "",
       "2) BATTLE LOG: a vertical list of recent matches. In every row the LEFT three players are the submitter's team,",
       "   and the centre shows 'VICTORY' (green) or 'DEFEAT' (red) FOR THAT LEFT TEAM. Use ONLY the MOST RECENT row (the topmost one).",
+      "   In that row the left three players are one team and the right three are the opponent.",
       "",
-      'Reply with ONLY a JSON object, no prose: {"leftTeamWon": boolean, "resultReadable": boolean, "winningPlayerNames": string[], "teamName": string|null, "screenType": "end_screen"|"battle_log"|"other"}.',
+      'Reply with ONLY a JSON object, no prose: {"leftTeamWon": boolean, "resultReadable": boolean, "winningPlayerNames": string[], "losingPlayerNames": string[], "screenType": "end_screen"|"battle_log"|"other"}.',
       "- leftTeamWon: true if the submitter's LEFT team clearly WON (VICTORY). false if it clearly LOST (DEFEAT).",
       "- resultReadable: true only if you can clearly read the VICTORY/DEFEAT result; false if blurry, cropped, a menu, or not a Brawl Stars result.",
-      "- winningPlayerNames: the player names of the team that WON (the left team if leftTeamWon, otherwise the right team).",
-      "- teamName: any team identifier/tag/name you can read, else null.",
+      "- winningPlayerNames: EVERY player name on the team that WON, exactly as written (keep symbols/emojis).",
+      "- losingPlayerNames: EVERY player name on the team that LOST, exactly as written.",
       "- screenType: which of the two layouts (or 'other').",
       "If you are not sure, set resultReadable=false.",
     ].join("\n");
@@ -108,21 +110,24 @@ export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expecte
     if (start < 0 || end < 0) return { confident: false, reason: "no_json" };
     const parsed = JSON.parse(text.slice(start, end + 1));
 
-    // The submitter's (left) team must have clearly won, and its roster must
-    // match the claimed winner. winningPlayerNames holds the victor's names,
-    // which equals the left team's names exactly when leftTeamWon is true.
+    // The submitter's (left) team must have clearly WON, its registered name
+    // must appear among the winners, and the OPPONENT's registered name must
+    // appear among the losers. Matching both sides proves it's the right match
+    // between the right two teams — not a random game or a screenshot swap.
     const leftTeamWon = parsed.leftTeamWon === true;
     const readable = parsed.resultReadable === true;
-    const names = Array.isArray(parsed.winningPlayerNames) ? parsed.winningPlayerNames : [];
-    const ocrTeamName = (parsed.teamName || "").trim();
+    const winSideNames = Array.isArray(parsed.winningPlayerNames) ? parsed.winningPlayerNames : [];
+    const loseSideNames = Array.isArray(parsed.losingPlayerNames) ? parsed.losingPlayerNames : [];
     const screenType = parsed.screenType || "other";
-    const matched = expected.filter((n) => nameMatches(n, names)).length;
-    // Require a clear VICTORY for the submitter plus a majority of their roster.
-    const need = Math.max(1, Math.ceil(expected.length / 2));
-    // Team name is a bonus signal; if both present and mismatched, defer.
-    const teamMatches = !teamName || !ocrTeamName || nameMatches(teamName, [ocrTeamName]);
-    const confident = readable && leftTeamWon && matched >= need && teamMatches;
-    return { confident, leftTeamWon, readable, names, matched, expected: expected.length, need, teamName: ocrTeamName, teamMatches, screenType, reason: confident ? "verified" : "insufficient_match" };
+
+    // Any registered winner name must be readable among the winning side.
+    const winnerFound = winners.some((n) => nameMatches(n, winSideNames));
+    // If we know the loser's registered name, it must show among the losers.
+    // (If the loser never registered a name, we can't cross-check — allow it.)
+    const loserFound = losers.length === 0 || losers.some((n) => nameMatches(n, loseSideNames));
+
+    const confident = readable && leftTeamWon && winnerFound && loserFound;
+    return { confident, leftTeamWon, readable, winnerFound, loserFound, winSideNames, loseSideNames, screenType, reason: confident ? "verified" : "insufficient_match" };
   } catch (e) {
     return { confident: false, reason: "ocr_error", detail: String(e).slice(0, 200) };
   }
