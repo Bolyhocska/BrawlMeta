@@ -11,6 +11,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn } from "lucide-react";
 import SiteHeader from "./SiteHeader";
+import SiteFooter from "./SiteFooter";
 import { supabase } from "./appCore";
 import { useAuth } from "./auth";
 import { groupIntoTeams, totalRoundsFor, roundLabel, nextPowerOfTwo, byesNeeded } from "./data/bracket";
@@ -183,10 +184,11 @@ export function TournamentLandingPage() {
           <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: 0, flex: 1, minWidth: 260 }}>
             <strong style={{ color: "#c9c9d6" }}>Fair by design:</strong> entry is always free and paid status can never buy a win —
             premium members only get priority for the bracket byes that the math already requires, plus deeper stats.
-            Results come from the official battle log, verified against all six registered player tags.
+            Both teams confirm each result; if they disagree, a quick screenshot settles it and the organizer decides.
           </p>
         </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }
@@ -329,12 +331,24 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   );
 }
 
-// ─── Match card (check-in + verify) ──────────────────────────────────────────
+// ─── Match card (check-in + dual-confirmation reporting) ─────────────────────
 function MatchCard({ match, myTag, onAction, showToast }) {
+  const { user, session } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const mine = myTag && [...(match.team_a_tags || []), ...(match.team_b_tags || [])].includes(myTag);
+  const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
+  const myReport = mySide === "A" ? match.team_a_reported : mySide === "B" ? match.team_b_reported : null;
+  const myProof = mySide === "A" ? match.team_a_proof_url : mySide === "B" ? match.team_b_proof_url : null;
   const checkedIn = (tags) => (tags || []).filter(t => match.checkin_status?.[t]).length;
   const iCheckedIn = myTag && match.checkin_status?.[myTag];
+
+  const authedFetch = (url, body) =>
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      body: JSON.stringify(body),
+    }).then(r => r.json().then(j => ({ ok: r.ok, status: r.status, body: j })));
 
   const checkin = async () => {
     setBusy(true);
@@ -353,24 +367,32 @@ function MatchCard({ match, myTag, onAction, showToast }) {
     }
   };
 
-  const verify = async () => {
+  // Report which team won. "winner" is a side letter relative to me: pass the
+  // absolute team_a/team_b to the API.
+  const report = async (winnerTeam) => {
     setBusy(true);
-    try {
-      const res = await fetch("/api/verify-match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchId: match.id, playerTag: myTag }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (res.status === 429) showToast(`Cooldown active — try again in ${Math.ceil((body.retryAfterMs || 0) / 1000)}s.`, "error");
-      else if (res.status === 404 && body.status === "not_found") showToast(body.message || "Battle not found yet — logs sync with a delay. Retry in a minute.", "info");
-      else if (body.result === "tie") showToast(body.message, "info");
-      else if (body.status === "found") showToast(`Verified — ${body.winner} advances! 🏆`, "success");
-      else showToast(body.message || body.reason || "Verification unavailable right now.", "error");
-    } catch {
-      showToast("Verification service unreachable (it runs on the deployed site).", "error");
-    }
+    const { ok, body } = await authedFetch("/api/report-result", { matchId: match.id, winner: winnerTeam });
     setBusy(false);
+    if (!ok) { showToast(body.message || `Couldn't submit result: ${body.error}`, "error"); return; }
+    showToast(body.message, body.status === "confirmed" ? "success" : body.status === "disputed" ? "error" : "info");
+    onAction();
+  };
+
+  const uploadProof = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { showToast("Screenshot must be under 5 MB.", "error"); return; }
+    if (!myReport) { showToast("Report who won first, then attach your proof.", "error"); return; }
+    setUploading(true);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${user.id}/${match.id}-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("match-proof").upload(path, file, { contentType: file.type });
+    if (up.error) { setUploading(false); showToast(`Upload failed: ${up.error.message}`, "error"); return; }
+    const { data } = supabase.storage.from("match-proof").getPublicUrl(path);
+    const { ok, body } = await authedFetch("/api/report-result", { matchId: match.id, winner: myReport, proofUrl: data.publicUrl });
+    setUploading(false);
+    if (!ok) { showToast(body.message || "Couldn't attach proof.", "error"); return; }
+    showToast("Screenshot attached ✔", "success");
     onAction();
   };
 
@@ -387,13 +409,21 @@ function MatchCard({ match, myTag, onAction, showToast }) {
     color: filled ? "#f4f4fa" : "#5a5a6a", fontSize: 13, fontWeight: 700,
   });
 
+  // A small reported-marker next to each side once they've confirmed.
+  const reportMark = (side) => {
+    const rep = side === "A" ? match.team_a_reported : match.team_b_reported;
+    if (!rep || match.status === "completed") return null;
+    return <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#8ee6b0" }}>reported ✓</span>;
+  };
+
   return (
-    <div style={{ ...page.card, padding: 16, display: "flex", flexDirection: "column", gap: 8, minWidth: 230 }}>
+    <div style={{ ...page.card, padding: 16, display: "flex", flexDirection: "column", gap: 8, minWidth: 230, ...(match.disputed ? { border: "1px solid rgba(255,143,143,.45)" } : {}) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>M{match.match_number + 1}</span>
         {match.status === "bye" && <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>BYE — AUTO-ADVANCE</span>}
         {["pending", "checkin"].includes(match.status) && match.checkin_deadline && <Countdown deadline={match.checkin_deadline} />}
-        {match.status === "active" && <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: GOLD }}>● LIVE</span>}
+        {match.status === "active" && !match.disputed && <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: GOLD }}>● LIVE</span>}
+        {match.disputed && <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#ff8f8f" }}>⚠ DISPUTED</span>}
         <span style={{ marginLeft: "auto" }}>{resultBadge}</span>
       </div>
       <div style={sideStyle(match.result === "team_a", match.team_a_name)}>
@@ -401,13 +431,17 @@ function MatchCard({ match, myTag, onAction, showToast }) {
         {(match.team_a_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
           <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>{checkedIn(match.team_a_tags)}/{match.team_a_tags.length} ✓</span>
         )}
+        {match.status === "active" && reportMark("A")}
       </div>
       <div style={sideStyle(match.result === "team_b", match.team_b_name)}>
         {match.team_b_name || (match.status === "bye" ? "—" : "TBD")}
         {(match.team_b_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
           <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>{checkedIn(match.team_b_tags)}/{match.team_b_tags.length} ✓</span>
         )}
+        {match.status === "active" && reportMark("B")}
       </div>
+
+      {/* Check-in */}
       {mine && ["pending", "checkin"].includes(match.status) && !iCheckedIn && (
         <button style={{ ...page.btn, padding: "10px 18px", fontSize: 12, opacity: busy ? .6 : 1 }} disabled={busy} onClick={checkin}>
           {busy ? "…" : "CHECK IN"}
@@ -416,10 +450,44 @@ function MatchCard({ match, myTag, onAction, showToast }) {
       {mine && ["pending", "checkin"].includes(match.status) && iCheckedIn && (
         <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ You're checked in — waiting on the lobby</span>
       )}
+
+      {/* Dual-confirmation reporting (active match, I'm a player) */}
       {mine && match.status === "active" && (
-        <button style={{ ...page.btnGhost, opacity: busy ? .6 : 1 }} disabled={busy} onClick={verify}>
-          {busy ? "Checking battle log…" : "⚡ VERIFY MATCH RESULTS"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 2 }}>
+          {!myReport ? (
+            <>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab", textAlign: "center" }}>WHO WON?</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ ...page.btn, flex: 1, padding: "9px 8px", fontSize: 11.5, opacity: busy ? .6 : 1 }} disabled={busy}
+                  onClick={() => report(mySide === "A" ? "team_a" : "team_b")}>We won</button>
+                <button style={{ ...page.btnGhost, flex: 1, padding: "9px 8px", fontSize: 11.5, opacity: busy ? .6 : 1 }} disabled={busy}
+                  onClick={() => report(mySide === "A" ? "team_b" : "team_a")}>We lost</button>
+              </div>
+            </>
+          ) : (
+            <span style={{ fontFamily: MONO, fontSize: 10.5, color: match.disputed ? "#ff8f8f" : "#8ee6b0", textAlign: "center" }}>
+              You reported: {myReport === "team_a" ? match.team_a_name : match.team_b_name} won
+            </span>
+          )}
+
+          {match.disputed && (
+            <span style={{ fontSize: 11, color: "#ffce7a", textAlign: "center", lineHeight: 1.4 }}>
+              Reports don't match. Attach a screenshot of the result screen — the organizer decides.
+            </span>
+          )}
+
+          {/* Proof upload — available once you've reported, encouraged on dispute */}
+          {myReport && (
+            myProof ? (
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0", textAlign: "center" }}>✓ Your screenshot is attached</span>
+            ) : (
+              <label style={{ ...page.btnGhost, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: "8px 12px", fontSize: 11 }}>
+                {uploading ? "Uploading…" : "📷 Attach screenshot"}
+                <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} style={{ display: "none" }} />
+              </label>
+            )
+          )}
+        </div>
       )}
     </div>
   );
@@ -601,11 +669,12 @@ export function TournamentDetailPage() {
               ))}
             </div>
             {myTag
-              ? <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a" }}>PLAYING AS {myTag} — check-in and verify buttons appear on your matches.</p>
+              ? <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a" }}>PLAYING AS {myTag} — check-in and result-report buttons appear on your matches.</p>
               : <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a" }}>REGISTERED? Set your tag on the <Link to="/tournaments/profile" style={{ color: "#c98bff" }}>profile page</Link> to unlock check-in buttons.</p>}
           </section>
         )}
       </div>
+      <SiteFooter />
       <Toast {...(toast || {})} />
     </div>
   );
@@ -976,6 +1045,38 @@ export function ManageTournamentPage() {
     reload();
   };
 
+  const declareWinner = async (matchId, winner) => {
+    const { ok, body } = await authedFetch("/api/declare-winner", { matchId, winner });
+    if (!ok) { showToast(`Failed: ${body.error}`, "error"); return; }
+    showToast("Winner declared — bracket advanced.", "success");
+    reload();
+  };
+
+  // Creator adds a full roster directly (e.g. from tags collected in Discord).
+  const [teamName, setTeamName] = useState("");
+  const [teamTags, setTeamTags] = useState("");
+  const addTeam = async (e) => {
+    e.preventDefault();
+    const size = tournament?.team_size || 3;
+    const rows = teamTags.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+      // "TAG, Name" or "TAG Name" — split on first comma or whitespace
+      const [tag, ...rest] = l.split(/[,\s]+/);
+      return { tag, name: rest.join(" ") || tag };
+    });
+    if (rows.length !== size) { showToast(`Enter exactly ${size} players (one per line).`, "error"); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("tournament_register_team", { p_tournament_id: tournamentId, p_team_name: teamName, p_players: rows });
+    setBusy(false);
+    if (error) {
+      const code = error.message?.match(/[A-Z_]{4,}/)?.[0];
+      showToast({ TAG_ALREADY_REGISTERED: "One of those tags is already in this tournament.", TEAM_NAME_TAKEN: "That team name is taken.", INVALID_TAG: "A tag looks invalid.", WRONG_PLAYER_COUNT: `Need exactly ${size} players.` }[code] || `Failed: ${error.message}`, "error");
+      return;
+    }
+    showToast(`Added team "${teamName}".`, "success");
+    setTeamName(""); setTeamTags("");
+    reload();
+  };
+
   if (!tournament) {
     return <div style={page.root}><div style={page.glow} /><SiteHeader /><div style={{ ...page.wrap, textAlign: "center", color: "#475569" }}>Loading…</div></div>;
   }
@@ -989,11 +1090,14 @@ export function ManageTournamentPage() {
   }
 
   const registeredCount = registrations.length;
-  const rounds = (() => {
-    const byRound = new Map();
-    for (const m of matches) byRound.set(m.round, [...(byRound.get(m.round) || []), m]);
-    return [...byRound.entries()].sort((a, b) => a[0] - b[0]);
-  })();
+  const disputes = matches.filter(m => m.disputed && m.status !== "completed");
+  const teamSize = tournament?.team_size || 3;
+
+  const proofView = (url, label) => url ? (
+    <a href={url} target="_blank" rel="noreferrer" style={{ display: "block" }}>
+      <img src={url} alt={label} style={{ width: "100%", maxHeight: 150, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)" }} />
+    </a>
+  ) : <div style={{ padding: "18px 10px", textAlign: "center", fontFamily: MONO, fontSize: 10, color: "#5a5a6a", border: "1px dashed rgba(255,255,255,.14)", borderRadius: 10 }}>no screenshot</div>;
 
   return (
     <div style={page.root}>
@@ -1006,19 +1110,55 @@ export function ManageTournamentPage() {
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).color, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.06)" }}>MANAGE MODE</span>
         </div>
 
+        {/* Disputes needing a decision — most urgent, shown first */}
+        {disputes.length > 0 && (
+          <section style={{ marginBottom: 26 }}>
+            <span style={{ ...page.eyebrow, color: "#ff8f8f" }}>⚠ DISPUTES — {disputes.length} NEED YOUR DECISION</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+              {disputes.map(m => (
+                <div key={m.id} style={{ ...page.card, padding: 18, border: "1px solid rgba(255,143,143,.4)" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: "#9a9aab", marginBottom: 10 }}>R{m.round} M{m.match_number + 1} — teams reported different winners</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{m.team_a_name} <span style={{ fontFamily: MONO, fontSize: 10, color: "#8a7fa6" }}>· claims {m.team_a_reported === "team_a" ? "win" : m.team_a_reported === "team_b" ? "loss" : "—"}</span></div>
+                      {proofView(m.team_a_proof_url, "Team A proof")}
+                      <button onClick={() => declareWinner(m.id, "team_a")} style={{ ...page.btn, width: "100%", marginTop: 8, padding: "9px", fontSize: 12 }}>Declare {m.team_a_name} winner</button>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{m.team_b_name} <span style={{ fontFamily: MONO, fontSize: 10, color: "#8a7fa6" }}>· claims {m.team_b_reported === "team_b" ? "win" : m.team_b_reported === "team_a" ? "loss" : "—"}</span></div>
+                      {proofView(m.team_b_proof_url, "Team B proof")}
+                      <button onClick={() => declareWinner(m.id, "team_b")} style={{ ...page.btn, width: "100%", marginTop: 8, padding: "9px", fontSize: 12 }}>Declare {m.team_b_name} winner</button>
+                    </div>
+                  </div>
+                  <button onClick={() => resetMatch(m.id)} style={{ ...page.btnGhost, marginTop: 10, padding: "7px 14px", fontSize: 11 }}>Or force a rematch</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {tournament.status === "registration" && (
           <div style={{ ...page.card, padding: 26, marginBottom: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             <span style={page.eyebrow}>◈ REGISTRATION — {registeredCount} PLAYERS SIGNED UP</span>
-            <p style={{ fontSize: 13, color: "#8b8b9c", margin: 0 }}>Share the tournament link. When you've got enough teams, generate the bracket — check-in windows and match verification run automatically from there.</p>
+            <p style={{ fontSize: 13, color: "#8b8b9c", margin: 0 }}>Share the tournament link. When you've got enough teams, generate the bracket — check-in windows and result reporting run automatically from there.</p>
             <button onClick={generateBracket} disabled={busy} style={{ ...page.btn, opacity: busy ? .6 : 1, alignSelf: "flex-start" }}>
               {busy ? "Generating…" : "Generate Bracket & Go Live"}
             </button>
+
+            {/* Creator adds teams directly (e.g. tags collected in Discord) */}
+            <form onSubmit={addTeam} style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#c98bff" }}>◈ ADD A TEAM YOURSELF</span>
+              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Enter a team name, then {teamSize} players — one per line as <code style={{ color: "#c9c9d6" }}>#TAG, Name</code>.</p>
+              <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={30} />
+              <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG, Alex\n#9YQ8RLP0, Sam\n#8UVP2QQL, Jo"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />
+              <button type="submit" disabled={busy} style={{ ...page.btnGhost, alignSelf: "flex-start", opacity: busy ? .6 : 1 }}>Add team</button>
+            </form>
           </div>
         )}
 
         {rounds.length > 0 && (
           <section>
-            <span style={page.eyebrow}>◈ MATCHES — DISPUTE OVERRIDE</span>
+            <span style={page.eyebrow}>◈ ALL MATCHES — OVERRIDE</span>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
               {matches.map(m => (
                 <div key={m.id} style={{ ...page.card, padding: 16, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>

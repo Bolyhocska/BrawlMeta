@@ -47,6 +47,29 @@ async function sweepExpiredCheckins(matches) {
   return resolved;
 }
 
+// Dual-confirmation timeout: an active match where exactly one side reported a
+// winner and the report window has lapsed resolves to the reporter — the silent
+// opponent forfeits the confirmation. Disputed matches are left for the creator.
+async function sweepReportTimeouts(matches, checkinMinutes) {
+  const now = Date.now();
+  const resolved = [];
+  for (const m of matches) {
+    if (m.status !== "active" || m.disputed) continue;
+    if (!m.report_deadline || Date.parse(m.report_deadline) > now) continue;
+    const aRep = m.team_a_reported, bRep = m.team_b_reported;
+    if ((aRep && bRep) || (!aRep && !bRep)) continue; // both or neither → not a timeout case
+
+    const reported = aRep || bRep;                // the lone report
+    const winningSide = reported === "team_a" ? "A" : "B";
+    const [updated] = await dbUpdate("TournamentMatches", `id=eq.${m.id}`, {
+      status: "completed", result: reported, verified: true, verified_at: new Date().toISOString(),
+    });
+    if (updated) await advanceWinner(updated, winningSide, checkinMinutes);
+    resolved.push({ id: m.id, action: "report_timeout", winner: reported === "team_a" ? m.team_a_name : m.team_b_name });
+  }
+  return resolved;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") return json(res, 405, { error: "GET only" });
   try {
@@ -62,13 +85,14 @@ export default async function handler(req, res) {
       `tournament_id=eq.${encodeURIComponent(tournamentId)}&select=*&order=round.asc,match_number.asc`
     );
     const swept = await sweepExpiredCheckins(matches);
-    if (swept.length) {
+    const sweptReports = await sweepReportTimeouts(matches, tournament.checkin_minutes || 10);
+    if (swept.length || sweptReports.length) {
       matches = await dbSelect(
         "TournamentMatches",
         `tournament_id=eq.${encodeURIComponent(tournamentId)}&select=*&order=round.asc,match_number.asc`
       );
     }
-    return json(res, 200, { tournament, matches, swept });
+    return json(res, 200, { tournament, matches, swept: [...swept, ...sweptReports] });
   } catch (e) {
     console.error("bracket-state error:", e);
     return json(res, e.status || 500, { error: e.message });
