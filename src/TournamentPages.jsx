@@ -813,6 +813,20 @@ export function TournamentProfilePage() {
 
 // ─── Create tournament (premium-gated) ───────────────────────────────────────
 const REGIONS = ["Global", "Europe", "North America", "South America", "Asia", "Oceania", "Middle East"];
+
+// A labelled field wrapper so every control lines up and breathes evenly.
+// Defined at module scope (NOT inside the page component) — a component
+// declared inside render is a new type each keystroke, which remounts the
+// input and drops focus after every character.
+function Field({ label, hint, children, style }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, ...style }}>
+      <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>{label}</span>
+      {children}
+      {hint && <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{hint}</span>}
+    </label>
+  );
+}
 // The creator's own timezone — times are entered as their local wall clock and
 // stored as UTC, so every viewer sees the start time in their own zone.
 const LOCAL_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "your local time"; } })();
@@ -910,14 +924,6 @@ export function CreateTournamentPage() {
     window.location.href = `/tournaments/${data}/manage`;
   };
 
-  // A labelled field wrapper so every control lines up and breathes evenly.
-  const Field = ({ label, hint, children, style }) => (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, ...style }}>
-      <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>{label}</span>
-      {children}
-      {hint && <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{hint}</span>}
-    </label>
-  );
   const fieldInput = { ...page.input, borderRadius: 14 };
 
   return (
@@ -1092,6 +1098,12 @@ export function ManageTournamentPage() {
   const registeredCount = registrations.length;
   const disputes = matches.filter(m => m.disputed && m.status !== "completed");
   const teamSize = tournament?.team_size || 3;
+  // Group matches into rounds so the "all matches" section can gate on it.
+  const rounds = (() => {
+    const byRound = new Map();
+    for (const m of matches) byRound.set(m.round, [...(byRound.get(m.round) || []), m]);
+    return [...byRound.entries()].sort((a, b) => a[0] - b[0]);
+  })();
 
   const proofView = (url, label) => url ? (
     <a href={url} target="_blank" rel="noreferrer" style={{ display: "block" }}>
