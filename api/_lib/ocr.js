@@ -61,12 +61,22 @@ export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expecte
   }
   try {
     const prompt = [
-      "You are verifying a Brawl Stars end-of-game result screenshot.",
-      'Reply with ONLY a JSON object, no prose: {"hasVictory": boolean, "playerNames": string[], "teamName": string|null}.',
-      "- hasVictory: true only if the screen clearly shows a VICTORY result (not DEFEAT, not DRAW, not a menu or lobby).",
-      "- playerNames: every player name shown on the winning/VICTORY side that you can read.",
-      "- teamName: if you can read any team identifier/tag/name on the screen (in UI or player profiles), include it; otherwise null.",
-      'If it is not clearly a Brawl Stars victory result screen, return {"hasVictory": false, "playerNames": [], "teamName": null}.',
+      "You verify a Brawl Stars screenshot submitted by a player to prove their team WON a tournament match.",
+      "The submitter's own team is ALWAYS the LEFT side. There are two screenshot types:",
+      "",
+      "1) END-OF-GAME SCREEN: a large 'VICTORY!' or 'DEFEAT!' banner in the TOP-LEFT.",
+      "   The blue team on the LEFT is the submitter. 'VICTORY!' = the left team won; 'DEFEAT!' = the left team lost.",
+      "",
+      "2) BATTLE LOG: a vertical list of recent matches. In every row the LEFT three players are the submitter's team,",
+      "   and the centre shows 'VICTORY' (green) or 'DEFEAT' (red) FOR THAT LEFT TEAM. Use ONLY the MOST RECENT row (the topmost one).",
+      "",
+      'Reply with ONLY a JSON object, no prose: {"leftTeamWon": boolean, "resultReadable": boolean, "winningPlayerNames": string[], "teamName": string|null, "screenType": "end_screen"|"battle_log"|"other"}.',
+      "- leftTeamWon: true if the submitter's LEFT team clearly WON (VICTORY). false if it clearly LOST (DEFEAT).",
+      "- resultReadable: true only if you can clearly read the VICTORY/DEFEAT result; false if blurry, cropped, a menu, or not a Brawl Stars result.",
+      "- winningPlayerNames: the player names of the team that WON (the left team if leftTeamWon, otherwise the right team).",
+      "- teamName: any team identifier/tag/name you can read, else null.",
+      "- screenType: which of the two layouts (or 'other').",
+      "If you are not sure, set resultReadable=false.",
     ].join("\n");
 
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -98,16 +108,21 @@ export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expecte
     if (start < 0 || end < 0) return { confident: false, reason: "no_json" };
     const parsed = JSON.parse(text.slice(start, end + 1));
 
-    const hasVictory = parsed.hasVictory === true;
-    const names = Array.isArray(parsed.playerNames) ? parsed.playerNames : [];
+    // The submitter's (left) team must have clearly won, and its roster must
+    // match the claimed winner. winningPlayerNames holds the victor's names,
+    // which equals the left team's names exactly when leftTeamWon is true.
+    const leftTeamWon = parsed.leftTeamWon === true;
+    const readable = parsed.resultReadable === true;
+    const names = Array.isArray(parsed.winningPlayerNames) ? parsed.winningPlayerNames : [];
     const ocrTeamName = (parsed.teamName || "").trim();
+    const screenType = parsed.screenType || "other";
     const matched = expected.filter((n) => nameMatches(n, names)).length;
-    // Require a VICTORY banner plus a majority of the winning roster's names.
+    // Require a clear VICTORY for the submitter plus a majority of their roster.
     const need = Math.max(1, Math.ceil(expected.length / 2));
-    // Team name is a bonus signal; if provided and doesn't match, reduce confidence slightly.
+    // Team name is a bonus signal; if both present and mismatched, defer.
     const teamMatches = !teamName || !ocrTeamName || nameMatches(teamName, [ocrTeamName]);
-    const confident = hasVictory && matched >= need && teamMatches;
-    return { confident, hasVictory, names, matched, expected: expected.length, need, teamName: ocrTeamName, teamMatches, reason: confident ? "verified" : "insufficient_match" };
+    const confident = readable && leftTeamWon && matched >= need && teamMatches;
+    return { confident, leftTeamWon, readable, names, matched, expected: expected.length, need, teamName: ocrTeamName, teamMatches, screenType, reason: confident ? "verified" : "insufficient_match" };
   } catch (e) {
     return { confident: false, reason: "ocr_error", detail: String(e).slice(0, 200) };
   }
