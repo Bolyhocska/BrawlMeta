@@ -396,7 +396,8 @@ function MatchCard({ match, myTag, onAction, showToast }) {
     const { ok, body } = await authedFetch("/api/report-result", { matchId: match.id, winner: myReport, proofUrl: data.publicUrl });
     setUploading(false);
     if (!ok) { showToast(body.message || "Couldn't attach proof.", "error"); return; }
-    showToast("Screenshot attached ✔", "success");
+    // OCR may auto-confirm the moment the screenshot lands — surface its message.
+    showToast(body.message || "Screenshot attached ✔", "success");
     onAction();
   };
 
@@ -510,15 +511,20 @@ function MatchCard({ match, myTag, onAction, showToast }) {
             </span>
           )}
 
-          {/* Proof upload — available once I've reported, essential on dispute */}
+          {/* Proof upload — auto-verifies via OCR when possible; essential on dispute */}
           {myReport && (
             myProof ? (
               <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0", textAlign: "center" }}>✓ Your screenshot is attached</span>
             ) : (
-              <label style={{ ...page.btnGhost, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: "8px 12px", fontSize: 11 }}>
-                {uploading ? "Uploading…" : "📷 Attach screenshot"}
-                <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} style={{ display: "none" }} />
-              </label>
+              <>
+                <label style={{ ...page.btnGhost, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: "8px 12px", fontSize: 11 }}>
+                  {uploading ? "Verifying…" : "📷 Attach screenshot"}
+                  <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} style={{ display: "none" }} />
+                </label>
+                {!match.disputed && (
+                  <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", textAlign: "center" }}>a clear victory screenshot can advance you instantly</span>
+                )}
+              </>
             )
           )}
         </div>

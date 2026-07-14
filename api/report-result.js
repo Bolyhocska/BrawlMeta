@@ -10,11 +10,16 @@
 //   • other team does nothing  → a lazy sweep in bracket-state.js auto-accepts
 //                               the reported result once the window lapses
 //
+// OCR fast-path: if the report carries a screenshot, a Claude-vision check
+// (api/_lib/ocr.js) can confirm the VICTORY + winning names instantly and skip
+// the timer entirely. It's best-effort — unclear images defer to the timer.
+//
 // Body: { matchId, winner: "team_a" | "team_b", proofUrl? }
 // Auth: the caller's Supabase session (Bearer token); their profile.player_tag
 // must be in the match, which decides which side they report for.
 
 import { assertEnv, dbSelect, dbUpdate, advanceWinner, creditWallets, json, getUserFromRequest } from "./_lib/db.js";
+import { verifyVictoryScreenshot } from "./_lib/ocr.js";
 import { normalizeTag } from "../src/data/verifyLogic.js";
 
 const REPORT_WINDOW_MIN = 3;                             // dispute window
@@ -91,6 +96,34 @@ export default async function handler(req, res) {
       // Disagreement → dispute.
       await dbUpdate("TournamentMatches", `id=eq.${match.id}`, { disputed: true });
       return json(res, 200, { status: "disputed", message: "Result disputed. Attach a screenshot of the result screen — the organizer will resolve it." });
+    }
+
+    // OCR fast-path: if the reporter attached a screenshot, try to verify it
+    // instantly. A confident VICTORY match for the claimed winner skips the
+    // dispute timer and advances right away. Any failure falls through to the
+    // timer below — OCR only ever accelerates, never blocks.
+    if (proofUrl) {
+      const winTags = (winner === "team_a" ? afterReport.team_a_tags : afterReport.team_b_tags) || [];
+      const regs = await dbSelect("Registrations", `tournament_id=eq.${match.tournament_id}&select=player_tag,display_name`);
+      const nameByTag = {};
+      for (const r of regs) nameByTag[normalizeTag(r.player_tag || "")] = r.display_name;
+      const expectedNames = winTags.map((t) => nameByTag[normalizeTag(t)]).filter(Boolean);
+
+      const ocr = await verifyVictoryScreenshot({ imageUrl: proofUrl, expectedNames });
+      if (ocr.confident) {
+        const winningSide = winner === "team_a" ? "A" : "B";
+        await dbUpdate("TournamentMatches", `id=eq.${match.id}`, {
+          status: "completed", result: winner, verified: true, verified_at: now, disputed: false,
+        });
+        const [tournament] = await dbSelect("Tournaments", `id=eq.${match.tournament_id}&select=*`);
+        const next = await advanceWinner({ ...afterReport, result: winner }, winningSide, tournament?.checkin_minutes || 10);
+        if (!next) {
+          await dbUpdate("Tournaments", `id=eq.${match.tournament_id}`, { status: "completed" });
+          const winnerTags = winningSide === "A" ? afterReport.team_a_tags : afterReport.team_b_tags;
+          await creditWallets(winnerTags, Number(tournament?.prize_pool_total || 0));
+        }
+        return json(res, 200, { status: "confirmed", result: winner, verifiedBy: "ocr", message: "Screenshot verified — winner advances automatically! 🏆" });
+      }
     }
 
     // First report — the other team now has the dispute window to respond.
