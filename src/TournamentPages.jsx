@@ -246,8 +246,8 @@ function ChampionCelebration({ name, tournamentId, prize }) {
         animation: "bm-aura 2.6s ease-in-out infinite",
       }} />
       <div style={{ position: "relative", textAlign: "center", padding: "0 6vw", animation: "bm-champ-rise .7s cubic-bezier(.2,.9,.3,1.2) both" }}>
-        <div style={{ fontSize: "clamp(64px, 10vw, 110px)", filter: "drop-shadow(0 0 34px rgba(255,180,61,.55))", animation: "bm-trophy 2.2s ease-in-out infinite" }}>🏆</div>
-        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 6, color: "#ffce7a", marginTop: 18 }}>◈ CHAMPIONS ◈</div>
+        <div style={{ fontSize: "clamp(64px, 10vw, 110px)", lineHeight: 1, display: "block", filter: "drop-shadow(0 0 34px rgba(255,180,61,.55))", animation: "bm-trophy 2.2s ease-in-out infinite" }}>🏆</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 6, color: "#ffce7a", marginTop: 34 }}>◈ CHAMPIONS ◈</div>
         <div style={{
           fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(44px, 8vw, 96px)", lineHeight: 1.02, marginTop: 10,
           color: GOLD, textShadow: "0 0 60px rgba(255,180,61,.6), 0 0 130px rgba(255,180,61,.3)",
@@ -1168,6 +1168,7 @@ export function TournamentProfilePage() {
   const [tagInput, setTagInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saveErr, setSaveErr] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [history, setHistory] = useState([]);
   const [matchHistory, setMatchHistory] = useState([]);
@@ -1196,9 +1197,21 @@ export function TournamentProfilePage() {
     (m.result === "team_b" && (m.team_b_tags || []).includes(myTag))
   ).length;
 
+  // Display name is permanent once set — only send it the first time (when the
+  // profile has none yet). The player tag stays freely editable.
+  const nameLocked = !!(profile?.display_name && profile.display_name.trim());
   const saveIdentity = async (e) => {
     e.preventDefault();
-    await updateProfile({ player_tag: normalizeTag(tagInput), display_name: nameInput.trim() || null });
+    setSaveErr(null);
+    const patch = { player_tag: normalizeTag(tagInput) };
+    if (!nameLocked && nameInput.trim()) patch.display_name = nameInput.trim();
+    const { error } = await updateProfile(patch);
+    if (error) {
+      setSaveErr(error.code === "23505" || /duplicate|unique/i.test(error.message)
+        ? "That display name is already taken — pick another."
+        : `Couldn't save: ${error.message}`);
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -1239,8 +1252,12 @@ export function TournamentProfilePage() {
 
         <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME</span>
-            <input style={{ ...page.input, maxWidth: 200 }} placeholder="Your name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30} />
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#6f7180" }}>· 🔒 PERMANENT</span>}</span>
+            <input
+              style={{ ...page.input, maxWidth: 200, ...(nameLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
+              placeholder="Choose a unique name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30}
+              readOnly={nameLocked} title={nameLocked ? "Your display name is set for good." : undefined} />
+            <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG</span>
@@ -1248,6 +1265,7 @@ export function TournamentProfilePage() {
           </div>
           <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12, alignSelf: "flex-end" }}>Save</button>
           {saved && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", alignSelf: "flex-end", paddingBottom: 12 }}>SAVED ✔</span>}
+          {saveErr && <span style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", alignSelf: "flex-end", paddingBottom: 12 }}>{saveErr}</span>}
         </form>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>

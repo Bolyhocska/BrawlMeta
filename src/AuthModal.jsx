@@ -113,7 +113,10 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
 
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {mode === "signup" && (
-            <input style={input} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={30} required />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <input style={input} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={30} required />
+              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#6f7180", paddingLeft: 4 }}>Unique & permanent — you can't change it later.</span>
+            </div>
           )}
           <input style={input} type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <input style={input} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />

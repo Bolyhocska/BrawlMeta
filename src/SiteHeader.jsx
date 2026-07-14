@@ -168,7 +168,7 @@ function AccountMenu() {
 
 export default function SiteHeader() {
   return (
-    <header className="site-header" style={{ position: "relative", zIndex: 40, display: "flex", alignItems: "center", gap: 22, padding: "22px 5vw", flexWrap: "wrap" }}>
+    <header className="site-header" style={{ position: "relative", zIndex: 40, display: "flex", alignItems: "center", gap: 22, padding: "22px 5vw", flexWrap: "nowrap" }}>
       <Link to="/" aria-label="BrawlMeta home" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", flexShrink: 0 }}>
         <div style={{
           position: "relative", width: 42, height: 42, borderRadius: 13, background: "#08080b",
@@ -188,13 +188,13 @@ export default function SiteHeader() {
         </div>
       </Link>
 
-      <nav className="site-nav" style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 6, padding: 6, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", overflowX: "auto" }}>
+      <nav className="site-nav" style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 6, padding: 6, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", overflowX: "auto", flex: "1 1 auto", minWidth: 0 }}>
         {NAV_ITEMS.map(n => n.dropdown
           ? <NavDropdown key={n.label} item={n} />
           : <NavLink key={n.label} to={n.to}>{n.label}</NavLink>)}
       </nav>
 
-      <div className="site-header-right" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="site-header-right" style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999,
           border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
