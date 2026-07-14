@@ -1170,15 +1170,16 @@ export function ManageTournamentPage() {
   // Creator adds a full roster directly (e.g. from tags collected in Discord).
   const [teamName, setTeamName] = useState("");
   const [teamTags, setTeamTags] = useState("");
+  const [teamDisplayNames, setTeamDisplayNames] = useState("");
   const addTeam = async (e) => {
     e.preventDefault();
     const size = tournament?.team_size || 3;
-    const rows = teamTags.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
-      // "TAG, Name" or "TAG Name" — split on first comma or whitespace
-      const [tag, ...rest] = l.split(/[,\s]+/);
-      return { tag, name: rest.join(" ") || tag };
-    });
-    if (rows.length !== size) { showToast(`Enter exactly ${size} players (one per line).`, "error"); return; }
+    const tags = teamTags.split("\n").map(l => l.trim()).filter(Boolean);
+    const names = teamDisplayNames.split("\n").map(l => l.trim()).filter(Boolean);
+    if (tags.length !== size) { showToast(`Enter exactly ${size} player tags (one per line).`, "error"); return; }
+    if (names.length !== size) { showToast(`Enter exactly ${size} player display names (one per line).`, "error"); return; }
+    const rows = tags.map((tag, i) => ({ tag, name: names[i] || tag }));
+    if (rows.length !== size) { showToast(`Enter exactly ${size} players.`, "error"); return; }
     setBusy(true);
     const { error } = await supabase.rpc("tournament_register_team", { p_tournament_id: tournamentId, p_team_name: teamName, p_players: rows });
     setBusy(false);
@@ -1188,7 +1189,7 @@ export function ManageTournamentPage() {
       return;
     }
     showToast(`Added team "${teamName}".`, "success");
-    setTeamName(""); setTeamTags("");
+    setTeamName(""); setTeamTags(""); setTeamDisplayNames("");
     reload();
   };
 
@@ -1306,9 +1307,18 @@ export function ManageTournamentPage() {
             {/* Creator adds teams directly (e.g. tags collected in Discord) */}
             <form onSubmit={addTeam} style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: "#c98bff" }}>◈ ADD A TEAM YOURSELF</span>
-              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Enter a team name, then {teamSize} players — one per line as <code style={{ color: "#c9c9d6" }}>#TAG, Name</code>.</p>
+              <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Enter a team name, then {teamSize} player tags and display names separately — one per line.</p>
               <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={30} />
-              <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG, Alex\n#9YQ8RLP0, Sam\n#8UVP2QQL, Jo"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAGS</span>
+                  <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG\n#9YQ8RLP0\n#8UVP2QQL"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAMES</span>
+                  <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: "'Chakra Petch', sans-serif" }} placeholder={"Alex\nSam\nJo"} value={teamDisplayNames} onChange={e => setTeamDisplayNames(e.target.value)} />
+                </div>
+              </div>
               <button type="submit" disabled={busy} style={{ ...page.btnGhost, alignSelf: "flex-start", opacity: busy ? .6 : 1 }}>Add team</button>
             </form>
           </div>
