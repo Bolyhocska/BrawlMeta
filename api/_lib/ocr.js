@@ -52,19 +52,21 @@ function nameMatches(expected, found) {
   return false;
 }
 
-export async function verifyVictoryScreenshot({ imageUrl, expectedNames }) {
+export async function verifyVictoryScreenshot({ imageUrl, expectedNames, expectedTeamName }) {
   const key = process.env.ANTHROPIC_API_KEY;
   const expected = (expectedNames || []).filter(Boolean);
+  const teamName = (expectedTeamName || "").trim();
   if (!key || !imageUrl || !expected.length) {
     return { confident: false, reason: "ocr_disabled_or_no_names" };
   }
   try {
     const prompt = [
       "You are verifying a Brawl Stars end-of-game result screenshot.",
-      'Reply with ONLY a JSON object, no prose: {"hasVictory": boolean, "playerNames": string[]}.',
+      'Reply with ONLY a JSON object, no prose: {"hasVictory": boolean, "playerNames": string[], "teamName": string|null}.',
       "- hasVictory: true only if the screen clearly shows a VICTORY result (not DEFEAT, not DRAW, not a menu or lobby).",
       "- playerNames: every player name shown on the winning/VICTORY side that you can read.",
-      'If it is not clearly a Brawl Stars victory result screen, return {"hasVictory": false, "playerNames": []}.',
+      "- teamName: if you can read any team identifier/tag/name on the screen (in UI or player profiles), include it; otherwise null.",
+      'If it is not clearly a Brawl Stars victory result screen, return {"hasVictory": false, "playerNames": [], "teamName": null}.',
     ].join("\n");
 
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -98,11 +100,14 @@ export async function verifyVictoryScreenshot({ imageUrl, expectedNames }) {
 
     const hasVictory = parsed.hasVictory === true;
     const names = Array.isArray(parsed.playerNames) ? parsed.playerNames : [];
+    const ocrTeamName = (parsed.teamName || "").trim();
     const matched = expected.filter((n) => nameMatches(n, names)).length;
     // Require a VICTORY banner plus a majority of the winning roster's names.
     const need = Math.max(1, Math.ceil(expected.length / 2));
-    const confident = hasVictory && matched >= need;
-    return { confident, hasVictory, names, matched, expected: expected.length, need, reason: confident ? "verified" : "insufficient_match" };
+    // Team name is a bonus signal; if provided and doesn't match, reduce confidence slightly.
+    const teamMatches = !teamName || !ocrTeamName || nameMatches(teamName, [ocrTeamName]);
+    const confident = hasVictory && matched >= need && teamMatches;
+    return { confident, hasVictory, names, matched, expected: expected.length, need, teamName: ocrTeamName, teamMatches, reason: confident ? "verified" : "insufficient_match" };
   } catch (e) {
     return { confident: false, reason: "ocr_error", detail: String(e).slice(0, 200) };
   }
