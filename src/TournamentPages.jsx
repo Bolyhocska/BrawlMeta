@@ -339,6 +339,7 @@ function MatchCard({ match, myTag, onAction, showToast }) {
   const { user, session } = useAuth();
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showDodgeModal, setShowDodgeModal] = useState(false);
   const mine = myTag && [...(match.team_a_tags || []), ...(match.team_b_tags || [])].includes(myTag);
   const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
   const myReport = mySide === "A" ? match.team_a_reported : mySide === "B" ? match.team_b_reported : null;
@@ -404,6 +405,24 @@ function MatchCard({ match, myTag, onAction, showToast }) {
     onAction();
   };
 
+  const uploadDodgeVideo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 50 * 1024 * 1024) { showToast("Video must be under 50 MB.", "error"); return; }
+    setUploading(true);
+    const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+    const path = `${user.id}/${match.id}-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("dodge-reports").upload(path, file, { contentType: file.type });
+    if (up.error) { setUploading(false); showToast(`Upload failed: ${up.error.message}`, "error"); return; }
+    const { data } = supabase.storage.from("dodge-reports").getPublicUrl(path);
+    const { ok, body } = await authedFetch("/api/report-dodge", { matchId: match.id, videoUrl: data.publicUrl });
+    setUploading(false);
+    if (!ok) { showToast(body.message || "Couldn't report dodge.", "error"); return; }
+    showToast("Dodge reported — organizer will review.", "success");
+    setShowDodgeModal(false);
+    onAction();
+  };
+
   const resultBadge = match.status === "completed" && (
     <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#8ee6b0", display: "inline-flex", alignItems: "center", gap: 4 }}>
       <CheckCircle2 size={11} /> {match.result === "team_a" ? match.team_a_name : match.team_b_name} WON
@@ -451,12 +470,22 @@ function MatchCard({ match, myTag, onAction, showToast }) {
 
       {/* Check-in */}
       {mine && ["pending", "checkin"].includes(match.status) && !iCheckedIn && (
-        <button style={{ ...page.btn, padding: "10px 18px", fontSize: 12, opacity: busy ? .6 : 1 }} disabled={busy} onClick={checkin}>
-          {busy ? "…" : "CHECK IN"}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+          <button style={{ ...page.btn, padding: "10px 18px", fontSize: 12, opacity: busy ? .6 : 1 }} disabled={busy} onClick={checkin}>
+            {busy ? "…" : "CHECK IN"}
+          </button>
+          <button type="button" style={{ ...page.btnGhost, padding: "8px 12px", fontSize: 11 }} onClick={() => setShowDodgeModal(true)}>
+            📹 Report a dodge
+          </button>
+        </div>
       )}
       {mine && ["pending", "checkin"].includes(match.status) && iCheckedIn && (
-        <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ You're checked in — waiting on the lobby</span>
+        <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ You're checked in — waiting on the lobby</span>
+          <button type="button" style={{ ...page.btnGhost, padding: "8px 12px", fontSize: 11 }} onClick={() => setShowDodgeModal(true)}>
+            📹 Report a dodge
+          </button>
+        </div>
       )}
 
       {/* Result reporting (active match, I'm a player) — single-upload + timer */}
@@ -530,6 +559,42 @@ function MatchCard({ match, myTag, onAction, showToast }) {
               </>
             )
           )}
+        </div>
+      )}
+
+      {/* Dodge report modal — a simple overlay modal */}
+      {showDodgeModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center",
+          backdropFilter: "blur(2px)",
+        }}>
+          <div style={{
+            ...page.card, padding: 26, maxWidth: 380, width: "90vw", display: "flex", flexDirection: "column", gap: 14,
+            boxShadow: "0 20px 60px rgba(0,0,0,.8)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, color: "#f4f4fa" }}>Report a dodge</span>
+              <button type="button" onClick={() => setShowDodgeModal(false)} style={{
+                background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#8a7fa6", padding: 0,
+              }}>✕</button>
+            </div>
+            <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: 0, lineHeight: 1.5 }}>
+              Upload a video of the brawler picking phase (max 50 MB). The organizer will review and decide.
+            </p>
+            <label style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "20px 16px",
+              borderRadius: 14, border: "1px dashed rgba(255,255,255,.18)", background: "rgba(13,13,20,.7)",
+              cursor: uploading ? "wait" : "pointer", color: "#8b8b9c", fontSize: 13, fontWeight: 700, fontFamily: "'Chakra Petch', sans-serif",
+            }}>
+              {uploading ? "Uploading…" : "＋ Select video (mp4, mov, webm)"}
+              <input type="file" accept="video/*" onChange={uploadDodgeVideo} disabled={uploading} style={{ display: "none" }} />
+            </label>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" onClick={() => setShowDodgeModal(false)} style={{ ...page.btnGhost, flex: 1, padding: "10px 16px", fontSize: 12 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -1141,6 +1206,7 @@ export function ManageTournamentPage() {
 
   const registeredCount = registrations.length;
   const disputes = matches.filter(m => m.disputed && m.status !== "completed");
+  const dodges = matches.filter(m => m.dodge_report_url && m.status !== "completed");
   const teamSize = tournament?.team_size || 3;
   // Group matches into rounds so the "all matches" section can gate on it.
   const rounds = (() => {
@@ -1165,6 +1231,42 @@ export function ManageTournamentPage() {
           <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(28px,4vw,42px)", fontWeight: 700, color: "#f4f4fa", margin: 0 }}>{tournament.name}</h1>
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: (STATUS_STYLE[tournament.status] || STATUS_STYLE.registration).color, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.06)" }}>MANAGE MODE</span>
         </div>
+
+        {/* Dodge reports — teams reporting opponent no-shows */}
+        {dodges.length > 0 && (
+          <section style={{ marginBottom: 26 }}>
+            <span style={{ ...page.eyebrow, color: "#ffce7a" }}>📹 DODGE REPORTS — {dodges.length} TO REVIEW</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+              {dodges.map(m => (
+                <div key={m.id} style={{ ...page.card, padding: 18, border: "1px solid rgba(255,206,122,.4)" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: "#9a9aab", marginBottom: 10 }}>R{m.round} M{m.match_number + 1} — {m.team_a_name || "TBD"} vs {m.team_b_name || "TBD"}</div>
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#c9c9d6" }}>Reported by: {m.dodge_reported_by || "Team"}</span>
+                    <div style={{ fontSize: 12, color: "#8a7fa6", marginTop: 4, fontFamily: MONO }}>
+                      {m.dodge_reported_at ? new Date(m.dodge_reported_at).toLocaleString() : ""}
+                    </div>
+                  </div>
+                  {m.dodge_report_url && (
+                    <a href={m.dodge_report_url} target="_blank" rel="noreferrer" style={{
+                      display: "block", marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "rgba(255,206,122,.1)",
+                      border: "1px solid rgba(255,206,122,.2)", color: "#ffce7a", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center",
+                    }}>
+                      ▶ Watch video
+                    </a>
+                  )}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => declareWinner(m.id, m.team_a_name === (m.dodge_reported_by || "") ? "team_b" : "team_a")} style={{ ...page.btn, flex: 1, padding: "9px", fontSize: 12 }}>
+                      Award to non-dodging team
+                    </button>
+                    <button onClick={() => resetMatch(m.id)} style={{ ...page.btnGhost, padding: "9px 14px", fontSize: 11 }}>
+                      Reset match
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Disputes needing a decision — most urgent, shown first */}
         {disputes.length > 0 && (
