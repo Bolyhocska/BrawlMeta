@@ -472,13 +472,21 @@ export function TournamentDetailPage() {
 
   const st = STATUS_STYLE[tournament.status] || STATUS_STYLE.registration;
   const totalRounds = teams.length >= 2 ? totalRoundsFor(teams.length) : 0;
+  const isCreator = profile?.id && tournament.created_by === profile.id;
 
   return (
     <div style={page.root}>
       <div style={page.glow} />
       <SiteHeader />
       <div style={page.wrap}>
-        <Link to="/tournaments" style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6", textDecoration: "none" }}>← ALL TOURNAMENTS</Link>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <Link to="/tournaments" style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6", textDecoration: "none" }}>← ALL TOURNAMENTS</Link>
+          {isCreator && (
+            <Link to={`/tournaments/${tournamentId}/manage`} style={{ ...page.btnGhost, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 11 }}>
+              ⚙ Manage tournament
+            </Link>
+          )}
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginTop: 16, marginBottom: 8 }}>
           <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: 0 }}>{tournament.name}</h1>
