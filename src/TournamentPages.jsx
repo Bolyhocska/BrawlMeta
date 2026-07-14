@@ -347,6 +347,7 @@ function MatchCard({ match, myTag, onAction, showToast }) {
   const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
   const myReport = mySide === "A" ? match.team_a_reported : mySide === "B" ? match.team_b_reported : null;
   const myProof = mySide === "A" ? match.team_a_proof_url : mySide === "B" ? match.team_b_proof_url : null;
+  const iWon = !!myReport && myReport === (mySide === "A" ? "team_a" : "team_b");
   const otherSide = mySide === "A" ? "B" : mySide === "B" ? "A" : null;
   const otherReport = otherSide === "A" ? match.team_a_reported : otherSide === "B" ? match.team_b_reported : null;
   const otherProof = otherSide === "A" ? match.team_a_proof_url : otherSide === "B" ? match.team_b_proof_url : null;
@@ -546,21 +547,23 @@ function MatchCard({ match, myTag, onAction, showToast }) {
             </span>
           )}
 
-          {/* Proof upload — auto-verifies via OCR when possible; essential on dispute */}
+          {/* Proof upload — the winner must upload a screenshot to verify. */}
           {myReport && (
             myProof ? (
               <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0", textAlign: "center" }}>✓ Your screenshot is attached</span>
-            ) : (
+            ) : (iWon || match.disputed) ? (
               <>
-                <label style={{ ...page.btnGhost, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: "8px 12px", fontSize: 11 }}>
-                  {uploading ? "Verifying…" : "📷 Attach screenshot"}
+                <label style={{ ...page.btn, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: "11px 14px", fontSize: 12, display: "block" }}>
+                  {uploading ? "Verifying…" : "📷 Upload winning screenshot"}
                   <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} style={{ display: "none" }} />
                 </label>
-                {!match.disputed && (
-                  <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", textAlign: "center" }}>a clear victory screenshot can advance you instantly</span>
-                )}
+                <span style={{ fontFamily: MONO, fontSize: 9.5, color: match.disputed ? "#ffce7a" : "#8ee6b0", textAlign: "center", lineHeight: 1.4 }}>
+                  {match.disputed
+                    ? "Required — upload your VICTORY screen so the organizer can decide."
+                    : "Required to confirm the win — a clear VICTORY screen advances you instantly."}
+                </span>
               </>
-            )
+            ) : null
           )}
         </div>
       )}
