@@ -4,8 +4,8 @@ import { useAuth } from "./auth";
 
 const NAV_STYLE = {
   display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#b7b7c6",
-  fontFamily: "'Chakra Petch', sans-serif", fontWeight: 600, fontSize: 14, letterSpacing: ".3px",
-  padding: "10px 20px", borderRadius: 999, transition: "background .18s, color .18s",
+  fontFamily: "'Chakra Petch', sans-serif", fontWeight: 600, fontSize: 13.5, letterSpacing: ".2px",
+  padding: "9px 14px", borderRadius: 999, transition: "background .18s, color .18s", whiteSpace: "nowrap",
 };
 
 // Master top-row navigation, shared across every page (Home, Draft Assistant,
@@ -136,13 +136,13 @@ function AccountMenu() {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => setOpen(o => !o)}
-        style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 14px 7px 8px", borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#f4f4fa", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
+        style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px 5px 6px", borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#f4f4fa", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
       >
         {profile?.avatar_url
-          ? <img src={profile.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} onError={e => { e.currentTarget.style.display = "none"; }} />
-          : <span style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#b36bff,#ffb43d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0d14", fontWeight: 800 }}>{initial}</span>}
-        <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-        {profile?.is_premium && <span style={{ fontSize: 11 }}>👑</span>}
+          ? <img src={profile.avatar_url} alt="" style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover" }} onError={e => { e.currentTarget.style.display = "none"; }} />
+          : <span style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#b36bff,#ffb43d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#0d0d14", fontWeight: 800 }}>{initial}</span>}
+        <span style={{ maxWidth: 88, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        {profile?.is_premium && <span style={{ fontSize: 10 }}>👑</span>}
       </button>
       {open && (
         <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 210, padding: 8, borderRadius: 16, background: "rgba(13,13,20,.96)", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", zIndex: 200, backdropFilter: "blur(12px)" }}>
@@ -194,16 +194,16 @@ export default function SiteHeader() {
           : <NavLink key={n.label} to={n.to}>{n.label}</NavLink>)}
       </nav>
 
-      <div className="site-header-right" style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999,
+      <div className="site-header-right" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+        <AccountMenu />
+        <div className="header-live" style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
           border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-          fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: "#ffce7a",
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
         }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
           LIVE
         </div>
-        <AccountMenu />
       </div>
 
       {/* Self-contained responsive rules — SiteHeader is used on multiple
@@ -220,7 +220,7 @@ export default function SiteHeader() {
           .site-nav a { padding: 8px 14px !important; font-size: 13px !important; }
         }
         @media (max-width: 560px) {
-          .site-header-right > div:first-child { display: none; }
+          .header-live { display: none !important; }
         }
       `}</style>
     </header>
