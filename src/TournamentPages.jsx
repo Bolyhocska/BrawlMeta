@@ -34,6 +34,7 @@ const page = {
   input: {
     width: "100%", padding: "12px 16px", borderRadius: 999, border: "1px solid rgba(255,255,255,.12)",
     background: "rgba(13,13,20,.7)", color: "#f4f4fa", fontSize: 13.5, fontFamily: "'Chakra Petch', sans-serif", outline: "none",
+    boxSizing: "border-box", // width:100% must include padding+border or inputs overflow their card
   },
   btn: {
     padding: "12px 24px", borderRadius: 999, border: "none", background: GOLD, color: "#1a1206",
@@ -51,6 +52,18 @@ const STATUS_STYLE = {
   live: { label: "LIVE", color: GOLD },
   completed: { label: "COMPLETED", color: "#94a3b8" },
   cancelled: { label: "CANCELLED", color: "#ef4444" },
+};
+
+// Start times are stored UTC; render them in the viewer's own timezone with a
+// short zone label so a global audience reads one unambiguous local time.
+const formatStart = (iso) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  }).format(d);
 };
 
 function Toast({ text, tone = "info" }) {
@@ -495,8 +508,17 @@ export function TournamentDetailPage() {
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontFamily: MONO, fontSize: 12, marginBottom: 30 }}>
           <span style={{ color: "#ffce7a" }}><Trophy size={12} style={{ verticalAlign: -1 }} /> ${Number(tournament.prize_pool_total).toLocaleString()} PRIZE POOL</span>
           <span style={{ color: "#9a9aab" }}><Users size={12} style={{ verticalAlign: -1 }} /> {teams.length} COMPLETE TEAMS · {registrations.length} PLAYERS</span>
-          <span style={{ color: "#9a9aab" }}><Swords size={12} style={{ verticalAlign: -1 }} /> 3v3 SINGLE ELIM</span>
+          <span style={{ color: "#9a9aab" }}><Swords size={12} style={{ verticalAlign: -1 }} /> {tournament.team_size}v{tournament.team_size} SINGLE ELIM</span>
+          {tournament.starts_at && <span style={{ color: "#c98bff" }}><Clock size={12} style={{ verticalAlign: -1 }} /> {formatStart(tournament.starts_at)}</span>}
+          {tournament.region && <span style={{ color: "#9a9aab" }}>◈ {tournament.region.toUpperCase()}</span>}
         </div>
+
+        {tournament.rules && (
+          <div style={{ ...page.card, padding: "18px 22px", marginBottom: 26 }}>
+            <div style={{ ...page.eyebrow, marginBottom: 8 }}>◈ RULES</div>
+            <p style={{ fontSize: 13, color: "#c9c9d6", margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{tournament.rules}</p>
+          </div>
+        )}
 
         {champion && (
           <div style={{ ...page.card, padding: "26px 30px", marginBottom: 26, textAlign: "center", background: "linear-gradient(160deg, rgba(255,180,61,.12), rgba(13,13,20,.5))", border: "1px solid rgba(255,180,61,.4)" }}>
@@ -702,9 +724,17 @@ export function TournamentProfilePage() {
 }
 
 // ─── Create tournament (premium-gated) ───────────────────────────────────────
+const REGIONS = ["Global", "Europe", "North America", "South America", "Asia", "Oceania", "Middle East"];
+// The creator's own timezone — times are entered as their local wall clock and
+// stored as UTC, so every viewer sees the start time in their own zone.
+const LOCAL_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "your local time"; } })();
+
 export function CreateTournamentPage() {
   const { user, loading, isPremium, openAuth } = useAuth();
-  const [form, setForm] = useState({ name: "", prizePool: "0", teamSize: "3", maxTeams: "16" });
+  const [form, setForm] = useState({
+    name: "", prizePool: "0", teamSize: "3", maxTeams: "16",
+    startsAt: "", region: "Global", checkinMinutes: "10", rules: "",
+  });
   const [busy, setBusy] = useState(false);
   const [toast, showToast] = useToast();
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -743,11 +773,18 @@ export function CreateTournamentPage() {
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
+    // datetime-local is the creator's wall clock; new Date() reads it in their
+    // browser timezone, toISOString() normalises to UTC for storage.
+    const startsAtUtc = form.startsAt ? new Date(form.startsAt).toISOString() : null;
     const { data, error } = await supabase.rpc("tournament_create", {
       p_name: form.name,
       p_prize_pool_total: Number(form.prizePool) || 0,
       p_team_size: Number(form.teamSize) || 3,
       p_max_teams: Number(form.maxTeams) || 16,
+      p_starts_at: startsAtUtc,
+      p_region: form.region,
+      p_rules: form.rules,
+      p_checkin_minutes: Number(form.checkinMinutes) || 10,
     });
     setBusy(false);
     if (error) {
@@ -757,41 +794,73 @@ export function CreateTournamentPage() {
         MISSING_FIELDS: "Give your tournament a name.",
         INVALID_TEAM_SIZE: "Team size must be between 1 and 5.",
         INVALID_PRIZE_POOL: "Prize pool can't be negative.",
+        INVALID_CHECKIN_WINDOW: "Check-in window must be between 5 and 60 minutes.",
       }[code] || `Couldn't create tournament: ${error.message}`, "error");
       return;
     }
     window.location.href = `/tournaments/${data}/manage`;
   };
 
+  // A labelled field wrapper so every control lines up and breathes evenly.
+  const Field = ({ label, hint, children, style }) => (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, ...style }}>
+      <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>{label}</span>
+      {children}
+      {hint && <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{hint}</span>}
+    </label>
+  );
+  const fieldInput = { ...page.input, borderRadius: 14 };
+
   return (
     <div style={page.root}>
       <div style={page.glow} />
       <SiteHeader />
-      <div style={{ ...page.wrap, maxWidth: 560 }}>
+      <div style={{ ...page.wrap, maxWidth: 620 }}>
         <span style={page.eyebrow}>◈ CREATE TOURNAMENT</span>
         <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,44px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 24px" }}>
           Set it up — <span style={{ color: VIOLET }}>we run it</span>
         </h1>
-        <form onSubmit={submit} style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 12 }}>
-          <input style={page.input} placeholder="Tournament name" value={form.name} onChange={set("name")} required maxLength={60} />
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PRIZE POOL ($)</label>
-              <input style={page.input} type="number" min="0" step="1" value={form.prizePool} onChange={set("prizePool")} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>TEAM SIZE</label>
-              <select style={page.input} value={form.teamSize} onChange={set("teamSize")}>
-                <option value="1">1 (solo)</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
+        <form onSubmit={submit} style={{ ...page.card, boxSizing: "border-box", padding: "26px", display: "flex", flexDirection: "column", gap: 18 }}>
+          <Field label="TOURNAMENT NAME">
+            <input style={fieldInput} placeholder="e.g. Friday Night Brawl" value={form.name} onChange={set("name")} required maxLength={60} />
+          </Field>
+
+          <Field label="START DATE & TIME" hint={`Entered in your timezone — ${LOCAL_TZ}. Players see it in theirs.`}>
+            <input style={fieldInput} type="datetime-local" value={form.startsAt} onChange={set("startsAt")} />
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Field label="REGION">
+              <select style={fieldInput} value={form.region} onChange={set("region")}>
+                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>MAX TEAMS</label>
-              <input style={page.input} type="number" min="2" step="1" value={form.maxTeams} onChange={set("maxTeams")} />
-            </div>
+            </Field>
+            <Field label="TEAM SIZE">
+              <select style={fieldInput} value={form.teamSize} onChange={set("teamSize")}>
+                <option value="1">1 (solo)</option>
+                <option value="2">2v2</option>
+                <option value="3">3v3</option>
+              </select>
+            </Field>
           </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            <Field label="PRIZE POOL ($)">
+              <input style={fieldInput} type="number" min="0" step="1" value={form.prizePool} onChange={set("prizePool")} />
+            </Field>
+            <Field label="MAX TEAMS">
+              <input style={fieldInput} type="number" min="2" step="1" value={form.maxTeams} onChange={set("maxTeams")} />
+            </Field>
+            <Field label="CHECK-IN (MIN)" hint="5–60">
+              <input style={fieldInput} type="number" min="5" max="60" step="1" value={form.checkinMinutes} onChange={set("checkinMinutes")} />
+            </Field>
+          </div>
+
+          <Field label="RULES / NOTES" hint="Shown to players on the tournament page. Lag & disconnects, map pool, anything else.">
+            <textarea style={{ ...fieldInput, minHeight: 90, borderRadius: 16, resize: "vertical", fontFamily: "'Chakra Petch', sans-serif" }}
+              placeholder="e.g. Best of 3. Disconnect = round loss. No banned brawlers." value={form.rules} onChange={set("rules")} maxLength={1000} />
+          </Field>
+
           <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
             {busy ? "Creating…" : "Create Tournament"}
           </button>

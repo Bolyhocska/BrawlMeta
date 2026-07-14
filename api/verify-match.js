@@ -116,12 +116,12 @@ export default async function handler(req, res) {
       verified: true,
       verified_at: new Date().toISOString(),
     });
-    const next = await advanceWinner(match, winningSide);
+    const [tournament] = await dbSelect("Tournaments", `id=eq.${match.tournament_id}&select=*`);
+    const next = await advanceWinner(match, winningSide, tournament?.checkin_minutes || 10);
 
     // Final won → tournament completed; credit the prize pool to the winners'
     // wallets (payout scaffolding — real payment processor comes later).
     if (!next) {
-      const [tournament] = await dbSelect("Tournaments", `id=eq.${match.tournament_id}&select=*`);
       await dbUpdate("Tournaments", `id=eq.${match.tournament_id}`, { status: "completed" });
       const winnerTags = winningSide === "A" ? match.team_a_tags : match.team_b_tags;
       await creditWallets(winnerTags, Number(tournament?.prize_pool_total || 0));

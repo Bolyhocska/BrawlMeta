@@ -47,8 +47,9 @@ export async function dbUpdate(table, query, patch) {
 }
 
 // Advance a winning team out of `match` into its next-round slot. Returns the
-// updated next match row, or null when `match` was the final.
-export async function advanceWinner(match, winningSide) {
+// updated next match row, or null when `match` was the final. `checkinMinutes`
+// (the tournament's configured window) sizes the next match's check-in timer.
+export async function advanceWinner(match, winningSide, checkinMinutes = 10) {
   const team = {
     name: winningSide === "A" ? match.team_a_name : match.team_b_name,
     userIds: winningSide === "A" ? match.team_a_user_ids : match.team_b_user_ids,
@@ -72,7 +73,7 @@ export async function advanceWinner(match, winningSide) {
   if (otherFilled) {
     patch.status = "checkin";
     patch.scheduled_time = new Date().toISOString();
-    patch.checkin_deadline = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    patch.checkin_deadline = new Date(Date.now() + checkinMinutes * 60 * 1000).toISOString();
   }
   const updated = await dbUpdate("TournamentMatches", `id=eq.${next.id}`, patch);
   return updated[0] ?? null;

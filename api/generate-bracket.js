@@ -72,7 +72,8 @@ export default async function handler(req, res) {
     const bracket = generateBracket(seeded);
 
     const nowIso = new Date().toISOString();
-    const deadline = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const checkinMs = (tournament.checkin_minutes || 10) * 60 * 1000;
+    const deadline = new Date(Date.now() + checkinMs).toISOString();
     const rows = bracket.map(m => ({
       tournament_id: tournamentId,
       round: m.round,
