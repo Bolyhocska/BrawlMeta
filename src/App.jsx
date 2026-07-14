@@ -125,7 +125,11 @@ function BrawlMeta() {
       <SiteHeader />
 
       <div style={styles.contentContainer}>
-        <RankBracketSelector value={rankBracket} onChange={setRankBracket} selectedPatch={selectedPatch} onPatchChange={setSelectedPatch} patches={patches} />
+        {/* The rank-bracket + patch bar is only meaningful for the ranked meta
+            (Ranked tab) and the Tier List; Leaderboards and Premium don't use it. */}
+        {["meta", "brawlers"].includes(activeTab) && (
+          <RankBracketSelector value={rankBracket} onChange={setRankBracket} selectedPatch={selectedPatch} onPatchChange={setSelectedPatch} patches={patches} />
+        )}
 
         {activeTab === "trending" && (
           <LeaderboardsView

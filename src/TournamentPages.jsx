@@ -501,6 +501,12 @@ export function TournamentDetailPage() {
           )}
         </div>
 
+        {tournament.banner_url && (
+          <div style={{ marginTop: 16, borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,.1)" }}>
+            <img src={tournament.banner_url} alt={tournament.name} style={{ display: "block", width: "100%", maxHeight: 260, objectFit: "cover" }} onError={e => { e.currentTarget.parentElement.style.display = "none"; }} />
+          </div>
+        )}
+
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginTop: 16, marginBottom: 8 }}>
           <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: 0 }}>{tournament.name}</h1>
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: st.color, padding: "5px 12px", borderRadius: 999, background: `${st.color}18`, border: `1px solid ${st.color}40` }}>{st.label}</span>
@@ -509,7 +515,10 @@ export function TournamentDetailPage() {
           <span style={{ color: "#ffce7a" }}><Trophy size={12} style={{ verticalAlign: -1 }} /> ${Number(tournament.prize_pool_total).toLocaleString()} PRIZE POOL</span>
           <span style={{ color: "#9a9aab" }}><Users size={12} style={{ verticalAlign: -1 }} /> {teams.length} COMPLETE TEAMS · {registrations.length} PLAYERS</span>
           <span style={{ color: "#9a9aab" }}><Swords size={12} style={{ verticalAlign: -1 }} /> {tournament.team_size}v{tournament.team_size} SINGLE ELIM</span>
-          {tournament.starts_at && <span style={{ color: "#c98bff" }}><Clock size={12} style={{ verticalAlign: -1 }} /> {formatStart(tournament.starts_at)}</span>}
+          {tournament.starts_at && <span style={{ color: "#c98bff" }}><Clock size={12} style={{ verticalAlign: -1 }} /> STARTS {formatStart(tournament.starts_at)}</span>}
+          {tournament.registration_deadline && tournament.status === "registration" && (
+            <span style={{ color: "#ffce7a" }}><Clock size={12} style={{ verticalAlign: -1 }} /> REG CLOSES {formatStart(tournament.registration_deadline)}</span>
+          )}
           {tournament.region && <span style={{ color: "#9a9aab" }}>◈ {tournament.region.toUpperCase()}</span>}
         </div>
 
@@ -734,10 +743,28 @@ export function CreateTournamentPage() {
   const [form, setForm] = useState({
     name: "", prizePool: "0", teamSize: "3", maxTeams: "16",
     startsAt: "", region: "Global", checkinMinutes: "10", rules: "",
+    registrationDeadline: "",
   });
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, showToast] = useToast();
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const uploadBanner = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 3 * 1024 * 1024) { showToast("Banner must be under 3 MB.", "error"); return; }
+    setUploading(true);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("tournament-banners").upload(path, file, { upsert: false, contentType: file.type });
+    if (error) { setUploading(false); showToast(`Upload failed: ${error.message}`, "error"); return; }
+    const { data } = supabase.storage.from("tournament-banners").getPublicUrl(path);
+    setBannerUrl(data.publicUrl);
+    setUploading(false);
+    showToast("Banner uploaded ✔", "success");
+  };
 
   if (!loading && !user) {
     return (
@@ -776,6 +803,7 @@ export function CreateTournamentPage() {
     // datetime-local is the creator's wall clock; new Date() reads it in their
     // browser timezone, toISOString() normalises to UTC for storage.
     const startsAtUtc = form.startsAt ? new Date(form.startsAt).toISOString() : null;
+    const deadlineUtc = form.registrationDeadline ? new Date(form.registrationDeadline).toISOString() : null;
     const { data, error } = await supabase.rpc("tournament_create", {
       p_name: form.name,
       p_prize_pool_total: Number(form.prizePool) || 0,
@@ -785,6 +813,8 @@ export function CreateTournamentPage() {
       p_region: form.region,
       p_rules: form.rules,
       p_checkin_minutes: Number(form.checkinMinutes) || 10,
+      p_registration_deadline: deadlineUtc,
+      p_banner_url: bannerUrl || null,
     });
     setBusy(false);
     if (error) {
@@ -821,13 +851,32 @@ export function CreateTournamentPage() {
           Set it up — <span style={{ color: VIOLET }}>we run it</span>
         </h1>
         <form onSubmit={submit} style={{ ...page.card, boxSizing: "border-box", padding: "26px", display: "flex", flexDirection: "column", gap: 18 }}>
+          <Field label="BANNER IMAGE" hint="Optional. Shown across the top of your tournament page. Under 3 MB.">
+            {bannerUrl ? (
+              <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,.12)" }}>
+                <img src={bannerUrl} alt="Banner preview" style={{ display: "block", width: "100%", maxHeight: 180, objectFit: "cover" }} />
+                <button type="button" onClick={() => setBannerUrl("")} style={{ position: "absolute", top: 10, right: 10, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(8,8,12,.85)", color: "#ff8f8f", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}>Remove</button>
+              </div>
+            ) : (
+              <label style={{ ...fieldInput, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: uploading ? "wait" : "pointer", color: "#8b8b9c", border: "1px dashed rgba(255,255,255,.18)", padding: "18px 16px" }}>
+                {uploading ? "Uploading…" : "＋ Upload a banner image"}
+                <input type="file" accept="image/*" onChange={uploadBanner} disabled={uploading} style={{ display: "none" }} />
+              </label>
+            )}
+          </Field>
+
           <Field label="TOURNAMENT NAME">
             <input style={fieldInput} placeholder="e.g. Friday Night Brawl" value={form.name} onChange={set("name")} required maxLength={60} />
           </Field>
 
-          <Field label="START DATE & TIME" hint={`Entered in your timezone — ${LOCAL_TZ}. Players see it in theirs.`}>
-            <input style={fieldInput} type="datetime-local" value={form.startsAt} onChange={set("startsAt")} />
-          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Field label="START DATE & TIME" hint={`Your timezone — ${LOCAL_TZ}.`}>
+              <input style={fieldInput} type="datetime-local" value={form.startsAt} onChange={set("startsAt")} />
+            </Field>
+            <Field label="REGISTRATION DEADLINE" hint="Optional. Sign-ups close at this time.">
+              <input style={fieldInput} type="datetime-local" value={form.registrationDeadline} onChange={set("registrationDeadline")} />
+            </Field>
+          </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <Field label="REGION">
