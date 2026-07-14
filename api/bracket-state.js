@@ -5,7 +5,21 @@
 // disqualified. Running this on read keeps the engine fully hands-off with no
 // cron dependency: the next person to look at the bracket triggers the sweep.
 
-import { assertEnv, dbSelect, dbUpdate, advanceWinner, json } from "./_lib/db.js";
+import { assertEnv, dbSelect, dbUpdate, advanceWinner, creditWallets, json } from "./_lib/db.js";
+
+// Advance the winner and, when it was the FINAL match (no next match), mark the
+// tournament completed and pay out — mirroring report-result/declare-winner.
+// The sweeps previously skipped this, leaving finished tournaments stuck "live".
+async function advanceAndMaybeFinish(match, winningSide, checkinMinutes = 10) {
+  const next = await advanceWinner(match, winningSide, checkinMinutes);
+  if (!next) {
+    const [tournament] = await dbSelect("Tournaments", `id=eq.${match.tournament_id}&select=*`);
+    await dbUpdate("Tournaments", `id=eq.${match.tournament_id}`, { status: "completed" });
+    const winnerTags = winningSide === "A" ? match.team_a_tags : match.team_b_tags;
+    await creditWallets(winnerTags, Number(tournament?.prize_pool_total || 0));
+  }
+  return next;
+}
 
 const checkinsFor = (match, side) => {
   const tags = side === "A" ? match.team_a_tags : match.team_b_tags;
@@ -36,7 +50,7 @@ async function sweepExpiredCheckins(matches) {
         const [updated] = await dbUpdate("TournamentMatches", `id=eq.${m.id}`, {
           status: "completed", result: "team_b", verified: true, verified_at: new Date().toISOString(),
         });
-        if (updated) await advanceWinner(updated, "B");
+        if (updated) await advanceAndMaybeFinish(updated, "B");
         resolved.push({ id: m.id, action: "host_forfeit_no_lobby", winner: m.team_b_name });
       } else {
         // Deadline raced the activation flip — go live; the match is now in
@@ -55,7 +69,7 @@ async function sweepExpiredCheckins(matches) {
       verified: true,           // verified by forfeit, not by battle log
       verified_at: new Date().toISOString(),
     });
-    if (updated) await advanceWinner(updated, winningSide);
+    if (updated) await advanceAndMaybeFinish(updated, winningSide);
     resolved.push({ id: m.id, action: "walkover", winner: winningSide === "A" ? m.team_a_name : m.team_b_name });
   }
   return resolved;
@@ -78,7 +92,7 @@ async function sweepReportTimeouts(matches, checkinMinutes) {
     const [updated] = await dbUpdate("TournamentMatches", `id=eq.${m.id}`, {
       status: "completed", result: reported, verified: true, verified_at: new Date().toISOString(),
     });
-    if (updated) await advanceWinner(updated, winningSide, checkinMinutes);
+    if (updated) await advanceAndMaybeFinish(updated, winningSide, checkinMinutes);
     resolved.push({ id: m.id, action: "report_timeout", winner: reported === "team_a" ? m.team_a_name : m.team_b_name });
   }
   return resolved;
