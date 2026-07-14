@@ -193,6 +193,49 @@ export function TournamentLandingPage() {
   );
 }
 
+// ─── Tournament rules / info modal ───────────────────────────────────────────
+// The universal rules every entrant must accept, plus the creator's own notes.
+const UNIVERSAL_RULES = [
+  ["🎥", "Record your draft", "Record the brawler pick phase. If an opponent dodges during selection, you'll need the recording to report the dodge."],
+  ["📸", "Winner uploads a screenshot", "The winning team MUST screenshot the VICTORY screen and upload it to advance. No valid screenshot means no automatic win."],
+  ["🤝", "Add your opponent in-game", "You must add the other team to play the friendly match. Provide your Brawl Stars player ID and Add Friend QR at registration so opponents can add you."],
+  ["⚠️", "Lag, bugs & disconnects = a loss", "Any lag, bug, or disconnect counts as a loss for the affected team. This platform and the organizer play on the official game and are not responsible for in-game technical issues."],
+];
+
+function RulesModal({ customRules, onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.72)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(2px)", padding: 16 }}>
+      <div style={{ ...page.card, padding: 26, maxWidth: 440, width: "100%", maxHeight: "86vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,.8)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, color: "#f4f4fa" }}>Tournament rules</span>
+          <button type="button" onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#8a7fa6", padding: 0 }}>✕</button>
+        </div>
+
+        {customRules && (
+          <div style={{ borderRadius: 14, background: "rgba(255,180,61,.08)", border: "1px solid rgba(255,180,61,.25)", padding: "14px 16px" }}>
+            <div style={{ ...page.eyebrow, color: "#ffce7a", marginBottom: 6 }}>◈ ORGANIZER'S RULES</div>
+            <p style={{ fontSize: 13, color: "#e9e9f2", margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{customRules}</p>
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {UNIVERSAL_RULES.map(([icon, title, body]) => (
+            <div key={title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 20, lineHeight: 1.2, flexShrink: 0 }}>{icon}</span>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "#f4f4fa" }}>{title}</div>
+                <div style={{ fontSize: 12.5, color: "#9a9aab", lineHeight: 1.5, marginTop: 2 }}>{body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" onClick={onClose} style={{ ...page.btn, marginTop: 4 }}>Got it</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Registration form ───────────────────────────────────────────────────────
 // Two paths: a captain registers their whole roster in one submission (no
 // teammate accounts required), or a player queues solo and gets auto-grouped
@@ -207,7 +250,26 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
   const [players, setPlayers] = useState(() => Array.from({ length: teamSize }, () => ({ tag: "" })));
   const [soloTag, setSoloTag] = useState("");
   const [soloName, setSoloName] = useState("");
+  const [friendId, setFriendId] = useState("");
+  const [friendQrUrl, setFriendQrUrl] = useState("");
+  const [qrUploading, setQrUploading] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const uploadQr = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { showToast("QR image must be under 5 MB.", "error"); return; }
+    setQrUploading(true);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${user.id}/qr-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("match-proof").upload(path, file, { contentType: file.type });
+    if (up.error) { setQrUploading(false); showToast(`Upload failed: ${up.error.message}`, "error"); return; }
+    const { data } = supabase.storage.from("match-proof").getPublicUrl(path);
+    setFriendQrUrl(data.publicUrl);
+    setQrUploading(false);
+    showToast("QR uploaded ✔", "success");
+  };
 
   // Prefill slot 1 (the captain) and the solo form from the signed-in profile.
   useEffect(() => {
@@ -258,6 +320,8 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       p_team_name: teamName,
       p_players: players.map(p => ({ tag: p.tag, name: p.tag })),
       p_team_display_name: teamDisplayName.trim(),
+      p_friend_id: friendId.trim(),
+      p_friend_qr_url: friendQrUrl || null,
     });
     setBusy(false);
     if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
@@ -278,6 +342,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       p_tournament_id: tournament.id,
       p_player_tag: soloTag,
       p_display_name: soloName,
+      p_friend_id: friendId.trim(),
     });
     setBusy(false);
     if (error) { showToast(errMsg(error, `Registration failed: ${error.message}`), "error"); return; }
@@ -295,9 +360,31 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
     fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
   });
 
+  // Shared friend-contact fields — captured so matched teams can add each other
+  // in-game. Player ID is required; the QR screenshot is a helpful extra.
+  const friendFields = (
+    <>
+      <input style={page.input} placeholder="Your Brawl Stars player ID (so opponents can add you)" value={friendId} onChange={e => setFriendId(e.target.value)} required maxLength={40} />
+      {friendQrUrl ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>
+          ✓ Add Friend QR uploaded
+          <button type="button" onClick={() => setFriendQrUrl("")} style={{ background: "none", border: "none", color: "#ff8f8f", cursor: "pointer", fontSize: 11, fontFamily: MONO }}>remove</button>
+        </div>
+      ) : (
+        <label style={{ ...page.input, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: qrUploading ? "wait" : "pointer", color: "#8b8b9c", border: "1px dashed rgba(255,255,255,.18)" }}>
+          {qrUploading ? "Uploading…" : "＋ Upload your Add Friend QR screenshot (optional)"}
+          <input type="file" accept="image/*" onChange={uploadQr} disabled={qrUploading} style={{ display: "none" }} />
+        </label>
+      )}
+    </>
+  );
+
   return (
     <div style={{ ...page.card, padding: 26, display: "flex", flexDirection: "column", gap: 14 }}>
-      <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <span style={page.eyebrow}>◈ FREE REGISTRATION</span>
+        <button type="button" onClick={() => setShowRules(true)} style={{ ...page.btnGhost, padding: "6px 14px", fontSize: 11 }}>ℹ Tournament info & rules</button>
+      </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" style={tabBtn(mode === "team")} onClick={() => setMode("team")}>REGISTER A TEAM</button>
         <button type="button" style={tabBtn(mode === "solo")} onClick={() => setMode("solo")}>JOIN SOLO</button>
@@ -316,6 +403,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
           {players.map((p, i) => (
             <input key={i} style={page.input} placeholder={i === 0 ? "Your tag (#2C20JJRG)" : `Teammate ${i + 1} tag`} value={p.tag} onChange={e => setPlayer(i, "tag", e.target.value)} required />
           ))}
+          {friendFields}
           <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
             {busy ? "Registering…" : `Register Team of ${teamSize} — Free`}
           </button>
@@ -327,24 +415,29 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
           </p>
           <input style={page.input} placeholder="Player tag (e.g. #2C20JJRG)" value={soloTag} onChange={e => setSoloTag(e.target.value)} required />
           <input style={page.input} placeholder="Display name — your EXACT in-game name" value={soloName} onChange={e => setSoloName(e.target.value)} required maxLength={30} />
+          {friendFields}
           <button type="submit" style={{ ...page.btn, opacity: busy ? .6 : 1 }} disabled={busy}>
             {busy ? "Joining queue…" : "Join Solo Queue — Free"}
           </button>
         </form>
       )}
-      <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", textAlign: "center" }}>NO ENTRY FEE · EVER</span>
+      <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", textAlign: "center" }}>NO ENTRY FEE · EVER · BY REGISTERING YOU ACCEPT THE RULES</span>
+      {showRules && <RulesModal customRules={tournament.rules} onClose={() => setShowRules(false)} />}
     </div>
   );
 }
 
 // ─── Match card (check-in + dual-confirmation reporting) ─────────────────────
-function MatchCard({ match, myTag, onAction, showToast }) {
+function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
   const { user, session } = useAuth();
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showDodgeModal, setShowDodgeModal] = useState(false);
   const mine = myTag && [...(match.team_a_tags || []), ...(match.team_b_tags || [])].includes(myTag);
   const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
+  // The opponent's in-game contact so the two matched teams can add each other.
+  const oppTags = mySide === "A" ? (match.team_b_tags || []) : mySide === "B" ? (match.team_a_tags || []) : [];
+  const oppContact = oppTags.map(t => contactByTag?.[normalizeTag(t)]).find(c => c && (c.friendId || c.qr));
   const myReport = mySide === "A" ? match.team_a_reported : mySide === "B" ? match.team_b_reported : null;
   const myProof = mySide === "A" ? match.team_a_proof_url : mySide === "B" ? match.team_b_proof_url : null;
   const iWon = !!myReport && myReport === (mySide === "A" ? "team_a" : "team_b");
@@ -471,6 +564,15 @@ function MatchCard({ match, myTag, onAction, showToast }) {
         )}
         {match.status === "active" && reportMark("B")}
       </div>
+
+      {/* Add-your-opponent — surfaced while the match is being set up / played */}
+      {mine && ["pending", "checkin", "active"].includes(match.status) && oppContact && (
+        <div style={{ borderRadius: 12, background: "rgba(179,107,255,.08)", border: "1px solid rgba(179,107,255,.25)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#c98bff" }}>ADD YOUR OPPONENT IN-GAME</span>
+          {oppContact.friendId && <span style={{ fontSize: 12.5, color: "#e9e9f2", fontWeight: 700 }}>ID: {oppContact.friendId}</span>}
+          {oppContact.qr && <a href={oppContact.qr} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 10.5, color: "#c98bff", textDecoration: "none" }}>view Add Friend QR →</a>}
+        </div>
+      )}
 
       {/* Check-in */}
       {mine && ["pending", "checkin"].includes(match.status) && !iCheckedIn && (
@@ -641,6 +743,15 @@ export function TournamentDetailPage() {
   }, [tournament?.status, reload]);
 
   const teams = useMemo(() => groupIntoTeams(registrations, tournament?.team_size || 3), [registrations, tournament]);
+  // player tag → the team's in-game add-friend contact, so a match card can show
+  // each side the opponent's ID/QR.
+  const contactByTag = useMemo(() => {
+    const map = {};
+    for (const r of registrations) {
+      if (r.friend_id || r.friend_qr_url) map[normalizeTag(r.player_tag || "")] = { friendId: r.friend_id, qr: r.friend_qr_url };
+    }
+    return map;
+  }, [registrations]);
   const soloQueue = useMemo(() => registrations.filter(r => r.is_solo && !r.team_name), [registrations]);
   const incomplete = useMemo(() => {
     const full = new Set(teams.map(t => t.name.toLowerCase()));
@@ -778,7 +889,7 @@ export function TournamentDetailPage() {
                   <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.5, color: "#ffce7a", textAlign: "center" }}>
                     {roundLabel(round, rounds.length).toUpperCase()}
                   </div>
-                  {ms.map(m => <MatchCard key={m.id} match={m} myTag={myTag} onAction={reload} showToast={showToast} />)}
+                  {ms.map(m => <MatchCard key={m.id} match={m} myTag={myTag} onAction={reload} showToast={showToast} contactByTag={contactByTag} />)}
                 </div>
               ))}
             </div>
@@ -1177,6 +1288,7 @@ export function ManageTournamentPage() {
   const [teamName, setTeamName] = useState("");
   const [teamTags, setTeamTags] = useState("");
   const [teamDisplayName, setTeamDisplayName] = useState("");
+  const [teamFriendId, setTeamFriendId] = useState("");
   const addTeam = async (e) => {
     e.preventDefault();
     const size = tournament?.team_size || 3;
@@ -1191,6 +1303,7 @@ export function ManageTournamentPage() {
       p_team_name: teamName,
       p_players: rows,
       p_team_display_name: teamDisplayName.trim() || null,
+      p_friend_id: teamFriendId.trim() || null,
     });
     setBusy(false);
     if (error) {
@@ -1199,7 +1312,7 @@ export function ManageTournamentPage() {
       return;
     }
     showToast(`Added team "${teamName}".`, "success");
-    setTeamName(""); setTeamTags(""); setTeamDisplayName("");
+    setTeamName(""); setTeamTags(""); setTeamDisplayName(""); setTeamFriendId("");
     reload();
   };
 
@@ -1320,6 +1433,7 @@ export function ManageTournamentPage() {
               <p style={{ fontSize: 12, color: "#8b8b9c", margin: 0 }}>Team name, one team display name (the EXACT in-game name of a player — used to auto-verify results), then {teamSize} player tags — one per line.</p>
               <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
               <input style={page.input} placeholder="Team display name — EXACT in-game name of one player" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
+              <input style={page.input} placeholder="Team's Brawl Stars player ID (optional — for opponents to add them)" value={teamFriendId} onChange={e => setTeamFriendId(e.target.value)} maxLength={40} />
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAGS</span>
                 <textarea style={{ ...page.input, minHeight: 84, borderRadius: 14, resize: "vertical", fontFamily: MONO }} placeholder={"#2C20JJRG\n#9YQ8RLP0\n#8UVP2QQL"} value={teamTags} onChange={e => setTeamTags(e.target.value)} />
