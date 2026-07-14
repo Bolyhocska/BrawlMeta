@@ -1,13 +1,14 @@
 // ─── POST /api/report-result ──────────────────────────────────────────────────
-// Dual-confirmation result reporting. Each side's captain (a signed-in player
-// whose registered tag is in the match) reports who won, optionally attaching a
-// screenshot. Resolution ladder:
-//   • both sides agree            → finalize + advance the winner
-//   • both sides disagree         → flag disputed; the creator decides
-//   • only one side has reported  → wait (a lazy sweep in bracket-state.js
-//                                    auto-resolves to the reporter once the
-//                                    report window lapses — the silent side
-//                                    forfeits)
+// Single-upload + dispute-timer result reporting. Only the winner needs to act:
+// they report the result (ideally with a screenshot). The other team gets a
+// short window to confirm or dispute — doing nothing accepts it. Resolution
+// ladder (same call handles the reporter and the responder):
+//   • first report            → start the dispute window; the other team is
+//                               notified they can confirm or dispute
+//   • other team confirms      → finalize + advance the winner instantly
+//   • other team disputes      → flag disputed; the creator decides
+//   • other team does nothing  → a lazy sweep in bracket-state.js auto-accepts
+//                               the reported result once the window lapses
 //
 // Body: { matchId, winner: "team_a" | "team_b", proofUrl? }
 // Auth: the caller's Supabase session (Bearer token); their profile.player_tag
@@ -16,7 +17,8 @@
 import { assertEnv, dbSelect, dbUpdate, advanceWinner, creditWallets, json, getUserFromRequest } from "./_lib/db.js";
 import { normalizeTag } from "../src/data/verifyLogic.js";
 
-const REPORT_WINDOW_MS = 15 * 60 * 1000; // silent side forfeits after this
+const REPORT_WINDOW_MIN = 3;                             // dispute window
+const REPORT_WINDOW_MS = REPORT_WINDOW_MIN * 60 * 1000;  // silent side auto-accepts after this
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "POST only" });
@@ -84,15 +86,15 @@ export default async function handler(req, res) {
           const winnerTags = winningSide === "A" ? afterReport.team_a_tags : afterReport.team_b_tags;
           await creditWallets(winnerTags, Number(tournament?.prize_pool_total || 0));
         }
-        return json(res, 200, { status: "confirmed", result: aReport, message: "Both teams agreed — winner advances! 🏆" });
+        return json(res, 200, { status: "confirmed", result: aReport, message: "Confirmed — winner advances! 🏆" });
       }
       // Disagreement → dispute.
       await dbUpdate("TournamentMatches", `id=eq.${match.id}`, { disputed: true });
-      return json(res, 200, { status: "disputed", message: "The two teams reported different winners. Upload a screenshot as proof — the organizer will resolve it." });
+      return json(res, 200, { status: "disputed", message: "Result disputed. Attach a screenshot of the result screen — the organizer will resolve it." });
     }
 
-    // Only this side so far — waiting on the opponent.
-    return json(res, 200, { status: "waiting", message: "Result recorded. Waiting for the other team to confirm." });
+    // First report — the other team now has the dispute window to respond.
+    return json(res, 200, { status: "waiting", message: `Result submitted. If the other team doesn't dispute within ${REPORT_WINDOW_MIN} minutes, you advance automatically.` });
   } catch (e) {
     console.error("report-result error:", e);
     return json(res, e.status || 500, { error: e.message });

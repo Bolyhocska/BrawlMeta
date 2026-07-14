@@ -184,7 +184,7 @@ export function TournamentLandingPage() {
           <p style={{ fontSize: 12.5, color: "#8b8b9c", margin: 0, flex: 1, minWidth: 260 }}>
             <strong style={{ color: "#c9c9d6" }}>Fair by design:</strong> entry is always free and paid status can never buy a win —
             premium members only get priority for the bracket byes that the math already requires, plus deeper stats.
-            Both teams confirm each result; if they disagree, a quick screenshot settles it and the organizer decides.
+            The winner reports the result; if the other team doesn't dispute within a few minutes it advances automatically, and a quick screenshot settles anything contested.
           </p>
         </div>
       </div>
@@ -340,6 +340,10 @@ function MatchCard({ match, myTag, onAction, showToast }) {
   const mySide = mine ? ((match.team_a_tags || []).includes(myTag) ? "A" : "B") : null;
   const myReport = mySide === "A" ? match.team_a_reported : mySide === "B" ? match.team_b_reported : null;
   const myProof = mySide === "A" ? match.team_a_proof_url : mySide === "B" ? match.team_b_proof_url : null;
+  const otherSide = mySide === "A" ? "B" : mySide === "B" ? "A" : null;
+  const otherReport = otherSide === "A" ? match.team_a_reported : otherSide === "B" ? match.team_b_reported : null;
+  const otherProof = otherSide === "A" ? match.team_a_proof_url : otherSide === "B" ? match.team_b_proof_url : null;
+  const teamName = (t) => (t === "team_a" ? match.team_a_name : match.team_b_name);
   const checkedIn = (tags) => (tags || []).filter(t => match.checkin_status?.[t]).length;
   const iCheckedIn = myTag && match.checkin_status?.[myTag];
 
@@ -451,10 +455,11 @@ function MatchCard({ match, myTag, onAction, showToast }) {
         <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center" }}>✓ You're checked in — waiting on the lobby</span>
       )}
 
-      {/* Dual-confirmation reporting (active match, I'm a player) */}
+      {/* Result reporting (active match, I'm a player) — single-upload + timer */}
       {mine && match.status === "active" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 2 }}>
-          {!myReport ? (
+          {/* State 1 — nobody has reported: I submit the result. */}
+          {!myReport && !otherReport && (
             <>
               <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab", textAlign: "center" }}>WHO WON?</span>
               <div style={{ display: "flex", gap: 8 }}>
@@ -464,9 +469,38 @@ function MatchCard({ match, myTag, onAction, showToast }) {
                   onClick={() => report(mySide === "A" ? "team_b" : "team_a")}>We lost</button>
               </div>
             </>
-          ) : (
-            <span style={{ fontFamily: MONO, fontSize: 10.5, color: match.disputed ? "#ff8f8f" : "#8ee6b0", textAlign: "center" }}>
-              You reported: {myReport === "team_a" ? match.team_a_name : match.team_b_name} won
+          )}
+
+          {/* State 2 — the other team reported first: I confirm or dispute. */}
+          {!myReport && otherReport && (
+            <>
+              <span style={{ fontSize: 11.5, color: "#c9c9d6", textAlign: "center", lineHeight: 1.4 }}>
+                Reported result: <strong>{teamName(otherReport)} won</strong>.
+              </span>
+              {otherProof && (
+                <a href={otherProof} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 10, color: "#c98bff", textAlign: "center", textDecoration: "none" }}>view their screenshot →</a>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ ...page.btn, flex: 1, padding: "9px 8px", fontSize: 11.5, opacity: busy ? .6 : 1 }} disabled={busy}
+                  onClick={() => report(otherReport)}>Confirm</button>
+                <button style={{ ...page.btnGhost, flex: 1, padding: "9px 8px", fontSize: 11.5, opacity: busy ? .6 : 1 }} disabled={busy}
+                  onClick={() => report(otherReport === "team_a" ? "team_b" : "team_a")}>Dispute</button>
+              </div>
+              {match.report_deadline && (
+                <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab", textAlign: "center" }}>
+                  auto-confirms in <Countdown deadline={match.report_deadline} />
+                </span>
+              )}
+            </>
+          )}
+
+          {/* State 3 — I reported and it's not disputed: waiting to advance. */}
+          {myReport && !match.disputed && (
+            <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0", textAlign: "center", lineHeight: 1.5 }}>
+              You reported {teamName(myReport)} won.
+              {!otherReport && match.report_deadline && (
+                <> Advances in <Countdown deadline={match.report_deadline} /> unless disputed.</>
+              )}
             </span>
           )}
 
@@ -476,7 +510,7 @@ function MatchCard({ match, myTag, onAction, showToast }) {
             </span>
           )}
 
-          {/* Proof upload — available once you've reported, encouraged on dispute */}
+          {/* Proof upload — available once I've reported, essential on dispute */}
           {myReport && (
             myProof ? (
               <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0", textAlign: "center" }}>✓ Your screenshot is attached</span>
