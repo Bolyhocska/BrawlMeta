@@ -149,18 +149,28 @@ export function TournamentLandingPage() {
               const st = STATUS_STYLE[t.status] || STATUS_STYLE.registration;
               const players = counts[t.id] || 0;
               return (
-                <Link key={t.id} to={`/tournaments/${t.id}`} style={{ ...page.card, padding: 24, textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", gap: 14, transition: "border-color .15s" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: st.color, padding: "4px 11px", borderRadius: 999, background: `${st.color}18`, border: `1px solid ${st.color}40` }}>{st.label}</span>
-                    <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>3v3 · SINGLE ELIM</span>
+                <Link key={t.id} to={`/tournaments/${t.id}`} style={{ ...page.card, overflow: "hidden", textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", transition: "border-color .15s" }}>
+                  {/* Banner header — the uploaded image, or a branded gradient
+                      fallback so cards stay uniform height with/without art. */}
+                  <div style={{ position: "relative", height: 130, background: "linear-gradient(135deg, rgba(179,107,255,.25), rgba(255,180,61,.15))" }}>
+                    {t.banner_url && (
+                      <img src={t.banner_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.currentTarget.style.display = "none"; }} />
+                    )}
+                    <span style={{ position: "absolute", top: 12, left: 12, fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, color: st.color, padding: "4px 11px", borderRadius: 999, background: "rgba(8,8,12,.78)", border: `1px solid ${st.color}55` }}>{st.label}</span>
+                    <span style={{ position: "absolute", top: 12, right: 12, fontFamily: MONO, fontSize: 10, color: "#e9e9f2", padding: "4px 10px", borderRadius: 999, background: "rgba(8,8,12,.78)" }}>{t.team_size}v{t.team_size}</span>
                   </div>
-                  <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 700, color: "#f4f4fa" }}>{t.name}</div>
-                  <div style={{ display: "flex", gap: 18, fontFamily: MONO, fontSize: 12 }}>
-                    <span style={{ color: "#ffce7a" }}><Trophy size={11} style={{ verticalAlign: -1 }} /> ${Number(t.prize_pool_total).toLocaleString()} pool</span>
-                    <span style={{ color: "#9a9aab" }}><Users size={11} style={{ verticalAlign: -1 }} /> {players} registered</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", color: "#d9b8ff", fontSize: 13, fontWeight: 700 }}>
-                    {t.status === "registration" ? "Register free" : "View bracket"} <ChevronRight size={14} />
+                  <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                    <div style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, color: "#f4f4fa", lineHeight: 1.1 }}>{t.name}</div>
+                    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontFamily: MONO, fontSize: 12 }}>
+                      <span style={{ color: "#ffce7a" }}><Trophy size={11} style={{ verticalAlign: -1 }} /> ${Number(t.prize_pool_total).toLocaleString()} pool</span>
+                      <span style={{ color: "#9a9aab" }}><Users size={11} style={{ verticalAlign: -1 }} /> {players} registered</span>
+                    </div>
+                    {t.starts_at && (
+                      <span style={{ fontFamily: MONO, fontSize: 11, color: "#c98bff" }}><Clock size={10} style={{ verticalAlign: -1 }} /> {formatStart(t.starts_at)}</span>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", color: "#d9b8ff", fontSize: 13, fontWeight: 700 }}>
+                      {t.status === "registration" ? "Register free" : "View bracket"} <ChevronRight size={14} />
+                    </div>
                   </div>
                 </Link>
               );
