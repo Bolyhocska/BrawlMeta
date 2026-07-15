@@ -19,10 +19,15 @@ export default async function handler(req, res) {
     const tag = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
     if (tag.length < 3) return json(res, 400, { error: "bad_tag", message: "Enter a player tag like #2C20JJRG." });
 
+    // undici's ProxyAgent ignores credentials embedded in the URI, so the
+    // Proxy-Authorization header has to be passed explicitly as `token`.
     const { PROXY_HOST, PROXY_PORT, PROXY_USER, PROXY_PASS } = process.env;
-    const dispatcher = PROXY_HOST
-      ? new ProxyAgent(`http://${PROXY_USER}:${PROXY_PASS}@${PROXY_HOST}:${PROXY_PORT}`)
-      : undefined;
+    let dispatcher;
+    if (PROXY_HOST) {
+      const opts = { uri: `http://${PROXY_HOST}:${PROXY_PORT}` };
+      if (PROXY_USER) opts.token = `Basic ${Buffer.from(`${PROXY_USER}:${PROXY_PASS}`).toString("base64")}`;
+      dispatcher = new ProxyAgent(opts);
+    }
 
     const r = await fetch(`https://api.brawlstars.com/v1/players/%23${tag}`, {
       headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
