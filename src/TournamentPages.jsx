@@ -1197,18 +1197,21 @@ export function TournamentProfilePage() {
     (m.result === "team_b" && (m.team_b_tags || []).includes(myTag))
   ).length;
 
-  // Display name is permanent once set — only send it the first time (when the
-  // profile has none yet). The player tag stays freely editable.
+  // Display name is permanent once set. The player tag stays editable until the
+  // account has entered a tournament, then it freezes (anti-impersonation).
   const nameLocked = !!(profile?.display_name && profile.display_name.trim());
+  const tagLocked = history.length > 0;
   const saveIdentity = async (e) => {
     e.preventDefault();
     setSaveErr(null);
-    const patch = { player_tag: normalizeTag(tagInput) };
+    const patch = {};
     if (!nameLocked && nameInput.trim()) patch.display_name = nameInput.trim();
+    if (!tagLocked) patch.player_tag = normalizeTag(tagInput);
+    if (!Object.keys(patch).length) { setSaved(true); setTimeout(() => setSaved(false), 2500); return; }
     const { error } = await updateProfile(patch);
     if (error) {
       setSaveErr(error.code === "23505" || /duplicate|unique/i.test(error.message)
-        ? "That display name is already taken — pick another."
+        ? "That name or player tag is already claimed by another account."
         : `Couldn't save: ${error.message}`);
       return;
     }
@@ -1260,8 +1263,12 @@ export function TournamentProfilePage() {
             <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG</span>
-            <input style={{ ...page.input, maxWidth: 200 }} placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)} />
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG {tagLocked && <span style={{ color: "#6f7180" }}>· 🔒 LOCKED</span>}</span>
+            <input
+              style={{ ...page.input, maxWidth: 200, ...(tagLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
+              placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)}
+              readOnly={tagLocked} title={tagLocked ? "Locked once you've entered a tournament." : undefined} />
+            <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
           </div>
           <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12, alignSelf: "flex-end" }}>Save</button>
           {saved && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", alignSelf: "flex-end", paddingBottom: 12 }}>SAVED ✔</span>}
