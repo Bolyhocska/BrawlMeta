@@ -248,6 +248,115 @@ function useSiteFeed(kind) {
   return feed;
 }
 
+// Global top-200 trophy leaderboard from its own structured table (the scraper
+// upserts a fresh snapshot every run). Rows are mapped to the same shape the
+// old SiteFeed payload had so the render code stays unchanged.
+function useTop200() {
+  const [state, setState] = useState({ players: [], fetchedAt: null });
+  useEffect(() => {
+    supabase
+      .from("top_200_leaderboard")
+      .select("*")
+      .order("rank", { ascending: true })
+      .then(({ data }) => {
+        if (!data?.length) return;
+        setState({
+          fetchedAt: data[0].fetched_at,
+          players: data.map(r => ({
+            rank: r.rank, tag: r.player_tag, name: r.name, nameColor: r.name_color,
+            trophies: r.trophies, icon: r.icon_id ? { id: r.icon_id } : null,
+            club: r.club_name ? { name: r.club_name } : null,
+          })),
+        });
+      });
+  }, []);
+  return state;
+}
+
+// ─── Player Card: look yourself up ───────────────────────────────────────────
+// Searches a tag via /api/player (server-side relay through the scraper's
+// proxy) and renders the profile in homepage styling. Works on the deployed
+// site; local dev has no /api runtime, so it shows the endpoint's error text.
+function PlayerCardSearch() {
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const [player, setPlayer] = useState(null);
+
+  const search = async (e) => {
+    e.preventDefault();
+    const tag = input.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    if (tag.length < 3) { setErr("Enter a player tag like #2C20JJRG."); return; }
+    setBusy(true); setErr(null); setPlayer(null);
+    try {
+      const r = await fetch(`/api/player?tag=%23${tag}`);
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) { setErr(body.message || body.error || "Lookup failed — try again."); return; }
+      setPlayer(body);
+    } catch {
+      setErr("Lookup failed — try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const stat = (label, value, color = "#f4f4fa") => (
+    <div key={label} style={{ padding: "14px 16px", borderRadius: 18, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", fontFamily: MONO_FONT }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color, fontFamily: DISPLAY_FONT }}>{value}</div>
+      <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#6f7180", marginTop: 3 }}>{label}</div>
+    </div>
+  );
+
+  return (
+    <section style={{ marginBottom: 44 }}>
+      <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#7cc4ff" }}>◈ FIND YOUR PROFILE</span>
+      <form onSubmit={search} style={{ display: "flex", gap: 10, marginTop: 14, maxWidth: 460 }}>
+        <input
+          value={input} onChange={e => setInput(e.target.value)} placeholder="Your player tag (e.g. #2C20JJRG)"
+          style={{ flex: 1, padding: "12px 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,.12)", background: "rgba(13,13,20,.7)", color: "#f4f4fa", fontSize: 13.5, fontFamily: "'Chakra Petch', sans-serif", outline: "none", boxSizing: "border-box" }} />
+        <button type="submit" disabled={busy} style={{ padding: "12px 26px", borderRadius: 999, border: "none", background: "#ffb43d", color: "#1a1206", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", boxShadow: "0 0 22px rgba(255,180,61,.3)", opacity: busy ? .6 : 1 }}>
+          {busy ? "Searching…" : "Search"}
+        </button>
+      </form>
+      {err && <p style={{ marginTop: 12, fontSize: 12.5, color: "#ff8f8f", fontFamily: MONO_FONT }}>{err}</p>}
+
+      {player && (
+        <div style={{ marginTop: 18, borderRadius: 24, overflow: "hidden", border: "1px solid rgba(179,107,255,.35)", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(13,13,20,.6))", boxShadow: "0 18px 50px rgba(0,0,0,.4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,.07)", flexWrap: "wrap" }}>
+            {player.iconId && (
+              <img src={`https://cdn.brawlify.com/profile-icons/regular/${player.iconId}.png`} alt="" loading="lazy"
+                style={{ width: 58, height: 58, borderRadius: 16, border: "2px solid rgba(179,107,255,.5)" }}
+                onError={e => { e.currentTarget.style.display = "none"; }} />
+            )}
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: 700, color: scNameColor(player.nameColor) }}>{player.name}</div>
+              <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: "#8a7fa6" }}>{player.tag}{player.club ? ` · ${player.club}` : ""}</div>
+            </div>
+            <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: "#6f7180" }}>LVL {player.expLevel}</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, padding: "16px 20px" }}>
+            {stat("TROPHIES", `🏆 ${player.trophies.toLocaleString()}`, "#ffce7a")}
+            {stat("HIGHEST", player.highestTrophies.toLocaleString(), "#ffce7a")}
+            {stat("3V3 WINS", player.victories3v3.toLocaleString(), "#8ee6b0")}
+            {stat("SOLO WINS", player.soloVictories.toLocaleString(), "#7cc4ff")}
+            {stat("DUO WINS", player.duoVictories.toLocaleString(), "#7cc4ff")}
+            {stat("BRAWLERS", `${player.brawlersOwned} · ${player.maxedBrawlers} maxed`, "#c98bff")}
+          </div>
+          {player.bestBrawlers?.length > 0 && (
+            <div style={{ padding: "0 20px 18px", display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {player.bestBrawlers.map(b => (
+                <span key={b.name} style={{ fontFamily: MONO_FONT, fontSize: 10.5, color: "#c9c9d6", padding: "6px 12px", borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)" }}>
+                  {b.name} · 🏆{b.trophies} · P{b.power}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // Map name -> { imageUrl, modeColor, modeName } from Brawlify's public API,
 // used to give rotation slots their real map art.
 function useBrawlifyMaps(enabled) {
@@ -300,9 +409,8 @@ const PODIUM = [
 ];
 
 function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
-  const rankingsFeed = useSiteFeed("player_rankings");
+  const { players, fetchedAt } = useTop200();
   const rotationFeed = useSiteFeed("event_rotation");
-  const players = rankingsFeed?.payload?.items || [];
   const rotation = Array.isArray(rotationFeed?.payload) ? rotationFeed.payload : [];
   const mapsByName = useBrawlifyMaps(rotation.length > 0);
 
@@ -337,6 +445,9 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
           Top of the <span style={{ color: "#ffb43d", textShadow: "0 0 40px rgba(255,180,61,.5)" }}>ladder</span>
         </h1>
       </div>
+
+      {/* ── Player Card lookup ── */}
+      <PlayerCardSearch />
 
       {/* ── Map rotation ── */}
       <section style={{ marginBottom: 44 }}>
@@ -387,10 +498,10 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
       {/* ── Global trophy leaderboard ── */}
       <section style={{ marginBottom: 44 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>◈ GLOBAL TROPHY LEADERBOARD</span>
-          {rankingsFeed?.fetched_at && (
+          <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>◈ GLOBAL TROPHY LEADERBOARD · TOP 200</span>
+          {fetchedAt && (
             <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#5a5a6a" }}>
-              UPDATED {new Date(rankingsFeed.fetched_at).toLocaleString()}
+              UPDATED {new Date(fetchedAt).toLocaleString()}
             </span>
           )}
         </div>

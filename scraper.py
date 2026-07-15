@@ -1,4 +1,7 @@
 import os
+import re
+import time
+import random
 import hashlib
 import threading
 import requests
@@ -108,10 +111,11 @@ def get_stored_match_count(rank_bracket):
     return 0
 
 def refresh_site_feed():
-    """Refresh the SiteFeed table powering the Leaderboards tab: the global
-    top-200 trophy leaderboard and the live event/map rotation. Both come from
-    the official Supercell API (browser clients can't call it — key + IP
-    allowlist — so the scraper relays them into Supabase on every run)."""
+    """Refresh the live relays: the event/map rotation stays as a raw SiteFeed
+    payload, while the global top-200 trophy leaderboard is parsed into the
+    structured top_200_leaderboard table that the Leaderboards UI reads. Both
+    come from the official Supercell API (browser clients can't call it — key +
+    IP allowlist — so the scraper relays them into Supabase on every run)."""
     feeds = [
         ("player_rankings", "global", f"{BASE_URL}/rankings/global/players?limit=200"),
         ("event_rotation", "global", f"{BASE_URL}/events/rotation"),
@@ -133,8 +137,128 @@ def refresh_site_feed():
                 print(f"✅ SiteFeed updated: {kind}")
             else:
                 print(f"⚠️ SiteFeed store failed for {kind}: {up.status_code} {up.text[:200]}")
+
+            if kind == "player_rankings":
+                store_top_200(payload)
         except Exception as e:
             print(f"⚠️ SiteFeed error for {kind}: {e}")
+
+def store_top_200(payload):
+    """Parse the raw rankings payload into structured top_200_leaderboard rows
+    (upsert on rank, so the table always holds exactly the latest snapshot)."""
+    items = payload.get("items", [])
+    if not items:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    rows = [{
+        "rank": p.get("rank"),
+        "player_tag": p.get("tag"),
+        "name": p.get("name"),
+        "name_color": p.get("nameColor"),
+        "icon_id": (p.get("icon") or {}).get("id"),
+        "trophies": p.get("trophies", 0),
+        "club_name": (p.get("club") or {}).get("name"),
+        "fetched_at": now,
+    } for p in items if p.get("rank") and p.get("tag")]
+    res = requests.post(
+        f"{SUPABASE_URL}/rest/v1/top_200_leaderboard?on_conflict=rank",
+        json=rows,
+        headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
+    )
+    if res.status_code in (200, 201, 204):
+        print(f"✅ top_200_leaderboard updated ({len(rows)} rows)")
+    else:
+        print(f"⚠️ top_200_leaderboard store failed: {res.status_code} {res.text[:200]}")
+
+# ==========================================
+# MASTERS SEEDS — live from the ranked leaderboard
+# ==========================================
+# brawlace.com lists the global ranked (Masters) leaderboard; player profile
+# links embed the tag as /players/%23TAG. We pull the top 100, store them in
+# masters_players, then seed the spider from a RANDOM 5 of them each run so
+# collection coverage rotates across the very top of the ladder.
+BRAWLACE_RANKED_URL = "https://brawlace.com/leaderboards-ranked"
+
+# Last manually verified top-5 global ranked players — the fallback if the
+# brawlace scrape ever fails (site down, markup change, bot protection).
+FALLBACK_MASTERS_SEEDS = [
+    "#2R0JLJJ9PP",  # FUT|Guesti
+    "#9JCG0VY8U",   # Joker Ilaria
+    "#UVQRUVR0",    # DPB|SusiGuy
+    "#80PVPCC29",   # NAVI|Enraged
+    "#89VC2CGCJ",   # TH|Subeme
+]
+
+def fetch_top_ranked_players(limit=100):
+    """Scrape the top `limit` ranked player tags (in rank order) from brawlace
+    and refresh the masters_players table. Returns [] on any failure."""
+    try:
+        res = requests.get(BRAWLACE_RANKED_URL, timeout=30, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; BrawlMetaBot/1.0; +https://brawl-meta.vercel.app)"
+        })
+        if res.status_code != 200:
+            print(f"⚠️ brawlace fetch failed: {res.status_code}")
+            return []
+        # Profile links look like href="https://brawlace.com/players/%23TAG"
+        tags = []
+        for m in re.finditer(r"/players/%23([0-9A-Z]+)", res.text):
+            tag = "#" + m.group(1)
+            if tag not in tags:
+                tags.append(tag)
+            if len(tags) >= limit:
+                break
+        if not tags:
+            print("⚠️ brawlace scrape returned no tags (markup changed?)")
+            return []
+        now = datetime.now(timezone.utc).isoformat()
+        rows = [{"player_tag": t, "rank": i + 1, "source": "brawlace", "fetched_at": now} for i, t in enumerate(tags)]
+        up = requests.post(
+            f"{SUPABASE_URL}/rest/v1/masters_players?on_conflict=player_tag",
+            json=rows,
+            headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
+        )
+        if up.status_code in (200, 201, 204):
+            print(f"✅ masters_players refreshed ({len(rows)} ranked players)")
+        else:
+            print(f"⚠️ masters_players store failed: {up.status_code} {up.text[:200]}")
+        return tags
+    except Exception as e:
+        print(f"⚠️ brawlace scrape error: {e}")
+        return []
+
+def get_masters_seeds():
+    """Random 5 of the live top-100 ranked players. Falls back to the last
+    stored masters_players, then to the hardcoded pro tags."""
+    top = fetch_top_ranked_players(100)
+    if not top:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&order=rank.asc&limit=100",
+            headers=SUPABASE_HEADERS,
+        )
+        if res.status_code == 200:
+            top = [r["player_tag"] for r in res.json() if r.get("player_tag")]
+        if top:
+            print(f"Using {len(top)} previously stored masters_players as seed pool.")
+    if not top:
+        print("Using hardcoded fallback Masters seeds.")
+        return list(FALLBACK_MASTERS_SEEDS)
+    return random.sample(top, min(5, len(top)))
+
+def get_diamond_seeds():
+    """Diamond/Mythic seeds now live in the diamond_mythic_players table."""
+    fallback = ["#2Y9RV2RGR", "#2JJPLROYGY", "#RYRU2L2UV"]
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/diamond_mythic_players?select=player_tag",
+            headers=SUPABASE_HEADERS,
+        )
+        if res.status_code == 200:
+            tags = [r["player_tag"] for r in res.json() if r.get("player_tag")]
+            if tags:
+                return tags
+    except Exception as e:
+        print(f"⚠️ diamond_mythic_players read error: {e}")
+    return fallback
 
 def make_hash(entry):
     winners = sorted([w for w in entry['winners'] if w])
@@ -180,6 +304,9 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
             return []
         seen_tags.add(player_tag)
 
+    # Slight per-request delay so 8 parallel workers can't hammer the Brawl
+    # Stars API into rate-limiting us (429s silently drop whole battlelogs).
+    time.sleep(REQUEST_DELAY)
     player_url_tag = player_tag.replace("#", "%23")
     log_url = f"{BASE_URL}/players/{player_url_tag}/battlelog"
     log_res = requests.get(log_url, headers=HEADERS, proxies=PROXIES)
@@ -263,10 +390,14 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, existin
             return merge()
     return merge()
 
-BASELINE_TARGET_PER_BRACKET = 100000   # one-time fill target before switching to steady increments
-STEADY_INCREMENT_PER_PUSH = 10000      # per-run target once the baseline has been reached
+MASTERS_BASELINE = 400000              # Masters fills to this before Diamond/Mythic collection ever starts
+MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met
+RUN_HARD_CAP = 150000                  # absolute max matches collected across one whole run
+SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity
 MAX_PLAYERS_PER_BRACKET = 20000        # safety cap so a run can't spider forever if the target is unreachable
-CONCURRENCY = 12                       # parallel battlelog requests — the real fix for the 35min -> 3hr slowdown
+CONCURRENCY = 8                        # parallel battlelog requests
+REQUEST_DELAY = 0.15                   # seconds before each API call (per worker) — stays under rate limits
+DB_BATCH_DELAY = 0.25                  # pause between Supabase insert batches
 
 def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hashes,
                      target_matches, max_players=MAX_PLAYERS_PER_BRACKET, max_depth=None):
@@ -303,17 +434,6 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, existing_hash
     reason = "reached target" if collected >= target_matches else ("ran out of players" if not queue else "hit player safety cap")
     print(f"{bracket} done. {collected} matches from {processed} players ({reason}).")
 
-def bracket_target(bracket):
-    """Baseline-fill this bracket to BASELINE_TARGET_PER_BRACKET first; once
-    reached, only collect a small steady increment per run."""
-    stored = get_stored_match_count(bracket)
-    if stored < BASELINE_TARGET_PER_BRACKET:
-        remaining = BASELINE_TARGET_PER_BRACKET - stored
-        print(f"{bracket}: {stored} stored, still filling baseline ({remaining} to go).")
-        return min(remaining, MAX_PLAYERS_PER_BRACKET)  # cap per-run effort even while filling baseline
-    print(f"{bracket}: {stored} stored, baseline met — steady +{STEADY_INCREMENT_PER_PUSH} increment.")
-    return STEADY_INCREMENT_PER_PUSH
-
 def harvest_to_cloud():
     print("🛰️ Harvesting rank-segmented high-elo matches...")
     refresh_site_feed()
@@ -322,46 +442,47 @@ def harvest_to_cloud():
     existing_hashes = fetch_existing_hashes()
 
     # ==========================================
-    # PASS 1: Masters (1+) — always prioritized. Fills to a 100k baseline
-    # first, then only tops up 10k per run once that's reached.
+    # PASS 1: Masters (1+) — always collected first. Fills to the 400k
+    # baseline before Diamond/Mythic gets any budget; once the baseline is
+    # met, throttles down to a steady 50k per run. The whole run is hard-
+    # capped at RUN_HARD_CAP matches regardless of bracket.
     #
-    # Seeded from player tags confirmed to be genuinely Masters+ ranked
-    # (found via powerleagueprodigy.com). The public API has no per-match
-    # rank-tier field (confirmed by dumping raw battle JSON) and the legacy
-    # Power League /rankings/{country}/seasons/{id} endpoint is dead (404),
-    # so Masters-only collection is enforced by spider proximity instead:
-    # max_depth=2 keeps collection within two matchmaking hops of verified
-    # Masters players. At Masters I+ queue is solo-only and matchmaking is
-    # rank-tight, so those hops stay Masters-adjacent instead of drifting
-    # down the ladder like unlimited spidering does.
+    # Seeds: a RANDOM 5 of the live top-100 global ranked players (scraped
+    # from brawlace each run into masters_players, with stored/hardcoded
+    # fallbacks). The public API has no per-match rank-tier field, so rank
+    # purity is enforced by spider proximity instead: SPIDER_DEPTH=2 keeps
+    # collection within two matchmaking hops of verified top-ranked players.
+    # At Masters I+ the queue is solo-only and matchmaking rank-tight, so
+    # those hops stay Masters-adjacent instead of drifting down the ladder.
     # ==========================================
-    masters_target = bracket_target("masters_legendary")
-    masters_seed_tags = [
-        "#J2RJ8Y",
-        "#22LURJ9JY",
-        "#8J8V2RUGO",
-        "#YPUJUORC8",
-        "#2C20JJRGJJ",
-        "#VU9CRLP8",
-    ]
-    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=masters_target, max_depth=2)
+    masters_stored = get_stored_match_count("masters_legendary")
+    if masters_stored < MASTERS_BASELINE:
+        masters_target = min(MASTERS_BASELINE - masters_stored, RUN_HARD_CAP)
+        print(f"masters_legendary: {masters_stored} stored, filling 400k baseline (target {masters_target} this run).")
+    else:
+        masters_target = min(MASTERS_STEADY, RUN_HARD_CAP)
+        print(f"masters_legendary: {masters_stored} stored, baseline met — steady +{masters_target}.")
+
+    masters_seed_tags = get_masters_seeds()
+    print(f"Masters seeds this run: {', '.join(masters_seed_tags)}")
+    harvest_bracket("masters_legendary", masters_seed_tags, extracted_data, seen_tags, existing_hashes,
+                    target_matches=masters_target, max_depth=SPIDER_DEPTH)
 
     # ==========================================
-    # PASS 2: Diamond & Mythic — only collected once Masters & Legendary has
-    # met its own baseline, so early runs put full budget into Masters first.
+    # PASS 2: Diamond & Mythic — only once Masters has met its 400k baseline,
+    # and only with whatever budget the run cap has left after Masters.
     # ==========================================
-    masters_stored_after = get_stored_match_count("masters_legendary")
-    if masters_stored_after < BASELINE_TARGET_PER_BRACKET:
-        print(f"Skipping Diamond/Mythic this run — Masters & Legendary baseline not yet met ({masters_stored_after}/{BASELINE_TARGET_PER_BRACKET}).")
+    if masters_stored < MASTERS_BASELINE:
+        print(f"Skipping Diamond/Mythic this run — Masters baseline not yet met ({masters_stored}/{MASTERS_BASELINE}).")
     else:
-        diamond_target = bracket_target("diamond_mythic")
-        print("Gathering Diamond/Mythic seed data via spidering...")
-        diamond_seed_tags = [
-            "#2Y9RV2RGR",
-            "#2JJPLROYGY",
-            "#RYRU2L2UV"
-        ]
-        harvest_bracket("diamond_mythic", diamond_seed_tags, extracted_data, seen_tags, existing_hashes, target_matches=diamond_target)
+        run_budget_left = RUN_HARD_CAP - len(extracted_data)
+        if run_budget_left <= 0:
+            print("Skipping Diamond/Mythic — run hard cap already consumed by Masters.")
+        else:
+            diamond_seed_tags = get_diamond_seeds()
+            print(f"Diamond/Mythic seeds: {', '.join(diamond_seed_tags)} (budget {run_budget_left}).")
+            harvest_bracket("diamond_mythic", diamond_seed_tags, extracted_data, seen_tags, existing_hashes,
+                            target_matches=run_budget_left, max_depth=SPIDER_DEPTH)
 
     # ==========================================
     # SAVE PIPELINE: SUPABASE CLOUD
@@ -378,6 +499,8 @@ def harvest_to_cloud():
     url = f"{SUPABASE_URL}/rest/v1/Matches"
     pushed = 0
     for i in range(0, len(extracted_data), INSERT_BATCH_SIZE):
+        if i > 0:
+            time.sleep(DB_BATCH_DELAY)  # breathe between batches — don't overload Supabase
         batch = extracted_data[i:i + INSERT_BATCH_SIZE]
         res = requests.post(url, json=batch, headers=SUPABASE_HEADERS)
         if res.status_code in [200, 201]:
