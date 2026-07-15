@@ -6,7 +6,10 @@
 //
 // Requires SUPERCELL_API_KEY (+ PROXY_HOST/PORT/USER/PASS) in Vercel env.
 
-import { ProxyAgent } from "undici";
+// Use undici's OWN fetch (not Node's global fetch): a ProxyAgent from the
+// standalone undici@8 package must be driven by the matching undici@8 fetch,
+// or the global fetch's internal undici rejects it with UND_ERR_INVALID_ARG.
+import { fetch as undiciFetch, ProxyAgent } from "undici";
 import { json } from "./_lib/db.js";
 
 export default async function handler(req, res) {
@@ -29,7 +32,7 @@ export default async function handler(req, res) {
       dispatcher = new ProxyAgent(opts);
     }
 
-    const r = await fetch(`https://api.brawlstars.com/v1/players/%23${tag}`, {
+    const r = await undiciFetch(`https://api.brawlstars.com/v1/players/%23${tag}`, {
       headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
       dispatcher,
     });
@@ -58,7 +61,9 @@ export default async function handler(req, res) {
       bestBrawlers: best,
     });
   } catch (e) {
-    console.error("player lookup error:", e);
-    return json(res, 500, { error: e.message });
+    console.error("player lookup error:", e, e?.cause);
+    // Surface the underlying cause — "fetch failed" alone hides the real reason
+    // (proxy refused, DNS, TLS, timeout…).
+    return json(res, 500, { error: e.message, cause: e?.cause?.code || e?.cause?.message || String(e?.cause || "") });
   }
 }
