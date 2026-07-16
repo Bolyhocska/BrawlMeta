@@ -58,8 +58,9 @@ Normalized match storage (2026-07-16; DB went 149→68 MB):
 
 ## Current state / open threads (2026-07-16)
 
-- Intelligence Engine live: 5-pass `getDraftAdvice` + `computeWinSplit` (capped 85-15, always sums to 100) in the Draft Assistant.
-- `NORI` (newest brawler) is defaulted to CONTROL in `draft_logic_config.json` — unconfirmed, correct if wrong.
+- Intelligence Engine live: 5-pass `getDraftAdvice` + `computeWinSplit` (capped 85-15, always sums to 100) in the Draft Assistant. Suggestion cards headline a confidence-honest WR (falls back to overall when the map sample < `minMapPicks`), a one-line `matchupNote`, and short chips — no more rationale paragraph. `counterStack` (config `constraints`) makes a hard counter to a class the enemy stacked (2+) surface strongly, applied AFTER mode weighting. Draft-complete verdict labels the win split as "matchup edge" vs the "roster strength / solo WR" rows so the two numbers stop reading as contradictory.
+- Draft classes are owner-confirmed: `NORI` = SPACE_MAKER (assassin), `DAMIAN` = TANK. Both are API-`Unknown`, so they live only in `brawlerClassOverrides`; the DB `vs_class` reflects a class change only after `refresh-intelligence` reruns `meta_weights.py`.
+- Scraper collects competitive Ranked ONLY: `common.py` filter is `"ranked" in type and type != "ranked"` (drops trophy-ladder `type:"ranked"`, keeps `soloRanked`/`teamRanked`). Pre-2026-07-16 rows still contain trophy pollution and can't be purged (battle `type` was never stored). Verify the filter with a `workflow_dispatch` — near-zero collection means the live competitive `type` string differs.
 - `src/data/generalTierList.json` is an intentionally empty hand-curated list — the tier list "GENERAL" tab is blank until the owner fills it.
 - User must drop `add-friend-id.png` + `add-friend-qr.png` into `public/help/` (registration example images hide via onError until then).
 - Future: Stripe Connect for prize payouts (needs business entity first); Supercell-API tag-ownership verification before real-money prizes.

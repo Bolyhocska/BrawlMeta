@@ -12,7 +12,9 @@
 // PASS 4  Strategic filter — mode tempo weights, thrower penalty, class diversity
 // PASS 5  Composition      — final_sanity_check: mid + lane anchor + objective specialist
 //
-// getDraftAdvice() returns the top-3 ranked picks with human rationale strings;
+// getDraftAdvice() returns the top-3 ranked picks — each with a confidence-honest
+// headline win rate (falls back to overall when the map sample is thin), a one-line
+// matchupNote ("how good into their comp"), and short reason chips.
 // computeWinSplit() produces the draft-complete BLUE/RED win % (always sums 100).
 
 import CONFIG from "./draft_logic_config.json";
@@ -82,6 +84,9 @@ export function getDraftAdvice({
   const myClasses = myTeam.map(draftClassOf);
   const enemyClasses = enemyTeam.map(draftClassOf);
   const enemyPicksRemaining = 3 - enemyTeam.length;
+  // How many of each class the enemy has committed — drives the counter-stack rule.
+  const enemyClassCounts = {};
+  for (const c of enemyClasses) enemyClassCounts[c] = (enemyClassCounts[c] || 0) + 1;
   const used = new Set([...myTeam, ...enemyTeam, ...unavailable].map(norm));
   const coeff = CONFIG.statisticalCoefficients;
   const cons = CONFIG.constraints;
@@ -138,6 +143,10 @@ export function getDraftAdvice({
     // With no enemy info yet, fall back to per-brawler blind safety: a 60% WR
     // Edgar is still a terrible reveal because his wins come from matchups.
     let matchupWinRate = null, matchupPicks = null;
+    let dataEdge = null;                 // empirical WR-50 vs their classes
+    let bestEdge = 0, bestCounterName = null;   // strongest class edge we have
+    let worstEdge = 0, worstCounterName = null; // worst class matchup we're in
+    let stackedCounter = null;           // { cls, count } enemy class we hard-counter and they stacked
     if (enemyTeam.length === 0) {
       score *= blindPickFactor(key);
       const bl = blindPickLabel(key);
@@ -150,6 +159,8 @@ export function getDraftAdvice({
       for (let i = 0; i < enemyTeam.length; i++) {
         const edge = matrixScore(cls, enemyClasses[i]);
         matrixPts += edge;
+        if (edge > bestEdge) { bestEdge = edge; bestCounterName = fmtName(enemyTeam[i]); }
+        if (edge < worstEdge) { worstEdge = edge; worstCounterName = fmtName(enemyTeam[i]); }
         if (edge >= 1.5) {
           chips.push({ label: `Counters ${fmtName(enemyTeam[i])}`, tone: "good" });
           why.push(`${classLabel(cls)} answer to their ${fmtName(enemyTeam[i])}`);
@@ -159,6 +170,17 @@ export function getDraftAdvice({
       }
       score += matrixPts * 2.2;
 
+      // Counter-stack: the enemy committed 2+ of a class we hard-counter → near-lock.
+      const cStack = cons.counterStack;
+      if (cStack) {
+        for (const [ec, cnt] of Object.entries(enemyClassCounts)) {
+          if (cnt >= cStack.minStack && matrixScore(cls, ec) >= cStack.hardCounterThreshold &&
+              (!stackedCounter || cnt > stackedCounter.count)) {
+            stackedCounter = { cls: ec, count: cnt };
+          }
+        }
+      }
+
       // Data: this brawler's empirical WR against the enemy's classes
       if (intel?.vs_class) {
         const edges = enemyClasses
@@ -166,7 +188,7 @@ export function getDraftAdvice({
           .filter(v => v && v.picks >= 200)
           .map(v => parseFloat(v.winRate) - 50);
         if (edges.length) {
-          const dataEdge = edges.reduce((a, v) => a + v, 0) / edges.length;
+          dataEdge = edges.reduce((a, v) => a + v, 0) / edges.length;
           score += dataEdge * 0.6;
           if (dataEdge >= 2.5) why.push(`${(50 + dataEdge).toFixed(1)}% into their classes historically`);
         }
@@ -194,6 +216,13 @@ export function getDraftAdvice({
 
     // ── PASS 4 · Strategic / map filter ──
     score *= modeCfg.classWeights?.[cls] ?? 1;
+
+    // Counter-stack bonus — added AFTER mode weight so a mode that favours the
+    // enemy's stacked class can't bury its hard counter (2 snipers → Mortis/Kit).
+    if (stackedCounter) {
+      score += (cons.counterStack.bonusPerEnemy ?? 9) * stackedCounter.count;
+      chips.unshift({ label: `Counters ${stackedCounter.count}× ${classLabel(stackedCounter.cls)}`, tone: "good" });
+    }
 
     // Thrower rule: never early without protection (Bobby), softer on passive maps
     if (cls === "THROWER" && cons.throwerPenalty.appliesToPickSlots.includes(pickSlot)) {
@@ -251,13 +280,37 @@ export function getDraftAdvice({
     }
     for (const mate of myClasses) score += synergyScore(cls, mate) * 2;
 
-    // Rationale string: lead with the strongest structural reason, close with data.
-    const statTail = mapTWR != null
-      ? `${(ms.wins / ms.picks * 100).toFixed(1)}% on this map (${ms.picks} games)`
-      : intel ? `${intel.win_rate}% overall` : null;
-    const rationale =
-      (why.length ? why.slice(0, 2).join("; ") : `${classLabel(cls)} pick with solid numbers here`) +
-      (statTail ? ` — ${statTail}.` : ".");
+    // Headline win rate: trust the map only when the sample is real; otherwise
+    // fall back to the (large-sample) overall rate so a 25-game map WR never headlines.
+    let displayWinRate = null, sampleGames = 0, sampleScope = null;
+    if (ms && ms.picks >= minMapPicks) {
+      displayWinRate = Math.round((ms.wins / ms.picks) * 1000) / 10;
+      sampleGames = ms.picks; sampleScope = "map";
+    } else if (intel) {
+      displayWinRate = Math.round(parseFloat(intel.win_rate) * 10) / 10;
+      sampleGames = Number(intel.picks) || 0; sampleScope = "overall";
+    } else if (ms && ms.picks > 0) {
+      displayWinRate = Math.round((ms.wins / ms.picks) * 1000) / 10;
+      sampleGames = ms.picks; sampleScope = "map";
+    }
+
+    // matchupNote: one plain line answering "how good is this into their comp?"
+    let matchupNote = null;
+    if (enemyTeam.length > 0) {
+      if (stackedCounter) {
+        matchupNote = `Hard-counters their ${stackedCounter.count}× ${classLabel(stackedCounter.cls)}`;
+      } else if (matchupWinRate != null) {
+        matchupNote = `${matchupWinRate}% vs this exact comp · ${matchupPicks} games`;
+      } else if (bestEdge >= 1.5 && bestCounterName) {
+        matchupNote = `Strong into their ${bestCounterName}`;
+      } else if (dataEdge != null && dataEdge >= 2) {
+        matchupNote = `${(50 + dataEdge).toFixed(0)}% into their classes`;
+      } else if (worstEdge <= -1.5 && worstCounterName) {
+        matchupNote = `Loses lane to their ${worstCounterName}`;
+      } else {
+        matchupNote = "Even into their comp";
+      }
+    }
 
     candidates.push({
       key,
@@ -265,11 +318,11 @@ export function getDraftAdvice({
       draftClass: cls,
       classLabel: classLabel(cls),
       score,
-      winRate: ms && ms.picks > 0 ? Math.round((ms.wins / ms.picks) * 1000) / 10 : (intel ? parseFloat(intel.win_rate) : null),
+      winRate: displayWinRate,
+      displayWinRate, sampleGames, sampleScope,
       picks: ms?.picks ?? 0,
-      matchupWinRate, matchupPicks,
-      reasons: chips.slice(0, 3),
-      rationale: rationale.charAt(0).toUpperCase() + rationale.slice(1),
+      matchupWinRate, matchupPicks, matchupNote,
+      reasons: chips.slice(0, 2),
     });
   }
 

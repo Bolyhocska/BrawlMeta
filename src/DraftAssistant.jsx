@@ -30,6 +30,9 @@ const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 const PANEL = { background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 28 };
 
+// Compact game counts: 1904 → "1.9K", 24310 → "24K"
+const fmtGames = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "")}K` : `${n}`);
+
 // ─── Small primitives (homepage design language) ────────────────────────────
 
 function Eyebrow({ children }) {
@@ -624,9 +627,11 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 10.5, color: "#6f7180", fontFamily: MONO }}>
-                          {s.matchupWinRate != null ? `${s.matchupWinRate}% IN MATCHUP · ${s.matchupPicks} GAMES` : `${s.picks} GAMES ON MAP`}
-                        </div>
+                        {s.matchupNote && (
+                          <div style={{ fontSize: 11.5, color: "#c9c9d6", marginTop: 3, fontFamily: "'Chakra Petch', sans-serif" }}>
+                            {s.matchupNote}
+                          </div>
+                        )}
                         {s.reasons?.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
                             {s.reasons.map((r, ri) => (
@@ -639,13 +644,12 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             ))}
                           </div>
                         )}
-                        {s.rationale && (
-                          <p style={{ fontSize: 11, color: "#9a9aab", lineHeight: 1.45, marginTop: 6 }}>{s.rationale}</p>
-                        )}
                       </div>
-                      <div style={{ textAlign: "center" }}>
+                      <div style={{ textAlign: "center", flexShrink: 0 }}>
                         <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color }}>{s.winRate}%</div>
-                        <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#6f7180" }}>WIN</div>
+                        <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#6f7180" }}>
+                          {s.sampleGames > 0 ? `${fmtGames(s.sampleGames)} ${s.sampleScope === "overall" ? "OVERALL" : "MAP"}` : "WIN"}
+                        </div>
                       </div>
                     </div>
                   );
@@ -681,12 +685,25 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 <div style={{ width: `${winSplit.blue}%`, background: "#7cc4ff", boxShadow: "0 0 12px rgba(124,196,255,.5)", transition: "width .7s ease" }} />
                 <div style={{ width: `${winSplit.red}%`, background: "#ff8f8f", transition: "width .7s ease" }} />
               </div>
-              {[["BLUE", teamStrength.blue, "#7cc4ff", winSplit.blueSanity], ["RED", teamStrength.red, "#ff8f8f", winSplit.redSanity]].map(([label, v, color, sanity]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontFamily: MONO, fontSize: 10.5 }}>
-                  <span style={{ color }}>{label} · {v != null ? `${v.toFixed(1)}% AVG WR` : "NO MAP DATA"}</span>
-                  {sanity.missing.length > 0 && <span style={{ color: "#ffce7a", textAlign: "right" }}>⚠ no {sanity.missing[0]}</span>}
-                </div>
-              ))}
+              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180", textAlign: "center", marginTop: -4 }}>
+                MATCHUP EDGE · AFTER COUNTERS & STRUCTURE
+              </div>
+
+              {/* Second lens: raw roster strength on the map, before any head-to-head. */}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+                <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: "#6f7180" }}>
+                  ROSTER STRENGTH · SOLO WR ON MAP
+                </span>
+                {[["BLUE", teamStrength.blue, "#7cc4ff", winSplit.blueSanity], ["RED", teamStrength.red, "#ff8f8f", winSplit.redSanity]].map(([label, v, color, sanity]) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontFamily: MONO, fontSize: 10.5 }}>
+                    <span style={{ color }}>{label} · {v != null ? `${v.toFixed(1)}% solo WR` : "NO MAP DATA"}</span>
+                    {sanity.missing.length > 0 && <span style={{ color: "#ffce7a", textAlign: "right" }}>⚠ no {sanity.missing[0]}</span>}
+                  </div>
+                ))}
+                <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.4 }}>
+                  Each side's average brawler win rate on this map on its own — not the matchup. The {winSplit.blue}–{winSplit.red} above is who wins once counters, synergy and comp gaps are applied.
+                </span>
+              </div>
             </div>
           )}
         </div>

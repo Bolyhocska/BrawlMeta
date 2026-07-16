@@ -235,7 +235,15 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
 
         match_type = battle_data.get("type", "").lower()
         mode_name = battle_data.get("mode", "")
-        if ("ranked" in match_type or "solomode" in match_type) and mode_name in RANKED_MODES:
+        # Competitive Ranked reports "soloRanked" / "teamRanked". Plain trophy-ladder
+        # games report EXACTLY "ranked" and must be EXCLUDED: a freshly released
+        # brawler (e.g. Nori) can be trophy-legal while still absent from the
+        # competitive Ranked pool, and those lower-skill games pollute the high-rank
+        # meta the tier list and draft engine are built on. Matching the "ranked"
+        # substring while dropping the exact "ranked" string keeps every competitive
+        # variant (soloRanked / teamRanked / any future *Ranked) but sheds trophy.
+        is_competitive_ranked = "ranked" in match_type and match_type != "ranked"
+        if is_competitive_ranked and mode_name in RANKED_MODES:
             teams = battle_data.get("teams", [])
             result = battle_data.get("result", "").lower()
 

@@ -35,7 +35,7 @@
     "_comment": "Brawlers whose API class is Unknown (new releases) or whose draft function differs from their API class. BOLT is a tank and STARR NOVA an assassin/space maker per current meta.",
     "BOLT": "TANK",
     "STARR NOVA": "SPACE_MAKER",
-    "DAMIAN": "SPACE_MAKER",
+    "DAMIAN": "TANK",
     "NAJIA": "SPACE_MAKER",
     "SIRIUS": "SUPPORT",
     "GLOWY": "CONTROL",
@@ -50,7 +50,7 @@
     "FINX": "CONTROL",
     "OLLIE": "TANK",
     "MEEPLE": "CONTROL",
-    "NORI": "CONTROL"
+    "NORI": "SPACE_MAKER"
   },
 
   "counterMatrix": {
@@ -171,6 +171,12 @@
       "bonus": 8,
       "appliesToPickSlots": [4, 5, 6],
       "requiresEnemyCommitted": true
+    },
+    "counterStack": {
+      "_comment": "Bobby: 'if the enemy commits to a class, the hard counter to it is almost a free pick'. When the enemy fields 2+ of one class, a brawler whose class hard-counters it (counterMatrix >= hardCounterThreshold) gets a flat bonus PER stacked enemy — applied AFTER mode weighting so a favorable enemy mode can't bury the counter (e.g. two snipers on a Bounty map still make Mortis/Kit a lock).",
+      "minStack": 2,
+      "hardCounterThreshold": 1.5,
+      "bonusPerEnemy": 9
     }
   },
 
