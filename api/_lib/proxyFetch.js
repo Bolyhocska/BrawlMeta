@@ -1,7 +1,7 @@
 // ─── Proxy-aware fetch for Supercell calls ───────────────────────────────────
 // Supercell API keys are locked to a single allowlisted IP. Vercel functions
 // don't have a static IP, so outbound Supercell requests are routed through
-// the same Webshare static-IP proxy scraper.py already uses (PROXY_HOST/
+// the same Webshare static-IP proxy the scrapers package already uses (PROXY_HOST/
 // PORT/USER/PASS) — reuse that key's existing allowlist entry instead of
 // managing a second one. Falls back to a direct call if no proxy is
 // configured (useful for local dev against a key allowlisted to "any IP").

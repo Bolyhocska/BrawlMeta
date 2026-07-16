@@ -53,7 +53,8 @@ export default async function handler(req, res) {
     }
 
     // Target player = first tag of team A; one battle-log call verifies all 6.
-    // Routed through the same static-IP proxy scraper.py uses — Supercell
+    // Routed through the same static-IP proxy the scrapers package uses —
+    // Supercell
     // keys are locked to an allowlisted IP, and Vercel's outbound IP isn't
     // static, so a direct call would be rejected.
     const targetTag = normalizeTag(match.team_a_tags[0]);
