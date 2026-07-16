@@ -1,0 +1,37 @@
+name: Scrape — Diamond/Mythic Matches
+
+# Diamond/Mythic ranked-match spider. Daily, offset from the Masters run so
+# the two spiders never share the proxy/API budget at the same time. Exits
+# early on its own if the Masters 400k baseline isn't met yet.
+on:
+  schedule:
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  diamond-mythic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run Diamond/Mythic scraper
+        env:
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: python -m scrapers.diamond_mythic
