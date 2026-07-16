@@ -1,0 +1,182 @@
+{
+  "_meta": {
+    "description": "Single source of truth for the BrawlMeta Intelligence Engine. Encodes Bobby's draft framework ('The Best Draft Guide EVER' parts 1+2): the 7 draft classes, the counter triangle (Control > Anti-Tank > Tank/Aggro > Control), active vs passive mode tempo, thrower rules, space-maker timing, and 1-mid + 2-lane team structure. Read by src/data/draftEngine.js (browser) AND scrapers/meta_weights.py (daily intelligence refresh) — edit here, both sides follow.",
+    "sources": [
+      "https://www.youtube.com/watch?v=Vn13u4Uggqc",
+      "https://www.youtube.com/watch?v=XHp3r_D9rAA"
+    ],
+    "version": 1
+  },
+
+  "classes": ["ANTI_TANK", "TANK", "SPACE_MAKER", "CONTROL", "THROWER", "SNIPER", "SUPPORT"],
+
+  "classLabels": {
+    "ANTI_TANK": "Anti-Tank",
+    "TANK": "Tank",
+    "SPACE_MAKER": "Space Maker",
+    "CONTROL": "Control",
+    "THROWER": "Thrower",
+    "SNIPER": "Sniper",
+    "SUPPORT": "Support"
+  },
+
+  "apiClassToDraftClass": {
+    "Damage Dealer": "ANTI_TANK",
+    "Tank": "TANK",
+    "Assassin": "SPACE_MAKER",
+    "Controller": "CONTROL",
+    "Artillery": "THROWER",
+    "Marksman": "SNIPER",
+    "Support": "SUPPORT",
+    "Unknown": "CONTROL"
+  },
+
+  "brawlerClassOverrides": {
+    "_comment": "Brawlers whose API class is Unknown (new releases) or whose draft function differs from their API class. BOLT is a tank and STARR NOVA an assassin/space maker per current meta.",
+    "BOLT": "TANK",
+    "STARR NOVA": "SPACE_MAKER",
+    "DAMIAN": "SPACE_MAKER",
+    "NAJIA": "SPACE_MAKER",
+    "SIRIUS": "SUPPORT",
+    "GLOWY": "CONTROL",
+    "GIGI": "THROWER",
+    "PIERCE": "SNIPER",
+    "ZIGGY": "THROWER",
+    "MINA": "SPACE_MAKER",
+    "TRUNK": "TANK",
+    "ALLI": "SPACE_MAKER",
+    "KAZE": "SPACE_MAKER",
+    "JAE-YONG": "SUPPORT",
+    "FINX": "CONTROL",
+    "OLLIE": "TANK",
+    "MEEPLE": "CONTROL",
+    "NORI": "CONTROL"
+  },
+
+  "counterMatrix": {
+    "_comment": "counterMatrix[A][B] > 0 means class A counters class B (score -2..+2). Encodes Bobby's triangle: Anti-Tank beats Tank, Tank/Aggro beats Control, Control beats Anti-Tank — 'everything in the game gets countered by something'. Space makers dive backline (snipers/throwers/support) but die to anti-tank damage and control.",
+    "ANTI_TANK":   { "ANTI_TANK": 0,    "TANK": 2,    "SPACE_MAKER": 1.5,  "CONTROL": -1.5, "THROWER": -1,   "SNIPER": -0.5, "SUPPORT": 0.5 },
+    "TANK":        { "ANTI_TANK": -2,   "TANK": 0,    "SPACE_MAKER": 0.5,  "CONTROL": 1.5,  "THROWER": -1.5, "SNIPER": -1,   "SUPPORT": 1 },
+    "SPACE_MAKER": { "ANTI_TANK": -1.5, "TANK": -0.5, "SPACE_MAKER": 0,    "CONTROL": -1,   "THROWER": 1.5,  "SNIPER": 2,    "SUPPORT": 1.5 },
+    "CONTROL":     { "ANTI_TANK": 1.5,  "TANK": -1.5, "SPACE_MAKER": 1,    "CONTROL": 0,    "THROWER": -0.5, "SNIPER": -1,   "SUPPORT": 0.5 },
+    "THROWER":     { "ANTI_TANK": 1,    "TANK": 1.5,  "SPACE_MAKER": -1.5, "CONTROL": 0.5,  "THROWER": 0,    "SNIPER": -1.5, "SUPPORT": 0 },
+    "SNIPER":      { "ANTI_TANK": 0.5,  "TANK": 1,    "SPACE_MAKER": -2,   "CONTROL": 1,    "THROWER": 1.5,  "SNIPER": 0,    "SUPPORT": 1 },
+    "SUPPORT":     { "ANTI_TANK": -0.5, "TANK": -1,   "SPACE_MAKER": -1.5, "CONTROL": -0.5, "THROWER": 0,    "SNIPER": -1,   "SUPPORT": 0 }
+  },
+
+  "synergyPairs": {
+    "_comment": "Same-team class pairings that amplify each other. Applied once per pair present in a comp.",
+    "TANK+SUPPORT": 1.5,
+    "TANK+CONTROL": 1,
+    "THROWER+TANK": 1.5,
+    "THROWER+CONTROL": 1,
+    "SPACE_MAKER+SNIPER": 1,
+    "SPACE_MAKER+SUPPORT": 0.5,
+    "ANTI_TANK+CONTROL": 0.5,
+    "ANTI_TANK+SUPPORT": 0.5
+  },
+
+  "roles": {
+    "_comment": "Standard ranked structure: one mid (objective player) + two laners. Lane anchors can hold a lane 1v1; objective specialists carry the mode's win condition.",
+    "structure": { "mid": 1, "lanes": 2 },
+    "midClasses": ["CONTROL", "SUPPORT", "ANTI_TANK"],
+    "laneAnchorClasses": ["SNIPER", "TANK", "CONTROL", "ANTI_TANK"],
+    "objectiveSpecialistByMode": {
+      "gemGrab": ["CONTROL", "SUPPORT"],
+      "brawlBall": ["TANK", "SPACE_MAKER"],
+      "hotZone": ["CONTROL", "TANK"],
+      "heist": ["TANK", "SPACE_MAKER", "ANTI_TANK"],
+      "knockout": ["SNIPER", "THROWER"],
+      "bounty": ["SNIPER"]
+    },
+    "objectiveSpecialistLabel": {
+      "gemGrab": "gem carrier",
+      "brawlBall": "ball carrier",
+      "hotZone": "zone holder",
+      "heist": "safe damage threat",
+      "knockout": "range anchor",
+      "bounty": "star keeper"
+    }
+  },
+
+  "modes": {
+    "_comment": "Bobby's two metas: active/aggro (Brawl Ball, Gem Grab, Hot Zone, Heist) vs passive (Bounty, Knockout). classWeights scale a brawler's score on that mode; maxPerClass enforces e.g. 'in Brawl Ball limit control to one brawler maximum'. damageOverMatchup relaxes matchup penalties where raw output wins ('I'd much rather have bad matchups with good damage' — Heist).",
+    "brawlBall": {
+      "tempo": "active",
+      "classWeights": { "TANK": 1.15, "SPACE_MAKER": 1.1, "ANTI_TANK": 1.1, "SUPPORT": 1.05, "CONTROL": 1.0, "SNIPER": 0.9, "THROWER": 0.75 },
+      "maxPerClass": { "CONTROL": 1, "THROWER": 1 },
+      "damageOverMatchup": false
+    },
+    "gemGrab": {
+      "tempo": "active",
+      "classWeights": { "CONTROL": 1.15, "SUPPORT": 1.1, "ANTI_TANK": 1.05, "TANK": 1.0, "SPACE_MAKER": 1.0, "SNIPER": 0.95, "THROWER": 0.95 },
+      "maxPerClass": {},
+      "damageOverMatchup": false
+    },
+    "hotZone": {
+      "tempo": "active",
+      "classWeights": { "CONTROL": 1.15, "TANK": 1.1, "SPACE_MAKER": 1.05, "ANTI_TANK": 1.05, "SUPPORT": 1.0, "THROWER": 1.0, "SNIPER": 0.85 },
+      "maxPerClass": {},
+      "damageOverMatchup": true
+    },
+    "heist": {
+      "tempo": "active",
+      "classWeights": { "TANK": 1.15, "SPACE_MAKER": 1.1, "ANTI_TANK": 1.05, "CONTROL": 0.95, "THROWER": 0.95, "SNIPER": 0.9, "SUPPORT": 0.85 },
+      "maxPerClass": {},
+      "damageOverMatchup": true
+    },
+    "knockout": {
+      "tempo": "passive",
+      "classWeights": { "SNIPER": 1.2, "THROWER": 1.1, "CONTROL": 1.05, "ANTI_TANK": 1.0, "SUPPORT": 0.95, "SPACE_MAKER": 0.85, "TANK": 0.8 },
+      "maxPerClass": {},
+      "damageOverMatchup": false
+    },
+    "bounty": {
+      "tempo": "passive",
+      "classWeights": { "SNIPER": 1.25, "THROWER": 1.05, "CONTROL": 1.05, "ANTI_TANK": 1.0, "SUPPORT": 0.95, "SPACE_MAKER": 0.85, "TANK": 0.75 },
+      "maxPerClass": {},
+      "damageOverMatchup": false
+    }
+  },
+
+  "statisticalCoefficients": {
+    "_comment": "Applied by meta_weights.py when building brawler_intelligence, and by the engine as score multipliers. true_win_rate = Bayesian shrink of raw WR toward 50% with confidencePriorGames of prior weight, so tiny samples can't fake a 60% brawler.",
+    "confidencePriorGames": 30,
+    "popularityTrap": { "minPickRatePct": 20, "maxWinRatePct": 48, "scoreMultiplier": 0.85, "label": "Popularity trap" },
+    "brokenIndicator": { "minPickRatePct": 10, "minWinRatePct": 52, "scoreMultiplier": 1.12, "label": "Meta breaker" },
+    "inflationBias": { "maxPickRatePct": 3, "minWinRatePct": 55, "scoreMultiplier": 0.9, "label": "Small-sample inflation" }
+  },
+
+  "constraints": {
+    "throwerPenalty": {
+      "_comment": "Bobby: 'never pick a thrower unless it's last pick or you have protection for it'. Flat penalty on global pick slots 1-4, waived if the team already fields a protection class, halved in passive-tempo modes where throwers are structurally strong.",
+      "appliesToPickSlots": [1, 2, 3, 4],
+      "penalty": -50,
+      "waivedWithProtection": true,
+      "protectionClasses": ["TANK", "CONTROL"],
+      "passiveTempoMultiplier": 0.5
+    },
+    "classDiversity": {
+      "_comment": "Bobby: 'if you pick three control brawlers, all of your brawlers are countered by one aggro'. Multiplier per duplicate class already on the team (compounds: 0.7, then 0.49).",
+      "duplicateMultiplier": 0.7
+    },
+    "antiTankFirstPick": {
+      "_comment": "Bobby: 'anti-tank is the foundation of every draft'; best anti-tank is almost always the correct first pick in objective (active) modes.",
+      "bonus": 12,
+      "appliesToPickSlots": [1, 2],
+      "activeTempoOnly": true
+    },
+    "spaceMakerLateBonus": {
+      "_comment": "Space makers are the skill separator — strongest in slots 4-6 when the enemy comp is revealed and can't answer the dive.",
+      "bonus": 8,
+      "appliesToPickSlots": [4, 5, 6],
+      "requiresEnemyCommitted": true
+    }
+  },
+
+  "winProbability": {
+    "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
+    "logisticScale": 14,
+    "capPct": 85
+  }
+}

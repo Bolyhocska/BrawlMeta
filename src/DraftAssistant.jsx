@@ -1,9 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
-import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches } from "./appCore";
-import { blindPickFactor, blindPickLabel, matchupAdjustment, getDraftProfile } from "./data/draftMeta";
+import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
+import { getDraftProfile } from "./data/draftMeta";
+import { getDraftAdvice, computeWinSplit } from "./data/draftEngine";
 import { tileStyles } from "./data/brawlerTile";
+
+// Daily statistical intelligence (true win rates, popularity-trap/broken/
+// inflation flags, per-class matchup WRs) — refreshed by scrapers/meta_weights.py.
+function useBrawlerIntelligence(selectedPatch, rankBracket) {
+  const [intel, setIntel] = useState({});
+  useEffect(() => {
+    if (!selectedPatch || !rankBracket) return;
+    supabase
+      .from("brawler_intelligence")
+      .select("*")
+      .eq("patch", selectedPatch)
+      .eq("rank_bracket", rankBracket)
+      .then(({ data }) => {
+        const byKey = {};
+        for (const row of data || []) byKey[row.brawler.toUpperCase()] = row;
+        setIntel(byKey);
+      });
+  }, [selectedPatch, rankBracket]);
+  return intel;
+}
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -81,6 +102,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const [selectedMap, setSelectedMap] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
   const { matches: mapMatches } = useMapMatches(selectedPatch, selectedMap?.name, !!selectedMap);
+  const intelligence = useBrawlerIntelligence(selectedPatch, rankBracket);
 
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
   const [redTeam, setRedTeam] = useState([null, null, null]);
@@ -205,42 +227,23 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       }
     }
 
-    const MIN_PICKS_SUGGESTION = 50;
-    const MIN_MATCHUP_SAMPLE = 20;
-    const results = Object.entries(stats)
-      .filter(([key]) => !allUsedNames.includes(key))
-      .filter(([, s]) => s.picks >= MIN_PICKS_SUGGESTION)
-      .map(([key, s]) => {
-        let score = confidenceScore(s.wins, s.picks);
-        const reasons = [];
-        let matchupWinRate = null, matchupPicks = null;
-        if (enemyKeys.length === 0) {
-          score *= blindPickFactor(key);
-          const bl = blindPickLabel(key);
-          if (bl) reasons.push(bl);
-        } else {
-          const adj = matchupAdjustment(key, enemyKeys, formatBrawlerName);
-          score *= adj.factor;
-          reasons.push(...adj.reasons.slice(0, 2));
-          const emp = matchupStats[key];
-          if (emp && emp.picks >= MIN_MATCHUP_SAMPLE) {
-            matchupWinRate = Math.round((emp.wins / emp.picks) * 1000) / 10;
-            matchupPicks = emp.picks;
-            score = score * 0.6 + confidenceScore(emp.wins, emp.picks) * adj.factor * 0.4;
-          }
-        }
-        return {
-          key, name: formatBrawlerName(key),
-          winRate: Math.round((s.wins / s.picks) * 1000) / 10,
-          picks: s.picks, matchupWinRate, matchupPicks, reasons, score,
-        };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
+    // The 5-pass Intelligence Engine: statistical truth → counter-intel →
+    // preventative blocking → strategic/map filters → composition sanity.
+    const myTeam = (pickerTeam === "blue" ? blueTeam : redTeam).filter(Boolean).map(b => b.name.toUpperCase());
+    const { suggestions: advice } = getDraftAdvice({
+      mode: selectedMap?.mode,
+      pickSlot: [...blueTeam, ...redTeam].filter(Boolean).length + 1,
+      myTeam,
+      enemyTeam: enemyKeys,
+      unavailable: allUsedNames,
+      mapStats: stats,
+      matchupStats,
+      intelligence,
+    });
 
-    setSuggestions(results);
+    setSuggestions(advice);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick]);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick, intelligence]);
 
   // Live comp strength — average confidence-weighted map win rate of each
   // team's picks, from the real per-map stats (no mock values).
@@ -254,6 +257,19 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     };
     return { blue: avg(blueTeam), red: avg(redTeam) };
   }, [blueTeam, redTeam, mapStatsByKey]);
+
+  // Intelligence Engine verdict once all six picks are locked: win probability
+  // split (always sums to 100) + per-team composition sanity report.
+  const winSplit = useMemo(() => {
+    if (!draftDone) return null;
+    return computeWinSplit({
+      blueTeam: blueTeam.filter(Boolean).map(b => b.name.toUpperCase()),
+      redTeam: redTeam.filter(Boolean).map(b => b.name.toUpperCase()),
+      mode: selectedMap?.mode,
+      mapStats: mapStatsByKey,
+      intelligence,
+    });
+  }, [draftDone, blueTeam, redTeam, selectedMap, mapStatsByKey, intelligence]);
 
   const roles = ["All", ...Array.from(new Set(BRAWLERS.map(b => b.role))).sort()];
   const filtered = BRAWLERS.filter(b =>
@@ -446,29 +462,50 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 />
               </div>
 
-              {/* Draft complete verdict — real data only */}
-              {draftDone && (
+              {/* Draft complete verdict — Intelligence Engine win split */}
+              {draftDone && winSplit && (
                 <div style={{
                   borderRadius: 20, padding: "22px 26px",
                   background: "linear-gradient(160deg, rgba(255,180,61,.10), rgba(20,14,32,.3))",
                   border: "1px solid rgba(255,180,61,.24)",
-                  display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap",
+                  display: "flex", flexDirection: "column", gap: 14,
                 }}>
-                  <div style={{ flex: 1, minWidth: 220 }}>
-                    <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>DRAFT COMPLETE</span>
-                    <p style={{ marginTop: 6, fontSize: 14.5, color: "#c9c9d6", lineHeight: 1.55 }}>
-                      {teamStrength.blue != null && teamStrength.red != null ? (
-                        Math.abs(teamStrength.blue - teamStrength.red) < 1.5
-                          ? "Dead even on this map's data — execution decides it."
-                          : `${teamStrength.blue > teamStrength.red ? "Blue" : "Red"} team's comp averages ${Math.abs(teamStrength.blue - teamStrength.red).toFixed(1)}% higher map win rate.`
-                      ) : "Not enough map data to compare these comps."}
-                    </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>DRAFT COMPLETE · ENGINE VERDICT</span>
+                      <p style={{ marginTop: 6, fontSize: 15.5, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY }}>
+                        {winSplit.winner === "even"
+                          ? "Dead even draft — execution decides it."
+                          : <>{winSplit.winner === "blue" ? "Blue" : "Red"} team wins the draft <span style={{ color: winSplit.winner === "blue" ? "#7cc4ff" : "#ff8f8f" }}>{Math.max(winSplit.blue, winSplit.red)}–{Math.min(winSplit.blue, winSplit.red)}</span></>}
+                      </p>
+                    </div>
+                    <button onClick={resetDraft} style={{
+                      padding: "13px 26px", borderRadius: 999, border: "none", background: "#ffb43d", color: "#1a1206",
+                      fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
+                      boxShadow: "0 0 26px rgba(255,180,61,.35)",
+                    }}>Run it back →</button>
                   </div>
-                  <button onClick={resetDraft} style={{
-                    padding: "13px 26px", borderRadius: 999, border: "none", background: "#ffb43d", color: "#1a1206",
-                    fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
-                    boxShadow: "0 0 26px rgba(255,180,61,.35)",
-                  }}>Run it back →</button>
+                  {/* 100-point probability bar */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+                      <span style={{ color: "#7cc4ff" }}>BLUE {winSplit.blue}%</span>
+                      <span style={{ color: "#ff8f8f" }}>{winSplit.red}% RED</span>
+                    </div>
+                    <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,.06)" }}>
+                      <div style={{ width: `${winSplit.blue}%`, background: "linear-gradient(90deg, #4a9fe8, #7cc4ff)", boxShadow: "0 0 12px rgba(124,196,255,.5)", transition: "width .7s ease" }} />
+                      <div style={{ width: `${winSplit.red}%`, background: "linear-gradient(90deg, #ff8f8f, #e85a5a)", transition: "width .7s ease" }} />
+                    </div>
+                  </div>
+                  {(winSplit.blueSanity.missing.length > 0 || winSplit.redSanity.missing.length > 0) && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {winSplit.blueSanity.missing.length > 0 && (
+                        <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7cc4ff" }}>⚠ BLUE comp lacks a {winSplit.blueSanity.missing.join(" and a ")}</span>
+                      )}
+                      {winSplit.redSanity.missing.length > 0 && (
+                        <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#ff8f8f" }}>⚠ RED comp lacks a {winSplit.redSanity.missing.join(" and a ")}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -579,7 +616,14 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                     }} onClick={() => full && handleBrawlerSelect(full)}>
                       {full && <BrawlerTile brawler={full} size={46} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY }}>{s.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY }}>{s.name}</span>
+                          {s.classLabel && (
+                            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>
+                              {s.classLabel.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: 10.5, color: "#6f7180", fontFamily: MONO }}>
                           {s.matchupWinRate != null ? `${s.matchupWinRate}% IN MATCHUP · ${s.matchupPicks} GAMES` : `${s.picks} GAMES ON MAP`}
                         </div>
@@ -594,6 +638,9 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                               }}>{r.label.toUpperCase()}</span>
                             ))}
                           </div>
+                        )}
+                        {s.rationale && (
+                          <p style={{ fontSize: 11, color: "#9a9aab", lineHeight: 1.45, marginTop: 6 }}>{s.rationale}</p>
                         )}
                       </div>
                       <div style={{ textAlign: "center" }}>
@@ -615,20 +662,29 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
             </>
           )}
 
-          {draftDone && (
+          {draftDone && winSplit && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <p style={{ fontSize: 13, color: "#8b8b9c", lineHeight: 1.6 }}>
-                Draft locked. Comp strength below is each team's average win rate on {selectedMap?.name} — from live {rankBracket === "masters_legendary" ? "Masters+" : "Diamond & Mythic"} match data.
+                Engine verdict for {selectedMap?.name}: statistical strength, class counters, synergy and comp structure — from live {rankBracket === "masters_legendary" ? "Masters+" : "Diamond & Mythic"} data.
               </p>
-              {[["BLUE", teamStrength.blue, "#7cc4ff"], ["RED", teamStrength.red, "#ff8f8f"]].map(([label, v, color]) => (
-                <div key={label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 11, marginBottom: 5 }}>
-                    <span style={{ color }}>{label}</span>
-                    <span style={{ color: "#c9c9d6" }}>{v != null ? `${v.toFixed(1)}% AVG WR` : "NO DATA"}</span>
-                  </div>
-                  <div style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
-                    <div style={{ width: `${v != null ? Math.min(100, Math.max(6, (v - 30) / 40 * 100)) : 0}%`, height: "100%", borderRadius: 999, background: color, boxShadow: `0 0 12px ${color}80`, transition: "width .6s ease" }} />
-                  </div>
+              <div style={{ textAlign: "center", padding: "10px 0 4px" }}>
+                <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700 }}>
+                  <span style={{ color: "#7cc4ff" }}>{winSplit.blue}</span>
+                  <span style={{ color: "#4a4a58", fontSize: 20 }}> — </span>
+                  <span style={{ color: "#ff8f8f" }}>{winSplit.red}</span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, color: "#8b8b9c", marginTop: 2 }}>
+                  {winSplit.winner === "even" ? "DEAD EVEN DRAFT" : `${winSplit.winner.toUpperCase()} TEAM WINS THE DRAFT`}
+                </div>
+              </div>
+              <div style={{ display: "flex", height: 8, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,.06)" }}>
+                <div style={{ width: `${winSplit.blue}%`, background: "#7cc4ff", boxShadow: "0 0 12px rgba(124,196,255,.5)", transition: "width .7s ease" }} />
+                <div style={{ width: `${winSplit.red}%`, background: "#ff8f8f", transition: "width .7s ease" }} />
+              </div>
+              {[["BLUE", teamStrength.blue, "#7cc4ff", winSplit.blueSanity], ["RED", teamStrength.red, "#ff8f8f", winSplit.redSanity]].map(([label, v, color, sanity]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontFamily: MONO, fontSize: 10.5 }}>
+                  <span style={{ color }}>{label} · {v != null ? `${v.toFixed(1)}% AVG WR` : "NO MAP DATA"}</span>
+                  {sanity.missing.length > 0 && <span style={{ color: "#ffce7a", textAlign: "right" }}>⚠ no {sanity.missing[0]}</span>}
                 </div>
               ))}
             </div>

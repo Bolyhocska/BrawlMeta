@@ -56,6 +56,9 @@ def main():
     inserted, touched = push_matches(extracted, lookups)
     if inserted:
         reaggregate(touched)
+        # Keep the Intelligence Engine's statistical layer in step with the data
+        from scrapers.meta_weights import refresh_intelligence
+        refresh_intelligence(sorted(touched))
 
 if __name__ == "__main__":
     main()

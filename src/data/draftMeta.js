@@ -14,8 +14,8 @@ import BRAWLER_META from "./brawlerMeta.json";
 
 // ── Classes for brawlers whose API class is "Unknown" (newer releases) ──────
 const CLASS_OVERRIDES = {
-  "BOLT": "Damage Dealer",
-  "STARR NOVA": "Marksman",
+  "BOLT": "Tank",
+  "STARR NOVA": "Assassin",
   "DAMIAN": "Assassin",
   "NAJIA": "Assassin",
   "SIRIUS": "Support",
