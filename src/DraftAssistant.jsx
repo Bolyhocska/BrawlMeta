@@ -3,7 +3,8 @@ import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
 import { getDraftProfile } from "./data/draftMeta";
-import { getDraftAdvice, computeWinSplit } from "./data/draftEngine";
+import { getDraftAdvice, computeWinSplit, draftClassOf, classLabel } from "./data/draftEngine";
+import { useAuth } from "./auth";
 import { tileStyles } from "./data/brawlerTile";
 
 // Daily statistical intelligence (true win rates, popularity-trap/broken/
@@ -274,10 +275,14 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     });
   }, [draftDone, blueTeam, redTeam, selectedMap, mapStatsByKey, intelligence]);
 
-  const roles = ["All", ...Array.from(new Set(BRAWLERS.map(b => b.role))).sort()];
+  // Filter by Bobby's DRAFT class (same taxonomy as the suggestion chips), not
+  // the official Supercell class — otherwise new brawlers with no official class
+  // fall into an "Unknown" tab and the filter labels contradict the card labels.
+  const draftClassName = (b) => classLabel(draftClassOf(b.key));
+  const roles = ["All", ...Array.from(new Set(BRAWLERS.map(draftClassName))).sort()];
   const filtered = BRAWLERS.filter(b =>
     b.name.toLowerCase().includes(search.toLowerCase()) &&
-    (filterRole === "All" || b.role === filterRole)
+    (filterRole === "All" || draftClassName(b) === filterRole)
   );
 
   const handleBrawlerSelect = (brawler) => {
@@ -558,6 +563,16 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 </div>
               )}
             </div>
+          )}
+
+          {draftDone && winSplit && (
+            <DraftFeedbackCard
+              map={selectedMap?.name} mode={selectedMap?.mode}
+              rankBracket={rankBracket} patch={selectedPatch}
+              blueTeam={blueTeam.filter(Boolean).map(b => b.name.toUpperCase())}
+              redTeam={redTeam.filter(Boolean).map(b => b.name.toUpperCase())}
+              winSplit={winSplit}
+            />
           )}
         </div>
 
@@ -891,6 +906,129 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Post-draft feedback ─────────────────────────────────────────────────────
+// Signed-in users rate the engine's advice and (optionally) report who actually
+// won, so the win-probability model can be calibrated against real outcomes.
+// Stored in draft_feedback (RLS: authenticated INSERT only). Top-level component
+// (never nested in render) so its inputs don't remount and lose focus.
+function DraftFeedbackCard({ map, mode, rankBracket, patch, blueTeam, redTeam, winSplit }) {
+  const { user, openAuth } = useAuth();
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [winner, setWinner] = useState(null); // 'blue' | 'red' | 'skip'
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState(null);
+
+  if (done) {
+    return (
+      <div style={{ ...PANEL, padding: 22, display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 20 }}>💜</span>
+        <span style={{ fontSize: 14, color: "#c9c9d6", fontFamily: DISPLAY, fontWeight: 700 }}>
+          Thanks — your feedback trains the engine.
+        </span>
+      </div>
+    );
+  }
+
+  const submit = async () => {
+    if (!rating) { setError("Pick a star rating first."); return; }
+    if (!winner) { setError("Tell us who won — or that you haven't played it."); return; }
+    setBusy(true); setError(null);
+    const { error: err } = await supabase.from("draft_feedback").insert({
+      user_id: user.id,
+      map, mode, rank_bracket: rankBracket, patch,
+      blue_team: blueTeam, red_team: redTeam,
+      engine_blue: winSplit.blue, engine_red: winSplit.red,
+      actual_winner: winner === "skip" ? null : winner,
+      rating, comment: comment.trim() || null,
+    });
+    setBusy(false);
+    if (err) { setError(err.message); return; }
+    setDone(true);
+  };
+
+  const winnerOpts = [
+    ["blue", "Blue won", "#7cc4ff"],
+    ["red", "Red won", "#ff8f8f"],
+    ["skip", "Haven't played it", "#8b8b9c"],
+  ];
+
+  return (
+    <div style={{ ...PANEL, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ RATE THIS DRAFT</span>
+        <p style={{ marginTop: 6, fontSize: 13.5, color: "#9a9aab", lineHeight: 1.5 }}>
+          Was the engine's read useful? Your rating and the real result help calibrate it.
+        </p>
+      </div>
+
+      {!user ? (
+        <button onClick={openAuth} style={{
+          padding: "13px 24px", borderRadius: 999, border: "1px solid rgba(179,107,255,.5)",
+          background: "rgba(179,107,255,.14)", color: "#e9d5ff", fontWeight: 700, fontSize: 14,
+          cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", alignSelf: "flex-start",
+        }}>
+          Sign in to leave feedback
+        </button>
+      ) : (
+        <>
+          {/* Star rating */}
+          <div style={{ display: "flex", gap: 6 }} onMouseLeave={() => setHover(0)}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button key={n} type="button" onClick={() => setRating(n)} onMouseEnter={() => setHover(n)} style={{
+                background: "none", border: "none", cursor: "pointer", padding: 2, fontSize: 26, lineHeight: 1,
+                color: n <= (hover || rating) ? "#ffb43d" : "rgba(255,255,255,.16)",
+                textShadow: n <= (hover || rating) ? "0 0 14px rgba(255,180,61,.5)" : "none",
+                transition: "color .12s, transform .12s", transform: n === hover ? "scale(1.18)" : "scale(1)",
+              }}>★</button>
+            ))}
+          </div>
+
+          {/* Who actually won */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.5, color: "#8b8b9c" }}>
+              WHO ACTUALLY WON? · ENGINE SAID {winSplit.winner === "even" ? "EVEN" : winSplit.winner.toUpperCase()}
+            </span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {winnerOpts.map(([id, label, color]) => (
+                <button key={id} type="button" onClick={() => setWinner(id)} style={{
+                  padding: "9px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                  fontFamily: "'Chakra Petch', sans-serif",
+                  background: winner === id ? `${color}22` : "rgba(255,255,255,.03)",
+                  border: `1px solid ${winner === id ? color + "88" : "rgba(255,255,255,.1)"}`,
+                  color: winner === id ? color : "#b7b7c6",
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Optional comment */}
+          <textarea value={comment} onChange={e => setComment(e.target.value)}
+            placeholder="Anything the engine got wrong or right? (optional)" rows={2} style={{
+              width: "100%", padding: "10px 14px", borderRadius: 14, resize: "vertical", boxSizing: "border-box",
+              background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)",
+              color: "#e9e9f2", fontSize: 13, fontFamily: "'Chakra Petch', sans-serif", outline: "none",
+            }} />
+
+          {error && <span style={{ fontSize: 12, color: "#ff8f8f" }}>{error}</span>}
+
+          <button onClick={submit} disabled={busy} style={{
+            padding: "13px 26px", borderRadius: 999, border: "none",
+            background: busy ? "rgba(255,255,255,.06)" : "#ffb43d", color: busy ? "#6f7180" : "#1a1206",
+            fontWeight: 700, fontSize: 14, cursor: busy ? "default" : "pointer",
+            fontFamily: "'Chakra Petch', sans-serif", alignSelf: "flex-start",
+            boxShadow: busy ? "none" : "0 0 22px rgba(255,180,61,.3)",
+          }}>
+            {busy ? "Saving…" : "Submit feedback"}
+          </button>
+        </>
+      )}
     </div>
   );
 }
