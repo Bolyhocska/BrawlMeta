@@ -647,11 +647,6 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             </span>
                           )}
                         </div>
-                        {s.matchupNote && (
-                          <div style={{ fontSize: 11.5, color: "#c9c9d6", marginTop: 3, fontFamily: "'Chakra Petch', sans-serif" }}>
-                            {s.matchupNote}
-                          </div>
-                        )}
                         {s.reasons?.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
                             {s.reasons.map((r, ri) => (
@@ -662,6 +657,11 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                                 border: `1px solid ${r.tone === "good" ? "rgba(142,230,176,.3)" : "rgba(255,122,122,.3)"}`,
                               }}>{r.label.toUpperCase()}</span>
                             ))}
+                          </div>
+                        )}
+                        {s.matchupNote && (
+                          <div style={{ fontSize: 11.5, color: "#c9c9d6", marginTop: 5, fontFamily: "'Chakra Petch', sans-serif" }}>
+                            {s.matchupNote}
                           </div>
                         )}
                       </div>
