@@ -310,6 +310,35 @@
     }
   },
 
+  "abilityRules": {
+    "_comment": "Ability-tag synergy/counter rules (Bobby): wall break opens lanes for snipers, strips the cover throwers depend on, and forces anti-tanks into the open where snipers kite them. Applied on top of the class counter matrix; bonuses are on the same ~50-point score scale as the other constraints.",
+    "wallBreakSniperSynergy": { "bonusPerSniper": 4, "label": "Opens sniper lanes" },
+    "wallBreakVsThrower": { "bonusPerThrower": 7, "label": "Breaks thrower cover" },
+    "wallBreakSniperVsAntiTank": { "bonus": 4, "label": "Forces anti-tank open" },
+    "sniperWithWallBreakSynergy": { "bonus": 3, "label": "Lanes already open" }
+  },
+
+  "supportRules": {
+    "_comment": "Bobby: supports are reactive 'conditional modifiers'. Never draft one in the first two global picks unless it's a meta-anchor on this map (waiver: map true WR >= waiverMinMapTrueWR); never without a lane/aggro partner to support. Named combos reward the known pairings late-draft.",
+    "earlyPickPenalty": { "appliesToPickSlots": [1, 2], "penalty": -10, "waiverMinMapTrueWR": 53, "label": "Support too early" },
+    "needsPartnerClasses": ["TANK", "SPACE_MAKER", "SNIPER", "ANTI_TANK"],
+    "noPartnerPenalty": -6,
+    "noPartnerLabel": "No lane to support",
+    "combos": [
+      { "brawler": "GRAY", "teammateClasses": ["TANK"], "modes": ["hotZone"], "bonus": 6, "label": "Gray + tank combo" },
+      { "brawler": "KIT", "teammateClasses": ["TANK", "SPACE_MAKER"], "modes": ["knockout"], "bonus": 6, "label": "Kit ride-along" },
+      { "brawler": "MAX", "enemyClasses": ["SNIPER"], "tempo": "passive", "bonus": 5, "label": "Runs down snipers" },
+      { "brawler": "MAX", "modes": ["brawlBall"], "bonus": 3, "label": "Tempo engine" }
+    ]
+  },
+
+  "counterLadder": {
+    "_comment": "Phase-specific drafting: picks 1-2 are the anchor phase (stats-led, counters barely matter — the enemy hasn't committed), 3-4 target revealed picks, 5-6 are hard-counter execution. counterWeightBySlot scales BOTH the class-matrix and empirical vs-class edges. Preventative blocking (PASS 3) is naturally off at slot 6 since the enemy comp is complete. lastPickSpecialist: a brawler with a thin map sample is a niche/last-pick option, demoted during slots 1-4. throwerLastPick: at slots 5-6 a thrower gets a bonus when the enemy fielded no wall break to strip its cover.",
+    "counterWeightBySlot": { "1": 0.8, "2": 0.9, "3": 1.0, "4": 1.1, "5": 1.15, "6": 1.3 },
+    "lastPickSpecialist": { "minMapPicks": 50, "appliesToPickSlots": [1, 2, 3, 4], "multiplier": 0.85 },
+    "throwerLastPick": { "minSlot": 5, "requiresEnemyNoWallBreak": true, "bonus": 5, "label": "Thrower window" }
+  },
+
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
     "logisticScale": 14,

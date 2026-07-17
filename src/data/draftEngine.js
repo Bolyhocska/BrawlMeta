@@ -101,6 +101,16 @@ export function getDraftAdvice({
   const coeff = CONFIG.statisticalCoefficients;
   const cons = CONFIG.constraints;
 
+  // Phase-specific drafting (counter-ladder): how hard counter evidence weighs
+  // scales with the pick slot — anchor phase (1-2) is stats-led, late picks
+  // (5-6) are hard-counter execution. Ability tags feed the wall-break rules.
+  const abilityRules = CONFIG.abilityRules || {};
+  const supportRules = CONFIG.supportRules || {};
+  const ladder = CONFIG.counterLadder || {};
+  const slotCounterW = ladder.counterWeightBySlot?.[String(pickSlot)] ?? 1;
+  const myAbilities = new Set(myTeam.map(abilityOf).filter(Boolean));
+  const enemyAbilities = new Set(enemyTeam.map(abilityOf).filter(Boolean));
+
   // PASS 3 prep: which class is the biggest available threat to my comp
   // (including nothing picked yet → generic anti-meta threat is skipped).
   let topThreatClass = null;
@@ -123,6 +133,7 @@ export function getDraftAdvice({
     if ((!ms || ms.picks < minMapPicks) && !intel) continue;
 
     const cls = draftClassOf(key);
+    const candAbility = abilityOf(key);
     const chips = [];       // short UI badges [{label, tone}]
     const why = [];         // rationale fragments, priority-ordered
 
@@ -178,7 +189,7 @@ export function getDraftAdvice({
           chips.push({ label: `Weak vs ${fmtName(enemyTeam[i])}`, tone: "bad" });
         }
       }
-      score += matrixPts * 2.2;
+      score += matrixPts * 2.2 * slotCounterW;
 
       // Counter-stack: the enemy committed 2+ of a class we hard-counter → near-lock.
       const cStack = cons.counterStack;
@@ -199,7 +210,7 @@ export function getDraftAdvice({
           .map(v => parseFloat(v.winRate) - 50);
         if (edges.length) {
           dataEdge = edges.reduce((a, v) => a + v, 0) / edges.length;
-          score += dataEdge * 0.6;
+          score += dataEdge * 0.6 * slotCounterW;
           if (dataEdge >= 2.5) why.push(`${(50 + dataEdge).toFixed(1)}% into their classes historically`);
         }
       }
@@ -211,6 +222,34 @@ export function getDraftAdvice({
         matchupPicks = emp.picks;
         score = score * 0.6 + trueWR(emp.wins, emp.picks) * 0.4;
       }
+    }
+
+    // ── Ability rules (Bobby) · wall break opens lanes / strips cover ──
+    if (candAbility === "WALL_BREAK") {
+      const sniperMates = myClasses.filter(c => c === "SNIPER").length;
+      // Synergy: our snipers dominate once the obstacles are gone
+      if (sniperMates > 0 && abilityRules.wallBreakSniperSynergy) {
+        score += abilityRules.wallBreakSniperSynergy.bonusPerSniper * sniperMates;
+        chips.push({ label: abilityRules.wallBreakSniperSynergy.label, tone: "good" });
+        why.push("wall break opens lanes for your snipers");
+      }
+      // Hard counter: throwers are defenseless without their cover
+      const enemyThrowers = enemyClasses.filter(c => c === "THROWER").length;
+      if (enemyThrowers > 0 && abilityRules.wallBreakVsThrower) {
+        score += abilityRules.wallBreakVsThrower.bonusPerThrower * enemyThrowers;
+        chips.unshift({ label: abilityRules.wallBreakVsThrower.label, tone: "good" });
+        why.unshift("strips the cover their thrower depends on");
+      }
+      // Combined counter: no approach cover → their anti-tank gets kited by our snipers
+      if (enemyClasses.includes("ANTI_TANK") && sniperMates > 0 && abilityRules.wallBreakSniperVsAntiTank) {
+        score += abilityRules.wallBreakSniperVsAntiTank.bonus;
+        chips.push({ label: abilityRules.wallBreakSniperVsAntiTank.label, tone: "good" });
+      }
+    }
+    // Mirror: a sniper joining a team that already brought the wall break
+    if (cls === "SNIPER" && myAbilities.has("WALL_BREAK") && abilityRules.sniperWithWallBreakSynergy) {
+      score += abilityRules.sniperWithWallBreakSynergy.bonus;
+      chips.push({ label: abilityRules.sniperWithWallBreakSynergy.label, tone: "good" });
     }
 
     // ── PASS 3 · Preventative: block their best remaining answer to us ──
@@ -245,6 +284,50 @@ export function getDraftAdvice({
       } else {
         why.push("thrower unlocked — your frontline protects it");
       }
+    }
+
+    // Thrower last-pick window: the enemy comp is done and brought no wall
+    // break to strip its cover — the thrower is uncontested (Bobby's pick-6 out).
+    const tlp = ladder.throwerLastPick;
+    if (cls === "THROWER" && tlp && pickSlot >= (tlp.minSlot ?? 5) &&
+        (!tlp.requiresEnemyNoWallBreak || !enemyAbilities.has("WALL_BREAK"))) {
+      score += tlp.bonus;
+      chips.push({ label: tlp.label, tone: "good" });
+      why.push("no wall break on their side — your cover stays up");
+    }
+
+    // Support rules (Bobby): supports are reactive conditional modifiers.
+    // Never in the first two picks unless a map meta-anchor; never without a
+    // lane/aggro partner whose pressure the support amplifies.
+    if (cls === "SUPPORT") {
+      const early = supportRules.earlyPickPenalty;
+      if (early?.appliesToPickSlots?.includes(pickSlot) &&
+          !(mapTWR != null && mapTWR >= (early.waiverMinMapTrueWR ?? 99))) {
+        score += early.penalty;
+        chips.push({ label: early.label, tone: "bad" });
+        why.push("supports are reactive — commit a lane first");
+      }
+      if (myTeam.length > 0 &&
+          !myClasses.some(c => (supportRules.needsPartnerClasses || []).includes(c))) {
+        score += supportRules.noPartnerPenalty ?? 0;
+        chips.push({ label: supportRules.noPartnerLabel, tone: "bad" });
+      }
+      for (const combo of supportRules.combos || []) {
+        if (norm(combo.brawler) !== key) continue;
+        if (combo.modes && !combo.modes.includes(mode)) continue;
+        if (combo.tempo && modeCfg.tempo !== combo.tempo) continue;
+        if (combo.teammateClasses && !myClasses.some(c => combo.teammateClasses.includes(c))) continue;
+        if (combo.enemyClasses && !enemyClasses.some(c => combo.enemyClasses.includes(c))) continue;
+        score += combo.bonus;
+        chips.push({ label: combo.label, tone: "good" });
+      }
+    }
+
+    // Statistical significance (Bobby): a thin map sample marks a last-pick
+    // specialist — demoted during slots 1-4, back to normal for picks 5-6.
+    const lps = ladder.lastPickSpecialist;
+    if (lps && lps.appliesToPickSlots.includes(pickSlot) && (!ms || ms.picks < lps.minMapPicks)) {
+      score *= lps.multiplier;
     }
 
     // Class diversity: duplicates compound the 0.7x multiplier
@@ -322,14 +405,12 @@ export function getDraftAdvice({
       }
     }
 
-    const abilityCode = abilityOf(key);
-
     candidates.push({
       key,
       name: fmtName(key),
       draftClass: cls,
       classLabel: classLabel(cls),
-      ability: abilityCode ? abilityLabel(abilityCode) : null,
+      ability: candAbility ? abilityLabel(candAbility) : null,
       score,
       winRate: displayWinRate,
       displayWinRate, sampleGames, sampleScope,
