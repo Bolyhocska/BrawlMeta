@@ -34,6 +34,12 @@ export function draftClassOf(key) {
 
 export const classLabel = (cls) => CONFIG.classLabels[cls] || cls;
 
+// ── Ability tag (Good Hyper / Knockback-Stun / Wall Break / Pierce Damage /
+// Special) — a static per-brawler trait, distinct from data-driven flags like
+// Meta Breaker. Undefined for brawlers not yet in the role map (e.g. Damian).
+export const abilityOf = (key) => CONFIG.brawlerAbilities?.[norm(key)] || null;
+export const abilityLabel = (code) => CONFIG.abilityLabels?.[code] || code;
+
 // ── Shared helpers ───────────────────────────────────────────────────────────
 const PRIOR = CONFIG.statisticalCoefficients.confidencePriorGames;
 
@@ -87,7 +93,11 @@ export function getDraftAdvice({
   // How many of each class the enemy has committed — drives the counter-stack rule.
   const enemyClassCounts = {};
   for (const c of enemyClasses) enemyClassCounts[c] = (enemyClassCounts[c] || 0) + 1;
-  const used = new Set([...myTeam, ...enemyTeam, ...unavailable].map(norm));
+  // rankedIneligible is a hard exclusion regardless of any data that exists for
+  // the key — a safety net for newly released brawlers not yet legal in Ranked
+  // (belt-and-suspenders on top of the scraper's own ranked-only filter).
+  const ineligible = CONFIG.rankedIneligible?.keys || [];
+  const used = new Set([...myTeam, ...enemyTeam, ...unavailable, ...ineligible].map(norm));
   const coeff = CONFIG.statisticalCoefficients;
   const cons = CONFIG.constraints;
 
@@ -312,11 +322,14 @@ export function getDraftAdvice({
       }
     }
 
+    const abilityCode = abilityOf(key);
+
     candidates.push({
       key,
       name: fmtName(key),
       draftClass: cls,
       classLabel: classLabel(cls),
+      ability: abilityCode ? abilityLabel(abilityCode) : null,
       score,
       winRate: displayWinRate,
       displayWinRate, sampleGames, sampleScope,

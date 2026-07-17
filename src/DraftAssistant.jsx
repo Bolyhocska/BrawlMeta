@@ -3,7 +3,7 @@ import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
 import { getDraftProfile } from "./data/draftMeta";
-import { getDraftAdvice, computeWinSplit, draftClassOf, classLabel } from "./data/draftEngine";
+import { getDraftAdvice, computeWinSplit, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
 import { useAuth } from "./auth";
 import { tileStyles } from "./data/brawlerTile";
 
@@ -641,6 +641,11 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                               {s.classLabel.toUpperCase()}
                             </span>
                           )}
+                          {s.ability && (
+                            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>
+                              {s.ability.toUpperCase()}
+                            </span>
+                          )}
                         </div>
                         {s.matchupNote && (
                           <div style={{ fontSize: 11.5, color: "#c9c9d6", marginTop: 3, fontFamily: "'Chakra Petch', sans-serif" }}>
@@ -877,6 +882,7 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
   const safety = profile.firstPickSafety >= 0.75 ? { text: "SAFE EARLY PICK", color: "#8ee6b0" }
     : profile.firstPickSafety <= 0.42 ? { text: "SAVE FOR LATE — COUNTERABLE", color: "#ff8f8f" }
     : { text: "FLEXIBLE TIMING", color: "#ffce7a" };
+  const abilityCode = abilityOf(brawlerKey);
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(5,4,10,.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -887,6 +893,9 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
             <div style={{ fontSize: 22, fontWeight: 700, fontFamily: DISPLAY, color: "#f4f4fa" }}>{formatBrawlerName(brawlerKey)}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
               <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>{profile.class.toUpperCase()}</span>
+              {abilityCode && (
+                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>{abilityLabel(abilityCode).toUpperCase()}</span>
+              )}
               <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: `${safety.color}15`, color: safety.color, border: `1px solid ${safety.color}40` }}>{safety.text}</span>
             </div>
           </div>
