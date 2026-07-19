@@ -90,6 +90,20 @@ def refresh_intelligence(patches=None):
         else:
             print(f"⚠️ intelligence refresh failed for {patch}: {res.status_code} {res.text[:200]}")
 
+        # Brawler-vs-brawler + teammate-synergy jsonb (vs_brawler/with_brawler)
+        # lives in its own RPC, called once per bracket: inlining it into the
+        # main refresh blew the statement budget on 470k+ matches.
+        for bracket in ("masters_legendary", "diamond_mythic"):
+            res = requests.post(
+                f"{SUPABASE_URL}/rest/v1/rpc/refresh_brawler_pairs",
+                json={"target_patch": patch, "target_bracket": bracket, "coeff": coeff},
+                headers=SUPABASE_HEADERS,
+            )
+            if res.status_code == 200:
+                print(f"✅ pair intelligence refreshed for {patch}/{bracket}: {res.text} rows")
+            else:
+                print(f"⚠️ pair refresh failed for {patch}/{bracket}: {res.status_code} {res.text[:200]}")
+
 def main():
     require_credentials()
     print("🧠 Meta weights: refreshing brawler intelligence...")

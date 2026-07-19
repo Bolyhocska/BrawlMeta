@@ -178,6 +178,7 @@ export function getDraftAdvice({
     // Edgar is still a terrible reveal because his wins come from matchups.
     let matchupWinRate = null, matchupPicks = null;
     let dataEdge = null;                 // empirical WR-50 vs their classes
+    let bestPair = null;                 // { name, winRate, picks } best-sampled brawler-vs-brawler edge
     let bestEdge = 0, bestCounterName = null;   // strongest class edge we have
     let worstEdge = 0, worstCounterName = null; // worst class matchup we're in
     let stackedCounter = null;           // { cls, count } enemy class we hard-counter and they stacked
@@ -228,6 +229,21 @@ export function getDraftAdvice({
         }
       }
 
+      // Data: brawler-vs-BRAWLER empirical edges — sharper than class-level and
+      // able to contradict it (e.g. Brock empirically beats Mortis even though
+      // sniper "loses" to space maker on the matrix). Weighted above vs_class.
+      if (intel?.vs_brawler) {
+        const pairs = enemyTeam
+          .map(ek => ({ name: fmtName(ek), v: intel.vs_brawler[norm(ek)] }))
+          .filter(p => p.v && p.v.picks >= 100);
+        if (pairs.length) {
+          const pe = pairs.reduce((a, p) => a + (parseFloat(p.v.winRate) - 50), 0) / pairs.length;
+          score += pe * 0.8 * slotCounterW;
+          const best = pairs.reduce((a, p) => (p.v.picks > a.v.picks ? p : a));
+          bestPair = { name: best.name, winRate: parseFloat(best.v.winRate), picks: best.v.picks };
+        }
+      }
+
       // Data: exact-matchup evidence on this map vs this enemy set
       const emp = matchupStats[key];
       if (emp && emp.picks >= 20) {
@@ -263,6 +279,18 @@ export function getDraftAdvice({
     if (cls === "SNIPER" && myAbilities.has("WALL_BREAK") && abilityRules.sniperWithWallBreakSynergy) {
       score += abilityRules.sniperWithWallBreakSynergy.bonus;
       chips.push({ label: abilityRules.sniperWithWallBreakSynergy.label, tone: "good" });
+    }
+
+    // ── Teammate synergy · empirical duo win rate with already-locked mates ──
+    if (myTeam.length > 0 && intel?.with_brawler) {
+      for (const mk of myTeam) {
+        const v = intel.with_brawler[norm(mk)];
+        if (!v || v.picks < 50) continue;
+        const duoEdge = parseFloat(v.winRate) - 50;
+        score += duoEdge * 0.5;
+        if (duoEdge >= 3) chips.push({ label: `Duos with ${fmtName(mk)}`, tone: "good" });
+        else if (duoEdge <= -3) chips.push({ label: `Weak duo with ${fmtName(mk)}`, tone: "bad" });
+      }
     }
 
     // ── PASS 3 · Preventative: block their best remaining answer to us ──
@@ -407,6 +435,8 @@ export function getDraftAdvice({
         matchupNote = `Hard-counters their ${stackedCounter.count}× ${classLabel(stackedCounter.cls)}`;
       } else if (matchupWinRate != null) {
         matchupNote = `${matchupWinRate}% vs this exact comp · ${matchupPicks} games`;
+      } else if (bestPair && Math.abs(bestPair.winRate - 50) >= 1.5) {
+        matchupNote = `${bestPair.winRate.toFixed(1)}% vs their ${bestPair.name} · ${bestPair.picks.toLocaleString("en-US")} games`;
       } else if (bestEdge >= 1.5 && bestCounterName) {
         matchupNote = `Strong into their ${bestCounterName}`;
       } else if (dataEdge != null && dataEdge >= 2) {
