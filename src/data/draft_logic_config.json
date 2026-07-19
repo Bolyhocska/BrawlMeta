@@ -194,6 +194,11 @@
     "SUPPORT":     { "ANTI_TANK": -0.5, "TANK": -1,   "SPACE_MAKER": -1.5, "CONTROL": -0.5, "THROWER": 0,    "SNIPER": -1,   "SUPPORT": 0 }
   },
 
+  "matchupOverrides": {
+    "_comment": "Per-brawler exceptions to the class counter matrix. Value = the LISTED brawler's edge (-2..+2) against that enemy class, replacing its class default in BOTH directions (the reverse pairing uses the negation). BOLT: THROWER 0 → Bolt is a tank but mobile enough that throwers don't counter him — no 'Weak vs' penalty for Bolt against throwers, and no 'Counters Bolt' credit for throwers.",
+    "BOLT": { "THROWER": 0 }
+  },
+
   "synergyPairs": {
     "_comment": "Same-team class pairings that amplify each other. Applied once per pair present in a comp.",
     "TANK+SUPPORT": 1.5,
@@ -274,7 +279,7 @@
     "confidencePriorGames": 30,
     "popularityTrap": { "minPickRatePct": 20, "maxWinRatePct": 48, "scoreMultiplier": 0.85, "label": "Popularity trap" },
     "brokenIndicator": { "minPickRatePct": 10, "minWinRatePct": 52, "scoreMultiplier": 1.12, "label": "Meta breaker" },
-    "inflationBias": { "maxPickRatePct": 3, "minWinRatePct": 55, "scoreMultiplier": 0.9, "label": "Small-sample inflation" }
+    "inflationBias": { "maxPickRatePct": 3, "minWinRatePct": 55, "scoreMultiplier": 0.9, "label": "Inflated WR" }
   },
 
   "constraints": {

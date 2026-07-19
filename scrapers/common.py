@@ -243,11 +243,19 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
         # substring while dropping the exact "ranked" string keeps every competitive
         # variant (soloRanked / teamRanked / any future *Ranked) but sheds trophy.
         is_competitive_ranked = "ranked" in match_type and match_type != "ranked"
+
+        # Belt-and-suspenders: trophy/casual battles carry a trophyChange field;
+        # competitive Ranked never does. Catches any mislabeled type string.
+        if "trophyChange" in battle_data:
+            continue
+
         if is_competitive_ranked and mode_name in RANKED_MODES:
             teams = battle_data.get("teams", [])
             result = battle_data.get("result", "").lower()
 
-            if len(teams) == 2 and result in ["victory", "defeat"]:
+            # Ranked is strictly 3v3 — the team-size check guards against any
+            # 5v5 event that reports a mode name colliding with RANKED_MODES.
+            if len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]:
                 for team in teams:
                     for p in team:
                         tag = p.get("tag")

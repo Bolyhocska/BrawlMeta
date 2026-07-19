@@ -50,6 +50,19 @@ const trueWR = (wins, picks, prior = PRIOR) =>
 const matrixScore = (myClass, enemyClass) =>
   CONFIG.counterMatrix[myClass]?.[enemyClass] ?? 0;
 
+// Class-matrix edge for a concrete brawler pairing, honoring per-brawler
+// matchupOverrides (e.g. BOLT is a tank that throwers do NOT counter). The
+// override value is the listed brawler's edge vs that enemy class; the
+// reverse pairing gets its negation. Falls back to the class matrix.
+const pairEdge = (myKey, myClass, enemyKey, enemyClass) => {
+  const ex = CONFIG.matchupOverrides || {};
+  const mine = ex[norm(myKey)]?.[enemyClass];
+  if (mine != null) return mine;
+  const theirs = ex[norm(enemyKey)]?.[myClass];
+  if (theirs != null) return -theirs;
+  return matrixScore(myClass, enemyClass);
+};
+
 const synergyScore = (a, b) =>
   CONFIG.synergyPairs[`${a}+${b}`] ?? CONFIG.synergyPairs[`${b}+${a}`] ?? 0;
 
@@ -178,7 +191,7 @@ export function getDraftAdvice({
       // Theory: class counter matrix
       let matrixPts = 0;
       for (let i = 0; i < enemyTeam.length; i++) {
-        const edge = matrixScore(cls, enemyClasses[i]);
+        const edge = pairEdge(key, cls, enemyTeam[i], enemyClasses[i]);
         matrixPts += edge;
         if (edge > bestEdge) { bestEdge = edge; bestCounterName = fmtName(enemyTeam[i]); }
         if (edge < worstEdge) { worstEdge = edge; worstCounterName = fmtName(enemyTeam[i]); }
@@ -443,10 +456,10 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     });
     let s = rates.reduce((a, v) => a + v, 0) / Math.max(1, rates.length);
 
-    // Counter pressure across all 9 pairings
-    for (const mine of classes)
-      for (const theirs of enemyCls)
-        s += matrixScore(mine, theirs) * 1.2;
+    // Counter pressure across all 9 pairings (per-brawler overrides honored)
+    for (let i = 0; i < teamKeys.length; i++)
+      for (let j = 0; j < enemyKeys.length; j++)
+        s += pairEdge(teamKeys[i], classes[i], enemyKeys[j], enemyCls[j]) * 1.2;
 
     // Synergy + structure
     for (let i = 0; i < classes.length; i++)

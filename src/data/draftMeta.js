@@ -13,14 +13,19 @@
 import BRAWLER_META from "./brawlerMeta.json";
 
 // ── Classes for brawlers whose API class is "Unknown" (newer releases) ──────
+// Kept in sync with brawlerClassOverrides in draft_logic_config.json (Bobby's
+// role map), translated to API-class vocabulary: THROWER→Artillery,
+// SPACE_MAKER→Assassin, ANTI_TANK→Damage Dealer, SNIPER→Marksman,
+// CONTROL→Controller.
 const CLASS_OVERRIDES = {
   "BOLT": "Tank",
   "STARR NOVA": "Assassin",
-  "DAMIAN": "Assassin",
-  "NAJIA": "Assassin",
-  "SIRIUS": "Support",
-  "GLOWY": "Controller",
-  "GIGI": "Artillery",
+  "DAMIAN": "Tank",
+  "NORI": "Assassin",
+  "NAJIA": "Controller",
+  "SIRIUS": "Artillery",
+  "GLOWY": "Support",
+  "GIGI": "Assassin",
   "PIERCE": "Marksman",
   "ZIGGY": "Artillery",
   "MINA": "Assassin",
@@ -28,8 +33,8 @@ const CLASS_OVERRIDES = {
   "ALLI": "Assassin",
   "KAZE": "Assassin",
   "JAE-YONG": "Support",
-  "FINX": "Controller",
-  "OLLIE": "Tank",
+  "FINX": "Damage Dealer",
+  "OLLIE": "Assassin",
   "MEEPLE": "Controller",
 };
 
