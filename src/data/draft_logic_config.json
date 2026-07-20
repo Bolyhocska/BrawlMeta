@@ -278,6 +278,15 @@
     "_comment": "Applied by meta_weights.py when building brawler_intelligence, and by the engine as score multipliers. true_win_rate = Bayesian shrink of raw WR toward 50% with confidencePriorGames of prior weight, so tiny samples can't fake a 60% brawler.",
     "confidencePriorGames": 30,
     "pairMinPicks": 20,
+    "recency": {
+      "_comment": "Dual-window drift detection: brawler_intelligence carries recent_* stats over the last windowDays (computed from collected_at). When the recent sample is solid, the engine blends recent WR at recentWeight over the full-patch rate — so a shadow nerf shows up in suggestions within days, no matter how many older games say otherwise. trendDeltaPct is the recent-vs-overall gap that surfaces a trending chip.",
+      "windowDays": 14,
+      "minRecentPicks": 300,
+      "recentWeight": 0.6,
+      "trendDeltaPct": 4,
+      "downLabel": "Trending down",
+      "upLabel": "Trending up"
+    },
     "popularityTrap": { "minPickRatePct": 20, "maxWinRatePct": 48, "scoreMultiplier": 0.85, "label": "Popularity trap" },
     "brokenIndicator": { "minPickRatePct": 10, "minWinRatePct": 52, "scoreMultiplier": 1.12, "label": "Meta breaker" },
     "inflationBias": { "maxPickRatePct": 3, "minWinRatePct": 55, "scoreMultiplier": 0.9, "label": "Inflated WR" }

@@ -19,9 +19,10 @@ from datetime import datetime, timezone
 
 from scrapers.common import (
     require_credentials, LookupCache, get_stored_match_count,
-    harvest_bracket, push_matches, reaggregate,
-    SUPABASE_URL, SUPABASE_HEADERS,
+    harvest_bracket, push_matches, reaggregate, prune_bracket,
+    SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
     MASTERS_BASELINE, MASTERS_STEADY, MASTERS_RUN_CAP, SPIDER_DEPTH,
+    MASTERS_WINDOW_CAP,
 )
 
 BRACKET = "masters_legendary"
@@ -46,8 +47,15 @@ def fetch_top_ranked_players(limit=100):
     """Scrape the top `limit` ranked player tags (in rank order) from brawlace
     and refresh the masters_players table. Returns [] on any failure."""
     try:
-        res = requests.get(BRAWLACE_RANKED_URL, timeout=30, headers={
-            "User-Agent": "Mozilla/5.0 (compatible; BrawlMetaBot/1.0; +https://brawl-meta.vercel.app)"
+        # brawlace sits behind Cloudflare bot protection that 403s obvious bots
+        # and datacenter IPs (GitHub Actions runners especially). Route through
+        # the same Webshare static-IP proxy as the Supercell API and present a
+        # normal browser fingerprint. Failure stays graceful — the spider
+        # self-seeds from masters_players either way.
+        res = requests.get(BRAWLACE_RANKED_URL, timeout=30, proxies=PROXIES, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
         })
         if res.status_code != 200:
             print(f"⚠️ brawlace fetch failed: {res.status_code}")
@@ -80,22 +88,47 @@ def fetch_top_ranked_players(limit=100):
         return []
 
 def get_masters_seeds():
-    """Random 5 of the live top-100 ranked players. Falls back to the last
-    stored masters_players, then to the hardcoded pro tags."""
+    """Random 5 of the live top-100 ranked players. Falls back to the stored
+    masters_players pool (brawlace rows AND spider-discovered players), always
+    anchored by 2 hardcoded pros so seed drift can't compound across runs."""
     top = fetch_top_ranked_players(100)
-    if not top:
-        res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&order=rank.asc&limit=100",
-            headers=SUPABASE_HEADERS,
-        )
-        if res.status_code == 200:
-            top = [r["player_tag"] for r in res.json() if r.get("player_tag")]
-        if top:
-            print(f"Using {len(top)} previously stored masters_players as seed pool.")
-    if not top:
-        print("Using hardcoded fallback Masters seeds.")
-        return list(FALLBACK_MASTERS_SEEDS)
-    return random.sample(top, min(5, len(top)))
+    if top:
+        return random.sample(top, min(5, len(top)))
+    res = requests.get(
+        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&order=rank.asc&limit=300",
+        headers=SUPABASE_HEADERS,
+    )
+    pool = []
+    if res.status_code == 200:
+        pool = [r["player_tag"] for r in res.json() if r.get("player_tag")]
+    if pool:
+        anchors = random.sample(FALLBACK_MASTERS_SEEDS, 2)
+        rotating = random.sample(pool, min(3, len(pool)))
+        print(f"brawlace unavailable — seeding 2 anchor pros + {len(rotating)} of {len(pool)} stored masters_players.")
+        return anchors + [t for t in rotating if t not in anchors]
+    print("Using hardcoded fallback Masters seeds.")
+    return list(FALLBACK_MASTERS_SEEDS)
+
+def persist_spider_players(seen_tags, limit=100):
+    """Store a random sample of this run's spidered players (all within
+    SPIDER_DEPTH hops of verified seeds → Masters-adjacent) so future runs can
+    rotate seeds even while brawlace is unreachable. rank=999 keeps them below
+    real leaderboard rows in the order-by-rank seed query."""
+    tags = [t for t in seen_tags if t]
+    if not tags:
+        return
+    sample = random.sample(tags, min(limit, len(tags)))
+    now = datetime.now(timezone.utc).isoformat()
+    rows = [{"player_tag": t, "rank": 999, "source": "spider", "fetched_at": now} for t in sample]
+    res = requests.post(
+        f"{SUPABASE_URL}/rest/v1/masters_players?on_conflict=player_tag",
+        json=rows,
+        headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
+    )
+    if res.status_code in (200, 201, 204):
+        print(f"🕸️ masters_players topped up with {len(rows)} spider-discovered players")
+    else:
+        print(f"⚠️ spider player store failed: {res.status_code} {res.text[:200]}")
 
 def main():
     require_credentials()
@@ -119,8 +152,13 @@ def main():
     harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
                     target_matches=target, max_depth=SPIDER_DEPTH)
 
+    persist_spider_players(seen_tags)
+
     inserted, touched = push_matches(extracted, lookups)
     if inserted:
+        # Sliding window BEFORE re-aggregation, so the fresh aggregates and
+        # intelligence are computed over exactly the retained window.
+        prune_bracket(BRACKET, MASTERS_WINDOW_CAP)
         reaggregate(touched)
         # Keep the Intelligence Engine's statistical layer in step with the data
         from scrapers.meta_weights import refresh_intelligence

@@ -117,6 +117,7 @@ RANKED_MAPS = {
 # ==========================================
 MASTERS_BASELINE = 400000              # Masters fills to this before Diamond/Mythic collection ever starts
 MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met
+MASTERS_WINDOW_CAP = 1500000           # sliding-window retention: keep the newest 1.5M Masters rows (FIFO by collected_at)
 MASTERS_RUN_CAP = 150000               # max matches one Masters run may collect while filling the baseline
 DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
 SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity
@@ -419,6 +420,22 @@ def push_matches(extracted_data, lookups):
     touched_patches = {e["patch"] for e in extracted_data} - CLOSED_PATCHES
     print(f"✅ Done. {inserted} new matches stored ({len(rows) - inserted if attempted == len(rows) else '?'} were already known).")
     return inserted, touched_patches
+
+def prune_bracket(bracket_name, cap=MASTERS_WINDOW_CAP):
+    """Sliding-window retention: FIFO-drop the oldest rows beyond `cap` for
+    this bracket (by collected_at). Owner-authorized exception to the old
+    'never delete from ranked_matches' rule — aggregates are per patch and the
+    recency window keeps the engine tracking the live meta, so rows older than
+    the window only cost storage and aggregation time."""
+    res = requests.post(
+        f"{SUPABASE_URL}/rest/v1/rpc/prune_ranked_matches",
+        json={"target_bracket": bracket_name, "cap": cap},
+        headers=SUPABASE_HEADERS,
+    )
+    if res.status_code == 200:
+        print(f"🧹 window prune ({bracket_name}, cap {cap:,}): {res.text.strip()} old matches dropped")
+    else:
+        print(f"⚠️ prune failed for {bracket_name}: {res.status_code} {res.text[:200]}")
 
 def reaggregate(touched_patches):
     """Re-aggregate BrawlerStats for every open patch touched by this run."""

@@ -168,10 +168,31 @@ export function getDraftAdvice({
 
     // ── PASS 1 · Statistical: true win rate + coefficient flags ──
     const mapTWR = ms && ms.picks >= minMapPicks ? trueWR(ms.wins, ms.picks) : null;
-    const globalTWR = intel ? parseFloat(intel.true_win_rate) : null;
+    let globalTWR = intel ? parseFloat(intel.true_win_rate) : null;
+
+    // Recency blend: when the last N days have a solid sample, they outvote
+    // the full-patch aggregate — a shadow-nerfed brawler stops being
+    // recommended within days even if a million older games say otherwise.
+    const rec = coeff.recency;
+    const recentPicks = Number(intel?.recent_picks) || 0;
+    if (rec && globalTWR != null && recentPicks >= (rec.minRecentPicks ?? 300)) {
+      const recentTWR = trueWR(Number(intel.recent_wins) || 0, recentPicks);
+      const w = rec.recentWeight ?? 0.6;
+      globalTWR = recentTWR * w + globalTWR * (1 - w);
+    }
+
     let score = mapTWR != null && globalTWR != null
       ? mapTWR * 0.65 + globalTWR * 0.35
       : (mapTWR ?? globalTWR ?? 50);
+
+    // Trending chips: recent WR diverging hard from the patch aggregate is
+    // the signature of a balance change or meta shift mid-patch.
+    if (rec && recentPicks >= (rec.minRecentPicks ?? 300) &&
+        intel?.recent_win_rate != null && intel?.win_rate != null) {
+      const drift = parseFloat(intel.recent_win_rate) - parseFloat(intel.win_rate);
+      if (drift <= -(rec.trendDeltaPct ?? 4)) chips.push({ label: rec.downLabel ?? "Trending down", tone: "bad" });
+      else if (drift >= (rec.trendDeltaPct ?? 4)) chips.push({ label: rec.upLabel ?? "Trending up", tone: "good" });
+    }
 
     const flags = intel?.flags || [];
     if (flags.includes("broken")) {
