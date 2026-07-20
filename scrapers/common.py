@@ -328,7 +328,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
     return merge()
 
 def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
-                    target_matches, max_players=MAX_PLAYERS_PER_BRACKET, max_depth=None):
+                    target_matches, max_players=MAX_PLAYERS_PER_BRACKET, max_depth=None,
+                    depth1_tags=None, depth1_source_whitelist=None):
     # Every entry fetch_player_battles appends during this call carries this
     # bracket, so tracking the growth of extracted_data's length is equivalent
     # to (and much cheaper than) recounting matches for this bracket each time.
@@ -340,6 +341,15 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
     # found in a verified Masters player's games (depth 1) and their games'
     # players (depth 2) are Masters-adjacent. Unlimited spidering drifts far
     # below the intended rank — that's what this cap prevents.
+    #
+    # depth1_tags/depth1_source_whitelist: optionally collect this run's
+    # depth-1 discoveries (players found directly in a seed's battlelog) for
+    # future seed rotation — but ONLY when the originating depth-0 seed is in
+    # depth1_source_whitelist (i.e. verified this run, not a previously-
+    # spidered player). This is what stops rank drift from compounding across
+    # successive runs: a "spider" seed offered to a future run is always
+    # exactly one hop from a player verified THIS run, never one hop from
+    # another spider seed.
     lock = threading.Lock()
     queue = [(tag, 0) for tag in seed_tags]
     processed = 0
@@ -349,9 +359,12 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
         while queue and processed < max_players and (len(extracted_data) - collected_start) < target_matches:
             batch = queue[:CONCURRENCY]
             queue = queue[CONCURRENCY:]
-            futures = [(depth, pool.submit(fetch_player_battles, tag, bracket, extracted_data, seen_tags, seen_hashes, lock)) for tag, depth in batch]
-            for depth, f in futures:
+            futures = [(tag, depth, pool.submit(fetch_player_battles, tag, bracket, extracted_data, seen_tags, seen_hashes, lock)) for tag, depth in batch]
+            for tag, depth, f in futures:
                 new_tags = f.result()
+                if depth == 0 and depth1_tags is not None:
+                    if depth1_source_whitelist is None or tag in depth1_source_whitelist:
+                        depth1_tags.update(new_tags)
                 if max_depth is None or depth < max_depth:
                     queue.extend((t, depth + 1) for t in new_tags)
             processed += len(batch)

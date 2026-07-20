@@ -17,6 +17,16 @@ import random
 import requests
 from datetime import datetime, timezone
 
+try:
+    # cloudscraper solves Cloudflare's basic JS "checking your browser"
+    # challenge (what a plain requests.get sees as a 403/520) without needing
+    # a real browser. Optional: falls back to plain requests if unavailable,
+    # which will likely still be blocked but costs nothing to attempt.
+    import cloudscraper
+    _HTTP = cloudscraper.create_scraper()
+except ImportError:
+    _HTTP = requests
+
 from scrapers.common import (
     require_credentials, LookupCache, get_stored_match_count,
     harvest_bracket, push_matches, reaggregate, prune_bracket,
@@ -47,12 +57,13 @@ def fetch_top_ranked_players(limit=100):
     """Scrape the top `limit` ranked player tags (in rank order) from brawlace
     and refresh the masters_players table. Returns [] on any failure."""
     try:
-        # brawlace sits behind Cloudflare bot protection that 403s obvious bots
-        # and datacenter IPs (GitHub Actions runners especially). Route through
-        # the same Webshare static-IP proxy as the Supercell API and present a
-        # normal browser fingerprint. Failure stays graceful — the spider
-        # self-seeds from masters_players either way.
-        res = requests.get(BRAWLACE_RANKED_URL, timeout=30, proxies=PROXIES, headers={
+        # brawlace sits behind a Cloudflare JS challenge (plain requests sees
+        # 403/520 regardless of User-Agent — confirmed 2026-07-20, headers
+        # alone don't pass it). cloudscraper solves that challenge; route
+        # through the Webshare static-IP proxy too since GH Actions IPs are
+        # separately flagged as datacenter traffic. Failure stays graceful —
+        # the spider self-seeds from masters_players either way.
+        res = _HTTP.get(BRAWLACE_RANKED_URL, timeout=30, proxies=PROXIES, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
@@ -89,13 +100,18 @@ def fetch_top_ranked_players(limit=100):
 
 def get_masters_seeds():
     """Random 5 of the live top-100 ranked players. Falls back to the stored
-    masters_players pool (brawlace rows AND spider-discovered players), always
-    anchored by 2 hardcoded pros so seed drift can't compound across runs."""
+    'spider' pool (each row there is, by construction, exactly one hop from a
+    player verified in SOME prior run — see persist_spider_players), always
+    anchored by 2 hardcoded pros. Returns (seeds, verified_set) — verified_set
+    is which of the returned seeds are trustworthy as a depth-1 collection
+    origin for THIS run (real leaderboard players or hardcoded pros; never a
+    previously-spidered player, which is what stops drift from compounding)."""
     top = fetch_top_ranked_players(100)
     if top:
-        return random.sample(top, min(5, len(top)))
+        seeds = random.sample(top, min(5, len(top)))
+        return seeds, set(seeds)
     res = requests.get(
-        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&order=rank.asc&limit=300",
+        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&source=eq.spider&limit=300",
         headers=SUPABASE_HEADERS,
     )
     pool = []
@@ -103,18 +119,25 @@ def get_masters_seeds():
         pool = [r["player_tag"] for r in res.json() if r.get("player_tag")]
     if pool:
         anchors = random.sample(FALLBACK_MASTERS_SEEDS, 2)
-        rotating = random.sample(pool, min(3, len(pool)))
-        print(f"brawlace unavailable — seeding 2 anchor pros + {len(rotating)} of {len(pool)} stored masters_players.")
-        return anchors + [t for t in rotating if t not in anchors]
+        rotating = [t for t in random.sample(pool, min(3, len(pool))) if t not in anchors]
+        print(f"brawlace unavailable — seeding 2 anchor pros + {len(rotating)} rotating (unverified) players.")
+        return anchors + rotating, set(anchors)
     print("Using hardcoded fallback Masters seeds.")
-    return list(FALLBACK_MASTERS_SEEDS)
+    return list(FALLBACK_MASTERS_SEEDS), set(FALLBACK_MASTERS_SEEDS)
 
-def persist_spider_players(seen_tags, limit=100):
-    """Store a random sample of this run's spidered players (all within
-    SPIDER_DEPTH hops of verified seeds → Masters-adjacent) so future runs can
-    rotate seeds even while brawlace is unreachable. rank=999 keeps them below
-    real leaderboard rows in the order-by-rank seed query."""
-    tags = [t for t in seen_tags if t]
+def persist_spider_players(depth1_tags, limit=100):
+    """REPLACE (not accumulate) the stored spider seed pool with a fresh
+    sample of players found exactly one hop from a seed verified THIS run.
+    Deleting the old pool first is what bounds drift: a future run's
+    'rotating' seeds are always <=1 hop from a real top-100/hardcoded pro,
+    never 2+ hops via a previous run's spider seed."""
+    tags = [t for t in depth1_tags if t]
+    del_res = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/masters_players?source=eq.spider",
+        headers=SUPABASE_HEADERS,
+    )
+    if del_res.status_code not in (200, 204):
+        print(f"⚠️ could not clear old spider pool: {del_res.status_code} {del_res.text[:200]}")
     if not tags:
         return
     sample = random.sample(tags, min(limit, len(tags)))
@@ -126,7 +149,7 @@ def persist_spider_players(seen_tags, limit=100):
         headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
     )
     if res.status_code in (200, 201, 204):
-        print(f"🕸️ masters_players topped up with {len(rows)} spider-discovered players")
+        print(f"🕸️ spider seed pool refreshed with {len(rows)} depth-1 (verified-origin) players")
     else:
         print(f"⚠️ spider player store failed: {res.status_code} {res.text[:200]}")
 
@@ -145,14 +168,15 @@ def main():
         target = MASTERS_STEADY
         print(f"{BRACKET}: {stored} stored, baseline met — steady +{target}.")
 
-    seeds = get_masters_seeds()
-    print(f"Masters seeds this run: {', '.join(seeds)}")
+    seeds, verified_seeds = get_masters_seeds()
+    print(f"Masters seeds this run: {', '.join(seeds)} (verified: {', '.join(sorted(verified_seeds)) or 'none'})")
 
-    extracted, seen_tags, seen_hashes = [], set(), set()
+    extracted, seen_tags, seen_hashes, depth1_tags = [], set(), set(), set()
     harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
-                    target_matches=target, max_depth=SPIDER_DEPTH)
+                    target_matches=target, max_depth=SPIDER_DEPTH,
+                    depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds)
 
-    persist_spider_players(seen_tags)
+    persist_spider_players(depth1_tags)
 
     inserted, touched = push_matches(extracted, lookups)
     if inserted:
