@@ -98,32 +98,41 @@ def fetch_top_ranked_players(limit=100):
         print(f"⚠️ brawlace scrape error: {e}")
         return []
 
-def get_masters_seeds():
-    """Random 5 of the live top-100 ranked players. Falls back to the stored
-    'spider' pool (each row there is, by construction, exactly one hop from a
-    player verified in SOME prior run — see persist_spider_players), always
-    anchored by 2 hardcoded pros. Returns (seeds, verified_set) — verified_set
-    is which of the returned seeds are trustworthy as a depth-1 collection
-    origin for THIS run (real leaderboard players or hardcoded pros; never a
-    previously-spidered player, which is what stops drift from compounding)."""
+# How many seeds to start each run's depth-2 spider from. Widened from 5
+# (2026-07-20): the actual bottleneck was graph size, not request throughput —
+# a run hit only 11k/95k of its target because it ran out of players reachable
+# within 2 hops of just 5 starting points, not because of rate limiting. More
+# seeds = wider frontier at the SAME depth, so rank purity is unaffected.
+SEED_COUNT = 25
+
+def get_masters_seeds(count=SEED_COUNT):
+    """Random `count` of the live top-100 ranked players. Falls back to all 5
+    hardcoded pro anchors + rotating players from the stored 'spider' pool
+    (each row there is, by construction, exactly one hop from a player
+    verified in SOME prior run — see persist_spider_players). Returns (seeds,
+    verified_set) — verified_set is which of the returned seeds are
+    trustworthy as a depth-1 collection origin for THIS run (real leaderboard
+    players or hardcoded pros; never a previously-spidered player, which is
+    what stops drift from compounding)."""
     top = fetch_top_ranked_players(100)
     if top:
-        seeds = random.sample(top, min(5, len(top)))
+        seeds = random.sample(top, min(count, len(top)))
         return seeds, set(seeds)
     res = requests.get(
-        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&source=eq.spider&limit=300",
+        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&source=eq.spider&limit=1000",
         headers=SUPABASE_HEADERS,
     )
     pool = []
     if res.status_code == 200:
         pool = [r["player_tag"] for r in res.json() if r.get("player_tag")]
+    anchors = list(FALLBACK_MASTERS_SEEDS)
     if pool:
-        anchors = random.sample(FALLBACK_MASTERS_SEEDS, 2)
-        rotating = [t for t in random.sample(pool, min(3, len(pool))) if t not in anchors]
-        print(f"brawlace unavailable — seeding 2 anchor pros + {len(rotating)} rotating (unverified) players.")
+        rotating_n = max(0, count - len(anchors))
+        rotating = [t for t in random.sample(pool, min(rotating_n, len(pool))) if t not in anchors]
+        print(f"brawlace unavailable — seeding {len(anchors)} anchor pros + {len(rotating)} rotating (unverified) players.")
         return anchors + rotating, set(anchors)
     print("Using hardcoded fallback Masters seeds.")
-    return list(FALLBACK_MASTERS_SEEDS), set(FALLBACK_MASTERS_SEEDS)
+    return anchors, set(anchors)
 
 def persist_spider_players(depth1_tags, limit=100):
     """REPLACE (not accumulate) the stored spider seed pool with a fresh
