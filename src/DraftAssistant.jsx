@@ -236,6 +236,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     const myTeam = (pickerTeam === "blue" ? blueTeam : redTeam).filter(Boolean).map(b => b.name.toUpperCase());
     const { suggestions: advice } = getDraftAdvice({
       mode: selectedMap?.mode,
+      mapName: selectedMap?.name,
       pickSlot: [...blueTeam, ...redTeam].filter(Boolean).length + 1,
       myTeam,
       enemyTeam: enemyKeys,

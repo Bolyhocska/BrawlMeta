@@ -89,6 +89,7 @@ export function finalSanityCheck(teamKeys, mode) {
 // ── The 5-pass advisor ───────────────────────────────────────────────────────
 export function getDraftAdvice({
   mode,                 // camelCase mode, e.g. "brawlBall"
+  mapName = null,       // exact map name — unlocks geometry/bush modifiers
   pickSlot,             // global pick about to be made, 1..6
   myTeam = [],          // my revealed picks (brawler keys)
   enemyTeam = [],       // enemy revealed picks (brawler keys)
@@ -98,6 +99,7 @@ export function getDraftAdvice({
   intelligence = {},    // { KEY: brawler_intelligence row }
   topN = 3,
   minMapPicks = 30,
+  _noDenial = false,    // internal: guards the one-level enemy-perspective recursion
 }) {
   const modeCfg = CONFIG.modes[mode] || { tempo: "active", classWeights: {}, maxPerClass: {} };
   const myClasses = myTeam.map(draftClassOf);
@@ -134,6 +136,20 @@ export function getDraftAdvice({
       if (dmg > best) { best = dmg; topThreatClass = threat; }
     }
     if (best < 1.5) topThreatClass = null; // no meaningful threat to block
+  }
+
+  // Interception drafting: evaluate what the ENEMY would most want to pick
+  // next (one-level recursion, guarded by _noDenial). If their dream pick also
+  // scores well for us, stealing it gets a denial bonus in the loop below.
+  let enemyTopKey = null;
+  const denial = ladder.denial;
+  if (denial && !_noDenial && enemyPicksRemaining > 0) {
+    const enemyView = getDraftAdvice({
+      mode, mapName, pickSlot, myTeam: enemyTeam, enemyTeam: myTeam,
+      unavailable, mapStats, matchupStats: {}, intelligence,
+      topN: 1, minMapPicks, _noDenial: true,
+    });
+    enemyTopKey = enemyView.suggestions[0]?.key ?? null;
   }
 
   const candidates = [];
@@ -306,6 +322,89 @@ export function getDraftAdvice({
 
     // ── PASS 4 · Strategic / map filter ──
     score *= modeCfg.classWeights?.[cls] ?? 1;
+
+    // Map geometry + mechanical attributes (range / attack type / spawner /
+    // bush kits). Geometry is a PRIOR: dampened when the brawler has a real
+    // map sample, since live map WR already encodes how the map treats them.
+    const attrs = CONFIG.brawlerAttributes?.[key];
+    const mapProf = mapName ? CONFIG.mapProfiles?.[mapName] : null;
+    const aRules = CONFIG.attributeRules || {};
+    if (mapProf && aRules.geometry) {
+      // Dynamic map mutation: a friendly wall breaker (already drafted, or this
+      // candidate itself) physically opens the map — CLOSED plays like MIXED,
+      // MIXED plays like OPEN, so range modifiers use the mutated state.
+      let openness = mapProf.openness;
+      if (aRules.geometry.wallBreakShiftsOpen &&
+          (myAbilities.has("WALL_BREAK") || candAbility === "WALL_BREAK")) {
+        openness = openness === "CLOSED" ? "MIXED" : "OPEN";
+      }
+      const g = aRules.geometry[openness] || {};
+      let gm = (attrs && g.rangeMultipliers?.[attrs.range]) ?? 1;
+      gm *= g.classMultipliers?.[cls] ?? 1;
+      if (gm !== 1 && mapTWR != null) gm = 1 + (gm - 1) * (aRules.geometry.dampWithMapData ?? 0.5);
+      score *= gm;
+    }
+    if (mapProf && attrs?.bushSynergy && aRules.bushSynergy) {
+      const bushPts = aRules.bushSynergy[mapProf.bushDensity] || 0;
+      if (bushPts) {
+        score += bushPts;
+        if (mapProf.bushDensity === "HIGH") chips.push({ label: aRules.bushSynergy.label, tone: "good" });
+      }
+    }
+    // Spawner interactions: attackable summons soak single shots unless a
+    // teammate brings the wave-clear; pierce/splash clears them for free.
+    const enemyHasSpawner = enemyTeam.some(ek => CONFIG.brawlerAttributes?.[norm(ek)]?.spawner);
+    if (enemyHasSpawner && attrs) {
+      const ss = aRules.singleShotVsSpawner;
+      if (ss && attrs.attackType === "SINGLE_SHOT") {
+        const waived = myTeam.some(mk =>
+          ss.waivedByTeammateAttackTypes.includes(CONFIG.brawlerAttributes?.[norm(mk)]?.attackType));
+        if (!waived) {
+          score *= ss.scoreMultiplier;
+          chips.push({ label: ss.label, tone: "bad" });
+        }
+      }
+      const clearBonus = aRules.clearsSummons?.attackTypeBonus?.[attrs.attackType];
+      if (clearBonus) {
+        score += clearBonus;
+        chips.push({ label: aRules.clearsSummons.label, tone: "good" });
+      }
+    }
+
+    // Anti-synergy: a friendly wall breaker strips the team's OWN thrower's
+    // cover. Symmetric (either side joining the other), exempt in Heist where
+    // opening the safe lane is the point.
+    const wbot = aRules.wallBreakOwnThrower;
+    if (wbot && !(wbot.exemptModes || []).includes(mode)) {
+      if ((candAbility === "WALL_BREAK" && myClasses.includes("THROWER")) ||
+          (cls === "THROWER" && myAbilities.has("WALL_BREAK"))) {
+        score *= wbot.scoreMultiplier;
+        chips.push({ label: wbot.label, tone: "bad" });
+      }
+    }
+
+    // Scaler saturation: two late-game scaling kits concede the early map.
+    const sat = aRules.scalerSaturation;
+    if (sat && attrs?.scaler &&
+        myTeam.some(mk => CONFIG.brawlerAttributes?.[norm(mk)]?.scaler)) {
+      score *= sat.scoreMultiplier;
+      chips.push({ label: sat.label, tone: "bad" });
+    }
+
+    // Utility saturation: in DPS-hungry objective modes a third utility-class
+    // pick (support/thrower/control in any mix) loses the damage race.
+    const us = aRules.utilitySaturation;
+    if (us && us.modes.includes(mode) && us.classes.includes(cls) &&
+        myClasses.filter(c => us.classes.includes(c)).length >= us.maxUtility) {
+      score *= us.scoreMultiplier;
+      chips.push({ label: us.label, tone: "bad" });
+    }
+
+    // Interception: this is the enemy's dream next pick and it works for us too.
+    if (enemyTopKey && key === enemyTopKey) {
+      score *= denial.scoreMultiplier;
+      chips.push({ label: denial.label, tone: "good" });
+    }
 
     // Counter-stack bonus — added AFTER mode weight so a mode that favours the
     // enemy's stacked class can't bury its hard counter (2 snipers → Mortis/Kit).
