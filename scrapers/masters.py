@@ -4,8 +4,9 @@
 #
 #   python -m scrapers.masters
 #
-# Seeds: a RANDOM 5 of the live top-100 global ranked players (scraped from
-# brawlace each run into masters_players, with stored/hardcoded fallbacks).
+# Seeds: a RANDOM `SEED_COUNT` of the live top-200 global ranked players
+# (scraped from brawlytix each run into masters_players, brawlace as a
+# secondary source, with stored/hardcoded fallbacks below that).
 # The public API has no per-match rank-tier field, so rank purity is enforced
 # by spider proximity instead: SPIDER_DEPTH=2 keeps collection within two
 # matchmaking hops of verified top-ranked players. At Masters I+ the queue is
@@ -37,10 +38,14 @@ from scrapers.common import (
 
 BRACKET = "masters_legendary"
 
-# brawlace.com lists the global ranked (Masters) leaderboard; player profile
-# links embed the tag as /players/%23TAG. We pull the top 100, store them in
-# masters_players, then seed the spider from a RANDOM 5 of them each run so
-# collection coverage rotates across the very top of the ladder.
+# brawlytix.com lists the global ranked (Masters) leaderboard, 200 deep, as
+# plain server-rendered HTML (<small>#TAG</small> right after each player's
+# name) — confirmed 2026-07-20 to need only a browser User-Agent, no JS
+# challenge (unlike brawlace, which is Cloudflare-JS-gated). Primary source.
+BRAWLYTIX_URL = "https://brawlytix.com/leaderboard/highest-ranked-elo"
+
+# brawlace.com: same idea, secondary fallback if brawlytix's markup ever
+# changes or the site goes down. Cloudflare-JS-gated (see fetch below).
 BRAWLACE_RANKED_URL = "https://brawlace.com/leaderboards-ranked"
 
 # Last manually verified top-5 global ranked players — the fallback if the
@@ -53,49 +58,76 @@ FALLBACK_MASTERS_SEEDS = [
     "#89VC2CGCJ",   # TH|Subeme
 ]
 
-def fetch_top_ranked_players(limit=100):
-    """Scrape the top `limit` ranked player tags (in rank order) from brawlace
-    and refresh the masters_players table. Returns [] on any failure."""
+_BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+def _fetch_brawlytix(limit):
+    """Plain server-rendered HTML — <small>#TAG</small> immediately after each
+    player's <strong>name</strong>, in rank order. No JS challenge to solve."""
+    res = requests.get(BRAWLYTIX_URL, timeout=30, headers=_BROWSER_HEADERS)
+    if res.status_code != 200:
+        print(f"⚠️ brawlytix fetch failed: {res.status_code}")
+        return []
+    tags = []
+    for m in re.finditer(r"<small>(#[0-9A-Z]{4,12})</small>", res.text):
+        tag = m.group(1)
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) >= limit:
+            break
+    if not tags:
+        print("⚠️ brawlytix scrape returned no tags (markup changed?)")
+    return tags
+
+def _fetch_brawlace(limit):
+    """brawlace sits behind a Cloudflare JS challenge (plain requests sees
+    403/520 regardless of User-Agent — confirmed 2026-07-20). cloudscraper
+    attempts that challenge; route through the Webshare static-IP proxy too
+    since GH Actions IPs are separately flagged as datacenter traffic."""
+    res = _HTTP.get(BRAWLACE_RANKED_URL, timeout=30, proxies=PROXIES, headers=_BROWSER_HEADERS)
+    if res.status_code != 200:
+        print(f"⚠️ brawlace fetch failed: {res.status_code}")
+        return []
+    # Profile links look like href="https://brawlace.com/players/%23TAG"
+    tags = []
+    for m in re.finditer(r"/players/%23([0-9A-Z]+)", res.text):
+        tag = "#" + m.group(1)
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) >= limit:
+            break
+    if not tags:
+        print("⚠️ brawlace scrape returned no tags (markup changed?)")
+    return tags
+
+def fetch_top_ranked_players(limit=200):
+    """Scrape the top `limit` ranked player tags (in rank order): brawlytix
+    first (200 deep, no JS challenge), brawlace as a secondary fallback.
+    Refreshes masters_players on success. Returns [] if both fail — the
+    spider self-seeds from masters_players either way."""
     try:
-        # brawlace sits behind a Cloudflare JS challenge (plain requests sees
-        # 403/520 regardless of User-Agent — confirmed 2026-07-20, headers
-        # alone don't pass it). cloudscraper solves that challenge; route
-        # through the Webshare static-IP proxy too since GH Actions IPs are
-        # separately flagged as datacenter traffic. Failure stays graceful —
-        # the spider self-seeds from masters_players either way.
-        res = _HTTP.get(BRAWLACE_RANKED_URL, timeout=30, proxies=PROXIES, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-        })
-        if res.status_code != 200:
-            print(f"⚠️ brawlace fetch failed: {res.status_code}")
-            return []
-        # Profile links look like href="https://brawlace.com/players/%23TAG"
-        tags = []
-        for m in re.finditer(r"/players/%23([0-9A-Z]+)", res.text):
-            tag = "#" + m.group(1)
-            if tag not in tags:
-                tags.append(tag)
-            if len(tags) >= limit:
-                break
+        tags, source = _fetch_brawlytix(limit), "brawlytix"
         if not tags:
-            print("⚠️ brawlace scrape returned no tags (markup changed?)")
+            tags, source = _fetch_brawlace(limit), "brawlace"
+        if not tags:
             return []
         now = datetime.now(timezone.utc).isoformat()
-        rows = [{"player_tag": t, "rank": i + 1, "source": "brawlace", "fetched_at": now} for i, t in enumerate(tags)]
+        rows = [{"player_tag": t, "rank": i + 1, "source": source, "fetched_at": now} for i, t in enumerate(tags)]
         up = requests.post(
             f"{SUPABASE_URL}/rest/v1/masters_players?on_conflict=player_tag",
             json=rows,
             headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
         )
         if up.status_code in (200, 201, 204):
-            print(f"✅ masters_players refreshed ({len(rows)} ranked players)")
+            print(f"✅ masters_players refreshed ({len(rows)} ranked players via {source})")
         else:
             print(f"⚠️ masters_players store failed: {up.status_code} {up.text[:200]}")
         return tags
     except Exception as e:
-        print(f"⚠️ brawlace scrape error: {e}")
+        print(f"⚠️ leaderboard scrape error: {e}")
         return []
 
 # How many seeds to start each run's depth-2 spider from. Widened from 5
@@ -106,7 +138,7 @@ def fetch_top_ranked_players(limit=100):
 SEED_COUNT = 25
 
 def get_masters_seeds(count=SEED_COUNT):
-    """Random `count` of the live top-100 ranked players. Falls back to all 5
+    """Random `count` of the live top-200 ranked players. Falls back to all 5
     hardcoded pro anchors + rotating players from the stored 'spider' pool
     (each row there is, by construction, exactly one hop from a player
     verified in SOME prior run — see persist_spider_players). Returns (seeds,
@@ -114,7 +146,7 @@ def get_masters_seeds(count=SEED_COUNT):
     trustworthy as a depth-1 collection origin for THIS run (real leaderboard
     players or hardcoded pros; never a previously-spidered player, which is
     what stops drift from compounding)."""
-    top = fetch_top_ranked_players(100)
+    top = fetch_top_ranked_players(200)
     if top:
         seeds = random.sample(top, min(count, len(top)))
         return seeds, set(seeds)
