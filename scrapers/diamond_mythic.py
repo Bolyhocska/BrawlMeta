@@ -4,9 +4,9 @@
 #
 #   python -m scrapers.diamond_mythic
 #
-# Gated on the Masters baseline: until Masters has its 400k-match foundation,
-# this scraper exits without collecting so all API/proxy budget goes to the
-# bracket the tier list leans on hardest.
+# Gated on the Masters baseline: until Masters has filled its full 1.5M-match
+# sliding window, this scraper exits without collecting so all API/proxy budget
+# goes to the bracket the tier list leans on hardest.
 
 import requests
 

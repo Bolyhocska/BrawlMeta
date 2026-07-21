@@ -115,9 +115,9 @@ RANKED_MAPS = {
 # ==========================================
 # THROTTLES & TARGETS
 # ==========================================
-MASTERS_BASELINE = 400000              # Masters fills to this before Diamond/Mythic collection ever starts
-MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met
 MASTERS_WINDOW_CAP = 1500000           # sliding-window retention: keep the newest 1.5M Masters rows (FIFO by collected_at)
+MASTERS_BASELINE = MASTERS_WINDOW_CAP  # Masters fills all the way to the 1.5M window before Diamond/Mythic collection ever starts — the owner wants the full Masters window in force first, then the rolling steady-state, and only then Diamond/Mythic
+MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met (== steady-state that the FIFO window trims back to 1.5M)
 MASTERS_RUN_CAP = 150000               # max matches one Masters run may collect while filling the baseline
 DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
 SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity

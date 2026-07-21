@@ -199,8 +199,9 @@ def main():
     print("🛰️ Masters scraper: harvesting Masters+ ranked matches...")
     lookups = LookupCache()
 
-    # Fill to the 400k baseline first (up to MASTERS_RUN_CAP per run); once
-    # met, throttle down to a steady 50k per run.
+    # Fill to the full 1.5M window baseline first (up to MASTERS_RUN_CAP per
+    # run); once met, throttle down to a steady 50k per run — the FIFO window
+    # prune then trims each run's surplus back to 1.5M.
     stored = get_stored_match_count(lookups, BRACKET)
     if stored < MASTERS_BASELINE:
         target = min(MASTERS_BASELINE - stored, MASTERS_RUN_CAP)
