@@ -146,7 +146,7 @@
   },
 
   "abilityLabels": {
-    "_comment": "Ability tags from the same role map — a static per-brawler trait shown as a badge on suggestion cards, distinct from data-driven flags like Meta Breaker.",
+    "_comment": "Ability tags from the same role map — a static per-brawler trait shown as a badge on suggestion cards, distinct from data-driven flags like Meta Breaker. A value may be a single tag OR an array when a brawler genuinely carries two (RUFFS breaks walls via his star power on top of being a Good Hyper); every rule reads the full array, while the card badge shows the first entry, so list the draft-relevant tag first.",
     "GOOD_HYPER": "Good Hyper",
     "KNOCKBACK_STUN": "Knockback/Stun",
     "WALL_BREAK": "Wall Break",
@@ -176,7 +176,7 @@
     "NAJIA": "SPECIAL", "NANI": "SPECIAL", "NITA": "GOOD_HYPER", "NORI": "SPECIAL",
     "OLLIE": "GOOD_HYPER", "OTIS": "GOOD_HYPER", "PAM": "GOOD_HYPER", "PEARL": "KNOCKBACK_STUN",
     "PENNY": "SPECIAL", "PIERCE": "SPECIAL", "PIPER": "KNOCKBACK_STUN", "POCO": "SPECIAL",
-    "R-T": "GOOD_HYPER", "RICO": "GOOD_HYPER", "ROSA": "SPECIAL", "RUFFS": "GOOD_HYPER",
+    "R-T": "GOOD_HYPER", "RICO": "GOOD_HYPER", "ROSA": "SPECIAL", "RUFFS": ["WALL_BREAK", "GOOD_HYPER"],
     "SAM": "SPECIAL", "SANDY": "GOOD_HYPER", "SHADE": "GOOD_HYPER", "SHELLY": "KNOCKBACK_STUN",
     "SIRIUS": "PIERCE_DAMAGE", "SPIKE": "WALL_BREAK", "SPROUT": "PIERCE_DAMAGE", "SQUEAK": "PIERCE_DAMAGE",
     "STARR NOVA": "SPECIAL", "STU": "WALL_BREAK", "SURGE": "KNOCKBACK_STUN", "TARA": "GOOD_HYPER",
@@ -360,11 +360,12 @@
   },
 
   "mapProfiles": {
-    "_comment": "Season 47 ranked pool geometry (owner-provided draft doc, 2026-07-20). openness: OPEN boosts long range / penalizes short; CLOSED the reverse (+throwers, who want walls); MIXED neutral. bushDensity HIGH/MEDIUM feeds the bushSynergy bonus. Keys are canonical DB map names; apostrophe/case variants are duplicated (e.g. Belles Rock vs Belle's Rock) because the live API spelling for not-yet-collected rotation maps is unconfirmed. Maps absent here get no geometry modifiers.",
+    "_comment": "Ranked pool geometry (owner-provided draft doc, 2026-07-20; Crystal Arcade + Deathcap Trap replaced Rustic Arcade on the 2026-07-22 rotation). openness: OPEN boosts long range / penalizes short; CLOSED the reverse (+throwers, who want walls); MIXED neutral. bushDensity HIGH/MEDIUM feeds the bushSynergy bonus. Entries flagged _estimated are Claude's read of the map rather than owner-confirmed — correct them if they play differently. Keys are canonical DB map names; the engine matches them case- and punctuation-insensitively (lookupByMap), so the duplicated apostrophe/case variants below are belt-and-suspenders only. Maps absent here get no geometry modifiers.",
     "Double Swoosh":   { "mode": "gemGrab",   "openness": "CLOSED", "bushDensity": "HIGH" },
     "Gem Fort":        { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
     "Hard Rock Mine":  { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
-    "Rustic Arcade":   { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "LOW" },
+    "Crystal Arcade":  { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM", "_estimated": true },
+    "Deathcap Trap":   { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "HIGH",   "_estimated": true },
     "Undermine":       { "mode": "gemGrab",   "openness": "CLOSED", "bushDensity": "HIGH" },
     "Bridge Too Far":  { "mode": "heist",     "openness": "OPEN",   "bushDensity": "LOW" },
     "Hot Potato":      { "mode": "heist",     "openness": "CLOSED", "bushDensity": "HIGH" },
@@ -586,8 +587,8 @@
     },
     "Sneaky Fields": {
       "mode": "brawlBall",
-      "note": "Mid flex pinchers (Rico / Ruffs / Max). Pair any utility pick with heavy DPS or their 6th pick punishes you.",
-      "favorBrawlers": { "RICO": 1.06, "RUFFS": 1.06, "MAX": 1.06 }
+      "note": "Mid flex pinchers (Rico / Ruffs / Max / Meeple). Pair any utility pick with heavy DPS or their 6th pick punishes you.",
+      "favorBrawlers": { "RICO": 1.06, "RUFFS": 1.06, "MAX": 1.06, "MEEPLE": 1.06 }
     },
     "Triple Dribble": {
       "mode": "brawlBall",
@@ -619,14 +620,12 @@
     },
     "Crystal Arcade": {
       "mode": "gemGrab",
-      "_status": "NOT in the Season 47 ranked pool (verified against the DB 2026-07-22) — inert until it rotates back in. The live gemGrab arcade map is Rustic Arcade, a DIFFERENT map, which deliberately gets no rule here.",
       "note": "Break both lanes open inside 40 seconds and low-range enemy comps collapse. Safe carriers: Stu / Max / Meg / Pearl.",
       "wallBreakBonus": 1.3,
       "favorBrawlers": { "STU": 1.06, "MAX": 1.06, "MEG": 1.06, "PEARL": 1.06 }
     },
     "Deathcap Trap": {
       "mode": "gemGrab",
-      "_status": "NOT in the Season 47 ranked pool (verified against the DB 2026-07-22) — inert until it rotates back in.",
       "note": "Right lane defensive pincher (Ruffs / Rico), left lane aggro into the grass pocket. Penny is a strong late pick.",
       "favorBrawlers": { "RUFFS": 1.06, "RICO": 1.06, "PENNY": 1.05 }
     },
@@ -638,8 +637,8 @@
     },
     "Hot Potato": {
       "mode": "heist",
-      "note": "Defensive anchor (Lumi) plus a high-DPS follow-up; Carl and Melodie force map control.",
-      "favorBrawlers": { "LUMI": 1.06, "CARL": 1.05, "MELODIE": 1.05 }
+      "note": "Defensive anchor (Lumi / Meeple) plus a high-DPS follow-up; Carl and Melodie force map control.",
+      "favorBrawlers": { "LUMI": 1.06, "MEEPLE": 1.06, "CARL": 1.05, "MELODIE": 1.05 }
     },
     "Kaboom Canyon": {
       "mode": "heist",
@@ -671,9 +670,9 @@
     },
     "Ring of Fire": {
       "mode": "hotZone",
-      "note": "Raw-DPS meta — late assassins struggle here. Crow / Lumi / Griff / Finx lead.",
+      "note": "Raw-DPS meta — late assassins struggle here. Crow / Lumi / Griff / Finx / Glowy / Poco lead.",
       "penalizeClasses": { "SPACE_MAKER": 0.88 },
-      "favorBrawlers": { "CROW": 1.06, "LUMI": 1.06, "GRIFF": 1.06, "FINX": 1.06 }
+      "favorBrawlers": { "CROW": 1.06, "LUMI": 1.06, "GRIFF": 1.06, "FINX": 1.06, "GLOWY": 1.06, "POCO": 1.06 }
     },
 
     "Belle's Rock": {

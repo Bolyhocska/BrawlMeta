@@ -103,12 +103,16 @@ RANKED_MAPS = {
         "Dueling Beetles", "In The Liminal", "Open Business", "Parallel Plays",
         "Quick Travel", "Ring Of Fire",
         "Belles Rock", "Flaring Phoenix", "New Horizons", "Out in the open",
-        # Season 47 rotation additions (2026-07-20). The API's exact spelling for
+        # Rotation additions (2026-07-20). The API's exact spelling for
         # not-yet-collected maps is unconfirmed, so apostrophe/case variants are
         # listed too — the allowlist is additive-safe, unknown names just never match.
         # ("Safe(r) Zone" from the draft doc turned out to be Safe Zone itself.)
-        "Rustic Arcade",
         "Belle's Rock", "Ring of Fire", "Out in the Open",
+        # 2026-07-22 rotation: Rustic Arcade left the ranked pool (owner-confirmed
+        # — it belonged to the previous season) and is deliberately NOT listed, so
+        # no further Rustic Arcade matches are ingested. Crystal Arcade and
+        # Deathcap Trap replace it and have never been collected before.
+        "Crystal Arcade", "Deathcap Trap",
     },
 }
 

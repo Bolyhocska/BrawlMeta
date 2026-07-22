@@ -45,7 +45,15 @@ export const classLabel = (cls) => CONFIG.classLabels[cls] || cls;
 // ── Ability tag (Good Hyper / Knockback-Stun / Wall Break / Pierce Damage /
 // Special) — a static per-brawler trait, distinct from data-driven flags like
 // Meta Breaker. Undefined for brawlers not yet in the role map (e.g. Damian).
-export const abilityOf = (key) => CONFIG.brawlerAbilities?.[norm(key)] || null;
+// A brawler may carry more than one tag (Ruffs is Good Hyper AND a wall breaker
+// via his star power), so brawlerAbilities values are either a string or an
+// array. abilitiesOf is what the RULES read; abilityOf returns just the first
+// tag, which is what the UI badge shows.
+export const abilitiesOf = (key) => {
+  const v = CONFIG.brawlerAbilities?.[norm(key)];
+  return v == null ? [] : Array.isArray(v) ? v : [v];
+};
+export const abilityOf = (key) => abilitiesOf(key)[0] || null;
 export const abilityLabel = (code) => CONFIG.abilityLabels?.[code] || code;
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
@@ -159,8 +167,8 @@ export function getDraftAdvice({
   const supportRules = CONFIG.supportRules || {};
   const ladder = CONFIG.counterLadder || {};
   const slotCounterW = ladder.counterWeightBySlot?.[String(pickSlot)] ?? 1;
-  const myAbilities = new Set(myTeam.map(abilityOf).filter(Boolean));
-  const enemyAbilities = new Set(enemyTeam.map(abilityOf).filter(Boolean));
+  const myAbilities = new Set(myTeam.flatMap(abilitiesOf));
+  const enemyAbilities = new Set(enemyTeam.flatMap(abilitiesOf));
   const bannedSet = new Set(banned.filter(Boolean).map(norm));
 
   // Pro map intel (SpenLC breakdowns) for THIS map: requirements, class biases,
@@ -222,7 +230,8 @@ export function getDraftAdvice({
     if ((!ms || ms.picks < minMapPicks) && !intel) continue;
 
     const cls = draftClassOf(key);
-    const candAbility = abilityOf(key);
+    const candAbilities = abilitiesOf(key);
+    const candAbility = candAbilities[0] || null;   // primary tag — UI badge only
     const chips = [];       // short UI badges [{label, tone}]
     const why = [];         // rationale fragments, priority-ordered
 
@@ -375,7 +384,7 @@ export function getDraftAdvice({
     }
 
     // ── Ability rules (Bobby) · wall break opens lanes / strips cover ──
-    if (candAbility === "WALL_BREAK") {
+    if (candAbilities.includes("WALL_BREAK")) {
       const sniperMates = myClasses.filter(c => c === "SNIPER").length;
       // Synergy: our snipers dominate once the obstacles are gone
       if (sniperMates > 0 && abilityRules.wallBreakSniperSynergy) {
@@ -440,7 +449,7 @@ export function getDraftAdvice({
       // MIXED plays like OPEN, so range modifiers use the mutated state.
       let openness = mapProf.openness;
       if (aRules.geometry.wallBreakShiftsOpen &&
-          (myAbilities.has("WALL_BREAK") || candAbility === "WALL_BREAK")) {
+          (myAbilities.has("WALL_BREAK") || candAbilities.includes("WALL_BREAK"))) {
         openness = openness === "CLOSED" ? "MIXED" : "OPEN";
       }
       const g = aRules.geometry[openness] || {};
@@ -481,7 +490,7 @@ export function getDraftAdvice({
     // opening the safe lane is the point.
     const wbot = aRules.wallBreakOwnThrower;
     if (wbot && !(wbot.exemptModes || []).includes(mode)) {
-      if ((candAbility === "WALL_BREAK" && myClasses.includes("THROWER")) ||
+      if ((candAbilities.includes("WALL_BREAK") && myClasses.includes("THROWER")) ||
           (cls === "THROWER" && myAbilities.has("WALL_BREAK"))) {
         score *= wbot.scoreMultiplier;
         chips.push({ label: wbot.label, tone: "bad" });
@@ -525,7 +534,7 @@ export function getDraftAdvice({
 
       // Wall break as a map-level win condition (open the lanes, deny the
       // spawn trap) rather than the generic ability synergy handled above.
-      if (mapRule.wallBreakBonus && candAbility === "WALL_BREAK") {
+      if (mapRule.wallBreakBonus && candAbilities.includes("WALL_BREAK")) {
         score *= dp(mapRule.wallBreakBonus);
         chips.push({ label: "Opens the map", tone: "good" });
       }
@@ -534,7 +543,7 @@ export function getDraftAdvice({
       // The candidate counts toward satisfying it, so the wall breaker rises
       // rather than the sniper merely falling.
       if (rta && !teamHasRequiredAbility && rta.penalizeClasses.includes(cls) &&
-          !rta.abilities.includes(candAbility)) {
+          !candAbilities.some(a => rta.abilities.includes(a))) {
         score *= dp(rta.multiplier);
         chips.push({ label: rta.label, tone: "bad" });
       }
