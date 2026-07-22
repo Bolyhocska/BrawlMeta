@@ -1,9 +1,20 @@
 name: Scrape — Masters Matches
 
-# Masters+ ranked-match spider (brawlace-seeded, depth 2). Daily.
+# Masters+ ranked-match spider (brawlytix-seeded, depth 2). Every 6 hours.
+#
+# Frequency, not breadth, is the lever here: one run saturates the 2-hop graph
+# from its seeds at roughly 33k players / 30k unique matches and then reports
+# "ran out of players" — widening the seed set barely helps, because the top-200
+# global players all queue against each other and their neighbourhoods overlap.
+# What DOES produce new rows is elapsed time, since the same players keep
+# playing. So we re-walk the graph 4x a day while filling the 1.5M baseline.
+#
+# Scheduled one hour after each scrape-leaderboard run (05/11/17/23) so the two
+# scrapers never share the proxy, and early enough at 06:00 to finish before
+# scrape-diamond-mythic (07:30) and refresh-intelligence (08:30).
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 0,6,12,18 * * *'
   workflow_dispatch:
 
 jobs:
