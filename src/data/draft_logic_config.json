@@ -544,6 +544,186 @@
     }
   },
 
+  "mapRules": {
+    "_comment": "Per-map competitive requirements from pro map breakdowns (SpenLC, 2026-07-22), layered ON TOP of the statistical core rather than replacing it. Every multiplier here is a PRIOR: dampWithMapData shrinks it toward 1.0 when the candidate has a real sample on this map, because the live map win rate already encodes whatever the pro is describing — the prior mainly carries the maps and brawlers where data is still thin. Primitives: penalizeClasses / favorClasses / favorBrawlers (flat multipliers); penaltyExemptSlots (a class penalty that lifts at the named pick slots, e.g. snipers are fine as the 6th pick); requireTeamAbility (a class stays handicapped until the TEAM fields an enabling ability); conditionalPenalty (class penalty waived by a teammate class); requireArchetype (comp mandate — candidates that do NOT satisfy it are penalized once the team is running out of slots to satisfy it, ramping in as the last pick approaches, since a flat whole-team penalty would not change any ranking); wallBreakBonus (multiplier for WALL_BREAK ability holders); banSuggestions and note (advisory only, surfaced in the UI, never scored). Map keys are matched case- and punctuation-insensitively, so 'Belles Rock' and \"Belle's Rock\" both resolve.",
+    "_defaults": { "dampWithMapData": 0.5 },
+
+    "Dry Season": {
+      "mode": "bounty",
+      "note": "Surge, 8-Bit and Meg lead here. Max answers snipers — watch for Sprout / Kit / Bolt on their last pick.",
+      "favorBrawlers": { "SURGE": 1.08, "8-BIT": 1.06, "MEG": 1.06 }
+    },
+    "Hideout": {
+      "mode": "bounty",
+      "note": "Ban Brock, then first-pick Surge. Pearl punishes Max and aggressive divers.",
+      "banSuggestions": ["BROCK"],
+      "favorBrawlers": { "SURGE": 1.08, "PEARL": 1.05 }
+    },
+    "Layer Cake": {
+      "mode": "bounty",
+      "note": "No snipers early — take mid control plus one aggro opener, and leave snipers for the last pick.",
+      "penalizeClasses": { "SNIPER": 0.75 },
+      "penaltyExemptSlots": [6],
+      "favorBrawlers": { "MEEPLE": 1.06, "GENE": 1.06, "CROW": 1.05, "MAX": 1.05, "CARL": 1.06, "MORTIS": 1.06, "SHADE": 1.06 }
+    },
+    "Shooting Star": {
+      "mode": "bounty",
+      "note": "Surge jumps mid for kills. Dual ranged (Belle / Byron / Brock / Piper) with Jae-Yong for the blue star.",
+      "favorBrawlers": { "SURGE": 1.08, "BELLE": 1.05, "BYRON": 1.05, "BROCK": 1.05, "PIPER": 1.05, "JAE-YONG": 1.05 }
+    },
+
+    "Center Stage": {
+      "mode": "brawlBall",
+      "note": "Griff-led DPS map. Max / Damian / 8-Bit / Rico dominate; pure dive assassins struggle into that much damage.",
+      "favorBrawlers": { "GRIFF": 1.08, "MAX": 1.06, "DAMIAN": 1.06, "8-BIT": 1.06, "RICO": 1.06 },
+      "penalizeClasses": { "SPACE_MAKER": 0.92 }
+    },
+    "Pinball Dreams": {
+      "mode": "brawlBall",
+      "note": "Needs one aggressive pusher (Shade / Damian / Kenji) plus a mid poke (Max / 8-Bit / Otis / Lumi / Rico).",
+      "requireArchetype": { "classes": ["SPACE_MAKER", "TANK"], "multiplier": 0.8, "label": "Comp has no pressure" },
+      "favorBrawlers": { "SHADE": 1.07, "MAX": 1.05, "8-BIT": 1.05, "OTIS": 1.05, "LUMI": 1.05, "RICO": 1.05 }
+    },
+    "Sneaky Fields": {
+      "mode": "brawlBall",
+      "note": "Mid flex pinchers (Rico / Ruffs / Max). Pair any utility pick with heavy DPS or their 6th pick punishes you.",
+      "favorBrawlers": { "RICO": 1.06, "RUFFS": 1.06, "MAX": 1.06 }
+    },
+    "Triple Dribble": {
+      "mode": "brawlBall",
+      "note": "Lane pinchers (Meeple / Moe / Lumi) win the sides; Kenji / Edgar / Mina pressure down the right wall.",
+      "favorBrawlers": { "MEEPLE": 1.06, "MOE": 1.06, "LUMI": 1.06, "KENJI": 1.05, "EDGAR": 1.05, "MINA": 1.05 }
+    },
+
+    "Double Swoosh": {
+      "mode": "gemGrab",
+      "note": "Run vision gear here. Right lane goes aggro onto their carrier, left lane plays a safe defender.",
+      "favorClasses": { "SPACE_MAKER": 1.05 }
+    },
+    "Hard Rock Mine": {
+      "mode": "gemGrab",
+      "note": "Max is the premier carrier — Pearl / Lola / Crow answer him. Save the last pick for a space-making assassin.",
+      "favorBrawlers": { "MAX": 1.07, "PEARL": 1.05, "LOLA": 1.05, "CROW": 1.05 }
+    },
+    "Gem Fort": {
+      "mode": "gemGrab",
+      "note": "Burst and team wipes decide it — bring mid sustain, a bush scout, and a sneaky assassin/tank (or Sandy) for carrier kills.",
+      "favorBrawlers": { "SANDY": 1.06 },
+      "favorClasses": { "SPACE_MAKER": 1.04 }
+    },
+    "Undermine": {
+      "mode": "gemGrab",
+      "note": "Messy map — you always want an assassin or pressure pick (Alli) to rob the gem carrier.",
+      "requireArchetype": { "classes": ["SPACE_MAKER"], "multiplier": 0.88, "label": "No carrier threat" },
+      "favorBrawlers": { "ALLI": 1.06 }
+    },
+    "Crystal Arcade": {
+      "mode": "gemGrab",
+      "_status": "NOT in the Season 47 ranked pool (verified against the DB 2026-07-22) — inert until it rotates back in. The live gemGrab arcade map is Rustic Arcade, a DIFFERENT map, which deliberately gets no rule here.",
+      "note": "Break both lanes open inside 40 seconds and low-range enemy comps collapse. Safe carriers: Stu / Max / Meg / Pearl.",
+      "wallBreakBonus": 1.3,
+      "favorBrawlers": { "STU": 1.06, "MAX": 1.06, "MEG": 1.06, "PEARL": 1.06 }
+    },
+    "Deathcap Trap": {
+      "mode": "gemGrab",
+      "_status": "NOT in the Season 47 ranked pool (verified against the DB 2026-07-22) — inert until it rotates back in.",
+      "note": "Right lane defensive pincher (Ruffs / Rico), left lane aggro into the grass pocket. Penny is a strong late pick.",
+      "favorBrawlers": { "RUFFS": 1.06, "RICO": 1.06, "PENNY": 1.05 }
+    },
+
+    "Bridge Too Far": {
+      "mode": "heist",
+      "note": "At most one defender. Surge and Starr Nova win the 1v1s; keep one safe DPS (Colt / Brock / 8-Bit / Amber).",
+      "favorBrawlers": { "SURGE": 1.07, "STARR NOVA": 1.07, "COLT": 1.05, "BROCK": 1.05, "8-BIT": 1.05, "AMBER": 1.05 }
+    },
+    "Hot Potato": {
+      "mode": "heist",
+      "note": "Defensive anchor (Lumi) plus a high-DPS follow-up; Carl and Melodie force map control.",
+      "favorBrawlers": { "LUMI": 1.06, "CARL": 1.05, "MELODIE": 1.05 }
+    },
+    "Kaboom Canyon": {
+      "mode": "heist",
+      "note": "Won on defence-to-offence transitions — don't over-draft snipers.",
+      "penalizeClasses": { "SNIPER": 0.9 }
+    },
+    "Safe Zone": {
+      "mode": "heist",
+      "note": "Penny is the premier, near-uncounterable pick. Mid plays range/defence, the sides bring high DPS (Colt / Penny).",
+      "favorBrawlers": { "PENNY": 1.08, "COLT": 1.05 }
+    },
+
+    "Dueling Beetles": {
+      "mode": "hotZone",
+      "note": "Griff and Lou lead. Ban Gray to kill the Gray + Emz cheese.",
+      "banSuggestions": ["GRAY"],
+      "favorBrawlers": { "GRIFF": 1.08, "LOU": 1.07 }
+    },
+    "Open Business": {
+      "mode": "hotZone",
+      "note": "Pure controller map: one controller, one DPS, one heavy zone sitter. Aggro struggles without a tank holding the zone.",
+      "favorClasses": { "CONTROL": 1.08 },
+      "conditionalPenalty": { "classes": ["SPACE_MAKER"], "multiplier": 0.8, "waivedByTeammateClasses": ["TANK"], "label": "Aggro with no zone sitter" }
+    },
+    "Parallel Plays": {
+      "mode": "hotZone",
+      "note": "Split the roles: one peeking defender (Charlie / R-T / Willow / Emz), one wall-jumping attacker (Shade / Damian), one zone pincher.",
+      "favorBrawlers": { "CHARLIE": 1.06, "R-T": 1.06, "WILLOW": 1.06, "EMZ": 1.06, "SHADE": 1.06, "DAMIAN": 1.06 }
+    },
+    "Ring of Fire": {
+      "mode": "hotZone",
+      "note": "Raw-DPS meta — late assassins struggle here. Crow / Lumi / Griff / Finx lead.",
+      "penalizeClasses": { "SPACE_MAKER": 0.88 },
+      "favorBrawlers": { "CROW": 1.06, "LUMI": 1.06, "GRIFF": 1.06, "FINX": 1.06 }
+    },
+
+    "Belle's Rock": {
+      "mode": "knockout",
+      "note": "Rico dominates and Brock is his answer. You need at least one high-health pressure anchor.",
+      "requireArchetype": { "classes": ["TANK"], "multiplier": 0.88, "label": "No health anchor" },
+      "favorBrawlers": { "RICO": 1.07, "BROCK": 1.05 }
+    },
+    "Flaring Phoenix": {
+      "mode": "knockout",
+      "note": "Mid wants a sniper (Gene / Piper / Mandy), left a thrower or assassin (Squeak / Gray); Buster and Ollie play the poison gas well.",
+      "favorBrawlers": { "GENE": 1.06, "PIPER": 1.06, "MANDY": 1.06, "SQUEAK": 1.05, "GRAY": 1.05, "BUSTER": 1.05, "OLLIE": 1.05 }
+    },
+    "New Horizons": {
+      "mode": "knockout",
+      "note": "Back-wall camping decides this map — bring wall break or pierce, or your snipers get turtled out of the game.",
+      "requireTeamAbility": {
+        "abilities": ["WALL_BREAK", "PIERCE_DAMAGE"],
+        "penalizeClasses": ["SNIPER"],
+        "multiplier": 0.7,
+        "label": "No wall break for your sniper"
+      }
+    },
+    "Out in the Open": {
+      "mode": "knockout",
+      "note": "Break the back wall or you get spawn-trapped. Balance DPS with enough range that you aren't out-ranged.",
+      "wallBreakBonus": 1.1,
+      "favorBrawlers": { "BROCK": 1.05 }
+    }
+  },
+
+  "brawlerBias": {
+    "_comment": "Pro-source tier corrections (SpenLC, 2026-07-22) for balance changes the patch aggregate has not fully priced in yet. Deliberately small (<=1.08) and damped by dampWithRecentData once the brawler has a solid RECENT sample — a live star-power rework is exactly what the 14-day recency window in statisticalCoefficients already detects, so this prior only has to cover the lag before that sample fills. Keyed by mode; a bias entry with no matching mode key contributes nothing.",
+    "_defaults": { "dampWithRecentData": 0.5 },
+    "GRIFF": { "modes": { "brawlBall": 1.08, "hotZone": 1.08 }, "reason": "star power rework — game-breaking DPS" },
+    "SURGE": { "modes": { "bounty": 1.08, "gemGrab": 1.08 }, "reason": "wall-jump star power converts to guaranteed kills" },
+    "BROCK": { "modes": { "bounty": 1.06, "knockout": 1.06 }, "reason": "post-buff damage" }
+  },
+
+  "brawlerCounters": {
+    "_comment": "Named brawler-vs-brawler multipliers from pro sources. Sits ABOVE the class counter matrix (which would only see Control vs Support) and BELOW empirical vs_brawler data — when a pair has 100+ real games, PASS 2 has already priced the matchup and this prior is damped the same way every other prior is.",
+    "_defaults": { "dampWithMapData": 0.5 },
+    "PEARL": { "vs": ["MAX", "KIT", "MORTIS"], "multiplier": 1.25, "label": "Counters their dive" }
+  },
+
+  "firstPickCaution": {
+    "_comment": "Brawlers strong on the map but exploitable as an early reveal — a named pro caveat, distinct from the data-driven blind-pick safety in draftMeta.js. waivedIfBanned lifts the penalty once the specific answer is off the board.",
+    "BROCK": { "multiplier": 0.85, "appliesToPickSlots": [1, 2], "waivedIfBanned": ["MAX"], "label": "Risky first pick" }
+  },
+
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
     "logisticScale": 14,

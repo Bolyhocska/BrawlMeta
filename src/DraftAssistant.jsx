@@ -119,6 +119,9 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const [filterRole, setFilterRole] = useState("All");
   const [suggestions, setSuggestions] = useState([]);
   const [recommendedBans, setRecommendedBans] = useState([]);
+  // Pro map intel for the selected map — advisory text, never part of scoring.
+  const [mapNote, setMapNote] = useState(null);
+  const [banAdvice, setBanAdvice] = useState([]);
   const [mapStatsByKey, setMapStatsByKey] = useState({});
   const [quickInfo, setQuickInfo] = useState(null);
   const [animKey, setAnimKey] = useState(0);
@@ -234,19 +237,22 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     // The 5-pass Intelligence Engine: statistical truth → counter-intel →
     // preventative blocking → strategic/map filters → composition sanity.
     const myTeam = (pickerTeam === "blue" ? blueTeam : redTeam).filter(Boolean).map(b => b.name.toUpperCase());
-    const { suggestions: advice } = getDraftAdvice({
+    const { suggestions: advice, mapNote: note, banSuggestions: proBans } = getDraftAdvice({
       mode: selectedMap?.mode,
       mapName: selectedMap?.name,
       pickSlot: [...blueTeam, ...redTeam].filter(Boolean).length + 1,
       myTeam,
       enemyTeam: enemyKeys,
       unavailable: allUsedNames,
+      banned: [...blueBans, ...redBans].filter(Boolean).map(b => b.name.toUpperCase()),
       mapStats: stats,
       matchupStats,
       intelligence,
     });
 
     setSuggestions(advice);
+    setMapNote(note);
+    setBanAdvice(proBans);
     setAnimKey(k => k + 1);
   }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick, intelligence]);
 
@@ -580,6 +586,25 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
         {/* ── RIGHT: draft intel ── */}
         <div className="da-sidebar" style={{ ...PANEL, padding: 26, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 20 }}>
           <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ DRAFT INTEL</span>
+
+          {/* Pro map read — advisory context from the map-rules config. Never
+              part of scoring; the engine already applied the numeric half. */}
+          {mapNote && (
+            <div style={{
+              padding: "11px 13px", borderRadius: 16,
+              background: "rgba(255,206,122,.06)", border: "1px solid rgba(255,206,122,.18)",
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 5 }}>
+                MAP READ
+              </div>
+              <p style={{ fontSize: 12.5, color: "#c9c9d6", lineHeight: 1.55, margin: 0 }}>{mapNote}</p>
+              {phase === "ban" && banAdvice.length > 0 && (
+                <p style={{ fontSize: 12, color: "#ff8f8f", lineHeight: 1.5, margin: "7px 0 0" }}>
+                  Priority ban: <strong style={{ color: "#ffb3b3" }}>{banAdvice.map(formatBrawlerName).join(", ")}</strong>
+                </p>
+              )}
+            </div>
+          )}
 
           {phase === "setup" && (
             <p style={{ fontSize: 13.5, color: "#8b8b9c", lineHeight: 1.6 }}>

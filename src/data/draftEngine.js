@@ -5,6 +5,14 @@
 //     rates, popularity-trap / broken / inflation flags, per-class matchup WRs)
 //   • Bobby's draft framework          (draft_logic_config.json — counter
 //     triangle, active/passive tempo, thrower rules, 1-mid + 2-lane structure)
+//   • pro map intel                    (draft_logic_config.json mapRules /
+//     brawlerBias / brawlerCounters — SpenLC's per-map requirements and tier
+//     corrections)
+//
+// The two hand-authored layers are PRIORS, not verdicts: every multiplier they
+// contribute runs through dampPrior and shrinks toward 1.0 once the brawler has
+// real data on the map, because a measured win rate already encodes whatever the
+// prior was describing. Thin data → theory leads. Thick data → statistics lead.
 //
 // PASS 1  Statistical      — Bayesian-shrunk "true win rate" + coefficient flags
 // PASS 2  Counter-intel    — class matrix + empirical vs-class WRs vs revealed enemies
@@ -66,6 +74,33 @@ const pairEdge = (myKey, myClass, enemyKey, enemyClass) => {
 const synergyScore = (a, b) =>
   CONFIG.synergyPairs[`${a}+${b}`] ?? CONFIG.synergyPairs[`${b}+${a}`] ?? 0;
 
+// ── Map-keyed config lookup ──────────────────────────────────────────────────
+// The live API's spelling for a map drifts across rotations ("Belles Rock" vs
+// "Belle's Rock", "Out in the open" vs "Out in the Open"), so config tables
+// keyed by map name resolve case- and punctuation-insensitively instead of
+// forcing every variant to be duplicated in the JSON.
+const mapSlug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const lookupByMap = (table, name) => {
+  if (!table || !name) return null;
+  if (table[name]) return table[name];
+  const want = mapSlug(name);
+  for (const k of Object.keys(table)) {
+    if (k.startsWith("_")) continue;
+    if (mapSlug(k) === want) return table[k];
+  }
+  return null;
+};
+
+// ── Prior damping ────────────────────────────────────────────────────────────
+// Every hand-authored prior in this engine (map geometry, pro map rules, pro
+// tier corrections) is a stand-in for evidence we don't have yet. Once real
+// data exists for that brawler, the measured win rate already encodes whatever
+// the prior was describing, so the prior shrinks toward 1.0 rather than
+// stacking on top of it. `damp` = how much of the prior survives when the
+// evidence is present (0.5 → half-strength).
+const dampPrior = (mult, hasData, damp = 0.5) =>
+  mult === 1 || !hasData ? mult : 1 + (mult - 1) * damp;
+
 const fmtName = (key) =>
   norm(key).toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
@@ -94,6 +129,7 @@ export function getDraftAdvice({
   myTeam = [],          // my revealed picks (brawler keys)
   enemyTeam = [],       // enemy revealed picks (brawler keys)
   unavailable = [],     // picked or banned keys
+  banned = [],          // banned keys ONLY — some rules lift once a named answer is off the board
   mapStats = {},        // { KEY: {picks, wins} } for this map+bracket
   matchupStats = {},    // { KEY: {picks, wins} } empirical vs this exact enemy set
   intelligence = {},    // { KEY: brawler_intelligence row }
@@ -125,6 +161,30 @@ export function getDraftAdvice({
   const slotCounterW = ladder.counterWeightBySlot?.[String(pickSlot)] ?? 1;
   const myAbilities = new Set(myTeam.map(abilityOf).filter(Boolean));
   const enemyAbilities = new Set(enemyTeam.map(abilityOf).filter(Boolean));
+  const bannedSet = new Set(banned.filter(Boolean).map(norm));
+
+  // Pro map intel (SpenLC breakdowns) for THIS map: requirements, class biases,
+  // ban advice. Everything numeric here is a prior and gets damped once the
+  // candidate has a real sample on the map — see dampPrior.
+  const mapRule = lookupByMap(CONFIG.mapRules, mapName) || {};
+  const mapDamp = CONFIG.mapRules?._defaults?.dampWithMapData ?? 0.5;
+  // requireArchetype ramps in as the team runs out of slots to satisfy it: a
+  // flat whole-comp penalty would shift every candidate equally and change no
+  // ranking, so instead the candidates that DON'T satisfy the mandate get
+  // penalized, at full strength on the final pick and half strength before it.
+  const archetype = mapRule.requireArchetype;
+  const myPicksLeft = 3 - myTeam.length;
+  const archetypeMissing = archetype &&
+    !myClasses.some(c => archetype.classes.includes(c)) && myPicksLeft <= 2;
+  const archetypeMult = archetypeMissing
+    ? (myPicksLeft === 1 ? archetype.multiplier : 1 + (archetype.multiplier - 1) * 0.5)
+    : 1;
+  // requireTeamAbility: the handicap stays on until SOMEONE on the team brings
+  // the enabling ability — the candidate itself counts, which is what makes the
+  // wall breaker rise instead of merely making the sniper fall.
+  const rta = mapRule.requireTeamAbility;
+  const teamHasRequiredAbility = rta
+    ? [...myAbilities].some(a => rta.abilities.includes(a)) : true;
 
   // PASS 3 prep: which class is the biggest available threat to my comp
   // (including nothing picked yet → generic anti-meta threat is skipped).
@@ -184,6 +244,16 @@ export function getDraftAdvice({
     let score = mapTWR != null && globalTWR != null
       ? mapTWR * 0.65 + globalTWR * 0.35
       : (mapTWR ?? globalTWR ?? 50);
+
+    // Pro tier correction: a named balance change (star-power rework, buff) the
+    // patch aggregate hasn't caught up to yet. Damped once the RECENT window
+    // has a solid sample, because that window is the engine's own detector for
+    // exactly this — the prior only covers the lag before the data lands.
+    const bias = CONFIG.brawlerBias?.[key]?.modes?.[mode];
+    if (bias) {
+      const solidRecent = recentPicks >= (rec?.minRecentPicks ?? 300);
+      score *= dampPrior(bias, solidRecent, CONFIG.brawlerBias._defaults?.dampWithRecentData ?? 0.5);
+    }
 
     // Trending chips: recent WR diverging hard from the patch aggregate is
     // the signature of a balance change or meta shift mid-patch.
@@ -281,6 +351,20 @@ export function getDraftAdvice({
         }
       }
 
+      // Named counters (pro source): sits above the class matrix, which only
+      // sees e.g. Control-vs-Support and would miss that Pearl specifically
+      // eats dive. Damped when we already have map evidence for this brawler.
+      const named = CONFIG.brawlerCounters?.[key];
+      if (named) {
+        const hits = enemyTeam.filter(ek => named.vs.includes(norm(ek)));
+        if (hits.length) {
+          score *= dampPrior(named.multiplier, mapTWR != null,
+            CONFIG.brawlerCounters._defaults?.dampWithMapData ?? 0.5);
+          chips.unshift({ label: named.label, tone: "good" });
+          why.unshift(`hard answer to their ${hits.map(fmtName).join(" / ")}`);
+        }
+      }
+
       // Data: exact-matchup evidence on this map vs this enemy set
       const emp = matchupStats[key];
       if (emp && emp.picks >= 20) {
@@ -348,7 +432,7 @@ export function getDraftAdvice({
     // bush kits). Geometry is a PRIOR: dampened when the brawler has a real
     // map sample, since live map WR already encodes how the map treats them.
     const attrs = CONFIG.brawlerAttributes?.[key];
-    const mapProf = mapName ? CONFIG.mapProfiles?.[mapName] : null;
+    const mapProf = lookupByMap(CONFIG.mapProfiles, mapName);
     const aRules = CONFIG.attributeRules || {};
     if (mapProf && aRules.geometry) {
       // Dynamic map mutation: a friendly wall breaker (already drafted, or this
@@ -419,6 +503,65 @@ export function getDraftAdvice({
         myClasses.filter(c => us.classes.includes(c)).length >= us.maxUtility) {
       score *= us.scoreMultiplier;
       chips.push({ label: us.label, tone: "bad" });
+    }
+
+    // ── Pro map rules (SpenLC) · map-specific requirements and biases ────────
+    // Layered on top of the statistical core: each multiplier is a prior, so it
+    // runs through dampPrior and halves once this brawler has a real sample on
+    // the map. Ordered cheapest-signal-first so the chips read in priority order.
+    if (mapRule.mode) {
+      const dp = (m) => dampPrior(m, mapTWR != null, mapDamp);
+
+      // Class-level map bias (e.g. Layer Cake hates early snipers), with an
+      // exempt-slot escape so "no snipers except last pick" is expressible.
+      const pen = mapRule.penalizeClasses?.[cls];
+      if (pen && !(mapRule.penaltyExemptSlots || []).includes(pickSlot)) score *= dp(pen);
+      const fav = mapRule.favorClasses?.[cls];
+      if (fav) score *= dp(fav);
+
+      // Named brawlers the pro calls out on this map.
+      const favB = mapRule.favorBrawlers?.[key];
+      if (favB) score *= dp(favB);
+
+      // Wall break as a map-level win condition (open the lanes, deny the
+      // spawn trap) rather than the generic ability synergy handled above.
+      if (mapRule.wallBreakBonus && candAbility === "WALL_BREAK") {
+        score *= dp(mapRule.wallBreakBonus);
+        chips.push({ label: "Opens the map", tone: "good" });
+      }
+
+      // Team must field an enabling ability before a class is playable here.
+      // The candidate counts toward satisfying it, so the wall breaker rises
+      // rather than the sniper merely falling.
+      if (rta && !teamHasRequiredAbility && rta.penalizeClasses.includes(cls) &&
+          !rta.abilities.includes(candAbility)) {
+        score *= dp(rta.multiplier);
+        chips.push({ label: rta.label, tone: "bad" });
+      }
+
+      // Class penalty waived by a teammate class (aggro needs a zone sitter).
+      const cp = mapRule.conditionalPenalty;
+      if (cp && cp.classes.includes(cls) &&
+          !myClasses.some(c => cp.waivedByTeammateClasses.includes(c))) {
+        score *= dp(cp.multiplier);
+        chips.push({ label: cp.label, tone: "bad" });
+      }
+
+      // Comp mandate: penalize candidates that don't satisfy it, once the team
+      // is running out of picks to satisfy it with.
+      if (archetypeMissing && !archetype.classes.includes(cls)) {
+        score *= dp(archetypeMult);
+        chips.push({ label: archetype.label, tone: "bad" });
+      }
+    }
+
+    // Named first-pick caution: strong on the map but exploitable as an early
+    // reveal, unless the specific answer is already banned off the board.
+    const fpc = CONFIG.firstPickCaution?.[key];
+    if (fpc && fpc.appliesToPickSlots.includes(pickSlot) &&
+        !(fpc.waivedIfBanned || []).some(b => bannedSet.has(norm(b)))) {
+      score *= dampPrior(fpc.multiplier, mapTWR != null, mapDamp);
+      chips.push({ label: fpc.label, tone: "bad" });
     }
 
     // Interception: this is the enemy's dream next pick and it works for us too.
@@ -584,7 +727,15 @@ export function getDraftAdvice({
   }
 
   candidates.sort((a, b) => b.score - a.score);
-  return { suggestions: candidates.slice(0, topN), topThreatClass };
+  return {
+    suggestions: candidates.slice(0, topN),
+    topThreatClass,
+    // Advisory only — never scored. mapNote is the pro's one-line read on the
+    // map; banSuggestions are the picks they open by removing (filtered to
+    // whatever is still on the board).
+    mapNote: mapRule.note ?? null,
+    banSuggestions: (mapRule.banSuggestions || []).filter(b => !used.has(norm(b))),
+  };
 }
 
 // ── Draft-complete win split ─────────────────────────────────────────────────
