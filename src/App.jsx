@@ -724,7 +724,7 @@ function BrawlerGuideRoute() {
   return (
     <div style={styles.root}>
       <SiteHeader />
-      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} onBack={() => navigate("/app")} />
+      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} allBrawlers={brawlers} onBack={() => navigate("/app")} />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>
   );
