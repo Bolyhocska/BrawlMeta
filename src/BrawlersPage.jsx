@@ -6,6 +6,7 @@ import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
 import { getExtendedGuide } from "./data/extendedGuides";
+import { getBrawlerTips, getGeneralTier } from "./data/brawlerTips";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -465,16 +466,20 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, textAlign: "center", flexShrink: 0 }}>
+          {/* Headline rating is OUR tier classification, not an invented score.
+              Falls back to a provisional tier while generalTierList.json is
+              still empty — see getGeneralTier. */}
+          <TierBadge brawlerKey={brawler.key} />
           <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)" }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{brawler.winRate}%</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{brawler.winRate != null ? `${brawler.winRate}%` : "—"}</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
           </div>
           <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)" }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate != null ? `${brawler.pickRate}%` : "—"}</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
           </div>
-          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)", gridColumn: "1/-1" }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#ffb43d" }}>{brawler.picks}</div>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 18px", border: "1px solid rgba(255,255,255,.1)" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#ffb43d" }}>{(brawler.picks || 0).toLocaleString("en-US")}</div>
             <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>TOTAL PICKS</div>
           </div>
         </div>
@@ -543,12 +548,203 @@ export function BrawlerGuidePage({ brawler, byMode, byMap, onBack }) {
       {/* Extended guide — game plan, strengths/weaknesses, draft timing, loadout, video */}
       <ExtendedGuideSections brawler={brawler} />
 
+      {/* Hand-written play tips: aiming, gadget, star power, hypercharge.
+          Renders nothing for brawlers whose guide hasn't been written yet. */}
+      <PlayTipsSections brawler={brawler} />
+
+      {/* Media slots the owner fills in — clip embeds and screenshots */}
+      <MediaPlaceholderSection brawler={brawler} />
+
       {/* In-depth guide: tips, screenshots, video */}
       <div>
         <div style={{ fontSize: 10, fontWeight: 700, color: "#8a7fa6", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
           Community Additions
         </div>
         <GuideSection guide={brawler.guide} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared guide-page primitives ────────────────────────────────────────────
+const GUIDE_MONO = "'JetBrains Mono', monospace";
+const guidePanel = { borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", padding: 28 };
+
+function GuideSectionLabel({ children, color = "#c98bff" }) {
+  return <span style={{ fontFamily: GUIDE_MONO, fontSize: 11, letterSpacing: 2, color }}>{children}</span>;
+}
+
+// Headline rating on a guide page. Reads the owner's hand-curated general tier
+// list; while that's still unfilled every brawler shows the provisional tier
+// with a caption saying so, rather than a made-up numeric "meta score".
+function TierBadge({ brawlerKey }) {
+  const { tier, provisional } = getGeneralTier(brawlerKey);
+  const band = TIERS.find(t => t.id === tier) || TIERS[1];
+  return (
+    <div
+      title={provisional ? "Provisional — the general tier list is still being curated" : "BrawlMeta general tier list"}
+      style={{
+        gridColumn: "1/-1", background: band.bg, borderRadius: 14, padding: "10px 18px",
+        border: `1px solid ${band.border}`,
+      }}
+    >
+      <div style={{ fontSize: 26, fontWeight: 900, color: band.color, fontFamily: "'Baloo 2', sans-serif", lineHeight: 1.1 }}>
+        {band.id}
+        <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 4, opacity: .75 }}>TIER</span>
+      </div>
+      <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>
+        {provisional ? "PROVISIONAL RATING" : "BRAWLMETA TIER LIST"}
+      </div>
+    </div>
+  );
+}
+
+// A slot the owner drops a clip or screenshot into. Mirrors HomePage's
+// ImageSlot so unfilled media reads as intentional rather than broken.
+function MediaSlot({ label, hint, aspect = "56.25%" }) {
+  return (
+    <div style={{ borderRadius: 18, overflow: "hidden", border: "1px dashed rgba(179,107,255,.28)" }}>
+      <div style={{ position: "relative", paddingTop: aspect }}>
+        <div style={{
+          position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 6, padding: 16, textAlign: "center",
+          background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))",
+        }}>
+          <span style={{ fontFamily: GUIDE_MONO, fontSize: 11, letterSpacing: 1.4, color: "#a78bfa" }}>{label}</span>
+          {hint && <span style={{ fontSize: 11.5, color: "#5a5a6a", maxWidth: 320, lineHeight: 1.5 }}>{hint}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Play tips: aiming, loadout, hypercharge ─────────────────────────────────
+// Only renders for brawlers with a hand-written entry in brawlerTips.js — a
+// missing section is better than a generically-worded one.
+const LOADOUT_PICK = {
+  main:        { label: "RECOMMENDED", color: "#8ee6b0", border: "rgba(142,230,176,.35)", bg: "rgba(142,230,176,.08)" },
+  situational: { label: "SITUATIONAL", color: "#ffce7a", border: "rgba(255,206,122,.30)", bg: "rgba(255,206,122,.07)" },
+  skip:        { label: "SKIP",        color: "#ff8f8f", border: "rgba(255,143,143,.30)", bg: "rgba(255,143,143,.07)" },
+};
+
+function LoadoutCard({ item, img }) {
+  const tone = LOADOUT_PICK[item.pick] || LOADOUT_PICK.situational;
+  return (
+    <div style={{
+      display: "flex", gap: 14, padding: 16, borderRadius: 18,
+      background: tone.bg, border: `1px solid ${tone.border}`,
+    }}>
+      {img && (
+        <img src={img} alt="" loading="lazy" style={{ width: 44, height: 44, flexShrink: 0, objectFit: "contain" }} />
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+          <span style={{ fontSize: 14.5, fontWeight: 800, color: "#f4f4fa", fontFamily: "'Baloo 2', sans-serif" }}>{item.name}</span>
+          <span style={{
+            fontFamily: GUIDE_MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "2px 8px",
+            borderRadius: 999, color: tone.color, border: `1px solid ${tone.border}`,
+          }}>{tone.label}</span>
+        </div>
+        <p style={{ fontSize: 13.5, lineHeight: 1.65, color: "#b0b0c0" }}>{item.body}</p>
+      </div>
+    </div>
+  );
+}
+
+function PlayTipsSections({ brawler }) {
+  const tips = getBrawlerTips(brawler.key);
+  if (!tips) return null;
+
+  // Match each written loadout entry back to its official art, by name.
+  const artFor = (list, name) => (list || []).find(x => x.name === name)?.img || null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
+      {tips.aiming?.length > 0 && (
+        <div style={{ ...guidePanel, display: "flex", flexDirection: "column", gap: 16 }}>
+          <GuideSectionLabel color="#7cc4ff">AIMING &amp; MECHANICS</GuideSectionLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            {tips.aiming.map((t, i) => (
+              <div key={i}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#f4f4fa", marginBottom: 5, fontFamily: "'Baloo 2', sans-serif" }}>{t.title}</div>
+                <p style={{ fontSize: 13.5, lineHeight: 1.65, color: "#b0b0c0" }}>{t.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tips.starPowers?.length > 0 && (
+        <div style={{ ...guidePanel, display: "flex", flexDirection: "column", gap: 14 }}>
+          <GuideSectionLabel color="#ffb43d">STAR POWERS · WHICH TO RUN</GuideSectionLabel>
+          {tips.starPowers.map((sp, i) => (
+            <LoadoutCard key={i} item={sp} img={artFor(brawler.starPowers, sp.name)} />
+          ))}
+        </div>
+      )}
+
+      {tips.gadgets?.length > 0 && (
+        <div style={{ ...guidePanel, display: "flex", flexDirection: "column", gap: 14 }}>
+          <GuideSectionLabel>GADGETS · WHICH TO RUN</GuideSectionLabel>
+          {tips.gadgets.map((g, i) => (
+            <LoadoutCard key={i} item={g} img={artFor(brawler.gadgets, g.name)} />
+          ))}
+        </div>
+      )}
+
+      {tips.hypercharge && (
+        <div style={{
+          borderRadius: 24, padding: 28, display: "flex", flexDirection: "column", gap: 12,
+          background: "linear-gradient(160deg, rgba(124,196,255,.10), rgba(179,107,255,.08), rgba(20,14,32,.45))",
+          border: "1px solid rgba(179,107,255,.28)",
+        }}>
+          <GuideSectionLabel color="#9fd8ff">HYPERCHARGE</GuideSectionLabel>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#f4f4fa", fontFamily: "'Baloo 2', sans-serif" }}>{tips.hypercharge.name}</div>
+          <p style={{ fontSize: 14, lineHeight: 1.7, color: "#c9c9d6" }}>{tips.hypercharge.body}</p>
+          {tips.hypercharge.tips?.length > 0 && (
+            <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 7, marginTop: 2 }}>
+              {tips.hypercharge.tips.map((t, i) => (
+                <li key={i} style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b0b0c0" }}>{t}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {tips.matchupNotes?.length > 0 && (
+        <div style={{ ...guidePanel, display: "flex", flexDirection: "column", gap: 12 }}>
+          <GuideSectionLabel color="#8ee6b0">MATCHUPS AT A GLANCE</GuideSectionLabel>
+          {tips.matchupNotes.map((m, i) => {
+            const color = m.tone === "good" ? "#8ee6b0" : m.tone === "bad" ? "#ff8f8f" : "#9fd8ff";
+            return (
+              <div key={i} style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+                <span style={{ fontFamily: GUIDE_MONO, fontSize: 10, letterSpacing: 1.2, color, minWidth: 108 }}>
+                  {m.label.toUpperCase()}
+                </span>
+                <span style={{ flex: 1, minWidth: 200, fontSize: 13.5, lineHeight: 1.6, color: "#b0b0c0" }}>{m.body}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Owner-filled media slots ────────────────────────────────────────────────
+function MediaPlaceholderSection({ brawler }) {
+  return (
+    <div style={{ ...guidePanel, display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
+      <GuideSectionLabel color="#ffb43d">CLIPS &amp; SCREENSHOTS</GuideSectionLabel>
+      <p style={{ fontSize: 13, lineHeight: 1.6, color: "#8b8b9c" }}>
+        Slots for {brawler.name} footage. Drop a YouTube id into <code style={{ fontFamily: GUIDE_MONO, fontSize: 12, color: "#c98bff" }}>BRAWLER_VIDEOS</code> in{" "}
+        <code style={{ fontFamily: GUIDE_MONO, fontSize: 12, color: "#c98bff" }}>src/data/extendedGuides.js</code> to replace the embed above; image slots take files from{" "}
+        <code style={{ fontFamily: GUIDE_MONO, fontSize: 12, color: "#c98bff" }}>public/guides/</code>.
+      </p>
+      <MediaSlot label="▶ GAMEPLAY CLIP" hint={`Short ${brawler.name} clip — a clean aiming rep or a hypercharge round-winner`} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <MediaSlot label="◫ POSITIONING" hint="Screenshot of the ideal lane position" aspect="62%" />
+        <MediaSlot label="◫ WALL BREAK" hint="Before / after of the sightline to open" aspect="62%" />
       </div>
     </div>
   );
