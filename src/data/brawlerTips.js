@@ -131,7 +131,9 @@ const GUIDES = {
       "Rocket Fuel": { pick: "situational", body: "A single mega rocket that breaks walls on impact. Take it when the map's win condition is opening a specific wall fast — otherwise your super already does that, and Laces keeps you alive to use it." },
     },
 
-    // The four tabs the owner asked for: aiming, gadget, star power, hyper.
+    // The guide tabs. `videos` are owner-supplied clips in public/guides/brock/
+    // (see videoBase); each has its own short label. The Pro Gameplay tab
+    // collects the "Pro" clips (the dodging one lives in the counter section).
     guideTabs: [
       {
         key: "aim", label: "Aim",
@@ -142,13 +144,20 @@ const GUIDES = {
           { lead: "No falloff — hold your ground.", rest: "A point-blank rocket hits as hard as a max-range one. When an assassin closes, don't panic-retreat while shooting: plant, aim at their feet, and the splash usually wins the trade." },
           { lead: "Keep one in reserve.", rest: "Disengage with at least one rocket left. An empty Brock walking backwards is free; a Brock with one shot still zones the chaser." },
         ],
+        videos: [{ src: "aim-tips", label: "Leading your shots" }],
       },
       {
         key: "gadget", label: "Gadget",
         tips: [
-          { lead: "Laces is a defensive button.", rest: "It launches you up and damages what's underneath. The correct trigger is 'someone reached me', not 'I want to be over there' — spending it on movement leaves you naked for the next dive." },
+          { lead: "Rocket Laces is a defensive button.", rest: "It launches you up and damages what's underneath. The correct trigger is 'someone reached me', not 'I want to be over there' — spending it on movement leaves you naked for the next dive." },
           { lead: "Jump the telegraphed engage.", rest: "Against Mortis, Edgar or Kenji the dive is visible a beat before it lands. Laces at that moment turns their commitment into your free hit." },
           { lead: "Rocket Fuel is a map tool.", rest: "When you run it, spend it on the wall that protects their comfort position — not on chip damage. The sightline it opens lasts the rest of the round." },
+        ],
+        videos: [
+          { src: "gadget1-kill-confirm", label: "Gadget 1 · Rocket Laces — kill confirm" },
+          { src: "gadget1-shot-reset", label: "Gadget 1 · Rocket Laces — shot reset" },
+          { src: "gadget2-shot-reset", label: "Gadget 2 · Rocket Fuel — shot reset" },
+          { src: "gadget2-surprise", label: "Gadget 2 · Rocket Fuel — surprise trick" },
         ],
       },
       {
@@ -158,6 +167,7 @@ const GUIDES = {
           { lead: "Swap to More Rockets on fixed objectives.", rest: "Heist and Hot Zone give you a target that can't move. That's the only condition where super damage beats having another rocket in the chamber." },
           { lead: "Count their reload, not yours.", rest: "With four rockets you win reload wars against every three-ammo marksman. Track when their last shot goes out and take the window." },
         ],
+        videos: [{ src: "starpower2-trick", label: "Star Power 2 · More Rockets — trick" }],
       },
       {
         key: "hyper", label: "Hyper",
@@ -166,8 +176,26 @@ const GUIDES = {
           { lead: "It still breaks walls.", rest: "Opening a sightline and threatening lethal in the same button is what makes the hyper swing whole rounds, not just fights." },
           { lead: "Don't hold it forever.", rest: "An unspent hypercharge at the end of a round did nothing. If the perfect window never comes, take the second-best one." },
         ],
+        videos: [{ src: "hyper-tip", label: "Hypercharge timing" }],
+      },
+      {
+        key: "pro", label: "Pro Gameplay",
+        tips: [
+          { lead: "Watch the spacing.", rest: "Notice how the pros never let a target inside their comfort band — every rotation keeps a wall or their team between them and the flank." },
+          { lead: "Super economy.", rest: "The hypercharge windows below are earned by patient chip damage, not forced — the barrage only comes out when the objective forces the enemy to hold still." },
+        ],
+        videos: [
+          { src: "pro-aim", label: "Pro aim & positioning" },
+          { src: "pro-hyper", label: "Pro hypercharge" },
+          { src: "pro-hyper-2", label: "Pro hypercharge · #2" },
+        ],
       },
     ],
+
+    // Base path for the owner-supplied clips (transcoded to muted H.264 loops).
+    videoBase: "/guides/brock",
+    // The dodging clip belongs to the counter section, not the guide tabs.
+    counterVideo: { src: "pro-dodge", label: "Dodging Brock's rockets" },
 
     // Brock-specific notes on OUR ranked maps. Maps without a note fall back to
     // the live win rate alone rather than inventing advice.
@@ -182,12 +210,22 @@ const GUIDES = {
       "Hot Potato": "Defensive anchor map. You're the follow-up damage behind the frontline, not the frontline.",
     },
 
-    synergies: [
-      { key: "POCO", reason: "Passive area healing keeps Brock topped up while he holds max range, letting him contest a lane far longer than his health alone allows." },
-      { key: "BYRON", reason: "Heals and damage amp stack with Brock's range — safe chip turns into a two-person siege the enemy can't approach without eating both." },
-      { key: "GENE", reason: "Gene's pull drags enemies out of cover into the open, which is exactly the geometry Brock's splash wants." },
-      { key: "DAMIAN", reason: "A tank frontline means Brock is never the closest target — the single condition his whole kit depends on." },
-    ],
+    // Synergy DATA is live — the page reads Brock's per-teammate win rate from
+    // brawler_intelligence.with_brawler and ranks it. These are only the
+    // hand-written reasons for the teammates that tend to top that list; any
+    // teammate without one falls back to a class-derived line.
+    synergyReasons: {
+      BOLT: "A tank frontline that also slows and stuns — Bolt holds the aggro and the space so Brock is never the closest target, then locks down whoever tries to close in.",
+      SPROUT: "Two zoners stacking walls and chip. Sprout's hedge splits the map into lanes Brock already dominates, and neither of them wants to be approached.",
+      PEARL: "Pearl punishes exactly the divers that punish Brock — hand her the frontline duel and poke over the top while the assassin is busy.",
+      DAMIAN: "A tank frontline means Brock is never the closest target — the single condition his whole kit depends on.",
+      "8-BIT": "Two immobile long-range carries, but 8-Bit's damage booster turns Brock's already-safe poke into lethal chip from range nobody can close.",
+      SURGE: "Surge takes the flanks and snowballs while Brock owns the lane — his mobility covers the one thing Brock can't, the enemy who gets in.",
+      "STARR NOVA": "Starr Nova's zoning and Brock's wall-breaking split the map from both sides, leaving the enemy nowhere to hold.",
+      GENE: "Gene's pull drags enemies out of cover into the open, which is exactly the geometry Brock's splash wants.",
+      BYRON: "Heals and damage amp stack with Brock's range — safe chip turns into a two-person siege the enemy can't approach without eating both.",
+      POCO: "Passive area healing keeps Brock topped up while he holds max range, letting him contest a lane far longer than his health alone allows.",
+    },
 
     counterTips: [
       { lead: "Close the gap fast or not at all.", rest: "Brock has no answer at close range, but a slow walk-up gets punished every reload. Use a dash, jump or blast to skip his comfort band entirely — don't stroll into it." },

@@ -35,6 +35,18 @@ export const MODE_COLORS = {
   showdown:    "#92400E", soloShowdown: "#92400E", duoShowdown: "#B45309",
 };
 
+// Official game-mode icons (Brawlify CDN — same source as the brawler art).
+// Keyed by our camelCase mode ids; lowercase aliases mirror MODE_COLORS.
+const MODE_ICON = (id) => `https://cdn.brawlify.com/game-modes/regular/${id}.png`;
+export const MODE_ICONS = {
+  gemGrab: MODE_ICON("48000000"), gemgrab: MODE_ICON("48000000"),
+  brawlBall: MODE_ICON("48000005"), brawlball: MODE_ICON("48000005"),
+  knockout: MODE_ICON("48000020"),
+  bounty: MODE_ICON("48000003"),
+  heist: MODE_ICON("48000002"),
+  hotZone: MODE_ICON("48000017"), hotzone: MODE_ICON("48000017"),
+};
+
 export const formatMode = (mode) => {
   if (!mode) return "Unknown";
   const spaced = mode.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");

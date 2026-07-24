@@ -11,6 +11,8 @@
 import { useState, useMemo, useEffect } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
+import { supabase, MODE_ICONS } from "./appCore";
+import { draftClassOf, classLabel } from "./data/draftEngine";
 import {
   getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS,
 } from "./data/brawlerTips";
@@ -94,6 +96,59 @@ function ClipSlot({ label, videoId, title, tone = "#8ee6b0" }) {
   );
 }
 
+// Owner-supplied muted loop clip. Autoplays only while on screen (one guide tab
+// is visible at a time, so at most a handful ever play). Falls back to the
+// design's placeholder if the file 404s.
+function VideoSlot({ base, src, label, tone = "#8ee6b0" }) {
+  const [failed, setFailed] = useState(false);
+  const borderTone = tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {label && (
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: "#9a9aab" }}>{label}</span>
+      )}
+      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${borderTone}` }}>
+        {failed ? (
+          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 12, textAlign: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c" }}>CLIP UNAVAILABLE</span>
+          </div>
+        ) : (
+          <video
+            src={`${base}/${src}.mp4`} muted loop autoPlay playsInline preload="metadata"
+            onError={() => setFailed(true)}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        )}
+        <div style={{ position: "absolute", top: 8, right: 8, fontFamily: MONO, fontSize: 8.5, letterSpacing: 1, color: "#e9e9f2", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: tone }} />LOOP · MUTED
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Official mode logo. `size` is the icon box; falls back silently (no broken
+// image) if the CDN art doesn't resolve.
+function ModeIcon({ mode, size = 22, title }) {
+  const url = MODE_ICONS[mode];
+  if (!url) return null;
+  return <img src={url} alt={title || mode} title={title} width={size} height={size} style={{ objectFit: "contain", flexShrink: 0 }} />;
+}
+
+// The "General" build tab: three mode logos in a triangle, signalling "all
+// modes" rather than any single one.
+function GeneralTriangle({ size = 30 }) {
+  const s = size / 2.4;
+  const modes = ["gemGrab", "brawlBall", "knockout"];
+  return (
+    <span style={{ position: "relative", display: "inline-block", width: size, height: size, flexShrink: 0 }}>
+      <img src={MODE_ICONS[modes[0]]} alt="" width={s} height={s} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", objectFit: "contain" }} />
+      <img src={MODE_ICONS[modes[1]]} alt="" width={s} height={s} style={{ position: "absolute", bottom: 0, left: 0, objectFit: "contain" }} />
+      <img src={MODE_ICONS[modes[2]]} alt="" width={s} height={s} style={{ position: "absolute", bottom: 0, right: 0, objectFit: "contain" }} />
+    </span>
+  );
+}
+
 function NumberedTip({ n, lead, rest, tone = "violet" }) {
   const c = tone === "red"
     ? { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f" }
@@ -147,6 +202,32 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   const [modeIdx, setModeIdx] = useState(0);
   const [mapIdx, setMapIdx] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
+  const [liveSynergies, setLiveSynergies] = useState(null);
+
+  // Live teammate synergies: Brock's per-teammate win rate from
+  // brawler_intelligence.with_brawler (Masters+, current patch). Ranked by win
+  // rate, min 300 games so it's real, top 6. Reasons are hand-written where we
+  // have them (guide.synergyReasons), class-derived otherwise.
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("brawler_intelligence")
+      .select("with_brawler")
+      .eq("brawler", brawler.key)
+      .eq("patch", "68.250")
+      .eq("rank_bracket", "masters_legendary")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data?.with_brawler) return;
+        const rows = Object.entries(data.with_brawler)
+          .map(([key, v]) => ({ key: key.toUpperCase(), winRate: Math.round(Number(v.winRate) * 10) / 10, games: Number(v.picks) }))
+          .filter(r => r.games >= 300 && Number.isFinite(r.winRate))
+          .sort((a, b) => b.winRate - a.winRate)
+          .slice(0, 6);
+        setLiveSynergies(rows);
+      });
+    return () => { cancelled = true; };
+  }, [brawler.key]);
 
   // ── Live stats ─────────────────────────────────────────────────────────────
   const modeStats = useMemo(() => Object.entries(byMode).map(([mode, brawlers]) => {
@@ -238,7 +319,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
     "combat-stats": Boolean(guide?.combatStats),
     guide: Boolean(guide?.guideTabs?.length),
     "maps-modes": true,
-    synergies: Boolean(guide?.synergies?.length),
+    synergies: Boolean(guide && liveSynergies?.length),
     counter: Boolean(guide?.counterTips?.length),
   };
   const railSections = SECTIONS.filter(s => present[s.id]);
@@ -325,18 +406,30 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 2. Best build ── */}
         {guide && build && (
           <section id="best-build" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 6 }}>Best build</h2>
+            <h2 style={{ ...H2, marginBottom: 6 }}>Best {brawler.name} build</h2>
             <p style={{ fontSize: 13.5, color: "#8b8b9c", marginBottom: 18 }}>
               Recommended gadget, star power &amp; gear — {buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}
             </p>
             {buildTabs.length > 1 && (
               <div style={{ marginBottom: 18 }}>
                 <PillTrack>
-                  {buildTabs.map(t => (
-                    <Pill key={t} active={t === buildTab} onClick={() => setBuildTab(t)}>
-                      {t === "General" ? "General" : FORMAT_MODE(t)}
-                    </Pill>
-                  ))}
+                  {buildTabs.map(t => {
+                    const on = t === buildTab;
+                    return (
+                      <button key={t} onClick={() => setBuildTab(t)}
+                        title={t === "General" ? "General — all modes" : FORMAT_MODE(t)}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px",
+                          borderRadius: 999, border: "none", cursor: "pointer",
+                          background: on ? "#b36bff" : "transparent",
+                          fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: on ? "#0a0a0f" : "#b7b7c6",
+                          transition: "background .15s, color .15s",
+                        }}>
+                        {t === "General" ? <GeneralTriangle size={26} /> : <ModeIcon mode={t} size={22} title={FORMAT_MODE(t)} />}
+                        {t === "General" && <span>General</span>}
+                      </button>
+                    );
+                  })}
                 </PillTrack>
               </div>
             )}
@@ -364,7 +457,6 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                       </div>
                     </div>
                     <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "#9a9aab" }}>{note?.body || item.desc}</p>
-                    <ClipSlot label={`▶ ${item.name.toUpperCase()} CLIP`} />
                   </div>
                 );
               })}
@@ -411,7 +503,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {guide?.guideTabs?.length > 0 && (
           <Accordion
             id="guide" title="Guide"
-            subtitle="Aim, gadget, star power &amp; hypercharge tricks with video breakdowns"
+            subtitle="Aim, gadget, star power, hypercharge &amp; pro gameplay — with video breakdowns"
             open={guideOpen} onToggle={() => setGuideOpen(o => !o)}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -429,11 +521,13 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                     <NumberedTip key={i} n={i + 1} lead={t.lead} rest={t.rest} />
                   ))}
                 </div>
-                <ClipSlot
-                  label={`▶ ${guide.guideTabs[guideTab].label.toUpperCase()} BREAKDOWN`}
-                  videoId={guideTab === 0 ? ext.video?.id : null}
-                  title={ext.video?.title}
-                />
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {(guide.guideTabs[guideTab].videos || []).length > 0
+                    ? guide.guideTabs[guideTab].videos.map(v => (
+                        <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} />
+                      ))
+                    : <ClipSlot label={`▶ ${guide.guideTabs[guideTab].label.toUpperCase()} BREAKDOWN`} />}
+                </div>
               </div>
             </div>
           </Accordion>
@@ -450,11 +544,23 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <PillTrack>
-                {modeStats.map((m, i) => (
-                  <Pill key={m.mode} active={i === modeIdx} onClick={() => { setModeIdx(i); setMapIdx(0); }}>
-                    {FORMAT_MODE(m.mode)} · {m.winRate}%
-                  </Pill>
-                ))}
+                {modeStats.map((m, i) => {
+                  const on = i === modeIdx;
+                  return (
+                    <button key={m.mode} onClick={() => { setModeIdx(i); setMapIdx(0); }}
+                      title={FORMAT_MODE(m.mode)}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px",
+                        borderRadius: 999, border: "none", cursor: "pointer",
+                        background: on ? "#b36bff" : "transparent",
+                        fontFamily: MONO, fontWeight: 700, fontSize: 13, color: on ? "#0a0a0f" : "#b7b7c6",
+                        transition: "background .15s, color .15s",
+                      }}>
+                      <ModeIcon mode={m.mode} size={22} title={FORMAT_MODE(m.mode)} />
+                      {m.winRate}%
+                    </button>
+                  );
+                })}
               </PillTrack>
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -502,23 +608,32 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           )}
         </Accordion>
 
-        {/* ── 6. Synergies ── */}
-        {guide?.synergies?.length > 0 && (
+        {/* ── 6. Synergies (live from with_brawler) ── */}
+        {guide && liveSynergies?.length > 0 && (
           <section id="synergies" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 18 }}>Synergies</h2>
+            <h2 style={{ ...H2, marginBottom: 6 }}>Synergies</h2>
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", marginBottom: 18 }}>
+              Teammates {brawler.name} wins with most — live Masters+ pair data, min 300 games together
+            </p>
             <div style={{ ...CARD, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
               <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: "#8ee6b0" }}>GOOD WITH</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
-                {guide.synergies.map(s => {
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
+                {liveSynergies.map(s => {
                   const meta = BRAWLER_META[s.key] || {};
+                  const reason = guide.synergyReasons?.[s.key]
+                    || `${classLabel(draftClassOf(s.key))} that pairs cleanly with ${brawler.name}'s range — a top win-rate teammate in the data.`;
                   return (
                     <div key={s.key} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 16, background: "rgba(255,255,255,.03)" }}>
                       <div style={{ width: 48, height: 48, borderRadius: 14, overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14" }}>
                         {meta.imageUrl && <img src={meta.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
                       </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: "#f4f4fa" }}>{fmtName(s.key)}</div>
-                        <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{s.reason}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 700, fontSize: 15, color: "#f4f4fa" }}>{fmtName(s.key)}</span>
+                          <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#8ee6b0" }}>{s.winRate}%</span>
+                          <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
+                        </div>
+                        <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{reason}</div>
                       </div>
                     </div>
                   );
@@ -541,7 +656,9 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   <NumberedTip key={i} n={i + 1} lead={t.lead} rest={t.rest} tone="red" />
                 ))}
               </div>
-              <ClipSlot label={`▶ COUNTERING ${brawler.name.toUpperCase()}`} tone="#ff8f8f" />
+              {guide.counterVideo
+                ? <VideoSlot base={guide.videoBase} src={guide.counterVideo.src} label={guide.counterVideo.label} tone="#ff8f8f" />
+                : <ClipSlot label={`▶ COUNTERING ${brawler.name.toUpperCase()}`} tone="#ff8f8f" />}
             </div>
           </section>
         )}
