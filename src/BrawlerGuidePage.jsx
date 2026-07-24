@@ -23,7 +23,7 @@ const MONO = "'JetBrains Mono', monospace";
 
 const CARD = { borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" };
 const H2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,3vw,30px)", color: "#f4f4fa", letterSpacing: "-.3px" };
-const SUB = { fontSize: 13.5, color: "#8b8b9c", marginTop: 4 };
+const SUB = { fontFamily: BODY, fontSize: 13.5, color: "#8b8b9c", marginTop: 4 };
 
 const FORMAT_MODE = (m) => (m || "").replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
 const fmtName = (key) => (key || "").toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -149,23 +149,6 @@ function GeneralTriangle({ size = 30 }) {
       <img src={MODE_ICONS[modes[1]]} alt="" width={s} height={s} style={{ position: "absolute", bottom: 0, left: 0, objectFit: "contain" }} />
       <img src={MODE_ICONS[modes[2]]} alt="" width={s} height={s} style={{ position: "absolute", bottom: 0, right: 0, objectFit: "contain" }} />
     </span>
-  );
-}
-
-// Guide subtitle restyled from a plain comma sentence into a row of small
-// labelled chips (one per tab) plus a "with video breakdowns" note.
-function GuideSubtitle({ tabs }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-      {tabs.map(t => (
-        <span key={t.key} style={{
-          fontFamily: MONO, fontSize: 10.5, letterSpacing: .6, color: "#c9c9d6",
-          padding: "4px 11px", borderRadius: 999,
-          background: "rgba(179,107,255,.10)", border: "1px solid rgba(179,107,255,.22)",
-        }}>{t.label}</span>
-      ))}
-      <span style={{ fontSize: 12.5, color: "#6f7180", fontStyle: "italic" }}>with video breakdowns</span>
-    </div>
   );
 }
 
@@ -536,7 +519,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {guide?.guideTabs?.length > 0 && (
           <Accordion
             id="guide" title={`${brawler.name} Guide`}
-            subtitle={<GuideSubtitle tabs={guide.guideTabs} />}
+            subtitle="Aim, gadget, star power, hypercharge & pro gameplay — with video breakdowns"
             open={guideOpen} onToggle={() => setGuideOpen(o => !o)}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
