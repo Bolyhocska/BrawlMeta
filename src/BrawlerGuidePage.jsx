@@ -22,8 +22,15 @@ const BODY = "'Chakra Petch', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
 
 const CARD = { borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" };
-const H2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,3vw,30px)", color: "#f4f4fa", letterSpacing: "-.3px" };
-const SUB = { fontFamily: BODY, fontSize: 13.5, color: "#8b8b9c", marginTop: 4 };
+const H2_SIZE = "clamp(24px,3vw,30px)";
+// margin:0 matters — the app resets html/body margins but not headings, so an
+// h2 otherwise carries ~25px of default top margin (which threw the chevron
+// alignment off and quietly padded every section header).
+const H2 = { fontFamily: DISPLAY, fontSize: H2_SIZE, lineHeight: 1.2, color: "#f4f4fa", letterSpacing: "-.3px", margin: 0 };
+// Height of the H2's line box — used to centre the collapse chevron on the
+// TITLE rather than on the whole header block (which includes the subtitle).
+const H2_LINE = `calc(${H2_SIZE} * 1.2)`;
+const SUB = { fontFamily: BODY, fontSize: 13.5, color: "#8b8b9c", margin: "4px 0 0" };
 
 const FORMAT_MODE = (m) => (m || "").replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
 const fmtName = (key) => (key || "").toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -161,6 +168,29 @@ function GeneralTriangle({ size = 30 }) {
   );
 }
 
+// Collapse affordance. An inline SVG rather than a "▾" glyph so it renders
+// identically everywhere instead of depending on font fallback, drawn with
+// rounded caps and sat in a rounded-999px chip to match the design system's
+// "everything rounded, nothing sharp" shape language.
+function Chevron({ open, size = 24 }) {
+  return (
+    <span aria-hidden="true" style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      width: size + 14, height: size + 14, borderRadius: 999,
+      background: open ? "rgba(179,107,255,.12)" : "rgba(255,255,255,.05)",
+      border: `1px solid ${open ? "rgba(179,107,255,.28)" : "rgba(255,255,255,.10)"}`,
+      transform: `rotate(${open ? 180 : 0}deg)`,
+      transition: "transform .22s ease, background .18s, border-color .18s",
+    }}>
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke={open ? "#c98bff" : "#9a9aab"} strokeWidth="2.6"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9.5l6 6 6-6" />
+      </svg>
+    </span>
+  );
+}
+
 function NumberedTip({ n, lead, rest, tone = "violet" }) {
   const c = tone === "red"
     ? { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f" }
@@ -208,7 +238,9 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
         role="button" tabIndex={0} aria-expanded={open} aria-controls={`${id}-content`}
         onClick={toggle} onKeyDown={onKeyDown}
         style={{
-          display: "flex", alignItems: card ? "center" : "flex-end", justifyContent: "space-between",
+          // flex-start so the chevron can be pinned to the title's line box
+          // rather than floating to the middle of title + subtitle.
+          display: "flex", alignItems: "flex-start", justifyContent: "space-between",
           gap: 16, padding: headerPad, cursor: "pointer", textAlign: "left",
           marginBottom: card ? 0 : (open ? 18 : 0), transition: "margin-bottom .18s",
         }}
@@ -219,12 +251,13 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
             ? <p style={SUB}>{subtitle}</p>
             : <div style={{ marginTop: 8 }}>{subtitle}</div>)}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexShrink: 0 }}>
           {right && <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>{right}</div>}
-          <span aria-hidden="true" style={{
-            display: "inline-block", fontSize: 18, color: "#8b8b9c",
-            transform: `rotate(${open ? 180 : 0}deg)`, transition: "transform .18s",
-          }}>▾</span>
+          {/* Fixed-height box equal to the H2 line, so the chevron centres on
+              the title no matter how tall the subtitle or `right` slot is. */}
+          <span style={{ display: "flex", alignItems: "center", height: H2_LINE }}>
+            <Chevron open={open} />
+          </span>
         </div>
       </div>
       {open && (
