@@ -179,23 +179,59 @@ function NumberedTip({ n, lead, rest, tone = "violet" }) {
   );
 }
 
-function Accordion({ id, title, subtitle, open, onToggle, children }) {
+// Collapsible section. Every content section on the page uses this so the
+// chevron affordance is consistent, and because collapsing UNMOUNTS the section
+// — which matters here: Guide and Maps & Modes can each hold five autoplaying
+// muted loops, so closing them genuinely stops that decode work.
+//
+// Two variants, mirroring the design handoff's two section shapes:
+//   "card" — heading lives inside a bordered panel (Combat Stats, Guide, Maps)
+//   "bare" — heading sits above unwrapped content (Best Build, Match-ups, …)
+// `right` is an optional header slot (e.g. the power-level select) that must
+// not toggle the section when clicked.
+function Section({ id, title, subtitle, right, open, onToggle, variant = "card", children }) {
+  const card = variant === "card";
+  const headerPad = card ? 26 : 0;
+
+  const toggle = () => onToggle();
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+  };
+
   return (
-    <section id={id} style={{ ...CARD, scrollMarginTop: 110, overflow: "hidden" }}>
-      <button onClick={onToggle} aria-expanded={open} style={{
-        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 16, padding: 26, background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
-      }}>
-        <div>
+    <section id={id} style={card
+      ? { ...CARD, scrollMarginTop: 110, overflow: "hidden" }
+      : { scrollMarginTop: 110 }}>
+      {/* A div rather than a <button> so an interactive `right` slot can nest
+          legally; keyboard semantics are restored explicitly. */}
+      <div
+        role="button" tabIndex={0} aria-expanded={open} aria-controls={`${id}-content`}
+        onClick={toggle} onKeyDown={onKeyDown}
+        style={{
+          display: "flex", alignItems: card ? "center" : "flex-end", justifyContent: "space-between",
+          gap: 16, padding: headerPad, cursor: "pointer", textAlign: "left",
+          marginBottom: card ? 0 : (open ? 18 : 0), transition: "margin-bottom .18s",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
           <h2 style={H2}>{title}</h2>
-          {typeof subtitle === "string" ? <p style={SUB}>{subtitle}</p> : <div style={{ marginTop: 8 }}>{subtitle}</div>}
+          {subtitle && (typeof subtitle === "string"
+            ? <p style={SUB}>{subtitle}</p>
+            : <div style={{ marginTop: 8 }}>{subtitle}</div>)}
         </div>
-        <span style={{
-          display: "inline-block", flexShrink: 0, fontSize: 18, color: "#8b8b9c",
-          transform: `rotate(${open ? 180 : 0}deg)`, transition: "transform .18s",
-        }}>▾</span>
-      </button>
-      {open && <div style={{ padding: "0 26px 26px" }}>{children}</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+          {right && <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>{right}</div>}
+          <span aria-hidden="true" style={{
+            display: "inline-block", fontSize: 18, color: "#8b8b9c",
+            transform: `rotate(${open ? 180 : 0}deg)`, transition: "transform .18s",
+          }}>▾</span>
+        </div>
+      </div>
+      {open && (
+        <div id={`${id}-content`} style={card ? { padding: "0 26px 26px" } : undefined}>
+          {children}
+        </div>
+      )}
     </section>
   );
 }
@@ -209,8 +245,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   const [power, setPower] = useState(11);
   const [buildTab, setBuildTab] = useState("General");
   const [guideTab, setGuideTab] = useState(0);
-  const [guideOpen, setGuideOpen] = useState(true);
-  const [mapsOpen, setMapsOpen] = useState(true);
+  // Every content section is collapsible, all open by default — nothing is
+  // hidden from someone landing here for the first time; collapsing is a tool
+  // for readers who already know what they came for.
+  const [openSections, setOpenSections] = useState({
+    "best-build": true, "combat-stats": true, guide: true,
+    "maps-modes": true, matchups: true, counter: true,
+  });
+  const isOpen = (id) => openSections[id] !== false;
+  const toggleSection = (id) => setOpenSections(s => ({ ...s, [id]: s[id] === false }));
   const [modeIdx, setModeIdx] = useState(0);
   const [mapIdx, setMapIdx] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
@@ -308,7 +351,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [guideOpen, mapsOpen]);
+  }, [openSections]);
 
   // ── Build tab wiring ───────────────────────────────────────────────────────
   const buildTabs = useMemo(() => {
@@ -439,11 +482,12 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
 
         {/* ── 2. Best build ── */}
         {guide && build && (
-          <section id="best-build" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 6 }}>Best {brawler.name} build</h2>
-            <p style={{ fontSize: 13.5, color: "#8b8b9c", marginBottom: 18 }}>
-              Recommended gadget, star power &amp; gear — {buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}
-            </p>
+          <Section
+            id="best-build" variant="bare"
+            title={`Best ${brawler.name} build`}
+            subtitle={`Recommended gadget, star power & gear — ${buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}`}
+            open={isOpen("best-build")} onToggle={() => toggleSection("best-build")}
+          >
             {buildTabs.length > 1 && (
               <div style={{ marginBottom: 18 }}>
                 <PillTrack>
@@ -495,19 +539,17 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 );
               })}
             </div>
-          </section>
+          </Section>
         )}
 
         {/* ── 3. Combat stats ── */}
         {guide?.combatStats && (
-          <section id="combat-stats" style={{ ...CARD, scrollMarginTop: 110, padding: 26 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: 18 }}>
-              <div>
-                <h2 style={H2}>Combat stats</h2>
-                <p style={SUB}>
-                  {power === 11 ? "Power 11 — the level ranked is played at" : `Power ${power} — scaled from the Power 11 values`}
-                </p>
-              </div>
+          <Section
+            id="combat-stats" variant="card"
+            title="Combat stats"
+            subtitle={power === 11 ? "Power 11 — the level ranked is played at" : `Power ${power} — scaled from the Power 11 values`}
+            open={isOpen("combat-stats")} onToggle={() => toggleSection("combat-stats")}
+            right={
               <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                 <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8ee6b0" }}>POWER LEVEL</span>
                 <select value={power} onChange={e => setPower(Number(e.target.value))} style={{
@@ -518,7 +560,8 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   {POWER_LEVELS.map(p => <option key={p} value={p} style={{ background: "#12121a" }}>Power {p}</option>)}
                 </select>
               </div>
-            </div>
+            }
+          >
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
               {guide.combatStats.map((c, i) => (
                 <div key={i} style={{ padding: "16px 18px", borderRadius: 16, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
@@ -530,15 +573,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 </div>
               ))}
             </div>
-          </section>
+          </Section>
         )}
 
         {/* ── 4. Guide (aim / gadget / star power / hyper) ── */}
         {guide?.guideTabs?.length > 0 && (
-          <Accordion
-            id="guide" title={`${brawler.name} Guide`}
+          <Section
+            id="guide" variant="card" title={`${brawler.name} Guide`}
             subtitle="Aim, gadget, star power, hypercharge & pro gameplay — with video breakdowns"
-            open={guideOpen} onToggle={() => setGuideOpen(o => !o)}
+            open={isOpen("guide")} onToggle={() => toggleSection("guide")}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <PillTrack>
@@ -564,14 +607,14 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 </div>
               </div>
             </div>
-          </Accordion>
+          </Section>
         )}
 
         {/* ── 5. Maps & modes (live data) ── */}
-        <Accordion
-          id="maps-modes" title="Maps &amp; modes"
-          subtitle="Ranked map pool &amp; win rates by mode — live Masters+ data"
-          open={mapsOpen} onToggle={() => setMapsOpen(o => !o)}
+        <Section
+          id="maps-modes" variant="card" title="Maps & modes"
+          subtitle="Ranked map pool & win rates by mode — live Masters+ data"
+          open={isOpen("maps-modes")} onToggle={() => toggleSection("maps-modes")}
         >
           {modeKeys.length === 0 ? (
             <p style={{ fontSize: 13.5, color: "#8b8b9c" }}>Not enough ranked data for {brawler.name} yet.</p>
@@ -658,15 +701,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
               )}
             </div>
           )}
-        </Accordion>
+        </Section>
 
         {/* ── 6. Match-ups (live from with_brawler + vs_brawler) ── */}
         {guide && (liveSynergies?.length > 0 || liveCounters?.length > 0) && (
-          <section id="matchups" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 6 }}>Match-ups</h2>
-            <p style={{ fontSize: 13.5, color: "#8b8b9c", marginBottom: 18 }}>
-              Live Masters+ pair data — min 300 games, best teammates and worst opponents
-            </p>
+          <Section
+            id="matchups" variant="bare" title="Match-ups"
+            subtitle="Live Masters+ pair data — min 300 games, best teammates and worst opponents"
+            open={isOpen("matchups")} onToggle={() => toggleSection("matchups")}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {liveSynergies?.length > 0 && (
                 <MatchupPanel
@@ -685,13 +728,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 />
               )}
             </div>
-          </section>
+          </Section>
         )}
 
         {/* ── 7. How to counter ── */}
         {guide?.counterTips?.length > 0 && (
-          <section id="counter" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 18 }}>How to counter {brawler.name}</h2>
+          <Section
+            id="counter" variant="bare" title={`How to counter ${brawler.name}`}
+            open={isOpen("counter")} onToggle={() => toggleSection("counter")}
+          >
             <div className="guide-split" style={{
               borderRadius: 24, background: "rgba(255,122,122,.04)", border: "1px solid rgba(255,122,122,.18)",
               padding: 26, display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 20, alignItems: "start",
@@ -709,7 +754,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   </div>
                 : <ClipSlot label={`▶ COUNTERING ${brawler.name.toUpperCase()}`} tone="#ff8f8f" />}
             </div>
-          </section>
+          </Section>
         )}
 
         {/* Generated fallback for brawlers with no hand-written guide yet */}
