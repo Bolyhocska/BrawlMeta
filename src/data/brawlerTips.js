@@ -238,6 +238,26 @@ const GUIDES = {
       "Out in the Open": [
         { src: "map-out-in-the-open-wall-break", label: "Out in the Open — Wall Break" },
       ],
+      // Owner-specified order: wall break, then max range, then positioning.
+      "Safe Zone": [
+        { src: "map-safe-zone-wall-break", label: "Safe Zone — Wall Break" },
+        { src: "map-safe-zone-max-range", label: "Star Power 1 · Rocket No. 4 — Safe Max Range" },
+        { src: "map-safe-zone-positioning", label: "Safe Zone — Positioning" },
+      ],
+      "Hot Potato": [
+        { src: "map-hot-potato-best-wall-break", label: "Hot Potato — Best Wall Break" },
+        { src: "map-hot-potato-usual-wall-break", label: "Hot Potato — Usual Wall Break" },
+        { src: "map-hot-potato-enemy-wall-break", label: "Hot Potato — Enemy Wall Break" },
+      ],
+      "Kaboom Canyon": [
+        { src: "map-kaboom-canyon-wall-break", label: "Kaboom Canyon — Wall Break" },
+      ],
+      "Layer Cake": [
+        { src: "map-layer-cake-wall-break", label: "Layer Cake — Wall Break" },
+      ],
+      "Ring of Fire": [
+        { src: "map-ring-of-fire-wall-break", label: "Ring of Fire — Wall Break" },
+      ],
     },
     modeVideos: {
       brawlBall: [

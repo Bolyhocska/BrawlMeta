@@ -28,9 +28,18 @@ const SUB = { fontFamily: BODY, fontSize: 13.5, color: "#8b8b9c", marginTop: 4 }
 const FORMAT_MODE = (m) => (m || "").replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
 const fmtName = (key) => (key || "").toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 const wrColor = (wr) => (wr >= 53 ? "#8ee6b0" : wr >= 49 ? "#ffce7a" : "#ff8f8f");
-// Capitalize the first letter of each space-separated word, leaving
-// separators (·, —, #2) and apostrophes intact: "kill confirm" → "Kill Confirm".
-const titleCase = (s) => (s || "").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+// Title-case a video label: capitalize each word, but leave short connecting
+// words lowercase unless they lead a phrase — otherwise proper map names come
+// out wrong ("Ring Of Fire", "Out In The Open"). Separators (·, —, #2) and
+// apostrophes pass through untouched.
+const MINOR_WORDS = new Set(["a", "an", "and", "as", "at", "by", "for", "in", "of", "on", "or", "the", "to", "vs", "w", "with"]);
+const titleCase = (s) => (s || "").split(" ").map((w, i, arr) => {
+  const lower = w.toLowerCase();
+  // Lead word of the string, or the word right after a — / · separator, always caps.
+  const leadsPhrase = i === 0 || ["—", "·", "-"].includes(arr[i - 1]);
+  if (!leadsPhrase && MINOR_WORDS.has(lower)) return lower;
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}).join(" ");
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
