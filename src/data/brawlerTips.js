@@ -155,6 +155,7 @@ const GUIDES = {
         ],
         videos: [
           { src: "gadget1-kill-confirm", label: "Gadget 1 · Rocket Laces — kill confirm" },
+          { src: "gadget1-full-health-kill", label: "Gadget 1 · Rocket Laces — full health kill" },
           { src: "gadget1-shot-reset", label: "Gadget 1 · Rocket Laces — shot reset" },
           { src: "gadget2-shot-reset", label: "Gadget 2 · Rocket Fuel — shot reset" },
           { src: "gadget2-surprise", label: "Gadget 2 · Rocket Fuel — Engagement trick" },
@@ -241,16 +242,23 @@ const GUIDES = {
       // Owner-specified order: wall break, then max range, then positioning.
       "Safe Zone": [
         { src: "map-safe-zone-wall-break", label: "Safe Zone — Wall Break" },
-        { src: "map-safe-zone-max-range", label: "Star Power 1 · Rocket No. 4 — Safe Max Range" },
+        { src: "map-safe-zone-max-range", label: "Safe Zone — Max Safe Range" },
         { src: "map-safe-zone-positioning", label: "Safe Zone — Positioning" },
       ],
       "Hot Potato": [
         { src: "map-hot-potato-best-wall-break", label: "Hot Potato — Best Wall Break" },
         { src: "map-hot-potato-usual-wall-break", label: "Hot Potato — Usual Wall Break" },
         { src: "map-hot-potato-enemy-wall-break", label: "Hot Potato — Enemy Wall Break" },
+        { src: "map-hot-potato-max-safe-range-burn", label: "Hot Potato — Max Safe Range (With Burn)" },
+        { src: "map-hot-potato-max-safe-range-no-burn", label: "Hot Potato — Max Safe Range (Without Burn)" },
       ],
       "Kaboom Canyon": [
         { src: "map-kaboom-canyon-wall-break", label: "Kaboom Canyon — Wall Break" },
+        { src: "map-kaboom-canyon-max-safe-range-burn", label: "Kaboom Canyon — Max Safe Range (With Burn)" },
+      ],
+      "Bridge Too Far": [
+        { src: "map-bridge-too-far-max-safe-range-burn", label: "Bridge Too Far — Max Safe Range (With Burn)" },
+        { src: "map-bridge-too-far-max-safe-range-no-burn", label: "Bridge Too Far — Max Safe Range (Without Burn)" },
       ],
       "Layer Cake": [
         { src: "map-layer-cake-wall-break", label: "Layer Cake — Wall Break" },
