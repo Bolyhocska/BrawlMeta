@@ -52,7 +52,16 @@
 
 html, body {
   margin: 0;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) prevents horizontal scroll WITHOUT establishing a
+     scroll container — `hidden` on one axis forces the other to compute as
+     `auto`, which turns <body> into a scroller and breaks `position: sticky`
+     for descendants (e.g. the brawler-guide side rail). */
+  overflow-x: clip;
+}
+
+/* Anchor jumps (side-rail links) glide instead of teleporting. */
+html {
+  scroll-behavior: smooth;
 }
 
 #root {

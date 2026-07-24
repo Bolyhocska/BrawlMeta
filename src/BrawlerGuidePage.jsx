@@ -28,6 +28,9 @@ const SUB = { fontSize: 13.5, color: "#8b8b9c", marginTop: 4 };
 const FORMAT_MODE = (m) => (m || "").replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
 const fmtName = (key) => (key || "").toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 const wrColor = (wr) => (wr >= 53 ? "#8ee6b0" : wr >= 49 ? "#ffce7a" : "#ff8f8f");
+// Capitalize the first letter of each space-separated word, leaving
+// separators (·, —, #2) and apostrophes intact: "kill confirm" → "Kill Confirm".
+const titleCase = (s) => (s || "").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -35,7 +38,7 @@ const SECTIONS = [
   { id: "combat-stats", label: "Combat Stats" },
   { id: "guide", label: "Guide" },
   { id: "maps-modes", label: "Maps & Modes" },
-  { id: "synergies", label: "Synergies" },
+  { id: "matchups", label: "Match-ups" },
   { id: "counter", label: "How to Counter" },
 ];
 
@@ -105,7 +108,7 @@ function VideoSlot({ base, src, label, tone = "#8ee6b0" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {label && (
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: "#9a9aab" }}>{label}</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: "#9a9aab" }}>{titleCase(label)}</span>
       )}
       <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${borderTone}` }}>
         {failed ? (
@@ -149,6 +152,23 @@ function GeneralTriangle({ size = 30 }) {
   );
 }
 
+// Guide subtitle restyled from a plain comma sentence into a row of small
+// labelled chips (one per tab) plus a "with video breakdowns" note.
+function GuideSubtitle({ tabs }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      {tabs.map(t => (
+        <span key={t.key} style={{
+          fontFamily: MONO, fontSize: 10.5, letterSpacing: .6, color: "#c9c9d6",
+          padding: "4px 11px", borderRadius: 999,
+          background: "rgba(179,107,255,.10)", border: "1px solid rgba(179,107,255,.22)",
+        }}>{t.label}</span>
+      ))}
+      <span style={{ fontSize: 12.5, color: "#6f7180", fontStyle: "italic" }}>with video breakdowns</span>
+    </div>
+  );
+}
+
 function NumberedTip({ n, lead, rest, tone = "violet" }) {
   const c = tone === "red"
     ? { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f" }
@@ -176,7 +196,7 @@ function Accordion({ id, title, subtitle, open, onToggle, children }) {
       }}>
         <div>
           <h2 style={H2}>{title}</h2>
-          <p style={SUB}>{subtitle}</p>
+          {typeof subtitle === "string" ? <p style={SUB}>{subtitle}</p> : <div style={{ marginTop: 8 }}>{subtitle}</div>}
         </div>
         <span style={{
           display: "inline-block", flexShrink: 0, fontSize: 18, color: "#8b8b9c",
@@ -203,28 +223,31 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   const [mapIdx, setMapIdx] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
   const [liveSynergies, setLiveSynergies] = useState(null);
+  const [liveCounters, setLiveCounters] = useState(null);
 
-  // Live teammate synergies: Brock's per-teammate win rate from
-  // brawler_intelligence.with_brawler (Masters+, current patch). Ranked by win
-  // rate, min 300 games so it's real, top 6. Reasons are hand-written where we
-  // have them (guide.synergyReasons), class-derived otherwise.
+  // Live match-up data from brawler_intelligence (Masters+, current patch):
+  //  • with_brawler → best teammates (highest win rate together)
+  //  • vs_brawler   → worst opponents (lowest win rate against)
+  // Both ranked with a 300-game floor so they're real, top 6 each. Reasons are
+  // hand-written where we have them, class-derived otherwise.
   useEffect(() => {
     let cancelled = false;
+    const rank = (obj, dir) => Object.entries(obj || {})
+      .map(([key, v]) => ({ key: key.toUpperCase(), winRate: Math.round(Number(v.winRate) * 10) / 10, games: Number(v.picks) }))
+      .filter(r => r.games >= 300 && Number.isFinite(r.winRate) && r.key !== brawler.key)
+      .sort((a, b) => dir * (b.winRate - a.winRate))
+      .slice(0, 6);
     supabase
       .from("brawler_intelligence")
-      .select("with_brawler")
+      .select("with_brawler, vs_brawler")
       .eq("brawler", brawler.key)
       .eq("patch", "68.250")
       .eq("rank_bracket", "masters_legendary")
       .maybeSingle()
       .then(({ data }) => {
-        if (cancelled || !data?.with_brawler) return;
-        const rows = Object.entries(data.with_brawler)
-          .map(([key, v]) => ({ key: key.toUpperCase(), winRate: Math.round(Number(v.winRate) * 10) / 10, games: Number(v.picks) }))
-          .filter(r => r.games >= 300 && Number.isFinite(r.winRate))
-          .sort((a, b) => b.winRate - a.winRate)
-          .slice(0, 6);
-        setLiveSynergies(rows);
+        if (cancelled || !data) return;
+        setLiveSynergies(rank(data.with_brawler, 1));   // highest win rate with
+        setLiveCounters(rank(data.vs_brawler, -1));      // lowest win rate against
       });
     return () => { cancelled = true; };
   }, [brawler.key]);
@@ -319,7 +342,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
     "combat-stats": Boolean(guide?.combatStats),
     guide: Boolean(guide?.guideTabs?.length),
     "maps-modes": true,
-    synergies: Boolean(guide && liveSynergies?.length),
+    matchups: Boolean(guide && (liveSynergies?.length || liveCounters?.length)),
     counter: Boolean(guide?.counterTips?.length),
   };
   const railSections = SECTIONS.filter(s => present[s.id]);
@@ -329,15 +352,25 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
       position: "relative", zIndex: 10, maxWidth: 1360, margin: "0 auto",
       padding: "20px 5vw 0", display: "flex", gap: 36, alignItems: "flex-start",
     }}>
-      {/* ── Sticky side rail ── */}
+      {/* ── Sticky side rail (follows scroll; the header isn't fixed, so it
+             parks near the top) ── */}
       <aside className="guide-rail" style={{
-        flexShrink: 0, width: 190, position: "sticky", top: 104,
+        flexShrink: 0, width: 190, position: "sticky", top: 24, alignSelf: "flex-start",
         padding: "8px 0 8px 18px", borderLeft: "2px solid rgba(255,255,255,.08)",
       }}>
         {railSections.map(s => {
           const on = activeSection === s.id;
+          const go = (e) => {
+            e.preventDefault();
+            const el = document.getElementById(s.id);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+              setActiveSection(s.id);
+              history.replaceState(null, "", `#${s.id}`);
+            }
+          };
           return (
-            <a key={s.id} href={`#${s.id}`} style={{
+            <a key={s.id} href={`#${s.id}`} onClick={go} style={{
               display: "flex", alignItems: "center", textDecoration: "none", fontFamily: BODY,
               fontWeight: 600, fontSize: 15, padding: "11px 0 11px 16px", marginLeft: -20,
               borderLeft: `2px solid ${on ? "#ffb43d" : "transparent"}`,
@@ -502,8 +535,8 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 4. Guide (aim / gadget / star power / hyper) ── */}
         {guide?.guideTabs?.length > 0 && (
           <Accordion
-            id="guide" title="Guide"
-            subtitle="Aim, gadget, star power, hypercharge &amp; pro gameplay — with video breakdowns"
+            id="guide" title={`${brawler.name} Guide`}
+            subtitle={<GuideSubtitle tabs={guide.guideTabs} />}
             open={guideOpen} onToggle={() => setGuideOpen(o => !o)}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -608,37 +641,30 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           )}
         </Accordion>
 
-        {/* ── 6. Synergies (live from with_brawler) ── */}
-        {guide && liveSynergies?.length > 0 && (
-          <section id="synergies" style={{ scrollMarginTop: 110 }}>
-            <h2 style={{ ...H2, marginBottom: 6 }}>Synergies</h2>
+        {/* ── 6. Match-ups (live from with_brawler + vs_brawler) ── */}
+        {guide && (liveSynergies?.length > 0 || liveCounters?.length > 0) && (
+          <section id="matchups" style={{ scrollMarginTop: 110 }}>
+            <h2 style={{ ...H2, marginBottom: 6 }}>Match-ups</h2>
             <p style={{ fontSize: 13.5, color: "#8b8b9c", marginBottom: 18 }}>
-              Teammates {brawler.name} wins with most — live Masters+ pair data, min 300 games together
+              Live Masters+ pair data — min 300 games, best teammates and worst opponents
             </p>
-            <div style={{ ...CARD, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
-              <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: "#8ee6b0" }}>GOOD WITH</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
-                {liveSynergies.map(s => {
-                  const meta = BRAWLER_META[s.key] || {};
-                  const reason = guide.synergyReasons?.[s.key]
-                    || `${classLabel(draftClassOf(s.key))} that pairs cleanly with ${brawler.name}'s range — a top win-rate teammate in the data.`;
-                  return (
-                    <div key={s.key} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 16, background: "rgba(255,255,255,.03)" }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 14, overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14" }}>
-                        {meta.imageUrl && <img src={meta.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 700, fontSize: 15, color: "#f4f4fa" }}>{fmtName(s.key)}</span>
-                          <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#8ee6b0" }}>{s.winRate}%</span>
-                          <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
-                        </div>
-                        <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{reason}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {liveSynergies?.length > 0 && (
+                <MatchupPanel
+                  eyebrow="SYNERGIES · GOOD WITH" accent="#8ee6b0"
+                  rows={liveSynergies}
+                  reasonFor={s => guide.synergyReasons?.[s.key]
+                    || `${classLabel(draftClassOf(s.key))} that pairs cleanly with ${brawler.name}'s range — a top win-rate teammate in the data.`}
+                />
+              )}
+              {liveCounters?.length > 0 && (
+                <MatchupPanel
+                  eyebrow="COUNTERS · WORST AGAINST" accent="#ff8f8f"
+                  rows={liveCounters}
+                  reasonFor={s => guide.counterReasons?.[s.key]
+                    || `${classLabel(draftClassOf(s.key))} that punishes ${brawler.name} — one of his lowest win rates in the data.`}
+                />
+              )}
             </div>
           </section>
         )}
@@ -656,8 +682,12 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   <NumberedTip key={i} n={i + 1} lead={t.lead} rest={t.rest} tone="red" />
                 ))}
               </div>
-              {guide.counterVideo
-                ? <VideoSlot base={guide.videoBase} src={guide.counterVideo.src} label={guide.counterVideo.label} tone="#ff8f8f" />
+              {guide.counterVideos?.length > 0
+                ? <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {guide.counterVideos.map(v => (
+                      <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} tone="#ff8f8f" />
+                    ))}
+                  </div>
                 : <ClipSlot label={`▶ COUNTERING ${brawler.name.toUpperCase()}`} tone="#ff8f8f" />}
             </div>
           </section>
@@ -681,6 +711,37 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           .guide-split { grid-template-columns: 1fr !important; }
         }
       `}</style>
+    </div>
+  );
+}
+
+// One half of the Match-ups section — a titled grid of brawler rows with the
+// live win rate + game count and a reason line. Used for both Synergies
+// (best teammates) and Counters (worst opponents).
+function MatchupPanel({ eyebrow, accent, rows, reasonFor }) {
+  return (
+    <div style={{ ...CARD, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
+      <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: accent }}>{eyebrow}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
+        {rows.map(s => {
+          const meta = BRAWLER_META[s.key] || {};
+          return (
+            <div key={s.key} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 16, background: "rgba(255,255,255,.03)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14" }}>
+                {meta.imageUrl && <img src={meta.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "#f4f4fa" }}>{fmtName(s.key)}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: accent }}>{s.winRate}%</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{reasonFor(s)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

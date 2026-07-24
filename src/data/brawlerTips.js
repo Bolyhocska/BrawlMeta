@@ -157,7 +157,7 @@ const GUIDES = {
           { src: "gadget1-kill-confirm", label: "Gadget 1 · Rocket Laces — kill confirm" },
           { src: "gadget1-shot-reset", label: "Gadget 1 · Rocket Laces — shot reset" },
           { src: "gadget2-shot-reset", label: "Gadget 2 · Rocket Fuel — shot reset" },
-          { src: "gadget2-surprise", label: "Gadget 2 · Rocket Fuel — surprise trick" },
+          { src: "gadget2-surprise", label: "Gadget 2 · Rocket Fuel — Engagement trick" },
         ],
       },
       {
@@ -194,8 +194,27 @@ const GUIDES = {
 
     // Base path for the owner-supplied clips (transcoded to muted H.264 loops).
     videoBase: "/guides/brock",
-    // The dodging clip belongs to the counter section, not the guide tabs.
-    counterVideo: { src: "pro-dodge", label: "Dodging Brock's rockets" },
+    // The dodging clips belong to the counter section, not the guide tabs.
+    counterVideos: [
+      { src: "pro-dodge", label: "Dodging Brock's rockets" },
+      { src: "pro-dodge-2", label: "Pro dodge · #2" },
+    ],
+
+    // Why Brock LOSES these matchups — hand-written for the regulars at the top
+    // of his worst-against list; class-derived fallback for the rest. The DATA
+    // (win rate, games, ordering) is live from vs_brawler.
+    counterReasons: {
+      BOLT: "The same tank that carries Brock as a teammate wrecks him across the net — Bolt closes behind his own wall-break, slows the retreat, and out-trades point-blank where Brock can't kite.",
+      FINX: "Out-ranges and out-DPSes Brock in the open; his hypercharge shreds an immobile marksman from a distance Brock can't answer.",
+      "STARR NOVA": "A space-maker that dives the backline — exactly Brock's blind spot. The mobility skips his comfort band before he gets a second rocket off.",
+      ASH: "Builds rage off Brock's own chip and walks him down; sustained frontline pressure Brock can't kite forever on a closed lane.",
+      KAZE: "Fast, slippery aggressor that closes the gap and deletes a stationary marksman before the single-shot can track her.",
+      MELODIE: "Repeated dashes Brock's one rocket at a time can't track — she's on top of him before the reload, and there's no falloff to save him up close.",
+      SURGE: "Snowballs past Brock's range with his upgrades and jumps the wall to reach him; once Surge is charged, Brock's spacing stops mattering.",
+      STU: "Dashes on every attack — closes and resets faster than Brock can zone, and ignores the reload window Brock relies on.",
+      "8-BIT": "A mirror at longer effective range with a damage booster; in a straight poke war 8-Bit out-values Brock and never has to approach.",
+      DAMIAN: "A mobile tank that reaches the backline — Brock's cover comes down and the dive lands before he can reposition.",
+    },
 
     // Brock-specific notes on OUR ranked maps. Maps without a note fall back to
     // the live win rate alone rather than inventing advice.
