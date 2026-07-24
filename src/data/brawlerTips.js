@@ -216,6 +216,37 @@ const GUIDES = {
       DAMIAN: "A mobile tank that reaches the backline — Brock's cover comes down and the dive lands before he can reposition.",
     },
 
+    // Owner-supplied map clips. `mapVideos` are keyed by canonical DB map name
+    // and show only on that map; `modeVideos` are keyed by mode and show on
+    // EVERY map in it (the Brawl Ball goal tricks are general technique, not
+    // map-specific). Both resolve against videoBase.
+    mapVideos: {
+      "Belle's Rock": [
+        { src: "map-belles-rock-all-walls", label: "Belle's Rock — All Walls" },
+        { src: "map-belles-rock-left-wall", label: "Belle's Rock — Left Wall" },
+        { src: "map-belles-rock-right-wall", label: "Belle's Rock — Right Wall" },
+        { src: "map-belles-rock-aggro-wall-break", label: "Belle's Rock — Aggro Wall Break" },
+      ],
+      "Flaring Phoenix": [
+        { src: "map-flaring-phoenix-good-wall-break", label: "Flaring Phoenix — Good Wall Break" },
+        { src: "map-flaring-phoenix-bad-wall-break", label: "Flaring Phoenix — Bad Wall Break" },
+        { src: "map-flaring-phoenix-own-wall-right-block", label: "Flaring Phoenix — Own Wall Right Block" },
+      ],
+      "New Horizons": [
+        { src: "map-new-horizons-wall-break", label: "New Horizons — Wall Break" },
+      ],
+      "Out in the Open": [
+        { src: "map-out-in-the-open-wall-break", label: "Out in the Open — Wall Break" },
+      ],
+    },
+    modeVideos: {
+      brawlBall: [
+        { src: "mode-brawlball-gadget1-goal-trick", label: "Gadget 1 · Rocket Laces — Goal Trick" },
+        { src: "mode-brawlball-gadget2-goal-trick", label: "Gadget 2 · Rocket Fuel — Goal Trick" },
+        { src: "mode-brawlball-gadget2-easier-goal-trick", label: "Gadget 2 · Rocket Fuel — Easier Goal Trick" },
+      ],
+    },
+
     // Brock-specific notes on OUR ranked maps. Maps without a note fall back to
     // the live win rate alone rather than inventing advice.
     mapNotes: {

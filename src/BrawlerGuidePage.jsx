@@ -268,6 +268,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   const activeMaps = (activeMode && mapsByMode[activeMode]) || [];
   const activeMap = activeMaps[mapIdx] || activeMaps[0] || null;
 
+  // Clips for the selected map: its own first, then any mode-wide technique
+  // (Brawl Ball goal tricks are general, so they ride along on every BB map).
+  const activeMapVideos = useMemo(() => {
+    if (!guide) return [];
+    const own = (guide.mapVideos?.[activeMap?.map] || []).map(v => ({ ...v, scope: "map" }));
+    const modeWide = (guide.modeVideos?.[activeMode] || []).map(v => ({ ...v, scope: "mode" }));
+    return [...own, ...modeWide];
+  }, [guide, activeMap, activeMode]);
+
   // Scroll-spy for the side rail. Computed from scroll position rather than an
   // IntersectionObserver: the observer only reports intersection CHANGES, so
   // jumping past several sections at once (anchor click, scrollIntoView) can
@@ -617,6 +626,24 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                       {guide?.mapNotes?.[activeMap.map]
                         || `${brawler.name} sits at ${activeMap.winRate}% here across ${activeMap.picks.toLocaleString("en-US")} Masters+ games. No hand-written note for this map yet — the number is the read.`}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Map clips: this map's own wall-break/positioning tricks, plus
+                  any mode-wide technique (Brawl Ball goal tricks apply to every
+                  map in the mode, so they show alongside whichever is selected). */}
+              {activeMapVideos.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>
+                    {activeMapVideos.some(v => v.scope === "map")
+                      ? `${activeMap.map.toUpperCase()} · CLIPS`
+                      : `${FORMAT_MODE(activeMode).toUpperCase()} · CLIPS`}
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+                    {activeMapVideos.map(v => (
+                      <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} />
+                    ))}
                   </div>
                 </div>
               )}
