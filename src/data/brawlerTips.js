@@ -82,7 +82,7 @@ const GUIDES = {
       General: {
         starPower: "Rocket No. 4",
         gadget: "Rocket Laces",
-        gears: ["Speed", "Shield"],
+        gears: ["Shield", "Damage"],
         note: "The all-purpose setup: a fourth rocket for uptime and Laces as the panic button against dives.",
       },
       heist: {
@@ -144,7 +144,11 @@ const GUIDES = {
           { lead: "No falloff — hold your ground.", rest: "A point-blank rocket hits as hard as a max-range one. When an assassin closes, don't panic-retreat while shooting: plant, aim at their feet, and the splash usually wins the trade." },
           { lead: "Keep one in reserve.", rest: "Disengage with at least one rocket left. An empty Brock walking backwards is free; a Brock with one shot still zones the chaser." },
         ],
-        videos: [{ src: "aim-tips", label: "Leading your shots" }],
+        videos: [
+          { src: "aim-tips", label: "Leading your shots" },
+          { src: "aim-around-the-wall", label: "Around the wall trick" },
+          { src: "aim-behind-the-wall", label: "Behind the wall trick" },
+        ],
       },
       {
         key: "gadget", label: "Gadget",

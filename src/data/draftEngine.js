@@ -646,8 +646,19 @@ export function getDraftAdvice({
     // Class diversity: duplicates compound the 0.7x multiplier
     const dupes = myClasses.filter(c => c === cls).length;
     if (dupes > 0) {
-      score *= Math.pow(cons.classDiversity.duplicateMultiplier, dupes);
-      chips.push({ label: `${dupes + 1}× ${classLabel(cls)}`, tone: "bad" });
+      let dupMult = Math.pow(cons.classDiversity.duplicateMultiplier, dupes);
+      // The stacking penalty is about counter-DRAFT exposure — one enemy pick
+      // that answers your whole stack. With no enemy picks left there is no
+      // such pick coming, so the penalty is relieved. Being countered by their
+      // already-revealed comp is priced by PASS 2, and a structurally broken
+      // comp is still caught by finalSanityCheck below.
+      const relief = cons.classDiversity.noCounterDraftRelief ?? 0;
+      const safeToStack = relief > 0 && enemyPicksRemaining === 0;
+      if (safeToStack) dupMult = 1 - (1 - dupMult) * (1 - relief);
+      score *= dupMult;
+      chips.push(safeToStack
+        ? { label: `${dupes + 1}× ${classLabel(cls)} · safe to stack`, tone: "good" }
+        : { label: `${dupes + 1}× ${classLabel(cls)}`, tone: "bad" });
     }
     // Mode hard caps (e.g. Brawl Ball: max 1 control)
     const cap = modeCfg.maxPerClass?.[cls];

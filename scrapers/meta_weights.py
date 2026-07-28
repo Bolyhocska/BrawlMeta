@@ -93,6 +93,15 @@ def refresh_intelligence(patches=None):
         # Brawler-vs-brawler + teammate-synergy jsonb (vs_brawler/with_brawler)
         # lives in its own RPC, called once per bracket: inlining it into the
         # main refresh blew the statement budget on 470k+ matches.
+        #
+        # 2026-07-28: at 1.11M Masters rows it unrolled to ~33M pair-rows and
+        # started exceeding the PostgREST gateway timeout, so this call failed
+        # every run and left both jsonb columns as '{}' — silently emptying the
+        # guide's Match-ups section. The RPC now bounds itself to the most
+        # recent `recent_limit` matches (default 600k, ~24s) via the
+        # (bracket_id, collected_at) index, so runtime stays flat as the
+        # retention window grows. If it regresses again, lower that default
+        # rather than re-inlining.
         for bracket in ("masters_legendary", "diamond_mythic"):
             res = requests.post(
                 f"{SUPABASE_URL}/rest/v1/rpc/refresh_brawler_pairs",

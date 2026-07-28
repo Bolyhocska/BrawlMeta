@@ -8,7 +8,7 @@
 // Sections (mirroring the design's side rail): Overview · Best Build ·
 // Combat Stats · Guide · Maps & Modes · Synergies · How to Counter.
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
 import { supabase, MODE_ICONS } from "./appCore";
@@ -395,19 +395,25 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   const build = guide?.builds?.[buildTab] || guide?.builds?.General || null;
 
   // Resolve a build's named abilities back to the official entries + art.
-  const buildItems = useMemo(() => {
-    if (!build) return [];
+  const resolveBuild = useCallback((b) => {
+    if (!b) return [];
     const find = (list, name) => (list || []).find(x => x.name === name);
     const items = [];
-    const sp = find(brawler.starPowers, build.starPower);
-    const gd = find(brawler.gadgets, build.gadget);
+    const sp = find(brawler.starPowers, b.starPower);
+    const gd = find(brawler.gadgets, b.gadget);
     if (sp) items.push({ kind: "STAR POWER", accent: "#ffb43d", ...sp });
     if (gd) items.push({ kind: "GADGET", accent: "#c98bff", ...gd });
-    for (const g of build.gears || []) {
-      items.push({ kind: "GEAR", accent: "#8ee6b0", name: `${g} Gear`, desc: GEAR_DESC[g] || "", img: null });
+    for (const g of b.gears || []) {
+      items.push({ kind: "GEAR", accent: GEAR_TINT[g] || "#8ee6b0", gear: g, name: `${g} Gear`, desc: GEAR_DESC[g] || "", img: null });
     }
     return items;
-  }, [build, brawler.starPowers, brawler.gadgets]);
+  }, [brawler.starPowers, brawler.gadgets]);
+
+  const buildItems = useMemo(() => resolveBuild(build), [resolveBuild, build]);
+  // The header strip always shows the GENERAL build, independent of which mode
+  // tab is open further down the page.
+  const generalBuildItems = useMemo(
+    () => resolveBuild(guide?.builds?.General), [resolveBuild, guide]);
 
   const tierBand = TIER_BANDS[tier] || TIER_BANDS.S;
 
@@ -480,8 +486,11 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontFamily: MONO, fontSize: 10, color: "#5a5a6a" }}>NO ART</div>}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(32px,4vw,44px)", color: "#f4f4fa", letterSpacing: "-.5px" }}>
+            {/* margin:0 on the h1 — the app resets html/body margins but not
+                headings, and the default ~29px was pushing the chips clear of
+                the portrait. gap alone controls the spacing now. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(32px,4vw,44px)", lineHeight: 1.1, margin: 0, color: "#f4f4fa", letterSpacing: "-.5px" }}>
                 {brawler.name}
               </h1>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -489,12 +498,32 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: "6px 14px", borderRadius: 999,
                   background: `${brawler.rarityColor}1f`, color: brawler.rarityColor, border: `1px solid ${brawler.rarityColor}4d`,
                 }}>{brawler.rarity}</span>
-                <span style={{
+                {/* OUR draft class (Sniper), not Supercell's official one (Marksman) */}
+                <span title="BrawlMeta draft class" style={{
                   fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: "6px 14px", borderRadius: 999,
-                  background: "rgba(255,255,255,.05)", color: "#c9c9d6", border: "1px solid rgba(255,255,255,.1)",
-                }}>{brawler.class}</span>
+                  background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.28)",
+                }}>{classLabel(draftClassOf(brawler.key))}</span>
               </div>
             </div>
+
+            {/* Best general build at a glance — art only, no names. */}
+            {generalBuildItems.length > 0 && (
+              <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.6, color: "#9a9aab" }}>BEST BUILD</span>
+                <div style={{ display: "flex", gap: 10 }}>
+                  {generalBuildItems.map((item, i) => (
+                    <div key={i} title={`${item.kind} · ${item.name}`} style={{
+                      width: 48, height: 48, borderRadius: 15, display: "grid", placeItems: "center",
+                      background: "rgba(255,255,255,.04)", border: `1px solid ${item.accent}3d`, flexShrink: 0,
+                    }}>
+                      {item.img
+                        ? <img src={item.img} alt={item.name} style={{ width: "84%", height: "84%", objectFit: "contain" }} />
+                        : <GearIcon name={item.gear} size={24} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
@@ -516,7 +545,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 2. Best build ── */}
         {guide && build && (
           <Section
-            id="best-build" variant="bare"
+            id="best-build" variant="card"
             title={`Best ${brawler.name} build`}
             subtitle={`Recommended gadget, star power & gear — ${buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}`}
             open={isOpen("best-build")} onToggle={() => toggleSection("best-build")}
@@ -560,7 +589,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                       }}>
                         {item.img
                           ? <img src={item.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                          : <span style={{ fontSize: 15, color: item.accent, opacity: .75 }}>⬢</span>}
+                          : <GearIcon name={item.gear} size={20} />}
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
@@ -739,7 +768,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 6. Match-ups (live from with_brawler + vs_brawler) ── */}
         {guide && (liveSynergies?.length > 0 || liveCounters?.length > 0) && (
           <Section
-            id="matchups" variant="bare" title="Match-ups"
+            id="matchups" variant="card" title="Match-ups"
             subtitle="Live Masters+ pair data — min 300 games, best teammates and worst opponents"
             open={isOpen("matchups")} onToggle={() => toggleSection("matchups")}
           >
@@ -767,12 +796,14 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 7. How to counter ── */}
         {guide?.counterTips?.length > 0 && (
           <Section
-            id="counter" variant="bare" title={`How to counter ${brawler.name}`}
+            id="counter" variant="card" title={`How to counter ${brawler.name}`}
             open={isOpen("counter")} onToggle={() => toggleSection("counter")}
           >
+            {/* No inner card — the Section already provides the box, matching
+                every other section. The red identity carries on the tips and
+                the clip borders instead. */}
             <div className="guide-split" style={{
-              borderRadius: 24, background: "rgba(255,122,122,.04)", border: "1px solid rgba(255,122,122,.18)",
-              padding: 26, display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 20, alignItems: "start",
+              display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 20, alignItems: "start",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {guide.counterTips.map((t, i) => (
@@ -816,8 +847,13 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
 // live win rate + game count and a reason line. Used for both Synergies
 // (best teammates) and Counters (worst opponents).
 function MatchupPanel({ eyebrow, accent, rows, reasonFor }) {
+  // Sub-panel inside a Section card — tinted to its accent rather than reusing
+  // CARD, so it reads as nested content instead of a second identical box.
   return (
-    <div style={{ ...CARD, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{
+      borderRadius: 20, padding: 22, display: "flex", flexDirection: "column", gap: 16,
+      background: `${accent}0f`, border: `1px solid ${accent}2e`,
+    }}>
       <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: accent }}>{eyebrow}</span>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
         {rows.map(s => {
@@ -871,3 +907,31 @@ const GEAR_DESC = {
   Damage: "Bonus damage below 50% health — punishes anyone who tries to trade back at close range.",
   Vision: "Reveals enemies hiding in bushes nearby — spots the flank before it lines up.",
 };
+
+// Gear artwork isn't in brawlerMeta.json (the Brawlify payload we sync carries
+// star powers and gadgets only), so gears get inline SVG glyphs instead —
+// self-contained, themed to the site's palette, and no external dependency to
+// break. Rounded joins to match the design's shape language.
+const GEAR_TINT = { Speed: "#7cc4ff", Shield: "#8ee6b0", Damage: "#ff8f8f", Vision: "#ffce7a" };
+const GEAR_PATH = {
+  // shield outline
+  Shield: <path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 8.5-4.1-.9-7-4.3-7-8.5V6l7-3z" />,
+  // burst / impact star
+  Damage: <path d="M12 2.5l2.3 5.2 5.2-.6-3.4 4 3.4 4-5.2-.6L12 19.7 9.7 14.5l-5.2.6 3.4-4-3.4-4 5.2.6L12 2.5z" />,
+  // speed chevrons
+  Speed: <g><path d="M5 7l5 5-5 5" /><path d="M13 7l5 5-5 5" /></g>,
+  // eye
+  Vision: <g><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></g>,
+};
+
+function GearIcon({ name, size = 20 }) {
+  const tint = GEAR_TINT[name] || "#9a9aab";
+  const path = GEAR_PATH[name];
+  if (!path) return <span style={{ fontSize: size * 0.7, color: tint }}>⬢</span>;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" role="img" aria-label={`${name} Gear`}
+      stroke={tint} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      {path}
+    </svg>
+  );
+}

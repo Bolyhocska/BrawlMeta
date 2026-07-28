@@ -303,7 +303,9 @@
     },
     "classDiversity": {
       "_comment": "Bobby: 'if you pick three control brawlers, all of your brawlers are countered by one aggro'. Multiplier per duplicate class already on the team (compounds: 0.7, then 0.49).",
-      "duplicateMultiplier": 0.7
+      "duplicateMultiplier": 0.7,
+      "noCounterDraftRelief": 1,
+      "_reliefComment": "The stacking penalty exists because a stacked comp invites ONE counter-pick that answers all of it — a counter-DRAFT risk. Once the enemy has no picks left that risk is gone, so the penalty is relieved by this fraction (1 = fully neutral) when enemyPicksRemaining is 0. This is not a free pass: being countered by the enemy's ALREADY-REVEALED picks is priced separately by the PASS 2 counter matrix, and a structurally broken comp (no mid / no lane anchor / no objective specialist) is still caught by finalSanityCheck. Owner-confirmed 2026-07-25: 'it is fine to stack if there are no more picks and they cant be countered.'"
     },
     "antiTankFirstPick": {
       "_comment": "Bobby: 'anti-tank is the foundation of every draft'; best anti-tank is almost always the correct first pick in objective (active) modes.",
