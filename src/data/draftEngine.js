@@ -766,10 +766,14 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     });
     let s = rates.reduce((a, v) => a + v, 0) / Math.max(1, rates.length);
 
-    // Counter pressure across all 9 pairings (per-brawler overrides honored)
+    // Counter pressure across all 9 pairings (per-brawler overrides honored).
+    // counterWeight is deliberately half the intuitive value — the matrix is
+    // antisymmetric, so this term enters the final differential twice (once as
+    // +x for one side, once as -x for the other). See winProbability config.
+    const cw = CONFIG.winProbability.counterWeight ?? 0.6;
     for (let i = 0; i < teamKeys.length; i++)
       for (let j = 0; j < enemyKeys.length; j++)
-        s += pairEdge(teamKeys[i], classes[i], enemyKeys[j], enemyCls[j]) * 1.2;
+        s += pairEdge(teamKeys[i], classes[i], enemyKeys[j], enemyCls[j]) * cw;
 
     // Synergy + structure
     for (let i = 0; i < classes.length; i++)

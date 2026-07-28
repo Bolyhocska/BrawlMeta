@@ -726,6 +726,8 @@
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
     "logisticScale": 14,
-    "capPct": 85
+    "capPct": 85,
+    "counterWeight": 0.6,
+    "_counterWeightComment": "Per-point weight of the class counter matrix in each side's comp score. MUST stay at half the intuitive value: counterMatrix is exactly antisymmetric (M[a][b] === -M[b][a]), so red's counter total is always the negation of blue's, and the differential blue-minus-red therefore counts every cross-team pairing TWICE. At the old 1.2 this let class theory swing the differential by up to ~26 points while the statistical term (a mean of true win rates) spans barely 6 — i.e. the matrix outvoted real win-rate evidence roughly 4:1, and could hand a 67% verdict to the comp with the WORSE measured win rates. 0.6 counts each pairing once, which puts theory and evidence on comparable footing and keeps the split consistent with the suggestion ranking."
   }
 }
