@@ -77,3 +77,4 @@ Every hand-authored number in `draftEngine.js` (map geometry, SpenLC `mapRules`,
 - `src/data/generalTierList.json` is an intentionally empty hand-curated list — the tier list "GENERAL" tab is blank until the owner fills it.
 - User must drop `add-friend-id.png` + `add-friend-qr.png` into `public/help/` (registration example images hide via onError until then).
 - Future: Stripe Connect for prize payouts (needs business entity first); Supercell-API tag-ownership verification before real-money prizes.
+- 2026-07-25: no-op commit to test whether the GitHub→Vercel deploy webhook is firing (c219d7b never triggered a deployment). Safe to delete this line once confirmed.
