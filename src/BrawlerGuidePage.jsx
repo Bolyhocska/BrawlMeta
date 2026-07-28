@@ -48,6 +48,19 @@ const titleCase = (s) => (s || "").split(" ").map((w, i, arr) => {
   return w.charAt(0).toUpperCase() + w.slice(1);
 }).join(" ");
 
+// Combat-stat values may be a plain number, a level-invariant string, or a
+// composite like "9 × {0}" / "{0} main + {1} × 2". `parts` are scaled by the
+// power selector individually so every number inside a breakdown stays honest,
+// not just the headline figure.
+const fillParts = (tpl, parts = [], power) =>
+  tpl.replace(/\{(\d+)\}/g, (_, i) => scaleStatValue(parts[+i] ?? 0, power).toLocaleString("en-US"));
+
+const statText = (c, power) => {
+  if (c.tpl) return fillParts(c.tpl, c.parts, c.scaled ? power : 11);
+  if (c.scaled) return scaleStatValue(c.value, power).toLocaleString("en-US");
+  return typeof c.value === "number" ? c.value.toLocaleString("en-US") : c.value;
+};
+
 const SECTIONS = [
   { id: "overview", label: "Overview" },
   { id: "best-build", label: "Best Build" },
@@ -191,10 +204,13 @@ function Chevron({ open, size = 24 }) {
   );
 }
 
+const TIP_TONE = {
+  violet: { bg: "rgba(179,107,255,.14)", fg: "#c98bff", noteBorder: "rgba(179,107,255,.35)" },
+  red: { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f", noteBorder: "rgba(255,122,122,.35)" },
+};
+
 function NumberedTip({ n, lead, rest, tone = "violet" }) {
-  const c = tone === "red"
-    ? { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f" }
-    : { bg: "rgba(179,107,255,.14)", fg: "#c98bff" };
+  const c = TIP_TONE[tone] || TIP_TONE.violet;
   return (
     <div style={{ display: "flex", gap: 12 }}>
       <span style={{
@@ -205,6 +221,105 @@ function NumberedTip({ n, lead, rest, tone = "violet" }) {
       <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "#c9c9d6" }}>
         <strong style={{ color: "#f4f4fa" }}>{lead}</strong> {rest}
       </p>
+    </div>
+  );
+}
+
+// Italic follow-up note under a tip, marked with a left rule so it reads as a
+// child of the tip rather than a new point.
+function TipNote({ children, tone = "violet" }) {
+  const c = TIP_TONE[tone] || TIP_TONE.violet;
+  return (
+    <p style={{
+      margin: 0, paddingLeft: 12, borderLeft: `2px solid ${c.noteBorder}`,
+      fontSize: 13.5, lineHeight: 1.6, color: "#a4a4b5", fontStyle: "italic",
+    }}>{children}</p>
+  );
+}
+
+// Titled figures table (damage breakdowns). Monospace numbers so they line up.
+function FiguresBlock({ title, rows }) {
+  return (
+    <div style={{
+      borderRadius: 16, padding: "14px 16px",
+      background: "rgba(255,180,61,.06)", border: "1px solid rgba(255,180,61,.20)",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 10 }}>
+        {title.toUpperCase()}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ flex: 1, minWidth: 150, fontSize: 13, color: "#c9c9d6" }}>{r.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 13.5, fontWeight: 700, color: "#f4f4fa" }}>{r.value}</span>
+            {r.extra && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>{r.extra}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// A tip paired with the footage that demonstrates it: text and clips side by
+// side on desktop (text vertically centred against the video), text stacked
+// above the clips on mobile. Falls back to full-width text when there's no
+// clip, so tips without footage don't leave a hole in the layout.
+function TipRow({ n, tip, tone = "violet", videoBase }) {
+  const vids = tip.videos || [];
+  const noteVids = tip.noteVideos || [];
+  const text = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+      <NumberedTip n={n} lead={tip.lead} rest={tip.rest} tone={tone} />
+      {tip.note && noteVids.length === 0 && <TipNote tone={tone}>{tip.note}</TipNote>}
+      {tip.block && <FiguresBlock title={tip.block.title} rows={tip.block.rows} />}
+    </div>
+  );
+
+  const clips = (list) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+      {list.map(v => <VideoSlot key={v.src} base={videoBase} src={v.src} label={v.label} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />)}
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {vids.length > 0
+        ? <div className="guide-split" style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
+            {text}{clips(vids)}
+          </div>
+        : text}
+      {/* A note with its own footage becomes its own aligned row. */}
+      {tip.note && noteVids.length > 0 && (
+        <div className="guide-split" style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
+          <TipNote tone={tone}>{tip.note}</TipNote>
+          {clips(noteVids)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Renders a tab's tips, honouring `header` entries that open a labelled
+// sub-group and restart the numbering (Gadget 1 / Gadget 2).
+function TipList({ tips, tone = "violet", videoBase }) {
+  let n = 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+      {tips.map((t, i) => {
+        if (t.header) {
+          n = 0;
+          return (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 12, marginTop: i === 0 ? 0 : 6,
+            }}>
+              <span style={{ fontFamily: DISPLAY, fontSize: 19, fontWeight: 700, color: "#f4f4fa" }}>{t.header}</span>
+              <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,.10)" }} />
+            </div>
+          );
+        }
+        n += 1;
+        return <TipRow key={i} n={n} tip={t} tone={tone} videoBase={videoBase} />;
+      })}
     </div>
   );
 }
@@ -574,7 +689,10 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
               </div>
             )}
             {build.note && (
-              <p style={{ fontSize: 14, lineHeight: 1.7, color: "#c9c9d6", marginBottom: 18, maxWidth: 760 }}>{build.note}</p>
+              <p style={{ fontSize: 14, lineHeight: 1.7, color: "#c9c9d6", margin: "0 0 10px", maxWidth: 760 }}>{build.note}</p>
+            )}
+            {build.gearNote && (
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: "#a4a4b5", fontStyle: "italic", margin: "0 0 18px", maxWidth: 760 }}>{build.gearNote}</p>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 16 }}>
               {buildItems.map((item, i) => {
@@ -629,9 +747,13 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                 <div key={i} style={{ padding: "16px 18px", borderRadius: 16, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
                   <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .5, color: "#8b8b9c" }}>{c.label}</div>
                   <div style={{ fontSize: 17, fontWeight: 700, marginTop: 5, color: "#f4f4fa" }}>
-                    {c.scaled ? scaleStatValue(c.value, power).toLocaleString("en-US") : (typeof c.value === "number" ? c.value.toLocaleString("en-US") : c.value)}
+                    {statText(c, power)}
                   </div>
-                  {c.tag && <div style={{ fontSize: 11, color: "#8ee6b0", marginTop: 2 }}>{c.tag}</div>}
+                  {(c.tag || c.tagTpl) && (
+                    <div style={{ fontSize: 11, color: "#8ee6b0", marginTop: 2 }}>
+                      {c.tagTpl ? fillParts(c.tagTpl, c.tagParts, c.scaled ? power : 11) : c.tag}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -651,23 +773,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   <Pill key={t.key} active={i === guideTab} onClick={() => setGuideTab(i)}>{t.label}</Pill>
                 ))}
               </PillTrack>
-              <div className="guide-split" style={{ display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>
-                    {guide.guideTabs[guideTab].label.toUpperCase()}
-                  </div>
-                  {guide.guideTabs[guideTab].tips.map((t, i) => (
-                    <NumberedTip key={i} n={i + 1} lead={t.lead} rest={t.rest} />
-                  ))}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  {(guide.guideTabs[guideTab].videos || []).length > 0
-                    ? guide.guideTabs[guideTab].videos.map(v => (
-                        <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} />
-                      ))
-                    : <ClipSlot label={`▶ ${guide.guideTabs[guideTab].label.toUpperCase()} BREAKDOWN`} />}
-                </div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>
+                {guide.guideTabs[guideTab].label.toUpperCase()}
               </div>
+              {guide.guideTabs[guideTab].intro && (
+                <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "#c9c9d6", margin: 0, maxWidth: 780 }}>
+                  {guide.guideTabs[guideTab].intro}
+                </p>
+              )}
+              <TipList tips={guide.guideTabs[guideTab].tips} videoBase={guide.videoBase} />
             </div>
           </Section>
         )}
@@ -701,6 +815,25 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   );
                 })}
               </PillTrack>
+
+              {/* Mode-level read: whether this brawler belongs in the mode at
+                  all, before you get down to individual maps. */}
+              {guide?.modeNotes?.[activeMode] && (
+                <div style={{
+                  borderRadius: 18, padding: "16px 18px", display: "flex", gap: 12,
+                  background: "rgba(255,180,61,.06)", border: "1px solid rgba(255,180,61,.20)",
+                }}>
+                  <ModeIcon mode={activeMode} size={24} title={FORMAT_MODE(activeMode)} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 5 }}>
+                      {FORMAT_MODE(activeMode).toUpperCase()} · MODE READ
+                    </div>
+                    <p style={{ fontSize: 14, lineHeight: 1.65, color: "#c9c9d6", margin: 0 }}>
+                      {guide.modeNotes[activeMode]}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {activeMaps.map((mp, i) => {
@@ -736,10 +869,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                     <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff", marginBottom: 6 }}>
                       {FORMAT_MODE(activeMode)} · {activeMap.map.toUpperCase()} · {activeMap.winRate}% WIN RATE · {activeMap.picks.toLocaleString("en-US")} GAMES
                     </div>
-                    <p style={{ fontSize: 15, lineHeight: 1.7, color: "#c9c9d6" }}>
-                      {guide?.mapNotes?.[activeMap.map]
-                        || `${brawler.name} sits at ${activeMap.winRate}% here across ${activeMap.picks.toLocaleString("en-US")} Masters+ games. No hand-written note for this map yet — the number is the read.`}
-                    </p>
+                    {/* Notes may hold multiple paragraphs (a base read plus a
+                        pro tip), separated by a blank line in the data. */}
+                    {(guide?.mapNotes?.[activeMap.map]
+                      || `${brawler.name} sits at ${activeMap.winRate}% here across ${activeMap.picks.toLocaleString("en-US")} Masters+ games. No hand-written note for this map yet — the number is the read.`
+                    ).split("\n\n").map((para, i) => (
+                      <p key={i} style={{ fontSize: 15, lineHeight: 1.7, color: "#c9c9d6", margin: i === 0 ? 0 : "10px 0 0" }}>
+                        {para}
+                      </p>
+                    ))}
                   </div>
                 </div>
               )}
@@ -801,23 +939,9 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           >
             {/* No inner card — the Section already provides the box, matching
                 every other section. The red identity carries on the tips and
-                the clip borders instead. */}
-            <div className="guide-split" style={{
-              display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 20, alignItems: "start",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {guide.counterTips.map((t, i) => (
-                  <NumberedTip key={i} n={i + 1} lead={t.lead} rest={t.rest} tone="red" />
-                ))}
-              </div>
-              {guide.counterVideos?.length > 0
-                ? <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {guide.counterVideos.map(v => (
-                      <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} tone="#ff8f8f" />
-                    ))}
-                  </div>
-                : <ClipSlot label={`▶ COUNTERING ${brawler.name.toUpperCase()}`} tone="#ff8f8f" />}
-            </div>
+                the clip borders instead. Counter tips pair with their footage
+                exactly like the guide tabs do. */}
+            <TipList tips={guide.counterTips} tone="red" videoBase={guide.videoBase} />
           </Section>
         )}
 
