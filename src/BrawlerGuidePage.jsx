@@ -14,7 +14,7 @@ import { getExtendedGuide } from "./data/extendedGuides";
 import { supabase, MODE_ICONS, GEAR_ICONS } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import {
-  getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS,
+  getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS, iconOverride,
 } from "./data/brawlerTips";
 
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -524,8 +524,8 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
     const items = [];
     const sp = find(brawler.starPowers, b.starPower);
     const gd = find(brawler.gadgets, b.gadget);
-    if (sp) items.push({ kind: "STAR POWER", accent: "#ffb43d", ...sp });
-    if (gd) items.push({ kind: "GADGET", accent: "#c98bff", ...gd });
+    if (sp) items.push({ kind: "STAR POWER", accent: "#ffb43d", ...sp, img: iconOverride(brawler.key, sp.name) || sp.img });
+    if (gd) items.push({ kind: "GADGET", accent: "#c98bff", ...gd, img: iconOverride(brawler.key, gd.name) || gd.img });
     for (const g of b.gears || []) {
       items.push({ kind: "GEAR", accent: GEAR_TINT[g] || "#8ee6b0", gear: g, name: `${g} Gear`, desc: GEAR_DESC[g] || "", img: null });
     }

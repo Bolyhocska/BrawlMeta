@@ -411,6 +411,18 @@ const GUIDES = {
   },
 };
 
+// Local art overrides for abilities where the synced Brawlify CDN icon has
+// gone stale (a rework changed the effect but the old icon is still served —
+// confirmed by comparing against the current in-game asset). Keyed by
+// "BRAWLER_KEY::Ability Name". Files live in public/icons/star-powers/ or
+// public/icons/gadgets/ and are used AS PROVIDED, unmodified — Supercell's own
+// full badge art, not re-cropped to match the CDN's borderless style.
+const ICON_OVERRIDES = {
+  "BROCK::More Rockets": "/icons/star-powers/BROCK_MORE_ROCKETS.png",
+};
+export const iconOverride = (brawlerKey, abilityName) =>
+  ICON_OVERRIDES[`${norm(brawlerKey)}::${abilityName}`] || null;
+
 export function getBrawlerGuide(key) {
   const k = norm(key);
   const g = GUIDES[k];

@@ -6,6 +6,7 @@ import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
 import { getExtendedGuide } from "./data/extendedGuides";
+import { iconOverride } from "./data/brawlerTips";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -396,7 +397,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                   <h3 style={sectionTitle}>Star Powers</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
                     {brawler.starPowers.map((sp, i) => (
-                      <AbilityCard key={i} name={sp.name} desc={sp.desc} img={sp.img} color="#ffb43d" />
+                      <AbilityCard key={i} name={sp.name} desc={sp.desc} img={iconOverride(brawler.key, sp.name) || sp.img} color="#ffb43d" />
                     ))}
                   </div>
                 </div>
@@ -406,7 +407,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
                   <h3 style={sectionTitle}>Gadgets</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
                     {brawler.gadgets.map((g, i) => (
-                      <AbilityCard key={i} name={g.name} desc={g.desc} img={g.img} color="#c98bff" />
+                      <AbilityCard key={i} name={g.name} desc={g.desc} img={iconOverride(brawler.key, g.name) || g.img} color="#c98bff" />
                     ))}
                   </div>
                 </div>
