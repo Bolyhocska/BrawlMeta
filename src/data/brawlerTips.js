@@ -38,15 +38,24 @@ export function getGeneralTier(key) {
 }
 
 // ── Power-level scaling ──────────────────────────────────────────────────────
-// Brawl Stars scales health and damage linearly: each power level adds 5% of
-// the POWER-1 base, so Power 11 is base x1.5. Guides quote Power 11 because
+// Brawl Stars scales health and damage linearly: each power level adds 10% of
+// the POWER-1 base, so Power 11 is base x2. Guides quote Power 11 because
 // that's the only level ranked play happens at, so that's what we store — the
 // lower levels are derived, and the UI says so. `scaled: false` marks the stats
 // that don't move with power level (range, speed, ammo count, reload).
-const POWER_MULTIPLIER = { 11: 1.5, 9: 1.4, 6: 1.25, 1: 1 };
+//
+// Verified against the community wiki's Power-1 figures: Brock 3,000 health ->
+// 6,000 at Power 11, Crow 2,800 -> 5,600, Crow 380 damage/dagger -> 760. An
+// earlier x1.5 assumption here made every DERIVED level read too high (Brock
+// showed 4,000 at Power 1 instead of 3,000); Power 11 itself was always right
+// because it's the stored value.
+const POWER_MULTIPLIER = { 11: 2, 9: 1.8, 6: 1.5, 1: 1 };
 
 export function scaleStatValue(power11Value, power) {
-  const factor = (POWER_MULTIPLIER[power] ?? 1.5) / 1.5;
+  // Stored values are Power 11, so divide by the Power-11 multiplier rather
+  // than a hard-coded constant — otherwise changing the scale silently
+  // rescales Power 11 itself.
+  const factor = (POWER_MULTIPLIER[power] ?? POWER_MULTIPLIER[11]) / POWER_MULTIPLIER[11];
   // Power 11 is the authored figure — return it EXACTLY. The nearest-20
   // rounding below approximates how the game rounds derived lower levels, and
   // applying it at Power 11 silently corrupted hand-entered values that aren't
@@ -416,12 +425,13 @@ const GUIDES = {
     // the page reads. The combo numbers in the gadget tips are the owner's own
     // measurements and are shown as authored.
     combatStats: [
-      { label: "Max Health", value: 4200, scaled: true },
-      { label: "Damage / Dagger", value: 570, scaled: true, tag: "3 daggers per shot" },
-      { label: "Full Attack", tpl: "3 × {0}", parts: [570], scaled: true, tagTpl: "{0} if all three land", tagParts: [1710] },
-      { label: "Poison Damage", value: 120, scaled: true, tag: "per tick" },
-      { label: "Super Damage / Dagger", value: 480, scaled: true, tag: "28 daggers" },
-      { label: "Slowing Toxin", value: 1920, scaled: true, tagTpl: "+{0} poison", tagParts: [240] },
+      { label: "Max Health", value: 5600, scaled: true, tagTpl: "+{0} with Shield Gear", tagParts: [900] },
+      { label: "Damage / Dagger", value: 760, scaled: true, tag: "3 daggers per shot" },
+      { label: "Full Attack", tpl: "3 × {0}", parts: [760], scaled: true, tagTpl: "{0} if all three land", tagParts: [2280] },
+      { label: "Poison Damage", value: 160, scaled: true, tag: "per tick" },
+      { label: "Healing Reduction", value: "50%", tag: "while poisoned" },
+      { label: "Super Damage", tpl: "14 × {0}", parts: [640], scaled: true, tagTpl: "{0} if every dagger lands", tagParts: [8960] },
+      { label: "Slowing Toxin", value: 2560, scaled: true, tagTpl: "+{0} poison", tagParts: [320] },
       { label: "Attack Range", value: "8.67 tiles", tag: "Long" },
       { label: "Super Range", value: "8.67 tiles" },
       { label: "Movement Speed", value: 820, tag: "Very Fast · 984 on hyper" },
@@ -538,7 +548,7 @@ const GUIDES = {
           },
           {
             lead: "Bait the dive with it.",
-            rest: "At full health, sit at the distance that tempts an aggro brawler to commit. When they do, back off while shooting — that's an instant 4,520 minimum on someone who can no longer disengage.",
+            rest: "At low health, sit at the distance that tempts an aggro brawler to commit. When they do, back off while shooting — that's an instant 4,520 minimum on someone who can no longer disengage.",
             videos: [{ src: "gadget2-defensive", label: "Gadget 2 as a defensive tool" }],
           },
         ],
@@ -601,7 +611,7 @@ const GUIDES = {
       bounty: "Chip, don't commit. Poison everything that peeks, let the ticks do the work, and bank stars by never dying. Your super is for removing a specific problem — usually their backline — not for opening a fight.",
       knockout: "Pure chip mode. Poison whoever peeks first and let the damage-over-time win the neutral for you. With no respawns, a poisoned enemy who has to back off is as good as a kill. Save the super for a target you can actually delete.",
       brawlBall: "Play noticeably more aggressive here. Farm your super off their aggro brawlers in the midfield scrap, then use it to dive their backline once they've committed. Slowing Toxin is the gadget — the slow both peels and sets up goals.",
-      heist: "You live in mid, chipping to farm super, and every super goes into the safe. Auto-aim it — see the clips below, this is the one place auto-aim is correct. Hold the hyper-super until the last shield break so it closes the game outright.",
+      heist: "You live in mid, chipping to farm super, and every super goes into the safe. Auto-aim it — see the clips below, this is the one place auto-aim is correct. Watch out for one trap though: auto-aim locks onto the nearest target, so with an enemy between you and the safe you'll jump onto THEM instead. Check what's in front of you before you press it. Hold the hyper-super until the last shield break so it closes the game outright.",
       gemGrab: "You can carry gems here. The Instapoison shield is what lets you survive a dive while holding them, and the super is your escape when aggro commits. If they're the ones on countdown, flip it — super straight onto their carrier.",
       hotZone: "Zone control. Your poison denies the circle without you standing in it, which is exactly what Crow wants — contest from the edge, tick them off the point, and take the super dive only when it removes whoever is anchoring the zone.",
     },
@@ -623,7 +633,7 @@ const GUIDES = {
 
     modeVideoNotes: {
       brawlBall: "Knowing these two scores is essential if you play Crow in Brawl Ball — watch them closely and drill them.",
-      heist: "Unlike against enemies, you want to AUTO-AIM the safe. Auto-aim breaks the shield; aiming behind it lands only about 13% safe damage. The same applies to the hyper-ult, and standing on the safe to ult does nothing at all.",
+      heist: "Unlike against enemies, you want to AUTO-AIM the safe. Auto-aim breaks the shield; aiming behind it lands only about 13% safe damage. The same applies to the hyper-ult, and standing on the safe to ult does nothing at all. One caveat: auto-aim takes the nearest target, so if an enemy is standing between you and the safe you'll dive them instead — clear the lane first.",
     },
 
     synergyReasons: {
