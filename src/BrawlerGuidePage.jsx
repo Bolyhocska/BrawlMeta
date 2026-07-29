@@ -139,13 +139,25 @@ function ClipSlot({ label, videoId, title, tone = "#8ee6b0" }) {
 // Owner-supplied muted loop clip. Autoplays only while on screen (one guide tab
 // is visible at a time, so at most a handful ever play). Falls back to the
 // design's placeholder if the file 404s.
-function VideoSlot({ base, src, label, tone = "#8ee6b0" }) {
+function VideoSlot({ base, src, label, tone = "#8ee6b0", kind }) {
   const [failed, setFailed] = useState(false);
-  const borderTone = tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)";
+  // A do/dont clip carries its verdict on the label and in the frame colour, so
+  // a "wrong way" demo can never be mistaken for instruction.
+  const mark = kind === "do" ? { c: "#8ee6b0", s: "✓" } : kind === "dont" ? { c: "#ff8f8f", s: "✕" } : null;
+  const borderTone = mark ? `${mark.c}3d`
+    : tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {label && (
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: "#9a9aab" }}>{titleCase(label)}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: mark ? mark.c : "#9a9aab" }}>
+          {mark && (
+            <span style={{
+              width: 15, height: 15, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center",
+              fontSize: 9, fontWeight: 700, background: `${mark.c}1f`, border: `1px solid ${mark.c}59`,
+            }}>{mark.s}</span>
+          )}
+          {titleCase(label)}
+        </span>
       )}
       <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${borderTone}` }}>
         {failed ? (
@@ -285,7 +297,7 @@ function TipRow({ n, tip, tone = "violet", videoBase }) {
 
   const clips = (list) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-      {list.map(v => <VideoSlot key={v.src} base={videoBase} src={v.src} label={v.label} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />)}
+      {list.map(v => <VideoSlot key={v.src} base={videoBase} src={v.src} label={v.label} kind={v.kind} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />)}
     </div>
   );
 
@@ -900,6 +912,13 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                       ? `${activeMap.map.toUpperCase()} · CLIPS`
                       : `${FORMAT_MODE(activeMode).toUpperCase()} · CLIPS`}
                   </span>
+                  {/* Why the mode's clips matter, when the technique is
+                      mode-wide rather than tied to one map. */}
+                  {guide?.modeVideoNotes?.[activeMode] && activeMapVideos.some(v => v.scope === "mode") && (
+                    <p style={{ fontSize: 14, lineHeight: 1.65, color: "#c9c9d6", margin: 0, maxWidth: 780 }}>
+                      {guide.modeVideoNotes[activeMode]}
+                    </p>
+                  )}
                   {/* Clips tagged do/dont split into a right-way / wrong-way
                       pair so a bad wall break can't be mistaken for an option.
                       Untagged clips render as one plain group. */}

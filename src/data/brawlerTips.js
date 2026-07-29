@@ -409,6 +409,258 @@ const GUIDES = {
       { lead: "Overwhelm him.", rest: "He has a slow reload and low damage for a marksman. Swarming him with fast brawlers is the single cleanest way to beat him — check the match-up data above for exactly who." },
     ],
   },
+
+  CROW: {
+    // Base figures from the community wiki's Power-1 stat block, scaled x1.5 to
+    // Power 11 (the level ranked is played at) so they match how the rest of
+    // the page reads. The combo numbers in the gadget tips are the owner's own
+    // measurements and are shown as authored.
+    combatStats: [
+      { label: "Max Health", value: 4200, scaled: true },
+      { label: "Damage / Dagger", value: 570, scaled: true, tag: "3 daggers per shot" },
+      { label: "Full Attack", tpl: "3 × {0}", parts: [570], scaled: true, tagTpl: "{0} if all three land", tagParts: [1710] },
+      { label: "Poison Damage", value: 120, scaled: true, tag: "per tick" },
+      { label: "Super Damage / Dagger", value: 480, scaled: true, tag: "28 daggers" },
+      { label: "Slowing Toxin", value: 1920, scaled: true, tagTpl: "+{0} poison", tagParts: [240] },
+      { label: "Attack Range", value: "8.67 tiles", tag: "Long" },
+      { label: "Super Range", value: "8.67 tiles" },
+      { label: "Movement Speed", value: 820, tag: "Very Fast · 984 on hyper" },
+      { label: "Reload Speed", value: "1.6s", tag: "Normal" },
+      { label: "Attack Spread", value: "20.25°" },
+      { label: "Gadget Charges", value: 3 },
+      { label: "Subclass", value: "Assassin" },
+    ],
+
+    builds: {
+      General: {
+        starPower: "Carrion Crow",
+        gadget: "Instapoison",
+        gears: ["Shield", "Damage"],
+        note: "The all-purpose Crow setup, and it plays on every mode and every map. Instapoison is the safer default — it converts your poison into instant damage and hands you a shield on demand.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      brawlBall: {
+        starPower: "Carrion Crow",
+        gadget: "Slowing Toxin",
+        gears: ["Shield", "Damage"],
+        note: "Brawl Ball is where we'd actively recommend the kunai over Instapoison — you're playing closer, and the slow both peels for you and sets up the score.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      bounty: {
+        starPower: "Carrion Crow", gadget: "Instapoison", gears: ["Shield", "Damage"],
+        note: "Same as general. Pros lean toward Slowing Toxin on open maps and into aggro comps — worth trying both to see which you prefer.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      knockout: {
+        starPower: "Carrion Crow", gadget: "Instapoison", gears: ["Shield", "Damage"],
+        note: "Same as general. Pros lean toward Slowing Toxin on open maps and into aggro comps — worth trying both to see which you prefer.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      heist: {
+        starPower: "Carrion Crow", gadget: "Instapoison", gears: ["Shield", "Damage"],
+        note: "Same as general. Instapoison keeps you alive in mid while you farm super off chip damage.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      gemGrab: {
+        starPower: "Carrion Crow", gadget: "Instapoison", gears: ["Shield", "Damage"],
+        note: "Same as general. The Instapoison shield is what lets you hold gems through a dive.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+      hotZone: {
+        starPower: "Carrion Crow", gadget: "Instapoison", gears: ["Shield", "Damage"],
+        note: "Same as general. Pros lean toward Slowing Toxin on the more open zones and into aggro comps.",
+        gearNote: "Shield Gear always. On bushy maps swap Damage for Speed — never Vision Gear, it does nothing for Crow.",
+      },
+    },
+
+    abilityNotes: {
+      "Carrion Crow": { pick: "main", body: "Extra damage on anything already below the health threshold — with your poison ticking on everything you touch, targets slide into that window constantly. This is the default star power; take it everywhere." },
+      "Extra Toxic": { pick: "situational", body: "Poisoned enemies deal less damage. Real value into heavy-damage comps, but it does nothing to help you finish a target, and finishing is Crow's whole job." },
+      "Instapoison": { pick: "main", body: "Dumps all remaining poison damage instantly and shields you for part of it. Two jobs in one button — the burst that confirms a kill, and the panic shield that survives a burst." },
+      "Slowing Toxin": { pick: "situational", body: "A kunai that damages, slows and poisons. Mainly defensive — it makes committing to you expensive — but it is the pick in Brawl Ball, and pros prefer it on open maps and into aggro." },
+    },
+
+    videoBase: "/guides/crow",
+
+    guideTabs: [
+      {
+        key: "aim", label: "Aim",
+        intro: "Crow fires three daggers in a spread. Almost everything about aiming him comes down to landing more than one dagger per shot — that single habit roughly doubles your damage.",
+        tips: [
+          {
+            lead: "Never aim straight at them.",
+            rest: "Aiming dead-on lands only the middle dagger. Aim at a slight angle — roughly 15–30° off centre — so two daggers connect instead of one.",
+            videos: [
+              { src: "aim-correct", label: "Correct aim — 2 hits per shot", kind: "do" },
+              { src: "aim-wrong", label: "Wrong aim — 1 hit per shot", kind: "dont" },
+            ],
+          },
+          {
+            lead: "Around cover, aim past the edge.",
+            rest: "Don't aim directly at someone behind a wall. Line the outside dagger up so it just clears the corner — that spreads the rest of the volley across the ground they have to move through.",
+            videos: [{ src: "aim-around-walls", label: "Wrong and correct way to shoot around walls" }],
+          },
+        ],
+      },
+      {
+        key: "gadget", label: "Gadget",
+        tips: [
+          { header: "Gadget 1 · Instapoison" },
+          {
+            lead: "Count four ticks, then reset.",
+            rest: "Let the poison run about 4 seconds — four ticks — before firing Instapoison. That maximises the window where the enemy cannot heal. Count it in your head, or watch your super bar: every tick charges it slightly.",
+            videos: [{ src: "gadget1-chip", label: "Using Gadget 1 to chip — press after 4s" }],
+            block: {
+              title: "Instapoison burst",
+              rows: [
+                { label: "1 dagger hit + gadget", value: "2,040" },
+                { label: "2 dagger hits + gadget", value: "2,800" },
+                { label: "3 dagger hits + gadget", value: "3,560" },
+              ],
+            },
+            note: "Use these numbers to plan the kill — if the target is under the threshold, the gadget finishes them on its own.",
+          },
+          {
+            lead: "It is also a panic shield.",
+            rest: "Low on health, fire it right before their shot lands and you tank a hit you had no business surviving. One dagger hit plus an instant gadget is a 912 shield.",
+            videos: [{ src: "gadget1-survivability", label: "Gadget 1 survivability" }],
+          },
+          { header: "Gadget 2 · Slowing Toxin" },
+          {
+            lead: "Reset your reload with it.",
+            rest: "Shoot, tap the gadget, shoot again — the kunai's poison is a separate instance from your attack poison, so the two stack. That chain is 4,520 damage.",
+            videos: [{ src: "gadget2-shot-reset", label: "Gadget 2 shot reset" }],
+          },
+          {
+            lead: "Go offensive only when they group.",
+            rest: "The kunai is a defensive tool by default. The exception is when the enemy team is bunched together and you're on high health — then it's free value.",
+            videos: [{ src: "gadget2-situational", label: "Situational shot — enemy grouped up" }],
+          },
+          {
+            lead: "Bait the dive with it.",
+            rest: "At full health, sit at the distance that tempts an aggro brawler to commit. When they do, back off while shooting — that's an instant 4,520 minimum on someone who can no longer disengage.",
+            videos: [{ src: "gadget2-defensive", label: "Gadget 2 as a defensive tool" }],
+          },
+        ],
+      },
+      {
+        key: "starpower", label: "Star Power & Super",
+        tips: [
+          { header: "Star Power" },
+          {
+            lead: "Always Carrion Crow.",
+            rest: "Take the damage star power everywhere. Your poison is constantly pushing targets under the health threshold, so the bonus is close to permanently active — and it applies to your super as well as your attack.",
+          },
+          { header: "Super · Ult" },
+          {
+            lead: "Never auto-aim the super.",
+            rest: "Auto-aim centres the dive and most of the daggers miss. Aim slightly behind or beside the target instead so the spread lands across them. After you land, Instapoison for the shield or Slowing Toxin for the damage.",
+            videos: [
+              { src: "super-aim-behind", label: "How to aim the ult — slightly behind", kind: "do" },
+              { src: "super-dont-autoaim", label: "Don't auto-aim the ult", kind: "dont" },
+            ],
+            note: "Heist is the exception and it's the exact reverse — there you DO auto-aim, straight at the safe. See the Heist mode read below.",
+          },
+          {
+            lead: "Dive the lowest-health target.",
+            rest: "Use the super to jump the squishy backline — throwers especially — and remove them from the fight. Fire a normal shot just before you jump: it lands more damage and spreads poison over the landing zone.",
+            videos: [
+              { src: "super-lowest-hp", label: "Aim the ult at the lowest HP enemy" },
+              { src: "super-dive-backline", label: "Dive the backline — shot before ult" },
+            ],
+          },
+          {
+            lead: "Don't dive someone who can leave.",
+            rest: "Never jump a target holding an escape — a Piper super, for instance. Crow's super is one of the slowest in the game to charge, so trading it for theirs is not an even trade. Wait until they've spent the gadget or super, then commit.",
+            videos: [{ src: "super-bad-dive", label: "How NOT to dive the backline", kind: "dont" }],
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "Crow's hypercharge absolutely shreds, and it's at its best on open maps. The one rule: empty your ammo before you hyper-super.",
+        tips: [
+          {
+            lead: "Use it to reach behind walls.",
+            rest: "An advanced trick for hitting targets tucked behind cover — very strong for confirming a kill or forcing an annoying brawler out of a pocket.",
+            videos: [{ src: "hyper-aim-trick", label: "Hyper aim trick" }],
+          },
+          {
+            lead: "Hyper-super at the very end of the hyper.",
+            rest: "Fire it just before the hyper expires: you still get the hyper version, and the super itself charges your next hyper. That's the loop.",
+            note: "Exception: to surprise someone, or into high-health tanky comps, supering early can get you two hyper-supers out of one hyper. Shoot before you super for maximum damage — and treat this as the exception, not the habit.",
+            videos: [{ src: "hyper-fast-charge", label: "Hyper trick — fast charge hyper" }],
+          },
+        ],
+      },
+    ],
+
+    // Crow is playable in every mode and on every map — these are about HOW,
+    // not whether.
+    modeNotes: {
+      bounty: "Chip, don't commit. Poison everything that peeks, let the ticks do the work, and bank stars by never dying. Your super is for removing a specific problem — usually their backline — not for opening a fight.",
+      knockout: "Pure chip mode. Poison whoever peeks first and let the damage-over-time win the neutral for you. With no respawns, a poisoned enemy who has to back off is as good as a kill. Save the super for a target you can actually delete.",
+      brawlBall: "Play noticeably more aggressive here. Farm your super off their aggro brawlers in the midfield scrap, then use it to dive their backline once they've committed. Slowing Toxin is the gadget — the slow both peels and sets up goals.",
+      heist: "You live in mid, chipping to farm super, and every super goes into the safe. Auto-aim it — see the clips below, this is the one place auto-aim is correct. Hold the hyper-super until the last shield break so it closes the game outright.",
+      gemGrab: "You can carry gems here. The Instapoison shield is what lets you survive a dive while holding them, and the super is your escape when aggro commits. If they're the ones on countdown, flip it — super straight onto their carrier.",
+      hotZone: "Zone control. Your poison denies the circle without you standing in it, which is exactly what Crow wants — contest from the edge, tick them off the point, and take the super dive only when it removes whoever is anchoring the zone.",
+    },
+
+    // Heist and Brawl Ball technique applies on every map in the mode.
+    modeVideos: {
+      brawlBall: [
+        { src: "mode-brawlball-score-1", label: "How to score in Brawl Ball #1" },
+        { src: "mode-brawlball-score-2", label: "How to score in Brawl Ball #2" },
+      ],
+      heist: [
+        { src: "mode-heist-ult-autoaim", label: "Heist ult — auto-aim the safe", kind: "do" },
+        { src: "mode-heist-hyper-autoaim", label: "Hyper-ult the safe — auto-aim", kind: "do" },
+        { src: "mode-heist-ult-wrong", label: "Wrong — aiming behind the safe", kind: "dont" },
+        { src: "mode-heist-hyper-wrong", label: "Wrong — hyper-ult behind the safe", kind: "dont" },
+        { src: "mode-heist-useless-ult", label: "Useless — standing on the safe to ult", kind: "dont" },
+      ],
+    },
+
+    modeVideoNotes: {
+      brawlBall: "Knowing these two scores is essential if you play Crow in Brawl Ball — watch them closely and drill them.",
+      heist: "Unlike against enemies, you want to AUTO-AIM the safe. Auto-aim breaks the shield; aiming behind it lands only about 13% safe damage. The same applies to the hyper-ult, and standing on the safe to ult does nothing at all.",
+    },
+
+    synergyReasons: {
+      POCO: "Sustain behind a brawler whose whole plan is surviving long enough for poison to finish the job.",
+      BYRON: "Byron's amp turns Crow's chip into real damage, and the heal keeps him at the health where he wants to dive.",
+      GENE: "Gene drags a target out of position and Crow's spread punishes them wherever they land.",
+    },
+
+    counterReasons: {
+      PIPER: "Out-ranges Crow outright and can leave the moment he commits — the matchup he least wants to see.",
+      BELLE: "Long range plus a mark that follows him; Crow has to cross open ground to answer and rarely survives it.",
+      "8-BIT": "Out-ranges and out-damages him from a position Crow can't dive profitably.",
+    },
+
+    counterTips: [
+      {
+        lead: "Out-range him.",
+        rest: "Snipers and sharpshooters simply beat Crow — he has to close distance to threaten, and crossing that gap is where he dies. Peek around walls to tap him and retreat before the poison stacks.",
+      },
+      {
+        lead: "Don't feed the super.",
+        rest: "Crow's super is one of the slowest to charge in the game. Every point of chip you eat is progress toward a dive on you. Break line of sight and let the poison expire rather than trading pointlessly.",
+      },
+      {
+        lead: "If he dives you, hold your escape.",
+        rest: "Wait for Crow to actually commit the super onto you, then use your gadget or super to leave. Burning it early just means you're standing there when he lands.",
+      },
+      {
+        lead: "Bring a spawner.",
+        rest: "Pets and turrets are miserable for Crow — his burst is low, so anything with a health bar he has to chew through costs him far more time than it costs you.",
+      },
+      {
+        lead: "Overwhelm him, but know the cost.",
+        rest: "High burst does kill him quickly, since he's squishy. Just be aware every hit you take on the way in feeds his super — so make sure you finish what you start.",
+      },
+    ],
+  },
 };
 
 // Local art overrides for abilities where the synced Brawlify CDN icon has
