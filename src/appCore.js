@@ -47,6 +47,20 @@ export const MODE_ICONS = {
   hotZone: MODE_ICON("48000017"), hotzone: MODE_ICON("48000017"),
 };
 
+// Official gear icons (same Brawlify CDN as the brawler / star power art).
+// The API exposes no gears endpoint, so these ids were identified by eye from
+// cdn.brawlify.com/gears/regular/: 0 Speed, 1 Health, 2 Damage, 3 Vision,
+// 4 Shield, 5 Reload Speed.
+const GEAR_ICON = (id) => `https://cdn.brawlify.com/gears/regular/${id}.png`;
+export const GEAR_ICONS = {
+  Speed: GEAR_ICON("62000000"),
+  Health: GEAR_ICON("62000001"),
+  Damage: GEAR_ICON("62000002"),
+  Vision: GEAR_ICON("62000003"),
+  Shield: GEAR_ICON("62000004"),
+  Reload: GEAR_ICON("62000005"),
+};
+
 export const formatMode = (mode) => {
   if (!mode) return "Unknown";
   const spaced = mode.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");

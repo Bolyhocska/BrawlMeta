@@ -11,7 +11,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
-import { supabase, MODE_ICONS } from "./appCore";
+import { supabase, MODE_ICONS, GEAR_ICONS } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import {
   getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS,
@@ -60,6 +60,14 @@ const statText = (c, power) => {
   if (c.scaled) return scaleStatValue(c.value, power).toLocaleString("en-US");
   return typeof c.value === "number" ? c.value.toLocaleString("en-US") : c.value;
 };
+
+// Map clips render in this order: the right way first, the wrong way second,
+// then anything untagged (mode-wide technique, which is neither).
+const CLIP_GROUPS = [
+  { kind: "do", label: "DO", color: "#8ee6b0", mark: "✓" },
+  { kind: "dont", label: "DON'T", color: "#ff8f8f", mark: "✕" },
+  { kind: null, label: null, color: null, mark: null },
+];
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -763,7 +771,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 4. Guide (aim / gadget / star power / hyper) ── */}
         {guide?.guideTabs?.length > 0 && (
           <Section
-            id="guide" variant="card" title={`${brawler.name} Guide`}
+            id="guide" variant="card" title={`Best ${brawler.name} Guide`}
             subtitle="Aim, gadget, star power, hypercharge & pro gameplay — with video breakdowns"
             open={isOpen("guide")} onToggle={() => toggleSection("guide")}
           >
@@ -886,17 +894,39 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   any mode-wide technique (Brawl Ball goal tricks apply to every
                   map in the mode, so they show alongside whichever is selected). */}
               {activeMapVideos.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>
                     {activeMapVideos.some(v => v.scope === "map")
                       ? `${activeMap.map.toUpperCase()} · CLIPS`
                       : `${FORMAT_MODE(activeMode).toUpperCase()} · CLIPS`}
                   </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
-                    {activeMapVideos.map(v => (
-                      <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label} />
-                    ))}
-                  </div>
+                  {/* Clips tagged do/dont split into a right-way / wrong-way
+                      pair so a bad wall break can't be mistaken for an option.
+                      Untagged clips render as one plain group. */}
+                  {CLIP_GROUPS.map(({ kind, label, color, mark }) => {
+                    const list = activeMapVideos.filter(v => (v.kind || null) === kind);
+                    if (!list.length) return null;
+                    return (
+                      <div key={String(kind)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {kind && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{
+                              width: 20, height: 20, borderRadius: 999, flexShrink: 0,
+                              display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700,
+                              background: `${color}1f`, color, border: `1px solid ${color}59`,
+                            }}>{mark}</span>
+                            <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color }}>{label}</span>
+                          </div>
+                        )}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+                          {list.map(v => (
+                            <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label}
+                              tone={kind === "dont" ? "#ff8f8f" : "#8ee6b0"} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1033,29 +1063,12 @@ const GEAR_DESC = {
 };
 
 // Gear artwork isn't in brawlerMeta.json (the Brawlify payload we sync carries
-// star powers and gadgets only), so gears get inline SVG glyphs instead —
-// self-contained, themed to the site's palette, and no external dependency to
-// break. Rounded joins to match the design's shape language.
+// star powers and gadgets only), so gears pull the official icons from the same
+// CDN via GEAR_ICONS. Tints are only used for the card accent border.
 const GEAR_TINT = { Speed: "#7cc4ff", Shield: "#8ee6b0", Damage: "#ff8f8f", Vision: "#ffce7a" };
-const GEAR_PATH = {
-  // shield outline
-  Shield: <path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 8.5-4.1-.9-7-4.3-7-8.5V6l7-3z" />,
-  // burst / impact star
-  Damage: <path d="M12 2.5l2.3 5.2 5.2-.6-3.4 4 3.4 4-5.2-.6L12 19.7 9.7 14.5l-5.2.6 3.4-4-3.4-4 5.2.6L12 2.5z" />,
-  // speed chevrons
-  Speed: <g><path d="M5 7l5 5-5 5" /><path d="M13 7l5 5-5 5" /></g>,
-  // eye
-  Vision: <g><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></g>,
-};
 
 function GearIcon({ name, size = 20 }) {
-  const tint = GEAR_TINT[name] || "#9a9aab";
-  const path = GEAR_PATH[name];
-  if (!path) return <span style={{ fontSize: size * 0.7, color: tint }}>⬢</span>;
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" role="img" aria-label={`${name} Gear`}
-      stroke={tint} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      {path}
-    </svg>
-  );
+  const url = GEAR_ICONS[name];
+  if (!url) return <span style={{ fontSize: size * 0.7, color: GEAR_TINT[name] || "#9a9aab" }}>⬢</span>;
+  return <img src={url} alt={`${name} Gear`} width={size} height={size} style={{ objectFit: "contain" }} />;
 }

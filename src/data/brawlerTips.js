@@ -60,12 +60,10 @@ export const POWER_LEVELS = [11, 9, 6, 1];
 // ── Guide content ────────────────────────────────────────────────────────────
 const GUIDES = {
   BROCK: {
-    subclass: "Damage Dealer",
-
     // Power-11 reference values. `scaled` entries are recomputed by the power
-    // selector; the rest are level-invariant.
-    // Composite figures use `parts` + `tpl` so every number inside them scales
-    // with the power selector, not just the headline (same for `tagParts`).
+    // selector; the rest are level-invariant. Composite figures use `parts` +
+    // `tpl` so every number inside them scales too, not just the headline
+    // (same for `tagParts`).
     combatStats: [
       { label: "Max Health", value: 6000, scaled: true, tagTpl: "+{0} with Shield Gear", tagParts: [900] },
       { label: "Damage / Rocket", value: 2320, scaled: true },
@@ -167,7 +165,7 @@ const GUIDES = {
             lead: "Use walls as aim assist.",
             rest: "A rocket that hits a wall still explodes and the splash reaches around it. Against someone hugging cover, aim at the wall edge beside them rather than the sliver of body you can see.",
             videos: [{ src: "aim-around-the-wall", label: "Around the wall trick" }],
-            note: "Tip: you can hit enemies behind a wall as long as they're touching it — the splash reaches through to confirm the kill.",
+            note: "Tip: You can hit enemies behind a wall as long as they're touching it — the splash reaches through to confirm the kill.",
             noteVideos: [{ src: "aim-behind-the-wall", label: "Behind the wall kill confirm" }],
           },
           { lead: "Pre-fire the choke.", rest: "Because the shot is slow, firing at a choke before they cross beats reacting after. Keep one rocket permanently in flight toward the lane they want." },
@@ -186,7 +184,7 @@ const GUIDES = {
               { src: "gadget1-kill-confirm", label: "Kill confirm" },
               { src: "gadget1-full-health-kill", label: "Full health kill" },
             ],
-            note: "When to go aggro: surprise them by jumping over a wall to engage. Land the gadget on top of them and auto-aim the first shot for a guaranteed 3,320 damage. Best when the enemy is below that HP or low on ammo — but never jump on someone holding a disengage (Surge's super, for example).",
+            note: "When to go aggro: Surprise them by jumping over a wall to engage. Land the gadget on top of them and auto-aim the first shot for a guaranteed 3,320 damage. Best when the enemy is below that HP or low on ammo — but never jump on someone holding a disengage (Surge's super, for example).",
             block: {
               title: "Gadget 1 damage guide",
               rows: [
@@ -208,7 +206,7 @@ const GUIDES = {
           {
             lead: "Rocket Fuel is a map tool.",
             rest: "Spend it on the wall that protects their comfort position — not on chip damage. The sightline it opens lasts the rest of the round. Check the map guide below for the exact wall break on each map.",
-            note: "Tip: reset your reload by tapping the gadget immediately after a shot, then firing again. Shot + gadget + shot = 2,320 + 2,000 + 2,320 = 6,640 damage.",
+            note: "Tip: Reset your reload by tapping the gadget immediately after a shot, then firing again. Shot + gadget + shot = 2,320 + 2,000 + 2,320 = 6,640 damage.",
             noteVideos: [{ src: "gadget2-shot-reset", label: "Reload reset" }],
           },
           {
@@ -225,7 +223,7 @@ const GUIDES = {
           {
             lead: "Swap to More Rockets on fixed objectives.",
             rest: "Hot Zone, Brawl Ball and Gem Grab give you targets worth the extra super damage. Heist is the exception — always Rocket No. 4 there, for the range.",
-            note: "Tip: with the added movement speed, you can use your super purely to escape an aggro brawler.",
+            note: "Tip: With the added movement speed, you can use your super purely to escape an aggro brawler.",
             noteVideos: [{ src: "starpower2-trick", label: "More Rockets trick" }],
           },
           { lead: "Count their reload, not yours.", rest: "With four rockets you win reload wars against every three-ammo marksman. Track when their last shot goes out and take the window." },
@@ -237,7 +235,7 @@ const GUIDES = {
           {
             lead: "Be aggressive.",
             rest: "You deal 5,358 per shot if all the rockets align — two shots is 10,716. You can shred almost anyone, but only if you hit. GET CLOSE. Exceptional in combination with Rocket Laces.",
-            note: "Tip: use the gadget to jump on top of the enemy and activate the hyper mid-air to catch them completely off guard.",
+            note: "Tip: Use the gadget to jump on top of the enemy and activate the hyper mid-air to catch them completely off guard.",
             noteVideos: [{ src: "hyper-tip", label: "Hypercharge timing" }],
           },
           {
@@ -294,16 +292,18 @@ const GUIDES = {
     // EVERY map in it (the Brawl Ball goal tricks are general technique, not
     // map-specific). Both resolve against videoBase.
     mapVideos: {
+      // `kind` splits the clips into a DO / DON'T pair of groups so the bad
+      // wall breaks read as warnings rather than options.
       "Belle's Rock": [
-        { src: "map-belles-rock-all-walls", label: "Belle's Rock — All Walls" },
-        { src: "map-belles-rock-left-wall", label: "Belle's Rock — Left Wall" },
-        { src: "map-belles-rock-right-wall", label: "Belle's Rock — Right Wall" },
-        { src: "map-belles-rock-aggro-wall-break", label: "Belle's Rock — Aggro Wall Break" },
+        { src: "map-belles-rock-all-walls", label: "Break every wall", kind: "do" },
+        { src: "map-belles-rock-aggro-wall-break", label: "Aggro wall break — leaves them cover", kind: "do" },
+        { src: "map-belles-rock-left-wall", label: "Bad break — left wall only, one block left", kind: "dont" },
+        { src: "map-belles-rock-right-wall", label: "Bad break — right wall only, one block left", kind: "dont" },
       ],
       "Flaring Phoenix": [
-        { src: "map-flaring-phoenix-good-wall-break", label: "Flaring Phoenix — Good Wall Break" },
-        { src: "map-flaring-phoenix-bad-wall-break", label: "Flaring Phoenix — Bad Wall Break" },
-        { src: "map-flaring-phoenix-own-wall-right-block", label: "Flaring Phoenix — Own Wall Right Block" },
+        { src: "map-flaring-phoenix-good-wall-break", label: "Good wall break", kind: "do" },
+        { src: "map-flaring-phoenix-own-wall-right-block", label: "Keep your own right block", kind: "do" },
+        { src: "map-flaring-phoenix-bad-wall-break", label: "Bad wall break", kind: "dont" },
       ],
       "New Horizons": [
         { src: "map-new-horizons-wall-break", label: "New Horizons — Wall Break" },
@@ -350,6 +350,8 @@ const GUIDES = {
     // Mode-level read, shown above the map pills — whether Brock belongs in the
     // mode at all, before you get to individual maps.
     modeNotes: {
+      knockout: "One of Brock's best modes. There are no respawns, so his job is to hold a lane from max range and win the opening trade before anyone can close. Break the wall that protects their camping spot early, then never walk into the open middle — every round you survive at range is a round your team plays 3v2.",
+      bounty: "A strong Brock mode for the same reason as Knockout: long sightlines and a heavy price on dying. Take a side lane, poke whoever peeks, and let the stars come from patient chip rather than pushes. Retreat with ammo in hand — a Brock who dies for one star hands the whole lead back.",
       heist: "Always Rocket No. 4 here, never More Rockets — the extra range is what lets you chip the safe from outside their reach. Chip it every single reload.",
       brawlBall: "Brock can be played far more aggressively here, and the goal tricks below are not optional — if you pick Brock in Brawl Ball you are expected to hit them. Watch the clips closely and drill them. He's mostly a Pinball Dreams pick; check the pick rates per map before locking him elsewhere.",
       gemGrab: "Not really a Brock mode, and the pick rates show it. Griff is the better pick almost every time. If you genuinely need the wall break, Brock is fine — but he cannot be your gem carrier.",
@@ -359,20 +361,20 @@ const GUIDES = {
     // Brock-specific notes on OUR ranked maps. Maps without a note fall back to
     // the live win rate alone rather than inventing advice.
     mapNotes: {
-      "Safe Zone": "The best Brock map in the pool. There's no cover to close through, so you post at max range and chip the safe every reload.",
+      "Safe Zone": "The best Brock map in the pool. Take a side lane and post at the very edge of your range — there's no cover for them to close through, so your job is simply to chip the safe every reload and never let anyone reach you. Rocket Fuel opens the lane in; Rocket No. 4 keeps the chip flowing.",
       "Out in the Open": "Long open sightlines and a back wall worth breaking. Open it early so they can't spawn-trap you, then hold the angle.",
       "Flaring Phoenix": "Mid wants a sniper and Brock qualifies. Play the centre lane, use the poison gas as a zoning partner, and don't contest the left thrower pocket.",
-      "Belle's Rock": "Play from the back rock formations and poke whoever peeks first. Rico is the pick you're answering — your range wins that neutral as long as you don't wander into the open middle.\n\nPro tip: if you have an aggro like Mina, use the aggro wall break shown below — it gives them a wall to hide behind and creates space for your team. Otherwise destroy all the walls exactly as demonstrated, because the wrong gadget shot leaves one block standing.",
-      "New Horizons": "Back-wall camping decides this map. You ARE the wall break, so open the sightline your snipers need and the rest of the round gets easier.",
-      "Layer Cake": "Strong here despite the map's anti-sniper reputation — just don't reveal Brock early. He's a fine last pick once their dive is on the board.",
-      "Kaboom Canyon": "Fire down the long central corridor and fall back the instant a diver commits. Don't over-draft snipers alongside you.",
+      "Belle's Rock": "Play from the back rock formations and poke whoever peeks first. Rico is the pick you're answering — your range wins that neutral as long as you don't wander into the open middle.\n\nPro tip: If you have an aggro like Mina, use the aggro wall break shown below — it gives them a wall to hide behind and creates space for your team. Otherwise destroy all the walls exactly as demonstrated, because the wrong gadget shot leaves one block standing.",
+      "New Horizons": "Back-wall camping decides this map. Take a side lane and open the back wall early — you ARE the wall break, so the sightline you create is what lets your snipers work for the rest of the round. Once it's open, hold the angle and punish anyone crossing.",
+      "Layer Cake": "Strong here despite the map's anti-sniper reputation — just don't reveal Brock early. He's a fine last pick once their dive is on the board. Play a side lane, break the wall that shields their mid control, and poke from behind your own cover.",
+      "Kaboom Canyon": "Fire down the long central corridor and fall back the instant a diver commits. Your job is defence-to-offence: hold the lane until the safe is exposed, then chip it. Don't over-draft snipers alongside you.",
       "Hot Potato": "Only pick Brock here if you genuinely need the wall break — Colt and Griff are the better wall-break options on this map. If you do take him, you're the follow-up damage behind the frontline, not the frontline.",
       "Pit Stop": "Don't play Brock here at all. There is no version of this map that wants him.",
-      "Bridge Too Far": "A good Brock map. The long bridge lanes are exactly his geometry — sit at max range, chip the safe every reload, and let the burn tick while they try to close.",
-      "Dry Season": "Standard Knockout-style play: hold your lane, poke whoever peeks first, and don't walk into the open. There's no specific wall break to learn on this map — run Rocket No. 4 and follow the aim guide above.",
-      "Shooting Star": "Standard Knockout-style play: hold your lane, poke whoever peeks first, and don't walk into the open. There's no specific wall break to learn on this map — run Rocket No. 4 and follow the aim guide above.",
-      "Hideout": "Standard Knockout-style play: hold your lane, poke whoever peeks first, and don't walk into the open. There's no specific wall break to learn on this map — run Rocket No. 4 and follow the aim guide above.",
-      "Ring of Fire": "The only Hot Zone map where Brock is defensible, and he's still a weak pick. His real value is opening walls against Penny.",
+      "Bridge Too Far": "A good Brock map. The long bridge lanes are exactly his geometry — sit at max range, chip the safe every reload, and let the burn tick while they try to close. Take a bridge lane and hold it; you're the safe DPS, not a defender.",
+      "Dry Season": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Watch for Sprout, Kit or Bolt on their last pick.",
+      "Shooting Star": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Dual ranged works well on this map, so you're rarely the only long-range pick.",
+      "Hideout": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Expect to be banned or contested; Brock is a priority pick on this map.",
+      "Ring of Fire": "The only Hot Zone map where Brock is defensible, and he's still a weak pick. His real value is opening walls against Penny — break her cover, then hold range off the zone rather than trying to contest it yourself.",
     },
 
     // Synergy DATA is live — the page reads Brock's per-teammate win rate from
