@@ -95,7 +95,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
           <X size={18} />
         </button>
 
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ BRAWLMETA ACCOUNT</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ BRAWLAPEX ACCOUNT</div>
         <h2 style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, color: "#f4f4fa", margin: "8px 0 18px" }}>
           {mode === "signup" ? "Create your account" : "Welcome back"}
         </h2>
@@ -130,7 +130,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
         )}
 
         <p style={{ marginTop: 16, textAlign: "center", fontSize: 12.5, color: "#8b8b9c" }}>
-          {mode === "signup" ? "Already have an account?" : "New to BrawlMeta?"}{" "}
+          {mode === "signup" ? "Already have an account?" : "New to BrawlApex?"}{" "}
           <button
             onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setMsg(null); }}
             style={{ background: "none", border: "none", color: "#c98bff", fontWeight: 700, cursor: "pointer", fontSize: 12.5, fontFamily: "'Chakra Petch', sans-serif" }}

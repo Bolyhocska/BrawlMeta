@@ -28,7 +28,7 @@ export function GuideShell({ children }) {
         display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
         fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#5a5a6a",
       }}>
-        <span>BRAWLMETA — UNOFFICIAL STRATEGY GUIDE</span>
+        <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
         <span>v2026.1 · META SNAPSHOT</span>
       </footer>
       <style>{`html { scroll-behavior: smooth; }`}</style>

@@ -37,7 +37,7 @@ export default function ComingSoonPage({ eyebrow, title, description }) {
         display: "flex", justifyContent: "space-between", fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11, color: "#5a5a6a",
       }}>
-        <span>BRAWLMETA — UNOFFICIAL STRATEGY GUIDE</span>
+        <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
         <span>v2026.1 · META SNAPSHOT</span>
       </footer>
     </div>

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "Single source of truth for the BrawlMeta Intelligence Engine. Encodes Bobby's draft framework ('The Best Draft Guide EVER' parts 1+2): the 7 draft classes, the counter triangle (Control > Anti-Tank > Tank/Aggro > Control), active vs passive mode tempo, thrower rules, space-maker timing, and 1-mid + 2-lane team structure. Read by src/data/draftEngine.js (browser) AND scrapers/meta_weights.py (daily intelligence refresh) — edit here, both sides follow.",
+    "description": "Single source of truth for the BrawlApex Intelligence Engine. Encodes Bobby's draft framework ('The Best Draft Guide EVER' parts 1+2): the 7 draft classes, the counter triangle (Control > Anti-Tank > Tank/Aggro > Control), active vs passive mode tempo, thrower rules, space-maker timing, and 1-mid + 2-lane team structure. Read by src/data/draftEngine.js (browser) AND scrapers/meta_weights.py (daily intelligence refresh) — edit here, both sides follow.",
     "sources": [
       "https://www.youtube.com/watch?v=Vn13u4Uggqc",
       "https://www.youtube.com/watch?v=XHp3r_D9rAA"

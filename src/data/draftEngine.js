@@ -1,4 +1,4 @@
-// ─── BrawlMeta Intelligence Engine ───────────────────────────────────────────
+// ─── BrawlApex Intelligence Engine ───────────────────────────────────────────
 // The 5-pass draft advisor. Combines three intelligence layers:
 //   • live per-map match data          (mapStats / matchupStats — from useMapMatches)
 //   • daily statistical intelligence   (brawler_intelligence table — true win

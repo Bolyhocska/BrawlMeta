@@ -166,10 +166,117 @@ function AccountMenu() {
   );
 }
 
+// Phone navigation. The desktop pill nav is a horizontal scroller, which on a
+// 375px screen showed about two and a half items with the rest hidden behind an
+// invisible scroll — so on small screens the whole thing collapses into this
+// single button and a full-width sheet listing every destination, dropdown
+// children included (flattened, since a menu inside a menu on a phone is
+// needless depth).
+function MobileNav() {
+  const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Lock body scroll while the sheet is open so the page behind doesn't drift.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const bar = { display: "block", width: 18, height: 2, borderRadius: 2, background: "#f4f4fa", transition: "transform .22s ease, opacity .18s ease" };
+
+  return (
+    <div className="mobile-nav">
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        style={{
+          display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+          width: 42, height: 42, borderRadius: 13, cursor: "pointer",
+          background: open ? "rgba(179,107,255,.16)" : "rgba(255,255,255,.05)",
+          border: `1px solid ${open ? "rgba(179,107,255,.4)" : "rgba(255,255,255,.12)"}`,
+          transition: "background .2s ease, border-color .2s ease",
+        }}
+      >
+        <span style={{ ...bar, transform: open ? "translateY(6px) rotate(45deg)" : "none" }} />
+        <span style={{ ...bar, opacity: open ? 0 : 1 }} />
+        <span style={{ ...bar, transform: open ? "translateY(-6px) rotate(-45deg)" : "none" }} />
+      </button>
+
+      {/* Backdrop + sheet. Rendered together so one tap outside closes it. */}
+      <div
+        onClick={() => setOpen(false)}
+        style={{
+          position: "fixed", inset: 0, zIndex: 190, background: "rgba(6,6,10,.6)",
+          backdropFilter: "blur(3px)", opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none", transition: "opacity .22s ease",
+        }}
+      />
+      <div style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, width: "min(320px, 86vw)", zIndex: 200,
+        background: "rgba(11,11,17,.98)", borderLeft: "1px solid rgba(255,255,255,.1)",
+        boxShadow: "-24px 0 60px rgba(0,0,0,.55)", padding: "18px 16px",
+        display: "flex", flexDirection: "column", gap: 4, overflowY: "auto",
+        transform: open ? "translateX(0)" : "translateX(100%)",
+        transition: "transform .26s cubic-bezier(.22,.75,.3,1)",
+      }}>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "2px 6px 12px", marginBottom: 6, borderBottom: "1px solid rgba(255,255,255,.08)",
+        }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: "#8a7fa6" }}>MENU</span>
+          <span style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
+            border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
+            LIVE
+          </span>
+        </div>
+
+        {NAV_ITEMS.map(n => n.dropdown ? (
+          <div key={n.label} style={{ marginTop: 6 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: 1.6, color: "#6f7180", padding: "8px 14px 4px" }}>
+              {n.label.toUpperCase()}
+            </div>
+            {n.dropdown.map(d => (
+              <Link key={d.to} to={d.to} onClick={() => setOpen(false)} className="mobile-nav-link" style={{
+                display: "flex", flexDirection: "column", gap: 1, padding: "11px 14px", borderRadius: 14,
+                textDecoration: "none", color: "#d9d9e6", fontFamily: "'Chakra Petch', sans-serif",
+              }}>
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{d.label}</span>
+                <span style={{ fontSize: 11.5, color: "#8b8b9c" }}>{d.desc}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Link key={n.label} to={n.to} onClick={() => setOpen(false)} className="mobile-nav-link" style={{
+            display: "block", padding: "13px 14px", borderRadius: 14, textDecoration: "none",
+            color: "#e9e9f2", fontFamily: "'Chakra Petch', sans-serif", fontSize: 15, fontWeight: 600,
+          }}>
+            {n.label}
+          </Link>
+        ))}
+
+        {!user && (
+          <p style={{ margin: "14px 14px 0", fontSize: 11.5, lineHeight: 1.5, color: "#6f7180", fontFamily: "'Chakra Petch', sans-serif" }}>
+            Sign in to save drafts and enter tournaments.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SiteHeader() {
   return (
     <header className="site-header" style={{ position: "relative", zIndex: 40, display: "flex", alignItems: "center", gap: 22, padding: "22px 5vw", flexWrap: "nowrap" }}>
-      <Link to="/" aria-label="BrawlMeta home" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", flexShrink: 0 }}>
+      <Link to="/" aria-label="BrawlApex home" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", flexShrink: 0 }}>
         <div style={{
           position: "relative", width: 42, height: 42, borderRadius: 13, background: "#08080b",
           border: "1px solid rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -183,7 +290,7 @@ export default function SiteHeader() {
         </div>
         <div style={{ lineHeight: .9 }}>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 20, letterSpacing: 1, color: "#f4f4fa" }}>
-            Brawl<span style={{ color: "#b36bff" }}>Meta</span>
+            Brawl<span style={{ color: "#b36bff" }}>Apex</span>
           </div>
         </div>
       </Link>
@@ -196,7 +303,7 @@ export default function SiteHeader() {
 
       <div className="site-header-right" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
         <AccountMenu />
-        <div className="header-live" style={{
+        <div className="header-live desktop-live" style={{
           display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
           border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
           fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
@@ -205,6 +312,8 @@ export default function SiteHeader() {
           LIVE
         </div>
       </div>
+
+      <MobileNav />
 
       {/* Self-contained responsive rules — SiteHeader is used on multiple
           top-level routes (Home, App, placeholders), each its own route
@@ -215,12 +324,21 @@ export default function SiteHeader() {
         .site-nav { max-width: 100%; scrollbar-width: none; }
         .site-nav::-webkit-scrollbar { display: none; }
         .site-nav a { white-space: nowrap; }
+        .mobile-nav { display: none; }
+        .mobile-nav-link { transition: background .18s ease, color .18s ease; }
+        .mobile-nav-link:active { background: rgba(179,107,255,.18); }
+        @media (hover: hover) { .mobile-nav-link:hover { background: rgba(179,107,255,.12); } }
         @media (max-width: 860px) {
           .site-header { padding: 14px 4vw !important; gap: 12px !important; }
           .site-nav a { padding: 8px 14px !important; font-size: 13px !important; }
         }
-        @media (max-width: 560px) {
-          .header-live { display: none !important; }
+        /* Below 760px the pill nav can't show enough items to be useful, so it
+           gives way entirely to the hamburger sheet. */
+        @media (max-width: 760px) {
+          .site-nav { display: none !important; }
+          .mobile-nav { display: block; margin-left: auto; }
+          .site-header-right { flex-direction: row !important; align-items: center !important; gap: 10px !important; }
+          .desktop-live { display: none !important; }
         }
       `}</style>
     </header>

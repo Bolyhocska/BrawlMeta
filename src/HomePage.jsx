@@ -169,7 +169,7 @@ export default function HomePage() {
         fontSize: 11, color: "#5a5a6a",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <span>BRAWLMETA — UNOFFICIAL STRATEGY GUIDE</span>
+          <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
           <span>v2026.1 · META SNAPSHOT</span>
         </div>
         <p style={{ margin: 0, lineHeight: 1.7, color: "#4a4a58", maxWidth: 760 }}>

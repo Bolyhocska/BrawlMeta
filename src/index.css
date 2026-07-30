@@ -50,6 +50,17 @@
   }
 }
 
+/* Global border-box. App.jsx already injected this for /app and the brawler
+   guide routes, but the Guides / Home / Scrims / Tournaments pages never got
+   it — so padding there added to declared widths and pushed elements past the
+   viewport (the brawler-guide search field rendered 388px wide inside a 337px
+   column on a phone, clipped at both ends). Making it global brings those
+   pages in line with the rest of the app and with the design handoff, which
+   specifies border-box. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   /* `clip` (not `hidden`) prevents horizontal scroll WITHOUT establishing a
@@ -68,4 +79,54 @@ html {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Interaction feel ──────────────────────────────────────────────────────
+   Most of the app styles inline, so hover/active states were instant snaps.
+   These give every interactive element a consistent ease without touching a
+   single component — anything that sets its own `transition` inline still
+   wins, since inline styles beat a stylesheet rule. */
+button,
+a,
+select,
+[role="button"],
+summary {
+  transition:
+    background-color .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease,
+    opacity .18s ease,
+    transform .12s ease;
+}
+
+/* A small give on press, so a tap reads as a tap. Skipped for elements that
+   already carry their own transform (the collapse chevrons rotate). */
+button:active:not([aria-expanded]),
+a:active,
+[role="button"]:active:not([aria-expanded]) {
+  transform: scale(.975);
+}
+
+/* Keyboard focus stays obvious without adding a ring to every mouse click. */
+:focus-visible {
+  outline: 2px solid rgba(179, 107, 255, .7);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+img,
+video {
+  /* Media fades in rather than popping once decoded. */
+  transition: opacity .2s ease;
+}
+
+/* Respect the OS setting — no motion for anyone who asked for none. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
 }

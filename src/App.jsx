@@ -104,7 +104,7 @@ function useBrawlerStats(selectedPatch) {
 
 const VALID_TABS = ["trending", "meta", "brawlers", "premium"];
 
-function BrawlMeta() {
+function BrawlApex() {
   // Derived directly from the URL on every render, not stored in state —
   // navigating between /app?tab=X and /app?tab=Y stays on the same route, so
   // React Router doesn't remount this component; a useState initial value
@@ -461,7 +461,7 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
         </div>
         {rotation.length === 0 ? (
           <div style={{ borderRadius: 24, border: "1px dashed rgba(255,255,255,.14)", padding: "34px 24px", textAlign: "center", color: "#6f7180", fontSize: 13.5 }}>
-            Rotation data lands here after the next scraper run — trigger the BrawlMeta Auto-Scraper workflow to fill it now.
+            Rotation data lands here after the next scraper run — trigger the BrawlApex Auto-Scraper workflow to fill it now.
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 16 }}>
@@ -609,7 +609,7 @@ function PremiumView() {
       <div style={{ width: 48, height: 48, background: "rgba(255,180,61,0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Crown size={24} color="#ffb43d" />
       </div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif" }}>Unlock BrawlMeta Pro</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif" }}>Unlock BrawlApex Pro</h2>
       <p style={{ color: "#64748b", fontSize: 13, marginTop: 6 }}>Gain deep access to the raw machine logs that global professional clubs utilize.</p>
       <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: 18, marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Real-time companion overlay linkage</span></div>
@@ -696,7 +696,7 @@ function BrawlerGuideRoute() {
 
   useEffect(() => {
     if (!brawler) return;
-    document.title = `${brawler.name} Guide — BrawlMeta`;
+    document.title = `${brawler.name} Guide — BrawlApex`;
     const setMeta = (name, content) => {
       let tag = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
       if (!tag) {
@@ -706,9 +706,9 @@ function BrawlerGuideRoute() {
       }
       tag.setAttribute("content", content);
     };
-    const description = brawler.description || `${brawler.name} ranked stats, win rate, and draft guide on BrawlMeta.`;
+    const description = brawler.description || `${brawler.name} ranked stats, win rate, and draft guide on BrawlApex.`;
     setMeta("description", description);
-    setMeta("og:title", `${brawler.name} Guide — BrawlMeta`);
+    setMeta("og:title", `${brawler.name} Guide — BrawlApex`);
     setMeta("og:description", description);
     if (brawler.imageUrl) setMeta("og:image", brawler.imageUrl);
   }, [brawler]);
@@ -734,9 +734,9 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/app" element={<BrawlMeta />} />
+      <Route path="/app" element={<BrawlApex />} />
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
-      <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlMeta soon." />} />
+      <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlApex soon." />} />
       <Route path="/scrims" element={<ScrimsPage />} />
       <Route path="/tournaments" element={<TournamentLandingPage />} />
       <Route path="/tournaments/create" element={<CreateTournamentPage />} />
@@ -749,7 +749,7 @@ export default function AppRoutes() {
       <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
       <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
       <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
-      <Route path="*" element={<BrawlMeta />} />
+      <Route path="*" element={<BrawlApex />} />
     </Routes>
   );
 }

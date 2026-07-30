@@ -552,6 +552,21 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
 
   const tierBand = TIER_BANDS[tier] || TIER_BANDS.S;
 
+  // Built from the tabs this brawler actually has. It used to be hardcoded and
+  // promised "pro gameplay" on every guide, including ones with no Pro tab.
+  const guideSubtitle = useMemo(() => {
+    const labels = (guide?.guideTabs || []).map(t => t.label.toLowerCase());
+    if (!labels.length) return "Video breakdowns";
+    // A label can itself contain an ampersand ("Star Power & Super"), which
+    // would read as "... & super & hyper" if we also joined with one — so fall
+    // back to plain commas whenever that happens.
+    const anyAmpersand = labels.some(l => l.includes("&"));
+    const list = labels.length === 1 ? labels[0]
+      : anyAmpersand ? labels.join(", ")
+      : `${labels.slice(0, -1).join(", ")} & ${labels[labels.length - 1]}`;
+    return `${list.charAt(0).toUpperCase()}${list.slice(1)} — with video breakdowns`;
+  }, [guide]);
+
   // The rail only lists sections this brawler actually renders — a link to a
   // section that isn't on the page is a dead click.
   const present = {
@@ -634,7 +649,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                   background: `${brawler.rarityColor}1f`, color: brawler.rarityColor, border: `1px solid ${brawler.rarityColor}4d`,
                 }}>{brawler.rarity}</span>
                 {/* OUR draft class (Sniper), not Supercell's official one (Marksman) */}
-                <span title="BrawlMeta draft class" style={{
+                <span title="BrawlApex draft class" style={{
                   fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: "6px 14px", borderRadius: 999,
                   background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.28)",
                 }}>{classLabel(draftClassOf(brawler.key))}</span>
@@ -666,9 +681,9 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
             <StatCard label="Overall Win Rate" value={brawler.winRate != null ? `${brawler.winRate}%` : "—"} color={brawler.winRate != null ? wrColor(brawler.winRate) : "#f4f4fa"} />
             <StatCard label="Overall Use Rate" value={brawler.pickRate != null ? `${brawler.pickRate}%` : "—"} color="#8ee6b0" />
             {/* The design's "Meta Score" is replaced by OUR tier classification. */}
-            <div title={provisional ? "Provisional — the general tier list is still being curated" : "BrawlMeta general tier list"}
+            <div title={provisional ? "Provisional — the general tier list is still being curated" : "BrawlApex general tier list"}
               style={{ padding: "20px 22px", borderRadius: 20, background: tierBand.bg, border: `1px solid ${tierBand.border}` }}>
-              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#9a9aab" }}>BrawlMeta Tier</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#9a9aab" }}>BrawlApex Tier</div>
               <div style={{ fontSize: 24, fontWeight: 700, marginTop: 6, color: tierBand.color, fontFamily: DISPLAY }}>
                 {tier}-Tier
               </div>
@@ -784,7 +799,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {guide?.guideTabs?.length > 0 && (
           <Section
             id="guide" variant="card" title={`Best ${brawler.name} Guide`}
-            subtitle="Aim, gadget, star power, hypercharge & pro gameplay — with video breakdowns"
+            subtitle={guideSubtitle}
             open={isOpen("guide")} onToggle={() => toggleSection("guide")}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>

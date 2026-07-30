@@ -1,5 +1,5 @@
 // ─── Site footer with the required Supercell fan-content disclaimer ──────────
-// Shown across the app. BrawlMeta reads only the official public API and is not
+// Shown across the app. BrawlApex reads only the official public API and is not
 // a Supercell product; the disclaimer follows Supercell's Fan Content Policy.
 
 export default function SiteFooter() {
@@ -16,7 +16,7 @@ export default function SiteFooter() {
           Supercell's Fan Content Policy
         </a>.
         <div style={{ marginTop: 8, color: "#4a4a58" }}>
-          BrawlMeta is a fan-made stats & tournament platform. Brawl Stars and its assets are trademarks of Supercell.
+          BrawlApex is a fan-made stats & tournament platform. Brawl Stars and its assets are trademarks of Supercell.
         </div>
       </div>
     </footer>
