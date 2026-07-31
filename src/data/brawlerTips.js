@@ -671,6 +671,250 @@ const GUIDES = {
       },
     ],
   },
+
+  SURGE: {
+    // Power-11 figures read straight off the in-game Brawler Stats card. The
+    // 2,360 is the DIRECT hit — Surge's shot splits in two on contact, and the
+    // wall-shot row below is what To The Max turns that into when the splits
+    // come back off a wall (owner-measured: 3,540 with one split returning,
+    // 4,720 with both).
+    combatStats: [
+      { label: "Max Health", value: 6600, scaled: true, tagTpl: "+{0} with Shield Gear", tagParts: [900] },
+      { label: "Damage / Shot", value: 2360, scaled: true, tag: "Splits in two on contact" },
+      { label: "Wall Shot · To The Max", tpl: "{0} – {1}", parts: [3540, 4720], scaled: true, tag: "One or both splits return" },
+      { label: "Super Damage", value: 2000, scaled: true, tag: "Party Tricks" },
+      { label: "Shots to Super", value: 3, tag: "2 if the Super hit two enemies" },
+      { label: "Ammo", value: 3 },
+      { label: "Attack Range", value: "Normal", tag: "Longer from Stage 2" },
+      { label: "Super Range", value: "Short" },
+      { label: "Movement Speed", value: 720, tag: "Normal · faster from Stage 1" },
+      { label: "Reload Speed", value: "Slow" },
+      { label: "Stage 1", value: "Move speed" },
+      { label: "Stage 2", value: "Weapon range" },
+      { label: "Stage 3", value: "Splits into 6", tag: "instead of 2 · max stage" },
+      { label: "Subclass", value: "Damage Dealer" },
+    ],
+
+    // Surge's loadout does not change. It is Power Shield + Serve Ice Cold in
+    // every mode on every map, so the mode tabs exist for the mode-specific
+    // reasoning rather than for a different build.
+    builds: {
+      General: {
+        starPower: "Serve Ice Cold",
+        gadget: "Power Shield",
+        gears: ["Shield", "Speed"],
+        note: "This is the Surge build, everywhere. Power Shield and Serve Ice Cold in every mode and on every map — Power Surge is never played in 3v3, and To The Max belongs in Showdown.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      knockout: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. With no respawns, keeping your Stage 1 through a death is worth more here than anywhere else.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      bounty: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. Dying costs you stages and stars at the same time, so Power Shield is doing double duty.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      heist: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. You're farming Super in mid rather than hitting the safe, and the shield is what keeps you there.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      brawlBall: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. The ammo Power Shield returns is what lets you follow up a goal trick instead of standing there empty.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      gemGrab: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. You're carrying gems, so the shield is what survives the dive that comes for them.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+      hotZone: {
+        starPower: "Serve Ice Cold", gadget: "Power Shield", gears: ["Shield", "Speed"],
+        note: "Same as general. Contest from the edge and let the shield buy you the extra seconds on the point.",
+        gearNote: "Shield and Speed by default. On maps without bushes, swap Speed for Damage Gear.",
+      },
+    },
+
+    abilityNotes: {
+      "Serve Ice Cold": { pick: "main", body: "Keeps your Stage 1 upgrade for the whole match, so a death no longer drops you all the way back to a slow, short-range Surge. In 3v3 this is always the pick — Surge's entire game is about not losing progress, and this is the only thing that protects it." },
+      "To The Max": { pick: "situational", body: "Your shot splits when it hits a wall, so firing at the wall behind a target can hit them twice — more damage and a faster Super. Genuinely strong tech and worth learning, but it belongs in Showdown and casual play. In 3v3 the permanent Stage 1 wins every time." },
+      "Power Shield": { pick: "main", body: "Eats most of the next incoming hit and converts it into 2 reloaded ammo. Defence and offence in one button, and the reason you can commit to an aggressive jump at all — but only if you fire it when a shot is genuinely on the way." },
+      "Power Surge": { pick: "skip", body: "Never play this. It raises your stage temporarily, but it does not change the 3 shots you need to charge your Super — so it buys you nothing you can build on. Power Shield's free ammo plus the damage it absorbs is a strictly better payoff." },
+    },
+
+    videoBase: "/guides/surge",
+
+    guideTabs: [
+      {
+        key: "gadget", label: "Gadget",
+        tips: [
+          { header: "Gadget 1 · Power Surge" },
+          {
+            lead: "Never play it.",
+            rest: "Without the gadget it takes 3 shots to charge your Super. With the gadget active it still takes 3 shots — the one thing you would want it for, it does not do. Power Shield's 2 returned ammo plus the damage it absorbs is the higher pay-off every single time.",
+            videos: [{ src: "gadget1-useless", label: "Gadget 1 is useless — still 3 shots", kind: "dont" }],
+          },
+          { header: "Gadget 2 · Power Shield" },
+          {
+            lead: "Wait for the shot — don't guess.",
+            rest: "Power Shield only pays off if a hit actually lands inside the window, so fire it when you can already see the shot coming. Pop it early and good players will simply hold their attack and watch it expire. The reliable pattern is the aggressive one: jump in, empty your ammo, activate the gadget as they commit, then keep shooting with what it hands back.",
+          },
+          {
+            lead: "Bait the big single-hit brawlers.",
+            rest: "Against anyone whose damage arrives in one large chunk, sit at low health and let them come to you. Absorb that shot with the gadget, then spend the returned ammo on an immediate Super to finish them — they've used their window and you've been handed yours.",
+          },
+        ],
+      },
+      {
+        key: "super", label: "Super & Star Power",
+        intro: "Surge's Super is both his damage and his progression — every one you land makes the next fight easier, and every death takes it away. Most of playing him well is managing that one number.",
+        tips: [
+          { header: "Super · Party Tricks" },
+          {
+            lead: "Shoot once, then Super.",
+            rest: "Fire an ammo just before you ult. The shot lands after the Super has already gone out, so it counts toward the next one — leaving you 2 shots from charged instead of 3. It costs nothing and should be your default habit.",
+            videos: [{ src: "super-charge-trick", label: "Surge ult charge trick" }],
+          },
+          {
+            lead: "Land it — the radius lies.",
+            rest: "The outer edge of the ult ring does not connect. Clip someone with the rim and you'll land next to them having dealt no damage at all, which on an aggressive jump is simply how you die. Commit only when they are properly inside the circle.",
+            videos: [
+              { src: "super-range-hit", label: "Inside the radius — hit", kind: "do" },
+              { src: "super-range-no-hit", label: "On the rim — no hit", kind: "dont" },
+            ],
+          },
+          {
+            lead: "Three shots to charge.",
+            rest: "Land 3 shots and the Super is up. Landing the Super itself on a single target doesn't shorten that — you still need 3 shots afterwards, so don't count on the ult to pay for the next one.",
+            videos: [
+              { src: "super-3-shots-for-super", label: "3 shots to charge the Super" },
+              { src: "super-then-3-shots", label: "Super on one target — still 3 shots" },
+            ],
+          },
+          {
+            lead: "Catch two enemies and you only need two.",
+            rest: "A Super that lands on two opponents leaves you 2 shots from the next one. Chaining upgrades is the entire Surge game plan, so take the double whenever the fight offers it.",
+            videos: [{ src: "super-double-hit-2-shots", label: "Double hit — only 2 shots after" }],
+            block: {
+              title: "Super combo damage",
+              rows: [
+                { label: "Super + 1 shot", value: "4,360" },
+                { label: "Super + 2 shots", value: "6,720" },
+                { label: "Super + 3 shots", value: "9,080" },
+              ],
+            },
+            note: "Keep these in your head before you jump — they tell you whether the target is actually dead, or whether you're about to land next to a survivor with no ammo.",
+          },
+          { header: "Star Power 1 · To The Max" },
+          {
+            lead: "Showdown and casual only.",
+            rest: "In 3v3 the answer is always Serve Ice Cold. To The Max is real tech and worth knowing, but everything in this sub-section only works while it's equipped — don't take these tips into a ranked game.",
+          },
+          {
+            lead: "Shoot the wall behind them, not them.",
+            rest: "Your shot splits on walls, so firing into the wall BEHIND a target hits them going in and again on the rebound. That charges your Super in 2 shots instead of 3 — and against a wide target like Frank a perfect shot can do it in 1, though that's unreliable enough that you should always plan for 2. The same geometry is a damage upgrade: an enemy stood against a wall takes 3,540 or 4,720 instead of 2,360.",
+            videos: [{ src: "sp1-fast-charge-extra-damage", label: "Fast charge + extra damage" }],
+          },
+          {
+            lead: "Chip through the wall before you jump it.",
+            rest: "Before ulting over cover, land a wall shot on them first and then jump across to finish. Don't forget the outer border of the map counts as a wall too — it works exactly the same way.",
+            videos: [{ src: "sp1-attack-behind-walls", label: "Attacking enemies behind walls" }],
+          },
+          { header: "Star Power 2 · Serve Ice Cold" },
+          {
+            lead: "Hold the opening Super against aggro.",
+            rest: "Don't spend your opening Super to upgrade early when they have a diver — an Edgar can reach you in the first seconds, and a Surge with no Super is a free kill. Keep it as the answer to the dive. Against a comp with no aggro at all the opposite is true: ult straight away and use the extra range to land more shots.",
+            videos: [{ src: "sp2-save-super-for-aggro", label: "Save the Super for aggro" }],
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "Surge's hypercharge is broken, and there isn't much nuance to it — the skill is in when you spend it, not how.",
+        tips: [
+          {
+            lead: "Land it on top of them, then auto-aim.",
+            rest: "Hyper-ult directly onto the enemy, auto-aim your shots, activate Power Shield for the extra ammo, and there is very little they can do about it. This is one of the few Surge situations where you don't need to be clever.",
+          },
+          {
+            lead: "Keep your Super charge in mind and chain them.",
+            rest: "The real value is the chain. Track how close the next Super is before you commit, because a hyper that ends with another Super already banked turns one won fight into a won round.",
+          },
+        ],
+      },
+      {
+        key: "gameplay", label: "Gameplay",
+        intro: "Surge is playable on every map in the pool — he just struggles more in heavy bush, which is exactly why Speed Gear is in the default build. Everything below is about protecting the snowball.",
+        tips: [
+          {
+            lead: "Not dying is the whole game.",
+            rest: "A death resets your upgrade stages, and a Stage 0 Surge is one of the weakest brawlers on the field. Every aggressive decision has to be weighed against that — the trade that looks even usually isn't, because you're also paying with your progression. Don't be too aggro.",
+          },
+          {
+            lead: "Farm 1v1s until you're maxed.",
+            rest: "At low stages, keep the game to trades you control: chip a single opponent, bank the Super, take the upgrade. Only once you're at max stage — the one where your attack splits into 6 — should you look for 2v1s and start taking the game over.",
+          },
+          {
+            lead: "Walls are your best friend.",
+            rest: "Chip around cover and ult over walls. Your Super ignores the geometry everyone else has to walk around, which is what makes an even-looking position suddenly not one. Play the map as a set of walls you can appear behind.",
+          },
+        ],
+      },
+    ],
+
+    // Surge is playable everywhere, so these are about HOW the snowball gets
+    // built in each mode rather than whether to pick him.
+    modeNotes: {
+      gemGrab: "You're the gem carrier. Farm your Super early and then hold it — it is your escape with the gems, not your engage. Losing the carry resets your stages and hands them the count in the same moment, which is the worst trade available to you.",
+      heist: "You are not really safe damage. Your job is farming Super off their mid presence and keeping the centre under control so your actual damage dealers get free hits on the safe. Chip, upgrade, hold the middle.",
+      brawlBall: "The two goal tricks below are not optional — if you pick Surge in Brawl Ball you're expected to hit them. Watch both closely and drill them.",
+      bounty: "Don't die. Bounty punishes a reset harder than any other mode, because you lose your stages and hand them stars at the same time. Chip, upgrade, and only push once you're fully stacked.",
+      knockout: "Don't die. With no respawns a reset Surge is a lost round — play the neutral, farm your stages off safe chip, and take the 2v1 only once you're at max stage.",
+      hotZone: "Contest from the edge rather than standing in the circle, and let your stages come off chip damage. The general rule applies harder here than most places: a Surge who trades his life for a few seconds of contest can't hold the zone for the rest of the round.",
+    },
+
+    // Brawl Ball technique applies on every map in the mode.
+    modeVideos: {
+      brawlBall: [
+        { src: "mode-brawlball-goal-trick-1", label: "Goal trick #1" },
+        { src: "mode-brawlball-goal-trick-2", label: "Goal trick #2" },
+      ],
+    },
+
+    modeVideoNotes: {
+      brawlBall: "Learning these two scores is essential if you play Surge in Brawl Ball — watch them closely and drill them.",
+    },
+
+    counterTips: [
+      {
+        lead: "Do not feed his Super. At all.",
+        rest: "Every point of chip you give up is progress toward another upgrade, and upgrades are the only reason he's a problem. At his lower stages his range is short — out-range him and refuse the trade entirely.",
+      },
+      {
+        lead: "Bait the gadget.",
+        rest: "If a Surge pushes in with his Super up, expect Power Shield. Hide rather than shoot: a shot into the shield hands him 2 free ammo and absorbs your damage. The only exception is when the shot is a guaranteed kill.",
+      },
+      {
+        lead: "Trade with him at max stage.",
+        rest: "Once he's fully upgraded he's an absolute monster, and leaving him there is worse than taking an even trade. Knocking him back down to Stage 0 is worth considerably more than your health bar.",
+      },
+      {
+        lead: "Count his ammo.",
+        rest: "Three ammo and a slow reload. After 2–3 shots into an aggressive push, expect the gadget — and once that's spent and his ammo is gone, he's on cooldown with nothing. That's your window to push him.",
+      },
+      {
+        lead: "Out-range him — while you still can.",
+        rest: "At low stages staying outside his range and poking is close to free. Be honest with yourself about the other end of it though: at max stage he has no real counters, which is why the earlier points matter so much.",
+      },
+      {
+        lead: "Save your escape for his jump.",
+        rest: "Hold dashes, gadgets and Supers for the moment he ults onto you. Surge is strong enough that trading with him is usually fine — just don't be caught with nothing when he lands.",
+      },
+    ],
+  },
 };
 
 // Local art overrides for abilities where the synced Brawlify CDN icon has
