@@ -761,10 +761,21 @@ const GUIDES = {
           {
             lead: "Wait for the shot — don't guess.",
             rest: "Power Shield only pays off if a hit actually lands inside the window, so fire it when you can already see the shot coming. Pop it early and good players will simply hold their attack and watch it expire. The reliable pattern is the aggressive one: jump in, empty your ammo, activate the gadget as they commit, then keep shooting with what it hands back.",
+            videos: [{ src: "gadget2-right-activation-single-shot", label: "Right activation vs a single shot", kind: "do" }],
           },
           {
             lead: "Bait the big single-hit brawlers.",
-            rest: "Against anyone whose damage arrives in one large chunk, sit at low health and let them come to you. Absorb that shot with the gadget, then spend the returned ammo on an immediate Super to finish them — they've used their window and you've been handed yours.",
+            rest: "Against anyone whose damage arrives in one large chunk, sit at low health and let them come to you. Absorb that shot with the gadget, then spend the returned ammo on an immediate Super to finish them — they've used their window and you've been handed yours. The clip above is exactly this: one big shot in, gadget out, ammo back.",
+          },
+          {
+            lead: "Against burst, the shield won't tank the burst.",
+            rest: "This is the part people get wrong. Power Shield eats ONE hit, so popping it into a burst brawler mid-volley absorbs a single shot and leaves the rest of the burst to land on you — you've spent the gadget and still taken most of the damage.",
+            videos: [{ src: "gadget2-wrong-activation-burst", label: "Wrong — popping it mid-burst", kind: "dont" }],
+          },
+          {
+            lead: "So walk into the burst on purpose instead.",
+            rest: "Activate the gadget BEFORE you step out, then deliberately move into the opening shot. The shield consumes that first shot, and because you're now moving through their volley the rest of the burst misses. You take one shot's worth of damage, they've spent their burst, and you're holding free ammo for the follow-up.",
+            videos: [{ src: "gadget2-right-activation-burst", label: "Right — gadget first, then step into it", kind: "do" }],
           },
         ],
       },
