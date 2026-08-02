@@ -19,6 +19,8 @@
 
 import json
 import os
+import time
+
 import requests
 
 from scrapers.common import (
@@ -72,6 +74,40 @@ def sync_brawler_classes(config):
     print(f"⚠️ brawler_classes sync failed: {up.status_code} {up.text[:200]}")
     return False
 
+def call_rpc(name, payload, label, attempts=3, backoff=20):
+    """POST an RPC, retrying the failures that are worth retrying.
+
+    A 504 here does NOT mean the statement failed — PostgREST gives up at the
+    gateway while Postgres carries on (service_role runs with a 600s
+    statement_timeout), so the work usually lands anyway. That is exactly how
+    the 2026-08-02 run went wrong: the intelligence refresh 504'd, kept running,
+    and held its lock on brawler_intelligence while the pair refreshes that
+    follow it hit authenticator's lock_timeout=8s and died with 55P03 — leaving
+    vs_brawler/with_brawler empty and silently emptying the guide's Match-ups.
+
+    Both halves are fixed in SQL now (the refresh computes into a temp table and
+    holds the lock only for the row swap), but retrying costs nothing and keeps
+    a transient lock from turning into a whole day of missing pair data.
+    """
+    transient = {408, 409, 425, 429, 500, 502, 503, 504}
+    for attempt in range(1, attempts + 1):
+        res = requests.post(f"{SUPABASE_URL}/rest/v1/rpc/{name}", json=payload, headers=SUPABASE_HEADERS)
+        if res.status_code == 200:
+            if attempt > 1:
+                print(f"✅ {label}: {res.text} (recovered on attempt {attempt})")
+            else:
+                print(f"✅ {label}: {res.text}")
+            return res
+        retryable = res.status_code in transient
+        if retryable and attempt < attempts:
+            print(f"↻ {label} attempt {attempt}/{attempts} failed ({res.status_code}), retrying in {backoff}s: {res.text[:160]}")
+            time.sleep(backoff)
+            continue
+        print(f"⚠️ {label} failed: {res.status_code} {res.text[:200]}")
+        return res
+    return res
+
+
 def refresh_intelligence(patches=None):
     """Sync classes, then rebuild brawler_intelligence for each open patch."""
     config = load_config()
@@ -80,15 +116,11 @@ def refresh_intelligence(patches=None):
     if patches is None:
         patches = sorted({name for name, _ in PATCH_START_TIMES} - CLOSED_PATCHES)
     for patch in patches:
-        res = requests.post(
-            f"{SUPABASE_URL}/rest/v1/rpc/refresh_brawler_intelligence",
-            json={"target_patch": patch, "coeff": coeff},
-            headers=SUPABASE_HEADERS,
+        call_rpc(
+            "refresh_brawler_intelligence",
+            {"target_patch": patch, "coeff": coeff},
+            f"brawler_intelligence refreshed for {patch}",
         )
-        if res.status_code == 200:
-            print(f"✅ brawler_intelligence refreshed for {patch}: {res.text} rows")
-        else:
-            print(f"⚠️ intelligence refresh failed for {patch}: {res.status_code} {res.text[:200]}")
 
         # Brawler-vs-brawler + teammate-synergy jsonb (vs_brawler/with_brawler)
         # lives in its own RPC, called once per bracket: inlining it into the
@@ -98,20 +130,20 @@ def refresh_intelligence(patches=None):
         # started exceeding the PostgREST gateway timeout, so this call failed
         # every run and left both jsonb columns as '{}' — silently emptying the
         # guide's Match-ups section. The RPC now bounds itself to the most
-        # recent `recent_limit` matches (default 600k, ~24s) via the
+        # recent `recent_limit` matches (default 600k, ~20s) via the
         # (bracket_id, collected_at) index, so runtime stays flat as the
         # retention window grows. If it regresses again, lower that default
         # rather than re-inlining.
+        #
+        # 2026-08-02: these failed again, but for a different reason — see
+        # call_rpc's docstring. The cause was lock contention from the refresh
+        # above, not this RPC's own cost.
         for bracket in ("masters_legendary", "diamond_mythic"):
-            res = requests.post(
-                f"{SUPABASE_URL}/rest/v1/rpc/refresh_brawler_pairs",
-                json={"target_patch": patch, "target_bracket": bracket, "coeff": coeff},
-                headers=SUPABASE_HEADERS,
+            call_rpc(
+                "refresh_brawler_pairs",
+                {"target_patch": patch, "target_bracket": bracket, "coeff": coeff},
+                f"pair intelligence refreshed for {patch}/{bracket}",
             )
-            if res.status_code == 200:
-                print(f"✅ pair intelligence refreshed for {patch}/{bracket}: {res.text} rows")
-            else:
-                print(f"⚠️ pair refresh failed for {patch}/{bracket}: {res.status_code} {res.text[:200]}")
 
 def main():
     require_credentials()
