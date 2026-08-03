@@ -263,7 +263,7 @@ export function getDraftAdvice({
     enemyTopKey = enemyView.suggestions[0]?.key ?? null;
   }
 
-  const candidates = [];
+  let candidates = [];
   const pool = new Set([...Object.keys(mapStats), ...Object.keys(intelligence)].map(norm));
 
   for (const key of pool) {
@@ -776,7 +776,12 @@ export function getDraftAdvice({
     const overallGames = Number(intel?.picks) || 0;
     let displayWinRate = null, sampleGames = 0, sampleScope = null;
     const mapWinRate = mapPicks > 0 ? Math.round((ms.wins / mapPicks) * 1000) / 10 : null;
-    if (mapPicks >= minMapPicks) {
+    // Headlining needs a bigger sample than SCORING does. Scoring runs the map
+    // rate through trueWR's Bayesian shrink, so 41 games can contribute safely —
+    // but the card prints raw wins/picks, and 41 games rendering as a confident
+    // "53.7%" is noise presented as a map read. Below the headline threshold the
+    // overall rate leads and the map sample still shows beside it.
+    if (mapPicks >= Math.max(minMapPicks, mapPri.headlineMinMapPicks ?? 200)) {
       displayWinRate = mapWinRate;
       sampleGames = mapPicks; sampleScope = "map";
     } else if (intel) {
@@ -838,7 +843,22 @@ export function getDraftAdvice({
   // graded 51-49. Ranking on the split can't disagree with the split.
   const isFinalPick = myTeam.length + enemyTeam.length >= 5 || pickSlot >= 6;
   if (isFinalPick && enemyTeam.length > 0) {
-    for (const c of candidates) {
+    // Ranking by the split means none of the score multipliers above reach this
+    // slot — they only break exact ties. That is what let class theory pull in
+    // brawlers with ~0.1% presence on the map: countering a class is worth real
+    // points in the split, and nothing was checking whether the brawler is
+    // actually played here. A pro's last pick answers the enemy comp AND is a
+    // real pick on the map, so gate the pool on presence first and rank the
+    // survivors by the verdict. Falls back to the full pool if the floor would
+    // leave too little to choose from.
+    const lp = mapPri.lastPick || {};
+    const floor = lp.minPresencePct ?? 1.5;
+    const eligible = mapTotalMatches > 0
+      ? candidates.filter(c => (c.mapGames / mapTotalMatches) * 100 >= floor)
+      : candidates;
+    const ranked = eligible.length >= (lp.minCandidates ?? 12) ? eligible : candidates;
+
+    for (const c of ranked) {
       const split = computeWinSplit({
         blueTeam: [...myTeam, c.key],   // symmetric — "blue" is just the picker
         redTeam: enemyTeam,
@@ -848,7 +868,8 @@ export function getDraftAdvice({
       c._edge = split.rawEdge;
     }
     // Sort on the continuous differential; `score` only breaks exact ties.
-    candidates.sort((a, b) => (b._edge - a._edge) || (b.score - a.score));
+    ranked.sort((a, b) => (b._edge - a._edge) || (b.score - a.score));
+    candidates = ranked;
   } else {
     candidates.sort((a, b) => b.score - a.score);
   }
