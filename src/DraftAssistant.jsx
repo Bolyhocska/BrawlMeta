@@ -715,6 +715,17 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             {s.matchupNote}
                           </div>
                         )}
+                        {/* Last pick only: the draft ends here, so show the
+                            verdict this pick produces. It's also the number the
+                            list is now sorted by, so the ranking and the
+                            draft-complete split can't contradict each other. */}
+                        {s.projectedWin != null && (
+                          <div style={{ fontSize: 11.5, marginTop: 4, fontFamily: MONO, letterSpacing: .3,
+                                        color: s.projectedWin >= 50 ? "#8ee6b0" : "#ff8f8f" }}>
+                            LOCKS THE DRAFT {s.projectedWin}–{100 - s.projectedWin}
+                            {s.projectedWin >= 50 ? " FOR YOU" : " AGAINST YOU"}
+                          </div>
+                        )}
                       </div>
                       {/* Sample provenance, not just a number. The headline is
                           the map rate whenever the map sample is real; the line

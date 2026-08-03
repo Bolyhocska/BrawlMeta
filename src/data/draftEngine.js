@@ -63,6 +63,39 @@ const PRIOR = CONFIG.statisticalCoefficients.confidencePriorGames;
 const trueWR = (wins, picks, prior = PRIOR) =>
   picks + prior === 0 ? 50 : ((wins + prior * 0.5) / (picks + prior)) * 100;
 
+// ── Shared statistical core ──────────────────────────────────────────────────
+// getDraftAdvice RANKS candidates and computeWinSplit GRADES the finished
+// draft. They must agree about who is favoured, so both read a brawler's
+// strength through these two helpers rather than each rolling their own blend.
+// They used to differ (0.65/0.35 with a 30-game floor vs 0.6/0.4 with a
+// 20-game floor, and only the ranker applied recency), which is a standing
+// invitation for the engine to recommend a pick and then grade that same pick
+// as the one that lost the draft.
+
+// Overall patch rate with the recent window blended in when it has a real
+// sample — the mid-patch shadow-nerf defense.
+const recencyTWR = (intel) => {
+  if (!intel) return null;
+  let g = parseFloat(intel.true_win_rate);
+  if (!Number.isFinite(g)) return null;
+  const rec = CONFIG.statisticalCoefficients?.recency;
+  const recentPicks = Number(intel.recent_picks) || 0;
+  if (rec && recentPicks >= (rec.minRecentPicks ?? 300)) {
+    const w = rec.recentWeight ?? 0.6;
+    g = trueWR(Number(intel.recent_wins) || 0, recentPicks) * w + g * (1 - w);
+  }
+  return g;
+};
+
+// Map rate weighted against the overall rate by how much map evidence exists.
+const blendMapGlobal = (mapPicks, mapTWR, globalTWR) => {
+  if (mapTWR == null) return globalTWR ?? 50;
+  if (globalTWR == null) return mapTWR;
+  const prior = CONFIG.mapPriority?.blendPriorGames ?? 400;
+  const w = mapPicks / (mapPicks + prior);
+  return mapTWR * w + globalTWR * (1 - w);
+};
+
 const matrixScore = (myClass, enemyClass) =>
   CONFIG.counterMatrix[myClass]?.[enemyClass] ?? 0;
 
@@ -267,10 +300,7 @@ export function getDraftAdvice({
     // to a pure overall score, so "unproven on this map" ranked identically to
     // "proven on this map". Sample weighting fixes both: the weight rises
     // smoothly with evidence and is 0 when there is none.
-    const mapW = mapTWR == null ? 0 : mapPicks / (mapPicks + mapPri.blendPriorGames);
-    let score = globalTWR == null
-      ? (mapTWR ?? 50)
-      : (mapTWR == null ? globalTWR : mapTWR * mapW + globalTWR * (1 - mapW));
+    let score = blendMapGlobal(mapPicks, mapTWR, globalTWR);
 
     // Pro tier correction: a named balance change (star-power rework, buff) the
     // patch aggregate hasn't caught up to yet. Damped once the RECENT window
@@ -794,7 +824,34 @@ export function getDraftAdvice({
     });
   }
 
-  candidates.sort((a, b) => b.score - a.score);
+  // ── Final pick: rank by the verdict itself ──────────────────────────────
+  // Every heuristic in the passes above exists to reason about what happens
+  // NEXT — blind-pick safety, denial, leaving room for a counter. On the last
+  // pick nothing happens next: the draft ends the moment this brawler is
+  // locked. So the only correct objective is "which brawler leaves my side
+  // ahead", and the honest way to rank that is to actually finish the draft
+  // with each candidate and read the verdict.
+  //
+  // This also makes the two code paths agree BY CONSTRUCTION at the one slot
+  // where they were most visibly contradicting each other: the engine was
+  // recommending a sniper that graded out 44-56, while a hand-picked Edgar
+  // graded 51-49. Ranking on the split can't disagree with the split.
+  const isFinalPick = myTeam.length + enemyTeam.length >= 5 || pickSlot >= 6;
+  if (isFinalPick && enemyTeam.length > 0) {
+    for (const c of candidates) {
+      const split = computeWinSplit({
+        blueTeam: [...myTeam, c.key],   // symmetric — "blue" is just the picker
+        redTeam: enemyTeam,
+        mode, mapStats, intelligence, minMapPicks,
+      });
+      c.projectedWin = split.blue;
+      c._edge = split.rawEdge;
+    }
+    // Sort on the continuous differential; `score` only breaks exact ties.
+    candidates.sort((a, b) => (b._edge - a._edge) || (b.score - a.score));
+  } else {
+    candidates.sort((a, b) => b.score - a.score);
+  }
   return {
     suggestions: candidates.slice(0, topN),
     topThreatClass,
@@ -810,18 +867,18 @@ export function getDraftAdvice({
 // Comp score per side = statistical strength + cross-team counter pressure +
 // synergy + structure. The differential runs through a logistic squash and is
 // capped (no draft is ever 90-10 — execution still exists). Always sums to 100.
-export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {} }) {
+export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30 }) {
   const strength = (teamKeys, enemyKeys) => {
     const classes = teamKeys.map(draftClassOf);
     const enemyCls = enemyKeys.map(draftClassOf);
 
-    // Statistical core: blended true win rates
+    // Statistical core — the SAME blend getDraftAdvice ranks with, so the two
+    // can't disagree about a brawler's strength (see blendMapGlobal).
     const rates = teamKeys.map(k => {
       const ms = mapStats[norm(k)];
-      const intel = intelligence[norm(k)];
-      const mapTWR = ms && ms.picks >= 20 ? trueWR(ms.wins, ms.picks) : null;
-      const gTWR = intel ? parseFloat(intel.true_win_rate) : null;
-      return mapTWR != null && gTWR != null ? mapTWR * 0.6 + gTWR * 0.4 : (mapTWR ?? gTWR ?? 50);
+      const mapPicks = Number(ms?.picks) || 0;
+      const mapTWR = mapPicks >= minMapPicks ? trueWR(ms.wins, mapPicks) : null;
+      return blendMapGlobal(mapPicks, mapTWR, recencyTWR(intelligence[norm(k)]));
     });
     let s = rates.reduce((a, v) => a + v, 0) / Math.max(1, rates.length);
 
@@ -862,5 +919,9 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     winner: bluePct === 50 ? "even" : bluePct > 50 ? "blue" : "red",
     blueSanity: blue.sanity,
     redSanity: red.sanity,
+    // Continuous, uncapped, unrounded differential. `blue` is rounded to a whole
+    // percent and clamped to 85/15, so dozens of candidates tie on it — the
+    // final-pick ranker sorts on this instead to keep a strict ordering.
+    rawEdge: blue.score - red.score,
   };
 }
