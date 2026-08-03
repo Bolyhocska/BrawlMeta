@@ -85,25 +85,49 @@ export const resolveMatchBracket = (match) => {
 
 // Lazy per-map raw match loading — powers the draft assistant's map-aware
 // suggestion engine.
-export function useMapMatches(selectedPatch, mapName, enabled) {
+// Raw rows are ONLY needed for exact-comp matchup stats (which brawlers beat a
+// specific revealed enemy trio) — per-brawler map win rates come from the
+// server-side BrawlerStats aggregate instead, which is why `enabled` should be
+// false until an enemy pick actually exists.
+//
+// This used to pull every column with limit 100000 for every map selection:
+// ~64k rows / ~10MB on a busy map. `anon` runs with statement_timeout = 3s, so
+// past a certain table size the bigger maps started returning 57014 — and
+// because the old code did `setMatches(data || [])` with no error check, a
+// failed request was indistinguishable from "this map has no matches". The
+// draft engine then scored every brawler on overall data alone, silently.
+// Hence: bracket filtered server-side, only the two columns actually read, a
+// limit that comfortably fits the timeout, and `failed` surfaced to callers.
+export function useMapMatches(selectedPatch, mapName, enabled, rankBracket = null, limit = 20000) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!enabled || !mapName) return;
+    if (!enabled || !mapName) { setMatches([]); setFailed(false); setLoading(false); return; }
+    let cancelled = false;
     setLoading(true);
     setMatches([]);
-    supabase
+    setFailed(false);
+    let q = supabase
       .from("Matches")
-      .select("map,mode,rank_bracket,winners,losers")
+      .select("rank_bracket,winners,losers")
       .eq("patch", selectedPatch)
-      .eq("map", mapName)
-      .limit(100000)
-      .then(({ data }) => {
+      .eq("map", mapName);
+    if (rankBracket) q = q.eq("rank_bracket", rankBracket);
+    q.limit(limit).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        console.warn("[useMapMatches] match sample unavailable:", error.message);
+        setFailed(true);
+        setMatches([]);
+      } else {
         setMatches(data || []);
-        setLoading(false);
-      });
-  }, [selectedPatch, mapName, enabled]);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [selectedPatch, mapName, enabled, rankBracket, limit]);
 
-  return { matches, loading };
+  return { matches, loading, failed };
 }

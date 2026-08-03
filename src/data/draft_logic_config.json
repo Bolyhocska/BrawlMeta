@@ -7,14 +7,19 @@
     ],
     "version": 1
   },
-
-  "classes": ["ANTI_TANK", "TANK", "SPACE_MAKER", "CONTROL", "THROWER", "SNIPER", "SUPPORT"],
-
+  "classes": [
+    "ANTI_TANK",
+    "TANK",
+    "SPACE_MAKER",
+    "CONTROL",
+    "THROWER",
+    "SNIPER",
+    "SUPPORT"
+  ],
   "rankedIneligible": {
     "_comment": "Manually maintained hard-exclusion list — brawlers newly released but not yet legal in competitive Ranked. Belt-and-suspenders on top of the scraper's ranked-only filter (scrapers/common.py): if a brawler's data ever leaks in anyway (mistagged battle type, a spidered match from before their ranked debut), this keeps them out of suggestions and the blind-pick list regardless. getDraftAdvice excludes every key listed here from its candidate pool entirely. Remove a brawler from this list the patch they go live in Ranked.",
     "keys": []
   },
-
   "classLabels": {
     "ANTI_TANK": "Anti-Tank",
     "TANK": "Tank",
@@ -24,7 +29,6 @@
     "SNIPER": "Sniper",
     "SUPPORT": "Support"
   },
-
   "apiClassToDraftClass": {
     "Damage Dealer": "ANTI_TANK",
     "Tank": "TANK",
@@ -35,7 +39,6 @@
     "Support": "SUPPORT",
     "Unknown": "CONTROL"
   },
-
   "brawlerClassOverrides": {
     "_comment": "Owner-confirmed draft class for every brawler, transcribed from Bobby's role map (screenshot 2026-07-17). Always wins over apiClassToDraftClass — draftClassOf() checks this first regardless of the brawler's official Supercell class, so it's the single source of truth for the draft engine's class assignment, not just a patch for Unknown-class new releases.",
     "BARLEY": "THROWER",
@@ -144,7 +147,6 @@
     "BONNIE": "CONTROL",
     "MR. P": "CONTROL"
   },
-
   "abilityLabels": {
     "_comment": "Ability tags from the same role map — a static per-brawler trait shown as a badge on suggestion cards, distinct from data-driven flags like Meta Breaker. A value may be a single tag OR an array when a brawler genuinely carries two (RUFFS breaks walls via his star power on top of being a Good Hyper); every rule reads the full array, while the card badge shows the first entry, so list the draft-relevant tag first.",
     "GOOD_HYPER": "Good Hyper",
@@ -153,52 +155,187 @@
     "PIERCE_DAMAGE": "Pierce Damage",
     "SPECIAL": "Special"
   },
-
   "brawlerAbilities": {
-    "8-BIT": "PIERCE_DAMAGE", "ALLI": "SPECIAL", "AMBER": "GOOD_HYPER", "ANGELO": "SPECIAL",
-    "ASH": "SPECIAL", "BARLEY": "GOOD_HYPER", "BEA": "SPECIAL", "BELLE": "SPECIAL",
-    "BERRY": "PIERCE_DAMAGE", "BIBI": "GOOD_HYPER", "BO": "GOOD_HYPER", "BOLT": "KNOCKBACK_STUN",
-    "BONNIE": "SPECIAL", "BROCK": "WALL_BREAK", "BULL": "GOOD_HYPER", "BUSTER": "SPECIAL",
-    "BUZZ": "KNOCKBACK_STUN", "BYRON": "PIERCE_DAMAGE", "CARL": "SPECIAL", "CHARLIE": "KNOCKBACK_STUN",
-    "CHESTER": "GOOD_HYPER", "CHUCK": "SPECIAL", "CLANCY": "SPECIAL", "COLETTE": "SPECIAL",
-    "COLT": "WALL_BREAK", "CORDELIUS": "WALL_BREAK", "CROW": "PIERCE_DAMAGE", "DARRYL": "SPECIAL",
-    "DOUG": "SPECIAL", "DRACO": "GOOD_HYPER", "DYNAMIKE": "KNOCKBACK_STUN", "EDGAR": "SPECIAL",
-    "EL PRIMO": "SPECIAL", "EMZ": "GOOD_HYPER", "EVE": "SPECIAL", "FANG": "SPECIAL",
-    "FINX": "GOOD_HYPER", "FRANK": "WALL_BREAK", "GALE": "WALL_BREAK", "GENE": "KNOCKBACK_STUN",
-    "GIGI": "SPECIAL", "GLOWY": "SPECIAL", "GRAY": "WALL_BREAK", "GRIFF": "WALL_BREAK",
-    "GROM": "PIERCE_DAMAGE", "GUS": "KNOCKBACK_STUN", "HANK": "SPECIAL", "JACKY": "SPECIAL",
-    "JAE-YONG": "SPECIAL", "JANET": "SPECIAL", "JESSIE": "SPECIAL", "JUJU": "PIERCE_DAMAGE",
-    "KAZE": "SPECIAL", "KENJI": "GOOD_HYPER", "KIT": "GOOD_HYPER", "LARRY & LAWRIE": "PIERCE_DAMAGE",
-    "LEON": "GOOD_HYPER", "LILY": "SPECIAL", "LOLA": "SPECIAL", "LOU": "GOOD_HYPER",
-    "LUMI": "GOOD_HYPER", "MAISIE": "KNOCKBACK_STUN", "MANDY": "GOOD_HYPER", "MAX": "GOOD_HYPER",
-    "MEEPLE": "GOOD_HYPER", "MEG": "SPECIAL", "MELODIE": "SPECIAL", "MICO": "SPECIAL",
-    "MINA": "KNOCKBACK_STUN", "MOE": "GOOD_HYPER", "MORTIS": "GOOD_HYPER", "MR. P": "SPECIAL",
-    "NAJIA": "SPECIAL", "NANI": "SPECIAL", "NITA": "GOOD_HYPER", "NORI": "SPECIAL",
-    "OLLIE": "GOOD_HYPER", "OTIS": "GOOD_HYPER", "PAM": "GOOD_HYPER", "PEARL": "KNOCKBACK_STUN",
-    "PENNY": "SPECIAL", "PIERCE": "SPECIAL", "PIPER": "KNOCKBACK_STUN", "POCO": "SPECIAL",
-    "R-T": "GOOD_HYPER", "RICO": "GOOD_HYPER", "ROSA": "SPECIAL", "RUFFS": ["WALL_BREAK", "GOOD_HYPER"],
-    "SAM": "SPECIAL", "SANDY": "GOOD_HYPER", "SHADE": "GOOD_HYPER", "SHELLY": "KNOCKBACK_STUN",
-    "SIRIUS": "PIERCE_DAMAGE", "SPIKE": "WALL_BREAK", "SPROUT": "PIERCE_DAMAGE", "SQUEAK": "PIERCE_DAMAGE",
-    "STARR NOVA": "SPECIAL", "STU": "WALL_BREAK", "SURGE": "KNOCKBACK_STUN", "TARA": "GOOD_HYPER",
-    "TICK": "PIERCE_DAMAGE", "TRUNK": "GOOD_HYPER", "WILLOW": "PIERCE_DAMAGE", "ZIGGY": "PIERCE_DAMAGE"
+    "8-BIT": "PIERCE_DAMAGE",
+    "ALLI": "SPECIAL",
+    "AMBER": "GOOD_HYPER",
+    "ANGELO": "SPECIAL",
+    "ASH": "SPECIAL",
+    "BARLEY": "GOOD_HYPER",
+    "BEA": "SPECIAL",
+    "BELLE": "SPECIAL",
+    "BERRY": "PIERCE_DAMAGE",
+    "BIBI": "GOOD_HYPER",
+    "BO": "GOOD_HYPER",
+    "BOLT": "KNOCKBACK_STUN",
+    "BONNIE": "SPECIAL",
+    "BROCK": "WALL_BREAK",
+    "BULL": "GOOD_HYPER",
+    "BUSTER": "SPECIAL",
+    "BUZZ": "KNOCKBACK_STUN",
+    "BYRON": "PIERCE_DAMAGE",
+    "CARL": "SPECIAL",
+    "CHARLIE": "KNOCKBACK_STUN",
+    "CHESTER": "GOOD_HYPER",
+    "CHUCK": "SPECIAL",
+    "CLANCY": "SPECIAL",
+    "COLETTE": "SPECIAL",
+    "COLT": "WALL_BREAK",
+    "CORDELIUS": "WALL_BREAK",
+    "CROW": "PIERCE_DAMAGE",
+    "DARRYL": "SPECIAL",
+    "DOUG": "SPECIAL",
+    "DRACO": "GOOD_HYPER",
+    "DYNAMIKE": "KNOCKBACK_STUN",
+    "EDGAR": "SPECIAL",
+    "EL PRIMO": "SPECIAL",
+    "EMZ": "GOOD_HYPER",
+    "EVE": "SPECIAL",
+    "FANG": "SPECIAL",
+    "FINX": "GOOD_HYPER",
+    "FRANK": "WALL_BREAK",
+    "GALE": "WALL_BREAK",
+    "GENE": "KNOCKBACK_STUN",
+    "GIGI": "SPECIAL",
+    "GLOWY": "SPECIAL",
+    "GRAY": "WALL_BREAK",
+    "GRIFF": "WALL_BREAK",
+    "GROM": "PIERCE_DAMAGE",
+    "GUS": "KNOCKBACK_STUN",
+    "HANK": "SPECIAL",
+    "JACKY": "SPECIAL",
+    "JAE-YONG": "SPECIAL",
+    "JANET": "SPECIAL",
+    "JESSIE": "SPECIAL",
+    "JUJU": "PIERCE_DAMAGE",
+    "KAZE": "SPECIAL",
+    "KENJI": "GOOD_HYPER",
+    "KIT": "GOOD_HYPER",
+    "LARRY & LAWRIE": "PIERCE_DAMAGE",
+    "LEON": "GOOD_HYPER",
+    "LILY": "SPECIAL",
+    "LOLA": "SPECIAL",
+    "LOU": "GOOD_HYPER",
+    "LUMI": "GOOD_HYPER",
+    "MAISIE": "KNOCKBACK_STUN",
+    "MANDY": "GOOD_HYPER",
+    "MAX": "GOOD_HYPER",
+    "MEEPLE": "GOOD_HYPER",
+    "MEG": "SPECIAL",
+    "MELODIE": "SPECIAL",
+    "MICO": "SPECIAL",
+    "MINA": "KNOCKBACK_STUN",
+    "MOE": "GOOD_HYPER",
+    "MORTIS": "GOOD_HYPER",
+    "MR. P": "SPECIAL",
+    "NAJIA": "SPECIAL",
+    "NANI": "SPECIAL",
+    "NITA": "GOOD_HYPER",
+    "NORI": "SPECIAL",
+    "OLLIE": "GOOD_HYPER",
+    "OTIS": "GOOD_HYPER",
+    "PAM": "GOOD_HYPER",
+    "PEARL": "KNOCKBACK_STUN",
+    "PENNY": "SPECIAL",
+    "PIERCE": "SPECIAL",
+    "PIPER": "KNOCKBACK_STUN",
+    "POCO": "SPECIAL",
+    "R-T": "GOOD_HYPER",
+    "RICO": "GOOD_HYPER",
+    "ROSA": "SPECIAL",
+    "RUFFS": [
+      "WALL_BREAK",
+      "GOOD_HYPER"
+    ],
+    "SAM": "SPECIAL",
+    "SANDY": "GOOD_HYPER",
+    "SHADE": "GOOD_HYPER",
+    "SHELLY": "KNOCKBACK_STUN",
+    "SIRIUS": "PIERCE_DAMAGE",
+    "SPIKE": "WALL_BREAK",
+    "SPROUT": "PIERCE_DAMAGE",
+    "SQUEAK": "PIERCE_DAMAGE",
+    "STARR NOVA": "SPECIAL",
+    "STU": "WALL_BREAK",
+    "SURGE": "KNOCKBACK_STUN",
+    "TARA": "GOOD_HYPER",
+    "TICK": "PIERCE_DAMAGE",
+    "TRUNK": "GOOD_HYPER",
+    "WILLOW": "PIERCE_DAMAGE",
+    "ZIGGY": "PIERCE_DAMAGE"
   },
-
   "counterMatrix": {
     "_comment": "counterMatrix[A][B] > 0 means class A counters class B (score -2..+2). Encodes Bobby's triangle: Anti-Tank beats Tank, Tank/Aggro beats Control, Control beats Anti-Tank — 'everything in the game gets countered by something'. Space makers dive backline (snipers/throwers/support) but die to anti-tank damage and control.",
-    "ANTI_TANK":   { "ANTI_TANK": 0,    "TANK": 2,    "SPACE_MAKER": 1.5,  "CONTROL": -1.5, "THROWER": -1,   "SNIPER": -0.5, "SUPPORT": 0.5 },
-    "TANK":        { "ANTI_TANK": -2,   "TANK": 0,    "SPACE_MAKER": 0.5,  "CONTROL": 1.5,  "THROWER": -1.5, "SNIPER": -1,   "SUPPORT": 1 },
-    "SPACE_MAKER": { "ANTI_TANK": -1.5, "TANK": -0.5, "SPACE_MAKER": 0,    "CONTROL": -1,   "THROWER": 1.5,  "SNIPER": 2,    "SUPPORT": 1.5 },
-    "CONTROL":     { "ANTI_TANK": 1.5,  "TANK": -1.5, "SPACE_MAKER": 1,    "CONTROL": 0,    "THROWER": -0.5, "SNIPER": -1,   "SUPPORT": 0.5 },
-    "THROWER":     { "ANTI_TANK": 1,    "TANK": 1.5,  "SPACE_MAKER": -1.5, "CONTROL": 0.5,  "THROWER": 0,    "SNIPER": -1.5, "SUPPORT": 0 },
-    "SNIPER":      { "ANTI_TANK": 0.5,  "TANK": 1,    "SPACE_MAKER": -2,   "CONTROL": 1,    "THROWER": 1.5,  "SNIPER": 0,    "SUPPORT": 1 },
-    "SUPPORT":     { "ANTI_TANK": -0.5, "TANK": -1,   "SPACE_MAKER": -1.5, "CONTROL": -0.5, "THROWER": 0,    "SNIPER": -1,   "SUPPORT": 0 }
+    "ANTI_TANK": {
+      "ANTI_TANK": 0,
+      "TANK": 2,
+      "SPACE_MAKER": 1.5,
+      "CONTROL": -1.5,
+      "THROWER": -1,
+      "SNIPER": -0.5,
+      "SUPPORT": 0.5
+    },
+    "TANK": {
+      "ANTI_TANK": -2,
+      "TANK": 0,
+      "SPACE_MAKER": 0.5,
+      "CONTROL": 1.5,
+      "THROWER": -1.5,
+      "SNIPER": -1,
+      "SUPPORT": 1
+    },
+    "SPACE_MAKER": {
+      "ANTI_TANK": -1.5,
+      "TANK": -0.5,
+      "SPACE_MAKER": 0,
+      "CONTROL": -1,
+      "THROWER": 1.5,
+      "SNIPER": 2,
+      "SUPPORT": 1.5
+    },
+    "CONTROL": {
+      "ANTI_TANK": 1.5,
+      "TANK": -1.5,
+      "SPACE_MAKER": 1,
+      "CONTROL": 0,
+      "THROWER": -0.5,
+      "SNIPER": -1,
+      "SUPPORT": 0.5
+    },
+    "THROWER": {
+      "ANTI_TANK": 1,
+      "TANK": 1.5,
+      "SPACE_MAKER": -1.5,
+      "CONTROL": 0.5,
+      "THROWER": 0,
+      "SNIPER": -1.5,
+      "SUPPORT": 0
+    },
+    "SNIPER": {
+      "ANTI_TANK": 0.5,
+      "TANK": 1,
+      "SPACE_MAKER": -2,
+      "CONTROL": 1,
+      "THROWER": 1.5,
+      "SNIPER": 0,
+      "SUPPORT": 1
+    },
+    "SUPPORT": {
+      "ANTI_TANK": -0.5,
+      "TANK": -1,
+      "SPACE_MAKER": -1.5,
+      "CONTROL": -0.5,
+      "THROWER": 0,
+      "SNIPER": -1,
+      "SUPPORT": 0
+    }
   },
-
   "matchupOverrides": {
     "_comment": "Per-brawler exceptions to the class counter matrix. Value = the LISTED brawler's edge (-2..+2) against that enemy class, replacing its class default in BOTH directions (the reverse pairing uses the negation). BOLT: THROWER 0 → Bolt is a tank but mobile enough that throwers don't counter him — no 'Weak vs' penalty for Bolt against throwers, and no 'Counters Bolt' credit for throwers.",
-    "BOLT": { "THROWER": 0 }
+    "BOLT": {
+      "THROWER": 0
+    }
   },
-
   "synergyPairs": {
     "_comment": "Same-team class pairings that amplify each other. Applied once per pair present in a comp.",
     "TANK+SUPPORT": 1.5,
@@ -210,19 +347,48 @@
     "ANTI_TANK+CONTROL": 0.5,
     "ANTI_TANK+SUPPORT": 0.5
   },
-
   "roles": {
     "_comment": "Standard ranked structure: one mid (objective player) + two laners. Lane anchors can hold a lane 1v1; objective specialists carry the mode's win condition.",
-    "structure": { "mid": 1, "lanes": 2 },
-    "midClasses": ["CONTROL", "SUPPORT", "ANTI_TANK"],
-    "laneAnchorClasses": ["SNIPER", "TANK", "CONTROL", "ANTI_TANK"],
+    "structure": {
+      "mid": 1,
+      "lanes": 2
+    },
+    "midClasses": [
+      "CONTROL",
+      "SUPPORT",
+      "ANTI_TANK"
+    ],
+    "laneAnchorClasses": [
+      "SNIPER",
+      "TANK",
+      "CONTROL",
+      "ANTI_TANK"
+    ],
     "objectiveSpecialistByMode": {
-      "gemGrab": ["CONTROL", "SUPPORT"],
-      "brawlBall": ["TANK", "SPACE_MAKER"],
-      "hotZone": ["CONTROL", "TANK"],
-      "heist": ["TANK", "SPACE_MAKER", "ANTI_TANK"],
-      "knockout": ["SNIPER", "THROWER"],
-      "bounty": ["SNIPER"]
+      "gemGrab": [
+        "CONTROL",
+        "SUPPORT"
+      ],
+      "brawlBall": [
+        "TANK",
+        "SPACE_MAKER"
+      ],
+      "hotZone": [
+        "CONTROL",
+        "TANK"
+      ],
+      "heist": [
+        "TANK",
+        "SPACE_MAKER",
+        "ANTI_TANK"
+      ],
+      "knockout": [
+        "SNIPER",
+        "THROWER"
+      ],
+      "bounty": [
+        "SNIPER"
+      ]
     },
     "objectiveSpecialistLabel": {
       "gemGrab": "gem carrier",
@@ -233,47 +399,96 @@
       "bounty": "star keeper"
     }
   },
-
   "modes": {
     "_comment": "Bobby's two metas: active/aggro (Brawl Ball, Gem Grab, Hot Zone, Heist) vs passive (Bounty, Knockout). classWeights scale a brawler's score on that mode; maxPerClass enforces e.g. 'in Brawl Ball limit control to one brawler maximum'. damageOverMatchup relaxes matchup penalties where raw output wins ('I'd much rather have bad matchups with good damage' — Heist).",
     "brawlBall": {
       "tempo": "active",
-      "classWeights": { "TANK": 1.15, "SPACE_MAKER": 1.1, "ANTI_TANK": 1.1, "SUPPORT": 1.05, "CONTROL": 1.0, "SNIPER": 0.9, "THROWER": 0.75 },
-      "maxPerClass": { "CONTROL": 1, "THROWER": 1 },
+      "classWeights": {
+        "TANK": 1.15,
+        "SPACE_MAKER": 1.1,
+        "ANTI_TANK": 1.1,
+        "SUPPORT": 1.05,
+        "CONTROL": 1.0,
+        "SNIPER": 0.9,
+        "THROWER": 0.75
+      },
+      "maxPerClass": {
+        "CONTROL": 1,
+        "THROWER": 1
+      },
       "damageOverMatchup": false
     },
     "gemGrab": {
       "tempo": "active",
-      "classWeights": { "CONTROL": 1.15, "SUPPORT": 1.1, "ANTI_TANK": 1.05, "TANK": 1.0, "SPACE_MAKER": 1.0, "SNIPER": 0.95, "THROWER": 0.95 },
+      "classWeights": {
+        "CONTROL": 1.15,
+        "SUPPORT": 1.1,
+        "ANTI_TANK": 1.05,
+        "TANK": 1.0,
+        "SPACE_MAKER": 1.0,
+        "SNIPER": 0.95,
+        "THROWER": 0.95
+      },
       "maxPerClass": {},
       "damageOverMatchup": false
     },
     "hotZone": {
       "tempo": "active",
-      "classWeights": { "CONTROL": 1.15, "TANK": 1.1, "SPACE_MAKER": 1.05, "ANTI_TANK": 1.05, "SUPPORT": 1.0, "THROWER": 1.0, "SNIPER": 0.85 },
+      "classWeights": {
+        "CONTROL": 1.15,
+        "TANK": 1.1,
+        "SPACE_MAKER": 1.05,
+        "ANTI_TANK": 1.05,
+        "SUPPORT": 1.0,
+        "THROWER": 1.0,
+        "SNIPER": 0.85
+      },
       "maxPerClass": {},
       "damageOverMatchup": true
     },
     "heist": {
       "tempo": "active",
-      "classWeights": { "TANK": 1.15, "SPACE_MAKER": 1.1, "ANTI_TANK": 1.05, "CONTROL": 0.95, "THROWER": 0.95, "SNIPER": 0.9, "SUPPORT": 0.85 },
+      "classWeights": {
+        "TANK": 1.15,
+        "SPACE_MAKER": 1.1,
+        "ANTI_TANK": 1.05,
+        "CONTROL": 0.95,
+        "THROWER": 0.95,
+        "SNIPER": 0.9,
+        "SUPPORT": 0.85
+      },
       "maxPerClass": {},
       "damageOverMatchup": true
     },
     "knockout": {
       "tempo": "passive",
-      "classWeights": { "SNIPER": 1.2, "THROWER": 1.1, "CONTROL": 1.05, "ANTI_TANK": 1.0, "SUPPORT": 0.95, "SPACE_MAKER": 0.85, "TANK": 0.8 },
+      "classWeights": {
+        "SNIPER": 1.2,
+        "THROWER": 1.1,
+        "CONTROL": 1.05,
+        "ANTI_TANK": 1.0,
+        "SUPPORT": 0.95,
+        "SPACE_MAKER": 0.85,
+        "TANK": 0.8
+      },
       "maxPerClass": {},
       "damageOverMatchup": false
     },
     "bounty": {
       "tempo": "passive",
-      "classWeights": { "SNIPER": 1.25, "THROWER": 1.05, "CONTROL": 1.05, "ANTI_TANK": 1.0, "SUPPORT": 0.95, "SPACE_MAKER": 0.85, "TANK": 0.75 },
+      "classWeights": {
+        "SNIPER": 1.25,
+        "THROWER": 1.05,
+        "CONTROL": 1.05,
+        "ANTI_TANK": 1.0,
+        "SUPPORT": 0.95,
+        "SPACE_MAKER": 0.85,
+        "TANK": 0.75
+      },
       "maxPerClass": {},
       "damageOverMatchup": false
     }
   },
-
   "statisticalCoefficients": {
     "_comment": "Applied by meta_weights.py when building brawler_intelligence, and by the engine as score multipliers. true_win_rate = Bayesian shrink of raw WR toward 50% with confidencePriorGames of prior weight, so tiny samples can't fake a 60% brawler.",
     "confidencePriorGames": 30,
@@ -287,18 +502,40 @@
       "downLabel": "Trending down",
       "upLabel": "Trending up"
     },
-    "popularityTrap": { "minPickRatePct": 20, "maxWinRatePct": 48, "scoreMultiplier": 0.85, "label": "Popularity trap" },
-    "brokenIndicator": { "minPickRatePct": 10, "minWinRatePct": 52, "scoreMultiplier": 1.12, "label": "Meta breaker" },
-    "inflationBias": { "maxPickRatePct": 3, "minWinRatePct": 55, "scoreMultiplier": 0.9, "label": "Inflated WR" }
+    "popularityTrap": {
+      "minPickRatePct": 20,
+      "maxWinRatePct": 48,
+      "scoreMultiplier": 0.85,
+      "label": "Popularity trap"
+    },
+    "brokenIndicator": {
+      "minPickRatePct": 10,
+      "minWinRatePct": 52,
+      "scoreMultiplier": 1.12,
+      "label": "Meta breaker"
+    },
+    "inflationBias": {
+      "maxPickRatePct": 3,
+      "minWinRatePct": 55,
+      "scoreMultiplier": 0.9,
+      "label": "Inflated WR"
+    }
   },
-
   "constraints": {
     "throwerPenalty": {
       "_comment": "Bobby: 'never pick a thrower unless it's last pick or you have protection for it'. Flat penalty on global pick slots 1-4, waived if the team already fields a protection class, halved in passive-tempo modes where throwers are structurally strong.",
-      "appliesToPickSlots": [1, 2, 3, 4],
+      "appliesToPickSlots": [
+        1,
+        2,
+        3,
+        4
+      ],
       "penalty": -50,
       "waivedWithProtection": true,
-      "protectionClasses": ["TANK", "CONTROL"],
+      "protectionClasses": [
+        "TANK",
+        "CONTROL"
+      ],
       "passiveTempoMultiplier": 0.5
     },
     "classDiversity": {
@@ -310,13 +547,20 @@
     "antiTankFirstPick": {
       "_comment": "Bobby: 'anti-tank is the foundation of every draft'; best anti-tank is almost always the correct first pick in objective (active) modes.",
       "bonus": 12,
-      "appliesToPickSlots": [1, 2],
+      "appliesToPickSlots": [
+        1,
+        2
+      ],
       "activeTempoOnly": true
     },
     "spaceMakerLateBonus": {
       "_comment": "Space makers are the skill separator — strongest in slots 4-6 when the enemy comp is revealed and can't answer the dive.",
       "bonus": 8,
-      "appliesToPickSlots": [4, 5, 6],
+      "appliesToPickSlots": [
+        4,
+        5,
+        6
+      ],
       "requiresEnemyCommitted": true
     },
     "counterStack": {
@@ -326,210 +570,776 @@
       "bonusPerEnemy": 9
     }
   },
-
   "abilityRules": {
     "_comment": "Ability-tag synergy/counter rules (Bobby): wall break opens lanes for snipers, strips the cover throwers depend on, and forces anti-tanks into the open where snipers kite them. Applied on top of the class counter matrix; bonuses are on the same ~50-point score scale as the other constraints.",
-    "wallBreakSniperSynergy": { "bonusPerSniper": 4, "label": "Opens sniper lanes" },
-    "wallBreakVsThrower": { "bonusPerThrower": 7, "label": "Breaks thrower cover" },
-    "wallBreakSniperVsAntiTank": { "bonus": 4, "label": "Forces anti-tank open" },
-    "sniperWithWallBreakSynergy": { "bonus": 3, "label": "Lanes already open" }
+    "wallBreakSniperSynergy": {
+      "bonusPerSniper": 4,
+      "label": "Opens sniper lanes"
+    },
+    "wallBreakVsThrower": {
+      "bonusPerThrower": 7,
+      "label": "Breaks thrower cover"
+    },
+    "wallBreakSniperVsAntiTank": {
+      "bonus": 4,
+      "label": "Forces anti-tank open"
+    },
+    "sniperWithWallBreakSynergy": {
+      "bonus": 3,
+      "label": "Lanes already open"
+    }
   },
-
   "supportRules": {
     "_comment": "Bobby: supports are reactive 'conditional modifiers'. Never draft one in the first two global picks unless it's a meta-anchor on this map (waiver: map true WR >= waiverMinMapTrueWR); never without a lane/aggro partner to support. Named combos reward the known pairings late-draft.",
-    "earlyPickPenalty": { "appliesToPickSlots": [1, 2], "penalty": -10, "waiverMinMapTrueWR": 53, "label": "Support too early" },
-    "needsPartnerClasses": ["TANK", "SPACE_MAKER", "SNIPER", "ANTI_TANK"],
+    "earlyPickPenalty": {
+      "appliesToPickSlots": [
+        1,
+        2
+      ],
+      "penalty": -10,
+      "waiverMinMapTrueWR": 53,
+      "label": "Support too early"
+    },
+    "needsPartnerClasses": [
+      "TANK",
+      "SPACE_MAKER",
+      "SNIPER",
+      "ANTI_TANK"
+    ],
     "noPartnerPenalty": -6,
     "noPartnerLabel": "No lane to support",
     "combos": [
-      { "brawler": "GRAY", "teammateClasses": ["TANK"], "modes": ["hotZone"], "bonus": 6, "label": "Gray + tank combo" },
-      { "brawler": "KIT", "teammateClasses": ["TANK", "SPACE_MAKER"], "modes": ["knockout"], "bonus": 6, "label": "Kit ride-along" },
-      { "brawler": "MAX", "enemyClasses": ["SNIPER"], "tempo": "passive", "bonus": 5, "label": "Runs down snipers" },
-      { "brawler": "MAX", "modes": ["brawlBall"], "bonus": 3, "label": "Tempo engine" }
+      {
+        "brawler": "GRAY",
+        "teammateClasses": [
+          "TANK"
+        ],
+        "modes": [
+          "hotZone"
+        ],
+        "bonus": 6,
+        "label": "Gray + tank combo"
+      },
+      {
+        "brawler": "KIT",
+        "teammateClasses": [
+          "TANK",
+          "SPACE_MAKER"
+        ],
+        "modes": [
+          "knockout"
+        ],
+        "bonus": 6,
+        "label": "Kit ride-along"
+      },
+      {
+        "brawler": "MAX",
+        "enemyClasses": [
+          "SNIPER"
+        ],
+        "tempo": "passive",
+        "bonus": 5,
+        "label": "Runs down snipers"
+      },
+      {
+        "brawler": "MAX",
+        "modes": [
+          "brawlBall"
+        ],
+        "bonus": 3,
+        "label": "Tempo engine"
+      }
     ]
   },
-
   "counterLadder": {
     "_comment": "Phase-specific drafting: picks 1-2 are the anchor phase (stats-led, counters barely matter — the enemy hasn't committed), 3-4 target revealed picks, 5-6 are hard-counter execution. counterWeightBySlot scales BOTH the class-matrix and empirical vs-class edges. Preventative blocking (PASS 3) is naturally off at slot 6 since the enemy comp is complete. lastPickSpecialist: a brawler with a thin map sample is a niche/last-pick option, demoted during slots 1-4. throwerLastPick: at slots 5-6 a thrower gets a bonus when the enemy fielded no wall break to strip its cover.",
-    "counterWeightBySlot": { "1": 0.8, "2": 0.9, "3": 1.0, "4": 1.1, "5": 1.15, "6": 1.3 },
-    "lastPickSpecialist": { "minMapPicks": 50, "appliesToPickSlots": [1, 2, 3, 4], "multiplier": 0.85 },
-    "throwerLastPick": { "minSlot": 5, "requiresEnemyNoWallBreak": true, "bonus": 5, "label": "Thrower window" },
+    "counterWeightBySlot": {
+      "1": 0.8,
+      "2": 0.9,
+      "3": 1.0,
+      "4": 1.1,
+      "5": 1.15,
+      "6": 1.3
+    },
+    "lastPickSpecialist": {
+      "minMapPicks": 50,
+      "appliesToPickSlots": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "multiplier": 0.85
+    },
+    "throwerLastPick": {
+      "minSlot": 5,
+      "requiresEnemyNoWallBreak": true,
+      "bonus": 5,
+      "label": "Thrower window"
+    },
     "denial": {
       "_comment": "Interception drafting: the engine evaluates the ENEMY's theoretical best next pick; if that brawler also scores well for us, stealing it denies their plan.",
       "scoreMultiplier": 1.1,
       "label": "Denies their pick"
     }
   },
-
   "mapProfiles": {
     "_comment": "Ranked pool geometry (owner-provided draft doc, 2026-07-20; Crystal Arcade + Deathcap Trap replaced Rustic Arcade on the 2026-07-22 rotation). openness: OPEN boosts long range / penalizes short; CLOSED the reverse (+throwers, who want walls); MIXED neutral. bushDensity HIGH/MEDIUM feeds the bushSynergy bonus. Entries flagged _estimated are Claude's read of the map rather than owner-confirmed — correct them if they play differently. Keys are canonical DB map names; the engine matches them case- and punctuation-insensitively (lookupByMap), so the duplicated apostrophe/case variants below are belt-and-suspenders only. Maps absent here get no geometry modifiers.",
-    "Double Swoosh":   { "mode": "gemGrab",   "openness": "CLOSED", "bushDensity": "HIGH" },
-    "Gem Fort":        { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
-    "Hard Rock Mine":  { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
-    "Crystal Arcade":  { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "MEDIUM", "_estimated": true },
-    "Deathcap Trap":   { "mode": "gemGrab",   "openness": "MIXED",  "bushDensity": "HIGH",   "_estimated": true },
-    "Undermine":       { "mode": "gemGrab",   "openness": "CLOSED", "bushDensity": "HIGH" },
-    "Bridge Too Far":  { "mode": "heist",     "openness": "OPEN",   "bushDensity": "LOW" },
-    "Hot Potato":      { "mode": "heist",     "openness": "CLOSED", "bushDensity": "HIGH" },
-    "Kaboom Canyon":   { "mode": "heist",     "openness": "MIXED",  "bushDensity": "LOW" },
-    "Pit Stop":        { "mode": "heist",     "openness": "CLOSED", "bushDensity": "LOW" },
-    "Safe Zone":       { "mode": "heist",     "openness": "OPEN",   "bushDensity": "LOW" },
-    "Dry Season":      { "mode": "bounty",    "openness": "OPEN",   "bushDensity": "LOW" },
-    "Hideout":         { "mode": "bounty",    "openness": "OPEN",   "bushDensity": "LOW" },
-    "Layer Cake":      { "mode": "bounty",    "openness": "MIXED",  "bushDensity": "LOW" },
-    "Shooting Star":   { "mode": "bounty",    "openness": "OPEN",   "bushDensity": "LOW" },
-    "Center Stage":    { "mode": "brawlBall", "openness": "MIXED",  "bushDensity": "LOW" },
-    "Pinball Dreams":  { "mode": "brawlBall", "openness": "MIXED",  "bushDensity": "LOW" },
-    "Sneaky Fields":   { "mode": "brawlBall", "openness": "CLOSED", "bushDensity": "HIGH" },
-    "Triple Dribble":  { "mode": "brawlBall", "openness": "MIXED",  "bushDensity": "LOW" },
-    "Dueling Beetles": { "mode": "hotZone",   "openness": "CLOSED", "bushDensity": "LOW" },
-    "Open Business":   { "mode": "hotZone",   "openness": "OPEN",   "bushDensity": "LOW" },
-    "Parallel Plays":  { "mode": "hotZone",   "openness": "MIXED",  "bushDensity": "LOW" },
-    "Ring Of Fire":    { "mode": "hotZone",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
-    "Ring of Fire":    { "mode": "hotZone",   "openness": "MIXED",  "bushDensity": "MEDIUM" },
-    "Belles Rock":     { "mode": "knockout",  "openness": "MIXED",  "bushDensity": "LOW" },
-    "Belle's Rock":    { "mode": "knockout",  "openness": "MIXED",  "bushDensity": "LOW" },
-    "Flaring Phoenix": { "mode": "knockout",  "openness": "OPEN",   "bushDensity": "LOW" },
-    "New Horizons":    { "mode": "knockout",  "openness": "OPEN",   "bushDensity": "LOW" },
-    "Out in the open": { "mode": "knockout",  "openness": "OPEN",   "bushDensity": "LOW" },
-    "Out in the Open": { "mode": "knockout",  "openness": "OPEN",   "bushDensity": "LOW" }
+    "Double Swoosh": {
+      "mode": "gemGrab",
+      "openness": "CLOSED",
+      "bushDensity": "HIGH"
+    },
+    "Gem Fort": {
+      "mode": "gemGrab",
+      "openness": "MIXED",
+      "bushDensity": "MEDIUM"
+    },
+    "Hard Rock Mine": {
+      "mode": "gemGrab",
+      "openness": "MIXED",
+      "bushDensity": "MEDIUM"
+    },
+    "Crystal Arcade": {
+      "mode": "gemGrab",
+      "openness": "MIXED",
+      "bushDensity": "MEDIUM",
+      "_estimated": true
+    },
+    "Deathcap Trap": {
+      "mode": "gemGrab",
+      "openness": "MIXED",
+      "bushDensity": "HIGH",
+      "_estimated": true
+    },
+    "Undermine": {
+      "mode": "gemGrab",
+      "openness": "CLOSED",
+      "bushDensity": "HIGH"
+    },
+    "Bridge Too Far": {
+      "mode": "heist",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Hot Potato": {
+      "mode": "heist",
+      "openness": "CLOSED",
+      "bushDensity": "HIGH"
+    },
+    "Kaboom Canyon": {
+      "mode": "heist",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Pit Stop": {
+      "mode": "heist",
+      "openness": "CLOSED",
+      "bushDensity": "LOW"
+    },
+    "Safe Zone": {
+      "mode": "heist",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Dry Season": {
+      "mode": "bounty",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Hideout": {
+      "mode": "bounty",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Layer Cake": {
+      "mode": "bounty",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Shooting Star": {
+      "mode": "bounty",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Center Stage": {
+      "mode": "brawlBall",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Pinball Dreams": {
+      "mode": "brawlBall",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Sneaky Fields": {
+      "mode": "brawlBall",
+      "openness": "CLOSED",
+      "bushDensity": "HIGH"
+    },
+    "Triple Dribble": {
+      "mode": "brawlBall",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Dueling Beetles": {
+      "mode": "hotZone",
+      "openness": "CLOSED",
+      "bushDensity": "LOW"
+    },
+    "Open Business": {
+      "mode": "hotZone",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Parallel Plays": {
+      "mode": "hotZone",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Ring Of Fire": {
+      "mode": "hotZone",
+      "openness": "MIXED",
+      "bushDensity": "MEDIUM"
+    },
+    "Ring of Fire": {
+      "mode": "hotZone",
+      "openness": "MIXED",
+      "bushDensity": "MEDIUM"
+    },
+    "Belles Rock": {
+      "mode": "knockout",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Belle's Rock": {
+      "mode": "knockout",
+      "openness": "MIXED",
+      "bushDensity": "LOW"
+    },
+    "Flaring Phoenix": {
+      "mode": "knockout",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "New Horizons": {
+      "mode": "knockout",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Out in the open": {
+      "mode": "knockout",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    },
+    "Out in the Open": {
+      "mode": "knockout",
+      "openness": "OPEN",
+      "bushDensity": "LOW"
+    }
   },
-
   "brawlerAttributes": {
     "_comment": "Mechanical facts per brawler: range (Short/Mid/Long), attackType (SINGLE_SHOT/BURST/SPREAD/PIERCE/SPLASH), spawner (true only for ATTACKABLE summons that soak single shots — 8-Bit's booster, Nani's Peep, Bea's goo and Sprout's hedge deliberately excluded), bushSynergy (invisibility/bush-vision/ambush kits), scaler (late-game power spikes — two on one team lose the early map). Sourced from the owner's draft docs (2026-07-20 roster expansion included) with corrections; classes in those docs are IGNORED — brawlerClassOverrides is the class authority.",
-    "SHELLY":         { "range": "Short", "attackType": "SPREAD" },
-    "NITA":           { "range": "Mid",   "attackType": "PIERCE", "spawner": true },
-    "COLT":           { "range": "Long",  "attackType": "BURST" },
-    "BULL":           { "range": "Short", "attackType": "SPREAD" },
-    "BROCK":          { "range": "Long",  "attackType": "SPLASH" },
-    "EL PRIMO":       { "range": "Short", "attackType": "SPREAD" },
-    "BARLEY":         { "range": "Mid",   "attackType": "SPLASH" },
-    "POCO":           { "range": "Mid",   "attackType": "PIERCE" },
-    "ROSA":           { "range": "Short", "attackType": "SPREAD", "bushSynergy": true },
-    "RICO":           { "range": "Long",  "attackType": "BURST" },
-    "DARRYL":         { "range": "Short", "attackType": "SPREAD" },
-    "PENNY":          { "range": "Long",  "attackType": "PIERCE", "spawner": true },
-    "CARL":           { "range": "Mid",   "attackType": "PIERCE" },
-    "JACKY":          { "range": "Short", "attackType": "SPLASH" },
-    "GUS":            { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "8-BIT":          { "range": "Long",  "attackType": "BURST" },
-    "JESSIE":         { "range": "Mid",   "attackType": "PIERCE", "spawner": true },
-    "DYNAMIKE":       { "range": "Long",  "attackType": "SPLASH" },
-    "TICK":           { "range": "Long",  "attackType": "SPLASH", "spawner": true },
-    "PIPER":          { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "PAM":            { "range": "Mid",   "attackType": "SPREAD", "spawner": true },
-    "FRANK":          { "range": "Short", "attackType": "SPREAD" },
-    "BIBI":           { "range": "Short", "attackType": "SPREAD" },
-    "BEA":            { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "EMZ":            { "range": "Mid",   "attackType": "PIERCE" },
-    "NANI":           { "range": "Long",  "attackType": "BURST" },
-    "EDGAR":          { "range": "Short", "attackType": "BURST" },
-    "GRIFF":          { "range": "Mid",   "attackType": "SPREAD" },
-    "GALE":           { "range": "Mid",   "attackType": "SPREAD" },
-    "COLETTE":        { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "BELLE":          { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "LOLA":           { "range": "Long",  "attackType": "BURST", "spawner": true },
-    "MANDY":          { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "MAISIE":         { "range": "Mid",   "attackType": "SINGLE_SHOT" },
-    "PEARL":          { "range": "Long",  "attackType": "BURST" },
-    "LARRY & LAWRIE": { "range": "Long",  "attackType": "SPLASH", "spawner": true },
-    "ANGELO":         { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "BERRY":          { "range": "Mid",   "attackType": "SPLASH" },
-    "SHADE":          { "range": "Short", "attackType": "PIERCE", "bushSynergy": true },
-    "MORTIS":         { "range": "Short", "attackType": "PIERCE" },
-    "TARA":           { "range": "Mid",   "attackType": "PIERCE", "spawner": true, "bushSynergy": true },
-    "GENE":           { "range": "Long",  "attackType": "SPREAD" },
-    "MR. P":          { "range": "Long",  "attackType": "SINGLE_SHOT", "spawner": true },
-    "MAX":            { "range": "Mid",   "attackType": "BURST" },
-    "SPROUT":         { "range": "Long",  "attackType": "SPLASH" },
-    "BYRON":          { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "SQUEAK":         { "range": "Mid",   "attackType": "SPLASH" },
-    "LOU":            { "range": "Long",  "attackType": "BURST" },
-    "BUZZ":           { "range": "Short", "attackType": "BURST" },
-    "FANG":           { "range": "Short", "attackType": "SINGLE_SHOT" },
-    "OTIS":           { "range": "Mid",   "attackType": "BURST" },
-    "BUSTER":         { "range": "Short", "attackType": "SPREAD" },
-    "GRAY":           { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "R-T":            { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "CHUCK":          { "range": "Long",  "attackType": "PIERCE" },
-    "CHARLIE":        { "range": "Long",  "attackType": "SINGLE_SHOT", "spawner": true },
-    "MELODIE":        { "range": "Short", "attackType": "SPREAD" },
-    "LILY":           { "range": "Short", "attackType": "SINGLE_SHOT" },
-    "CLANCY":         { "range": "Mid",   "attackType": "BURST", "scaler": true },
-    "MOE":            { "range": "Mid",   "attackType": "BURST" },
-    "SPIKE":          { "range": "Mid",   "attackType": "SPLASH" },
-    "CROW":           { "range": "Long",  "attackType": "SPREAD" },
-    "LEON":           { "range": "Mid",   "attackType": "BURST", "bushSynergy": true },
-    "SANDY":          { "range": "Mid",   "attackType": "PIERCE", "bushSynergy": true },
-    "AMBER":          { "range": "Long",  "attackType": "PIERCE" },
-    "MEG":            { "range": "Long",  "attackType": "BURST", "scaler": true },
-    "SURGE":          { "range": "Mid",   "attackType": "SPLASH", "scaler": true },
-    "CHESTER":        { "range": "Mid",   "attackType": "BURST" },
-    "CORDELIUS":      { "range": "Short", "attackType": "BURST" },
-    "KIT":            { "range": "Short", "attackType": "SINGLE_SHOT" },
-    "DRACO":          { "range": "Short", "attackType": "PIERCE", "scaler": true },
-    "KENJI":          { "range": "Short", "attackType": "SPREAD" },
-    "PIERCE":         { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "SIRIUS":         { "range": "Mid",   "attackType": "BURST", "spawner": true },
-    "NORI":           { "range": "Mid",   "attackType": "PIERCE" },
-    "DAMIAN":         { "range": "Short", "attackType": "SPLASH", "scaler": true },
-    "JANET":          { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "BO":             { "range": "Mid",   "attackType": "SPREAD", "bushSynergy": true },
-    "STU":            { "range": "Mid",   "attackType": "SINGLE_SHOT" },
-    "EVE":            { "range": "Long",  "attackType": "SINGLE_SHOT", "spawner": true },
-    "WILLOW":         { "range": "Mid",   "attackType": "SPLASH" },
-    "GROM":           { "range": "Long",  "attackType": "SPLASH" },
-    "ASH":            { "range": "Short", "attackType": "SPREAD" },
-    "MICO":           { "range": "Short", "attackType": "BURST" },
-    "SAM":            { "range": "Short", "attackType": "BURST" },
-    "DOUG":           { "range": "Short", "attackType": "SPLASH" },
-    "BONNIE":         { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "RUFFS":          { "range": "Long",  "attackType": "BURST" },
-    "HANK":           { "range": "Short", "attackType": "SPREAD" },
-    "MEEPLE":         { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "JUJU":           { "range": "Mid",   "attackType": "SPLASH" },
-    "ZIGGY":          { "range": "Mid",   "attackType": "SPLASH" },
-    "BOLT":           { "range": "Short", "attackType": "BURST" },
-    "STARR NOVA":     { "range": "Short", "attackType": "BURST", "scaler": true },
-    "NAJIA":          { "range": "Long",  "attackType": "PIERCE", "spawner": true },
-    "ALLI":           { "range": "Short", "attackType": "BURST" },
-    "KAZE":           { "range": "Short", "attackType": "SPREAD" },
-    "MINA":           { "range": "Mid",   "attackType": "PIERCE" },
-    "TRUNK":          { "range": "Short", "attackType": "SPREAD" },
-    "GIGI":           { "range": "Short", "attackType": "SPLASH" },
-    "GLOWY":          { "range": "Mid",   "attackType": "SPLASH" },
-    "FINX":           { "range": "Mid",   "attackType": "BURST" },
-    "JAE-YONG":       { "range": "Long",  "attackType": "SINGLE_SHOT" },
-    "LUMI":           { "range": "Mid",   "attackType": "SPREAD", "spawner": true },
-    "OLLIE":          { "range": "Short", "attackType": "BURST" }
+    "SHELLY": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "NITA": {
+      "range": "Mid",
+      "attackType": "PIERCE",
+      "spawner": true
+    },
+    "COLT": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "BULL": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "BROCK": {
+      "range": "Long",
+      "attackType": "SPLASH"
+    },
+    "EL PRIMO": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "BARLEY": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "POCO": {
+      "range": "Mid",
+      "attackType": "PIERCE"
+    },
+    "ROSA": {
+      "range": "Short",
+      "attackType": "SPREAD",
+      "bushSynergy": true
+    },
+    "RICO": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "DARRYL": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "PENNY": {
+      "range": "Long",
+      "attackType": "PIERCE",
+      "spawner": true
+    },
+    "CARL": {
+      "range": "Mid",
+      "attackType": "PIERCE"
+    },
+    "JACKY": {
+      "range": "Short",
+      "attackType": "SPLASH"
+    },
+    "GUS": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "8-BIT": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "JESSIE": {
+      "range": "Mid",
+      "attackType": "PIERCE",
+      "spawner": true
+    },
+    "DYNAMIKE": {
+      "range": "Long",
+      "attackType": "SPLASH"
+    },
+    "TICK": {
+      "range": "Long",
+      "attackType": "SPLASH",
+      "spawner": true
+    },
+    "PIPER": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "PAM": {
+      "range": "Mid",
+      "attackType": "SPREAD",
+      "spawner": true
+    },
+    "FRANK": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "BIBI": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "BEA": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "EMZ": {
+      "range": "Mid",
+      "attackType": "PIERCE"
+    },
+    "NANI": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "EDGAR": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "GRIFF": {
+      "range": "Mid",
+      "attackType": "SPREAD"
+    },
+    "GALE": {
+      "range": "Mid",
+      "attackType": "SPREAD"
+    },
+    "COLETTE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "BELLE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "LOLA": {
+      "range": "Long",
+      "attackType": "BURST",
+      "spawner": true
+    },
+    "MANDY": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "MAISIE": {
+      "range": "Mid",
+      "attackType": "SINGLE_SHOT"
+    },
+    "PEARL": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "LARRY & LAWRIE": {
+      "range": "Long",
+      "attackType": "SPLASH",
+      "spawner": true
+    },
+    "ANGELO": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "BERRY": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "SHADE": {
+      "range": "Short",
+      "attackType": "PIERCE",
+      "bushSynergy": true
+    },
+    "MORTIS": {
+      "range": "Short",
+      "attackType": "PIERCE"
+    },
+    "TARA": {
+      "range": "Mid",
+      "attackType": "PIERCE",
+      "spawner": true,
+      "bushSynergy": true
+    },
+    "GENE": {
+      "range": "Long",
+      "attackType": "SPREAD"
+    },
+    "MR. P": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT",
+      "spawner": true
+    },
+    "MAX": {
+      "range": "Mid",
+      "attackType": "BURST"
+    },
+    "SPROUT": {
+      "range": "Long",
+      "attackType": "SPLASH"
+    },
+    "BYRON": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "SQUEAK": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "LOU": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "BUZZ": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "FANG": {
+      "range": "Short",
+      "attackType": "SINGLE_SHOT"
+    },
+    "OTIS": {
+      "range": "Mid",
+      "attackType": "BURST"
+    },
+    "BUSTER": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "GRAY": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "R-T": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "CHUCK": {
+      "range": "Long",
+      "attackType": "PIERCE"
+    },
+    "CHARLIE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT",
+      "spawner": true
+    },
+    "MELODIE": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "LILY": {
+      "range": "Short",
+      "attackType": "SINGLE_SHOT"
+    },
+    "CLANCY": {
+      "range": "Mid",
+      "attackType": "BURST",
+      "scaler": true
+    },
+    "MOE": {
+      "range": "Mid",
+      "attackType": "BURST"
+    },
+    "SPIKE": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "CROW": {
+      "range": "Long",
+      "attackType": "SPREAD"
+    },
+    "LEON": {
+      "range": "Mid",
+      "attackType": "BURST",
+      "bushSynergy": true
+    },
+    "SANDY": {
+      "range": "Mid",
+      "attackType": "PIERCE",
+      "bushSynergy": true
+    },
+    "AMBER": {
+      "range": "Long",
+      "attackType": "PIERCE"
+    },
+    "MEG": {
+      "range": "Long",
+      "attackType": "BURST",
+      "scaler": true
+    },
+    "SURGE": {
+      "range": "Mid",
+      "attackType": "SPLASH",
+      "scaler": true
+    },
+    "CHESTER": {
+      "range": "Mid",
+      "attackType": "BURST"
+    },
+    "CORDELIUS": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "KIT": {
+      "range": "Short",
+      "attackType": "SINGLE_SHOT"
+    },
+    "DRACO": {
+      "range": "Short",
+      "attackType": "PIERCE",
+      "scaler": true
+    },
+    "KENJI": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "PIERCE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "SIRIUS": {
+      "range": "Mid",
+      "attackType": "BURST",
+      "spawner": true
+    },
+    "NORI": {
+      "range": "Mid",
+      "attackType": "PIERCE"
+    },
+    "DAMIAN": {
+      "range": "Short",
+      "attackType": "SPLASH",
+      "scaler": true
+    },
+    "JANET": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "BO": {
+      "range": "Mid",
+      "attackType": "SPREAD",
+      "bushSynergy": true
+    },
+    "STU": {
+      "range": "Mid",
+      "attackType": "SINGLE_SHOT"
+    },
+    "EVE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT",
+      "spawner": true
+    },
+    "WILLOW": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "GROM": {
+      "range": "Long",
+      "attackType": "SPLASH"
+    },
+    "ASH": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "MICO": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "SAM": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "DOUG": {
+      "range": "Short",
+      "attackType": "SPLASH"
+    },
+    "BONNIE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "RUFFS": {
+      "range": "Long",
+      "attackType": "BURST"
+    },
+    "HANK": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "MEEPLE": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "JUJU": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "ZIGGY": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "BOLT": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "STARR NOVA": {
+      "range": "Short",
+      "attackType": "BURST",
+      "scaler": true
+    },
+    "NAJIA": {
+      "range": "Long",
+      "attackType": "PIERCE",
+      "spawner": true
+    },
+    "ALLI": {
+      "range": "Short",
+      "attackType": "BURST"
+    },
+    "KAZE": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "MINA": {
+      "range": "Mid",
+      "attackType": "PIERCE"
+    },
+    "TRUNK": {
+      "range": "Short",
+      "attackType": "SPREAD"
+    },
+    "GIGI": {
+      "range": "Short",
+      "attackType": "SPLASH"
+    },
+    "GLOWY": {
+      "range": "Mid",
+      "attackType": "SPLASH"
+    },
+    "FINX": {
+      "range": "Mid",
+      "attackType": "BURST"
+    },
+    "JAE-YONG": {
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
+    },
+    "LUMI": {
+      "range": "Mid",
+      "attackType": "SPREAD",
+      "spawner": true
+    },
+    "OLLIE": {
+      "range": "Short",
+      "attackType": "BURST"
+    }
   },
-
   "attributeRules": {
     "_comment": "Mechanical interaction rules from the draft doc, magnitudes retuned to this engine's ~50-point score scale (the doc's raw ±15-20% would swamp real win-rate edges, where 5% WR = 2.5 pts). Geometry modifiers are DAMPENED by dampWithMapData when the brawler has a solid map sample — the live map WR already encodes how the map treats them, so the static prior mainly fills in when data is thin.",
     "singleShotVsSpawner": {
       "_comment": "High-damage single instances get eaten by attackable summons. Waived when a teammate brings PIERCE/SPLASH wave-clear.",
       "scoreMultiplier": 0.88,
-      "waivedByTeammateAttackTypes": ["PIERCE", "SPLASH"],
+      "waivedByTeammateAttackTypes": [
+        "PIERCE",
+        "SPLASH"
+      ],
       "label": "Summon fodder"
     },
     "clearsSummons": {
       "_comment": "Pierce/splash clears summons while still hitting the primary target.",
-      "attackTypeBonus": { "PIERCE": 5, "SPLASH": 3 },
+      "attackTypeBonus": {
+        "PIERCE": 5,
+        "SPLASH": 3
+      },
       "label": "Clears summons"
     },
     "geometry": {
       "_comment": "wallBreakShiftsOpen: a friendly wall breaker physically opens the map mid-game — CLOSED evaluates as MIXED, MIXED as OPEN (dynamic map mutation).",
-      "OPEN":   { "rangeMultipliers": { "Long": 1.1, "Short": 0.85 } },
-      "CLOSED": { "rangeMultipliers": { "Short": 1.1, "Long": 0.88 }, "classMultipliers": { "THROWER": 1.08 } },
-      "MIXED":  { "rangeMultipliers": {} },
+      "OPEN": {
+        "rangeMultipliers": {
+          "Long": 1.1,
+          "Short": 0.85
+        }
+      },
+      "CLOSED": {
+        "rangeMultipliers": {
+          "Short": 1.1,
+          "Long": 0.88
+        },
+        "classMultipliers": {
+          "THROWER": 1.08
+        }
+      },
+      "MIXED": {
+        "rangeMultipliers": {}
+      },
       "dampWithMapData": 0.5,
       "wallBreakShiftsOpen": true
     },
-    "bushSynergy": { "HIGH": 4, "MEDIUM": 2, "label": "Bush lurker" },
+    "bushSynergy": {
+      "HIGH": 4,
+      "MEDIUM": 2,
+      "label": "Bush lurker"
+    },
     "wallBreakOwnThrower": {
       "_comment": "Anti-synergy: a friendly wall breaker destroys the cover the team's own thrower depends on. Applied in both directions (wall breaker joining a thrower comp, or thrower joining a wall-break comp). Exempt in Heist, where breaking the safe lane open is the whole point.",
       "scoreMultiplier": 0.92,
-      "exemptModes": ["heist"],
+      "exemptModes": [
+        "heist"
+      ],
       "label": "Breaks own cover"
     },
     "scalerSaturation": {
@@ -539,161 +1349,324 @@
     },
     "utilitySaturation": {
       "_comment": "In DPS-hungry objective modes, a third pick from the utility classes loses the damage race (mode classWeights already discourage one; this catches the mixed-class trio the duplicate penalty misses).",
-      "modes": ["heist", "hotZone"],
-      "classes": ["SUPPORT", "THROWER", "CONTROL"],
+      "modes": [
+        "heist",
+        "hotZone"
+      ],
+      "classes": [
+        "SUPPORT",
+        "THROWER",
+        "CONTROL"
+      ],
       "maxUtility": 2,
       "scoreMultiplier": 0.75,
       "label": "Third utility pick"
     }
   },
-
   "mapRules": {
     "_comment": "Per-map competitive requirements from pro map breakdowns (SpenLC, 2026-07-22), layered ON TOP of the statistical core rather than replacing it. Every multiplier here is a PRIOR: dampWithMapData shrinks it toward 1.0 when the candidate has a real sample on this map, because the live map win rate already encodes whatever the pro is describing — the prior mainly carries the maps and brawlers where data is still thin. Primitives: penalizeClasses / favorClasses / favorBrawlers (flat multipliers); penaltyExemptSlots (a class penalty that lifts at the named pick slots, e.g. snipers are fine as the 6th pick); requireTeamAbility (a class stays handicapped until the TEAM fields an enabling ability); conditionalPenalty (class penalty waived by a teammate class); requireArchetype (comp mandate — candidates that do NOT satisfy it are penalized once the team is running out of slots to satisfy it, ramping in as the last pick approaches, since a flat whole-team penalty would not change any ranking); wallBreakBonus (multiplier for WALL_BREAK ability holders); banSuggestions and note (advisory only, surfaced in the UI, never scored). Map keys are matched case- and punctuation-insensitively, so 'Belles Rock' and \"Belle's Rock\" both resolve.",
-    "_defaults": { "dampWithMapData": 0.5 },
-
+    "_defaults": {
+      "dampWithMapData": 0.5
+    },
     "Dry Season": {
       "mode": "bounty",
       "note": "Surge, 8-Bit and Meg lead here. Max answers snipers — watch for Sprout / Kit / Bolt on their last pick.",
-      "favorBrawlers": { "SURGE": 1.08, "8-BIT": 1.06, "MEG": 1.06 }
+      "favorBrawlers": {
+        "SURGE": 1.08,
+        "8-BIT": 1.06,
+        "MEG": 1.06
+      }
     },
     "Hideout": {
       "mode": "bounty",
       "note": "Ban Brock, then first-pick Surge. Pearl punishes Max and aggressive divers.",
-      "banSuggestions": ["BROCK"],
-      "favorBrawlers": { "SURGE": 1.08, "PEARL": 1.05 }
+      "banSuggestions": [
+        "BROCK"
+      ],
+      "favorBrawlers": {
+        "SURGE": 1.08,
+        "PEARL": 1.05
+      }
     },
     "Layer Cake": {
       "mode": "bounty",
       "note": "No snipers early — take mid control plus one aggro opener, and leave snipers for the last pick.",
-      "penalizeClasses": { "SNIPER": 0.75 },
-      "penaltyExemptSlots": [6],
-      "favorBrawlers": { "MEEPLE": 1.06, "GENE": 1.06, "CROW": 1.05, "MAX": 1.05, "CARL": 1.06, "MORTIS": 1.06, "SHADE": 1.06 }
+      "penalizeClasses": {
+        "SNIPER": 0.75
+      },
+      "penaltyExemptSlots": [
+        6
+      ],
+      "favorBrawlers": {
+        "MEEPLE": 1.06,
+        "GENE": 1.06,
+        "CROW": 1.05,
+        "MAX": 1.05,
+        "CARL": 1.06,
+        "MORTIS": 1.06,
+        "SHADE": 1.06
+      }
     },
     "Shooting Star": {
       "mode": "bounty",
       "note": "Surge jumps mid for kills. Dual ranged (Belle / Byron / Brock / Piper) with Jae-Yong for the blue star.",
-      "favorBrawlers": { "SURGE": 1.08, "BELLE": 1.05, "BYRON": 1.05, "BROCK": 1.05, "PIPER": 1.05, "JAE-YONG": 1.05 }
+      "favorBrawlers": {
+        "SURGE": 1.08,
+        "BELLE": 1.05,
+        "BYRON": 1.05,
+        "BROCK": 1.05,
+        "PIPER": 1.05,
+        "JAE-YONG": 1.05
+      }
     },
-
     "Center Stage": {
       "mode": "brawlBall",
       "note": "Griff-led DPS map. Max / Damian / 8-Bit / Rico dominate; pure dive assassins struggle into that much damage.",
-      "favorBrawlers": { "GRIFF": 1.08, "MAX": 1.06, "DAMIAN": 1.06, "8-BIT": 1.06, "RICO": 1.06 },
-      "penalizeClasses": { "SPACE_MAKER": 0.92 }
+      "favorBrawlers": {
+        "GRIFF": 1.08,
+        "MAX": 1.06,
+        "DAMIAN": 1.06,
+        "8-BIT": 1.06,
+        "RICO": 1.06
+      },
+      "penalizeClasses": {
+        "SPACE_MAKER": 0.92
+      }
     },
     "Pinball Dreams": {
       "mode": "brawlBall",
       "note": "Needs one aggressive pusher (Shade / Damian / Kenji) plus a mid poke (Max / 8-Bit / Otis / Lumi / Rico).",
-      "requireArchetype": { "classes": ["SPACE_MAKER", "TANK"], "multiplier": 0.8, "label": "Comp has no pressure" },
-      "favorBrawlers": { "SHADE": 1.07, "MAX": 1.05, "8-BIT": 1.05, "OTIS": 1.05, "LUMI": 1.05, "RICO": 1.05 }
+      "requireArchetype": {
+        "classes": [
+          "SPACE_MAKER",
+          "TANK"
+        ],
+        "multiplier": 0.8,
+        "label": "Comp has no pressure"
+      },
+      "favorBrawlers": {
+        "SHADE": 1.07,
+        "MAX": 1.05,
+        "8-BIT": 1.05,
+        "OTIS": 1.05,
+        "LUMI": 1.05,
+        "RICO": 1.05
+      }
     },
     "Sneaky Fields": {
       "mode": "brawlBall",
       "note": "Mid flex pinchers (Rico / Ruffs / Max / Meeple). Pair any utility pick with heavy DPS or their 6th pick punishes you.",
-      "favorBrawlers": { "RICO": 1.06, "RUFFS": 1.06, "MAX": 1.06, "MEEPLE": 1.06 }
+      "favorBrawlers": {
+        "RICO": 1.06,
+        "RUFFS": 1.06,
+        "MAX": 1.06,
+        "MEEPLE": 1.06
+      }
     },
     "Triple Dribble": {
       "mode": "brawlBall",
       "note": "Lane pinchers (Meeple / Moe / Lumi) win the sides; Kenji / Edgar / Mina pressure down the right wall.",
-      "favorBrawlers": { "MEEPLE": 1.06, "MOE": 1.06, "LUMI": 1.06, "KENJI": 1.05, "EDGAR": 1.05, "MINA": 1.05 }
+      "favorBrawlers": {
+        "MEEPLE": 1.06,
+        "MOE": 1.06,
+        "LUMI": 1.06,
+        "KENJI": 1.05,
+        "EDGAR": 1.05,
+        "MINA": 1.05
+      }
     },
-
     "Double Swoosh": {
       "mode": "gemGrab",
       "note": "Run vision gear here. Right lane goes aggro onto their carrier, left lane plays a safe defender.",
-      "favorClasses": { "SPACE_MAKER": 1.05 }
+      "favorClasses": {
+        "SPACE_MAKER": 1.05
+      }
     },
     "Hard Rock Mine": {
       "mode": "gemGrab",
       "note": "Max is the premier carrier — Pearl / Lola / Crow answer him. Save the last pick for a space-making assassin.",
-      "favorBrawlers": { "MAX": 1.07, "PEARL": 1.05, "LOLA": 1.05, "CROW": 1.05 }
+      "favorBrawlers": {
+        "MAX": 1.07,
+        "PEARL": 1.05,
+        "LOLA": 1.05,
+        "CROW": 1.05
+      }
     },
     "Gem Fort": {
       "mode": "gemGrab",
       "note": "Burst and team wipes decide it — bring mid sustain, a bush scout, and a sneaky assassin/tank (or Sandy) for carrier kills.",
-      "favorBrawlers": { "SANDY": 1.06 },
-      "favorClasses": { "SPACE_MAKER": 1.04 }
+      "favorBrawlers": {
+        "SANDY": 1.06
+      },
+      "favorClasses": {
+        "SPACE_MAKER": 1.04
+      }
     },
     "Undermine": {
       "mode": "gemGrab",
       "note": "Messy map — you always want an assassin or pressure pick (Alli) to rob the gem carrier.",
-      "requireArchetype": { "classes": ["SPACE_MAKER"], "multiplier": 0.88, "label": "No carrier threat" },
-      "favorBrawlers": { "ALLI": 1.06 }
+      "requireArchetype": {
+        "classes": [
+          "SPACE_MAKER"
+        ],
+        "multiplier": 0.88,
+        "label": "No carrier threat"
+      },
+      "favorBrawlers": {
+        "ALLI": 1.06
+      }
     },
     "Crystal Arcade": {
       "mode": "gemGrab",
       "note": "Break both lanes open inside 40 seconds and low-range enemy comps collapse. Safe carriers: Stu / Max / Meg / Pearl.",
       "wallBreakBonus": 1.3,
-      "favorBrawlers": { "STU": 1.06, "MAX": 1.06, "MEG": 1.06, "PEARL": 1.06 }
+      "favorBrawlers": {
+        "STU": 1.06,
+        "MAX": 1.06,
+        "MEG": 1.06,
+        "PEARL": 1.06
+      }
     },
     "Deathcap Trap": {
       "mode": "gemGrab",
       "note": "Right lane defensive pincher (Ruffs / Rico), left lane aggro into the grass pocket. Penny is a strong late pick.",
-      "favorBrawlers": { "RUFFS": 1.06, "RICO": 1.06, "PENNY": 1.05 }
+      "favorBrawlers": {
+        "RUFFS": 1.06,
+        "RICO": 1.06,
+        "PENNY": 1.05
+      }
     },
-
     "Bridge Too Far": {
       "mode": "heist",
       "note": "At most one defender. Surge and Starr Nova win the 1v1s; keep one safe DPS (Colt / Brock / 8-Bit / Amber).",
-      "favorBrawlers": { "SURGE": 1.07, "STARR NOVA": 1.07, "COLT": 1.05, "BROCK": 1.05, "8-BIT": 1.05, "AMBER": 1.05 }
+      "favorBrawlers": {
+        "SURGE": 1.07,
+        "STARR NOVA": 1.07,
+        "COLT": 1.05,
+        "BROCK": 1.05,
+        "8-BIT": 1.05,
+        "AMBER": 1.05
+      }
     },
     "Hot Potato": {
       "mode": "heist",
       "note": "Defensive anchor (Lumi / Meeple) plus a high-DPS follow-up; Carl and Melodie force map control.",
-      "favorBrawlers": { "LUMI": 1.06, "MEEPLE": 1.06, "CARL": 1.05, "MELODIE": 1.05 }
+      "favorBrawlers": {
+        "LUMI": 1.06,
+        "MEEPLE": 1.06,
+        "CARL": 1.05,
+        "MELODIE": 1.05
+      }
     },
     "Kaboom Canyon": {
       "mode": "heist",
       "note": "Won on defence-to-offence transitions — don't over-draft snipers.",
-      "penalizeClasses": { "SNIPER": 0.9 }
+      "penalizeClasses": {
+        "SNIPER": 0.9
+      }
     },
     "Safe Zone": {
       "mode": "heist",
       "note": "Penny is the premier, near-uncounterable pick. Mid plays range/defence, the sides bring high DPS (Colt / Penny).",
-      "favorBrawlers": { "PENNY": 1.08, "COLT": 1.05 }
+      "favorBrawlers": {
+        "PENNY": 1.08,
+        "COLT": 1.05
+      }
     },
-
     "Dueling Beetles": {
       "mode": "hotZone",
       "note": "Griff and Lou lead. Ban Gray to kill the Gray + Emz cheese.",
-      "banSuggestions": ["GRAY"],
-      "favorBrawlers": { "GRIFF": 1.08, "LOU": 1.07 }
+      "banSuggestions": [
+        "GRAY"
+      ],
+      "favorBrawlers": {
+        "GRIFF": 1.08,
+        "LOU": 1.07
+      }
     },
     "Open Business": {
       "mode": "hotZone",
       "note": "Pure controller map: one controller, one DPS, one heavy zone sitter. Aggro struggles without a tank holding the zone.",
-      "favorClasses": { "CONTROL": 1.08 },
-      "conditionalPenalty": { "classes": ["SPACE_MAKER"], "multiplier": 0.8, "waivedByTeammateClasses": ["TANK"], "label": "Aggro with no zone sitter" }
+      "favorClasses": {
+        "CONTROL": 1.08
+      },
+      "conditionalPenalty": {
+        "classes": [
+          "SPACE_MAKER"
+        ],
+        "multiplier": 0.8,
+        "waivedByTeammateClasses": [
+          "TANK"
+        ],
+        "label": "Aggro with no zone sitter"
+      }
     },
     "Parallel Plays": {
       "mode": "hotZone",
       "note": "Split the roles: one peeking defender (Charlie / R-T / Willow / Emz), one wall-jumping attacker (Shade / Damian), one zone pincher.",
-      "favorBrawlers": { "CHARLIE": 1.06, "R-T": 1.06, "WILLOW": 1.06, "EMZ": 1.06, "SHADE": 1.06, "DAMIAN": 1.06 }
+      "favorBrawlers": {
+        "CHARLIE": 1.06,
+        "R-T": 1.06,
+        "WILLOW": 1.06,
+        "EMZ": 1.06,
+        "SHADE": 1.06,
+        "DAMIAN": 1.06
+      }
     },
     "Ring of Fire": {
       "mode": "hotZone",
       "note": "Raw-DPS meta — late assassins struggle here. Crow / Lumi / Griff / Finx / Glowy / Poco lead.",
-      "penalizeClasses": { "SPACE_MAKER": 0.88 },
-      "favorBrawlers": { "CROW": 1.06, "LUMI": 1.06, "GRIFF": 1.06, "FINX": 1.06, "GLOWY": 1.06, "POCO": 1.06 }
+      "penalizeClasses": {
+        "SPACE_MAKER": 0.88
+      },
+      "favorBrawlers": {
+        "CROW": 1.06,
+        "LUMI": 1.06,
+        "GRIFF": 1.06,
+        "FINX": 1.06,
+        "GLOWY": 1.06,
+        "POCO": 1.06
+      }
     },
-
     "Belle's Rock": {
       "mode": "knockout",
       "note": "Rico dominates and Brock is his answer. You need at least one high-health pressure anchor.",
-      "requireArchetype": { "classes": ["TANK"], "multiplier": 0.88, "label": "No health anchor" },
-      "favorBrawlers": { "RICO": 1.07, "BROCK": 1.05 }
+      "requireArchetype": {
+        "classes": [
+          "TANK"
+        ],
+        "multiplier": 0.88,
+        "label": "No health anchor"
+      },
+      "favorBrawlers": {
+        "RICO": 1.07,
+        "BROCK": 1.05
+      }
     },
     "Flaring Phoenix": {
       "mode": "knockout",
       "note": "Mid wants a sniper (Gene / Piper / Mandy), left a thrower or assassin (Squeak / Gray); Buster and Ollie play the poison gas well.",
-      "favorBrawlers": { "GENE": 1.06, "PIPER": 1.06, "MANDY": 1.06, "SQUEAK": 1.05, "GRAY": 1.05, "BUSTER": 1.05, "OLLIE": 1.05 }
+      "favorBrawlers": {
+        "GENE": 1.06,
+        "PIPER": 1.06,
+        "MANDY": 1.06,
+        "SQUEAK": 1.05,
+        "GRAY": 1.05,
+        "BUSTER": 1.05,
+        "OLLIE": 1.05
+      }
     },
     "New Horizons": {
       "mode": "knockout",
       "note": "Back-wall camping decides this map — bring wall break or pierce, or your snipers get turtled out of the game.",
       "requireTeamAbility": {
-        "abilities": ["WALL_BREAK", "PIERCE_DAMAGE"],
-        "penalizeClasses": ["SNIPER"],
+        "abilities": [
+          "WALL_BREAK",
+          "PIERCE_DAMAGE"
+        ],
+        "penalizeClasses": [
+          "SNIPER"
+        ],
         "multiplier": 0.7,
         "label": "No wall break for your sniper"
       }
@@ -702,34 +1675,87 @@
       "mode": "knockout",
       "note": "Break the back wall or you get spawn-trapped. Balance DPS with enough range that you aren't out-ranged.",
       "wallBreakBonus": 1.1,
-      "favorBrawlers": { "BROCK": 1.05 }
+      "favorBrawlers": {
+        "BROCK": 1.05
+      }
     }
   },
-
   "brawlerBias": {
     "_comment": "Pro-source tier corrections (SpenLC, 2026-07-22) for balance changes the patch aggregate has not fully priced in yet. Deliberately small (<=1.08) and damped by dampWithRecentData once the brawler has a solid RECENT sample — a live star-power rework is exactly what the 14-day recency window in statisticalCoefficients already detects, so this prior only has to cover the lag before that sample fills. Keyed by mode; a bias entry with no matching mode key contributes nothing.",
-    "_defaults": { "dampWithRecentData": 0.5 },
-    "GRIFF": { "modes": { "brawlBall": 1.08, "hotZone": 1.08 }, "reason": "star power rework — game-breaking DPS" },
-    "SURGE": { "modes": { "bounty": 1.08, "gemGrab": 1.08 }, "reason": "wall-jump star power converts to guaranteed kills" },
-    "BROCK": { "modes": { "bounty": 1.06, "knockout": 1.06 }, "reason": "post-buff damage" }
+    "_defaults": {
+      "dampWithRecentData": 0.5
+    },
+    "GRIFF": {
+      "modes": {
+        "brawlBall": 1.08,
+        "hotZone": 1.08
+      },
+      "reason": "star power rework — game-breaking DPS"
+    },
+    "SURGE": {
+      "modes": {
+        "bounty": 1.08,
+        "gemGrab": 1.08
+      },
+      "reason": "wall-jump star power converts to guaranteed kills"
+    },
+    "BROCK": {
+      "modes": {
+        "bounty": 1.06,
+        "knockout": 1.06
+      },
+      "reason": "post-buff damage"
+    }
   },
-
   "brawlerCounters": {
     "_comment": "Named brawler-vs-brawler multipliers from pro sources. Sits ABOVE the class counter matrix (which would only see Control vs Support) and BELOW empirical vs_brawler data — when a pair has 100+ real games, PASS 2 has already priced the matchup and this prior is damped the same way every other prior is.",
-    "_defaults": { "dampWithMapData": 0.5 },
-    "PEARL": { "vs": ["MAX", "KIT", "MORTIS"], "multiplier": 1.25, "label": "Counters their dive" }
+    "_defaults": {
+      "dampWithMapData": 0.5
+    },
+    "PEARL": {
+      "vs": [
+        "MAX",
+        "KIT",
+        "MORTIS"
+      ],
+      "multiplier": 1.25,
+      "label": "Counters their dive"
+    }
   },
-
   "firstPickCaution": {
     "_comment": "Brawlers strong on the map but exploitable as an early reveal — a named pro caveat, distinct from the data-driven blind-pick safety in draftMeta.js. waivedIfBanned lifts the penalty once the specific answer is off the board.",
-    "BROCK": { "multiplier": 0.85, "appliesToPickSlots": [1, 2], "waivedIfBanned": ["MAX"], "label": "Risky first pick" }
+    "BROCK": {
+      "multiplier": 0.85,
+      "appliesToPickSlots": [
+        1,
+        2
+      ],
+      "waivedIfBanned": [
+        "MAX"
+      ],
+      "label": "Risky first pick"
+    }
   },
-
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
     "logisticScale": 14,
     "capPct": 85,
     "counterWeight": 0.6,
     "_counterWeightComment": "Per-point weight of the class counter matrix in each side's comp score. MUST stay at half the intuitive value: counterMatrix is exactly antisymmetric (M[a][b] === -M[b][a]), so red's counter total is always the negation of blue's, and the differential blue-minus-red therefore counts every cross-team pairing TWICE. At the old 1.2 this let class theory swing the differential by up to ~26 points while the statistical term (a mean of true win rates) spans barely 6 — i.e. the matrix outvoted real win-rate evidence roughly 4:1, and could hand a 67% verdict to the comp with the WORSE measured win rates. 0.6 counts each pairing once, which puts theory and evidence on comparable footing and keeps the split consistent with the suggestion ranking."
+  },
+  "mapPriority": {
+    "_comment": "How hard the engine leans on THIS MAP's data versus the brawler's overall patch numbers. The old behaviour was a fixed 65/35 map/overall blend that applied only when the map sample cleared minMapPicks — and a brawler with NO map data silently fell through to a pure overall score, so 'unproven here' scored identically to 'proven here'. blendPriorGames replaces that with sample weighting: map weight = mapPicks / (mapPicks + blendPriorGames), so weight rises smoothly with evidence and is 0 when there is none.",
+    "blendPriorGames": 400,
+    "firstPick": {
+      "_comment": "First pick is a map question before it is a matchup question: with no enemy revealed, the only real evidence is whether a brawler wins AND is actually played on this map. presencePct = share of this map's matches the brawler appears in (sums to ~600% across the pool, so an even split over ~105 brawlers is ~5.7%).",
+      "staplePresencePct": 8,
+      "stapleBonus": 1.06,
+      "stapleLabel": "Map staple",
+      "rarePresencePct": 2,
+      "rarePenalty": 0.88,
+      "rareLabel": "Rarely picked here",
+      "noMapDataPenalty": 0.8,
+      "noMapDataLabel": "No map data"
+    }
   }
 }

@@ -105,7 +105,6 @@ function BrawlerTile({ brawler, size = 44, dim, banned, onClick, title }) {
 export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawlerStats }) {
   const [selectedMap, setSelectedMap] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
-  const { matches: mapMatches } = useMapMatches(selectedPatch, selectedMap?.name, !!selectedMap);
   const intelligence = useBrawlerIntelligence(selectedPatch, rankBracket);
 
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
@@ -122,9 +121,42 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   // Pro map intel for the selected map — advisory text, never part of scoring.
   const [mapNote, setMapNote] = useState(null);
   const [banAdvice, setBanAdvice] = useState([]);
-  const [mapStatsByKey, setMapStatsByKey] = useState({});
   const [quickInfo, setQuickInfo] = useState(null);
   const [animKey, setAnimKey] = useState(0);
+
+  // Per-brawler stats for THIS map, straight from the server-side BrawlerStats
+  // aggregate (already loaded for the tier list — no extra request).
+  //
+  // This was previously computed in the browser by downloading up to 100k raw
+  // Matches rows per map (~10MB) and counting them. That silently stopped
+  // working as ranked_matches grew: the query began exceeding anon's 3s
+  // statement_timeout, supabase-js returned data: null, and the old
+  // `setMatches(data || [])` turned the failure into an empty array. Result —
+  // mapStats was {} for every brawler, so the engine fell back to overall win
+  // rates for the entire board and map-specific ranking quietly disappeared.
+  // Reading the pre-aggregated table instead is both correct and ~1000x smaller.
+  const mapStatsByKey = useMemo(() => {
+    const out = {};
+    if (!selectedMap) return out;
+    for (const r of brawlerStats || []) {
+      if (r.map !== selectedMap.name) continue;
+      if (r.rank_bracket !== rankBracket) continue;
+      if (r.patch && selectedPatch && r.patch !== selectedPatch) continue;
+      const key = (r.brawler || "").toUpperCase();
+      if (!key) continue;
+      if (!out[key]) out[key] = { picks: 0, wins: 0 };
+      out[key].picks += Number(r.picks) || 0;
+      out[key].wins += Number(r.wins) || 0;
+    }
+    return out;
+  }, [brawlerStats, selectedMap, rankBracket, selectedPatch]);
+
+  // Raw match rows are needed ONLY for exact-comp matchup stats, so don't pay
+  // for them until the enemy has actually revealed something.
+  const enemyRevealed = useMemo(
+    () => [...blueTeam, ...redTeam].some(Boolean), [blueTeam, redTeam]);
+  const { matches: mapMatches } = useMapMatches(
+    selectedPatch, selectedMap?.name, !!selectedMap && enemyRevealed, rankBracket);
 
   // Auto-select first map when maps load or patch changes
   useEffect(() => {
@@ -193,15 +225,8 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       ...redBans.filter(Boolean).map(b => b.name.toUpperCase()),
     ];
 
-    const stats = {};
+    const stats = mapStatsByKey;
     const bracketMatches = mapMatches.filter(m => resolveMatchBracket(m) === rankBracket);
-    for (const match of bracketMatches) {
-      const winners = (match.winners || []).map(b => b.toUpperCase());
-      const losers = (match.losers || []).map(b => b.toUpperCase());
-      for (const b of winners) { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; stats[b].wins++; }
-      for (const b of losers)  { if (!stats[b]) stats[b] = { picks: 0, wins: 0 }; stats[b].picks++; }
-    }
-    setMapStatsByKey(stats);
 
     const bans = Object.entries(stats)
       .filter(([, s]) => s.picks >= 15)
@@ -254,7 +279,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     setMapNote(note);
     setBanAdvice(proBans);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, rankBracket, activeSlot, firstPick, intelligence]);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, rankBracket, activeSlot, firstPick, intelligence]);
 
   // Live comp strength — average confidence-weighted map win rate of each
   // team's picks, from the real per-map stats (no mock values).
@@ -691,11 +716,38 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                           </div>
                         )}
                       </div>
-                      <div style={{ textAlign: "center", flexShrink: 0 }}>
+                      {/* Sample provenance, not just a number. The headline is
+                          the map rate whenever the map sample is real; the line
+                          under it always names WHICH sample, and the overall
+                          count sits beneath so a map read can be weighed against
+                          the brawler's general strength. "NO MAP DATA" is shown
+                          explicitly — that state used to silently render as an
+                          overall number, which is how a brawler nobody plays
+                          here could headline a first pick. */}
+                      <div style={{ textAlign: "right", flexShrink: 0, minWidth: 74 }}>
                         <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color }}>{s.winRate}%</div>
-                        <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#6f7180" }}>
-                          {s.sampleGames > 0 ? `${fmtGames(s.sampleGames)} ${s.sampleScope === "overall" ? "OVERALL" : "MAP"}` : "WIN"}
-                        </div>
+                        {s.mapGames > 0 ? (
+                          <>
+                            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: s.sampleScope === "map" ? "#8ee6b0" : "#6f7180" }}>
+                              {fmtGames(s.mapGames)} MAP
+                              {s.mapPresencePct != null && ` · ${s.mapPresencePct}%`}
+                            </div>
+                            {s.overallGames > 0 && (
+                              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
+                                {fmtGames(s.overallGames)} OVERALL
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#ff8f8f" }}>NO MAP DATA</div>
+                            {s.overallGames > 0 && (
+                              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
+                                {fmtGames(s.overallGames)} OVERALL
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   );

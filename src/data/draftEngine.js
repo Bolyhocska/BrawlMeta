@@ -158,6 +158,16 @@ export function getDraftAdvice({
   const ineligible = CONFIG.rankedIneligible?.keys || [];
   const used = new Set([...myTeam, ...enemyTeam, ...unavailable, ...ineligible].map(norm));
   const coeff = CONFIG.statisticalCoefficients;
+  const mapPri = CONFIG.mapPriority || { blendPriorGames: 400, firstPick: {} };
+  const fpPri = mapPri.firstPick || {};
+
+  // Every match contributes 6 brawler-picks, so the map's total picks / 6 is
+  // the number of matches behind this map's sample. That denominator turns raw
+  // picks into a PRESENCE percentage — "what share of games on this map does
+  // this brawler actually show up in" — which is the pick-rate half of judging
+  // a first pick, and is meaningless without it.
+  const mapTotalPicks = Object.values(mapStats).reduce((a, s) => a + (Number(s?.picks) || 0), 0);
+  const mapTotalMatches = mapTotalPicks > 0 ? mapTotalPicks / 6 : 0;
   const cons = CONFIG.constraints;
 
   // Phase-specific drafting (counter-ladder): how hard counter evidence weighs
@@ -236,7 +246,8 @@ export function getDraftAdvice({
     const why = [];         // rationale fragments, priority-ordered
 
     // ── PASS 1 · Statistical: true win rate + coefficient flags ──
-    const mapTWR = ms && ms.picks >= minMapPicks ? trueWR(ms.wins, ms.picks) : null;
+    const mapPicks = ms?.picks || 0;
+    const mapTWR = mapPicks >= minMapPicks ? trueWR(ms.wins, mapPicks) : null;
     let globalTWR = intel ? parseFloat(intel.true_win_rate) : null;
 
     // Recency blend: when the last N days have a solid sample, they outvote
@@ -250,9 +261,16 @@ export function getDraftAdvice({
       globalTWR = recentTWR * w + globalTWR * (1 - w);
     }
 
-    let score = mapTWR != null && globalTWR != null
-      ? mapTWR * 0.65 + globalTWR * 0.35
-      : (mapTWR ?? globalTWR ?? 50);
+    // Map data leads, in proportion to how much of it there is. The old fixed
+    // 65/35 split had two failure modes: it treated 40 map games exactly like
+    // 4,000, and — worse — a brawler with NO map sample fell straight through
+    // to a pure overall score, so "unproven on this map" ranked identically to
+    // "proven on this map". Sample weighting fixes both: the weight rises
+    // smoothly with evidence and is 0 when there is none.
+    const mapW = mapTWR == null ? 0 : mapPicks / (mapPicks + mapPri.blendPriorGames);
+    let score = globalTWR == null
+      ? (mapTWR ?? 50)
+      : (mapTWR == null ? globalTWR : mapTWR * mapW + globalTWR * (1 - mapW));
 
     // Pro tier correction: a named balance change (star-power rework, buff) the
     // patch aggregate hasn't caught up to yet. Damped once the RECENT window
@@ -303,6 +321,28 @@ export function getDraftAdvice({
       const bl = blindPickLabel(key);
       if (bl) chips.push(bl);
       if (bl?.tone === "bad") why.push("risky reveal — wins come from favorable matchups");
+
+      // First pick is a MAP question before it is a matchup question. With no
+      // enemy revealed there is nothing to counter, so the only real evidence
+      // is whether this brawler wins AND gets played on this specific map. A
+      // brawler nobody picks here is not a first pick however good their global
+      // numbers look — and one with no map sample at all is a guess, not a read.
+      if (mapTWR == null) {
+        score *= fpPri.noMapDataPenalty ?? 0.8;
+        chips.push({ label: fpPri.noMapDataLabel ?? "No map data", tone: "bad" });
+        why.push("no meaningful sample on this map — scored on overall data alone");
+      } else if (mapTotalMatches > 0) {
+        const presencePct = (mapPicks / mapTotalMatches) * 100;
+        if (presencePct >= (fpPri.staplePresencePct ?? 8)) {
+          score *= fpPri.stapleBonus ?? 1.06;
+          chips.push({ label: fpPri.stapleLabel ?? "Map staple", tone: "good" });
+          why.push(`picked in ${presencePct.toFixed(1)}% of games on this map`);
+        } else if (presencePct <= (fpPri.rarePresencePct ?? 2)) {
+          score *= fpPri.rarePenalty ?? 0.88;
+          chips.push({ label: fpPri.rareLabel ?? "Rarely picked here", tone: "bad" });
+          why.push(`only ${presencePct.toFixed(1)}% pick rate on this map`);
+        }
+      }
     }
     if (enemyTeam.length > 0) {
       // Theory: class counter matrix
@@ -699,16 +739,22 @@ export function getDraftAdvice({
 
     // Headline win rate: trust the map only when the sample is real; otherwise
     // fall back to the (large-sample) overall rate so a 25-game map WR never headlines.
+    // mapGames/overallGames are reported SEPARATELY and always, so the card can
+    // show the map sample next to the overall one — when those two disagree the
+    // user needs to see it, and when the map sample is missing entirely that has
+    // to be visible rather than quietly becoming an overall number.
+    const overallGames = Number(intel?.picks) || 0;
     let displayWinRate = null, sampleGames = 0, sampleScope = null;
-    if (ms && ms.picks >= minMapPicks) {
-      displayWinRate = Math.round((ms.wins / ms.picks) * 1000) / 10;
-      sampleGames = ms.picks; sampleScope = "map";
+    const mapWinRate = mapPicks > 0 ? Math.round((ms.wins / mapPicks) * 1000) / 10 : null;
+    if (mapPicks >= minMapPicks) {
+      displayWinRate = mapWinRate;
+      sampleGames = mapPicks; sampleScope = "map";
     } else if (intel) {
       displayWinRate = Math.round(parseFloat(intel.win_rate) * 10) / 10;
-      sampleGames = Number(intel.picks) || 0; sampleScope = "overall";
-    } else if (ms && ms.picks > 0) {
-      displayWinRate = Math.round((ms.wins / ms.picks) * 1000) / 10;
-      sampleGames = ms.picks; sampleScope = "map";
+      sampleGames = overallGames; sampleScope = "overall";
+    } else if (mapPicks > 0) {
+      displayWinRate = mapWinRate;
+      sampleGames = mapPicks; sampleScope = "map";
     }
 
     // matchupNote: one plain line answering "how good is this into their comp?"
@@ -740,7 +786,9 @@ export function getDraftAdvice({
       score,
       winRate: displayWinRate,
       displayWinRate, sampleGames, sampleScope,
-      picks: ms?.picks ?? 0,
+      mapGames: mapPicks, mapWinRate, overallGames,
+      mapPresencePct: mapTotalMatches > 0 ? Math.round((mapPicks / mapTotalMatches) * 1000) / 10 : null,
+      picks: mapPicks,
       matchupWinRate, matchupPicks, matchupNote,
       reasons: chips.slice(0, 2),
     });
