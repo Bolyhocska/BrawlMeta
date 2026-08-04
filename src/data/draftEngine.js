@@ -27,7 +27,7 @@
 
 import CONFIG from "./draft_logic_config.json";
 import BRAWLER_META from "./brawlerMeta.json";
-import { blindPickFactor, blindPickLabel } from "./draftMeta";
+import { blindPickFactor, blindPickLabel, getDraftProfile } from "./draftMeta";
 
 const norm = (k) => (k || "").toUpperCase().trim();
 
@@ -888,6 +888,111 @@ export function getDraftAdvice({
 // Comp score per side = statistical strength + cross-team counter pressure +
 // synergy + structure. The differential runs through a logistic squash and is
 // capped (no draft is ever 90-10 — execution still exists). Always sums to 100.
+// ── Ban advice ───────────────────────────────────────────────────────────────
+// Which brawlers to ban depends entirely on WHERE YOU PICK, and this is the one
+// piece of draft theory the old list ignored — it showed the six strongest
+// brawlers on the map to both teams.
+//
+// That's actively wrong for the team picking first. Banning the best brawler in
+// the game when you hold first pick throws the ban away: you could simply have
+// taken him. What a first-picker cannot control is the enemy's LAST pick, which
+// sees the whole revealed comp and answers it — so those counter threats are
+// what they should be removing. The team picking last has the opposite problem:
+// the enemy opens on the best brawler and they will never get him, so denying
+// the meta openers is exactly right.
+//
+// firstPickSafety (draftMeta) is the discriminator. High = hard to punish, safe
+// to reveal early, therefore the brawler that gets first-picked. Low = wins come
+// from favourable matchups, therefore a last-pick counter threat.
+export function getBanAdvice({
+  mapName = null,
+  banningTeamPicksFirst,      // true if the team choosing this ban also picks first
+  mapStats = {},
+  intelligence = {},
+  unavailable = [],           // already banned or picked — kept, but marked used
+  topN = 6,
+  minMapPicks = 30,
+}) {
+  const cfg = CONFIG.banStrategy || {};
+  const deny = cfg.denyOpeners || {};
+  const protect = cfg.protectFromCounters || {};
+  const used = new Set(unavailable.map(norm));
+  const ineligible = new Set((CONFIG.rankedIneligible?.keys || []).map(norm));
+  const mapRule = lookupByMap(CONFIG.mapRules, mapName) || {};
+  const proBans = new Set((mapRule.banSuggestions || []).map(norm));
+
+  const mapTotalPicks = Object.values(mapStats).reduce((a, s) => a + (Number(s?.picks) || 0), 0);
+  const mapTotalMatches = mapTotalPicks > 0 ? mapTotalPicks / 6 : 0;
+  const floor = cfg.minPresencePct ?? 1.5;
+
+  const rows = [];
+  for (const key of new Set([...Object.keys(mapStats), ...Object.keys(intelligence)].map(norm))) {
+    if (ineligible.has(key)) continue;
+    const ms = mapStats[key];
+    const intel = intelligence[key];
+    const mapPicks = Number(ms?.picks) || 0;
+    if (!mapPicks && !intel) continue;
+    // A brawler nobody plays here isn't worth a ban, same floor as the last pick.
+    const presencePct = mapTotalMatches > 0 ? (mapPicks / mapTotalMatches) * 100 : 0;
+    if (mapTotalMatches > 0 && presencePct < floor) continue;
+
+    const mapTWR = mapPicks >= minMapPicks ? trueWR(ms.wins, mapPicks) : null;
+    const strength = blendMapGlobal(mapPicks, mapTWR, recencyTWR(intel));
+    // Only brawlers actually above par are worth a ban slot.
+    const edge = strength - 50;
+    if (edge <= 0) continue;
+
+    const safety = getDraftProfile(key).firstPickSafety;   // 0..1
+    const openerScore  = edge * ((deny.safetyBase ?? 0.7) + (deny.safetyBias ?? 0.6) * safety);
+    const counterScore = edge * ((protect.counterBase ?? 0.5) + (protect.counterBias ?? 1.0) * (1 - safety));
+
+    rows.push({
+      key, name: fmtName(key),
+      winRate: mapPicks >= minMapPicks
+        ? Math.round((ms.wins / mapPicks) * 1000) / 10
+        : (intel ? Math.round(parseFloat(intel.win_rate) * 10) / 10 : null),
+      mapGames: mapPicks,
+      presencePct: Math.round(presencePct * 10) / 10,
+      safety, openerScore, counterScore,
+      isPro: proBans.has(key),
+      used: used.has(key),
+    });
+  }
+
+  // The brawlers this team would realistically OPEN on. Never recommend banning
+  // your own first pick — that is the whole point of the rule.
+  const ownOpeners = new Set(
+    [...rows].sort((a, b) => b.openerScore - a.openerScore)
+      .slice(0, protect.skipTopOpeners ?? 2).map(r => r.key));
+
+  const mode = banningTeamPicksFirst ? protect : deny;
+  let ranked;
+  if (banningTeamPicksFirst) {
+    // Drop the safe openers entirely. A brawler this team can simply TAKE with
+    // the first pick is never worth a ban slot — that's the Surge case: he's the
+    // best brawler on the map, which is exactly why you pick him instead of
+    // banning him. Down-weighting wasn't enough; a high enough win rate still
+    // carried openers into the list.
+    const maxSafety = protect.maxOpenerSafety ?? 0.78;
+    ranked = rows.filter(r => !ownOpeners.has(r.key) && r.safety < maxSafety)
+                 .sort((a, b) => b.counterScore - a.counterScore);
+  } else {
+    ranked = [...rows].sort((a, b) => b.openerScore - a.openerScore);
+  }
+
+  return {
+    headline: mode.headline || null,
+    picksFirst: !!banningTeamPicksFirst,
+    // Pro-authored bans for the map still ride along as a flag, not a re-sort.
+    bans: ranked.slice(0, topN).map(r => ({
+      key: r.key, name: r.name, winRate: r.winRate,
+      mapGames: r.mapGames, presencePct: r.presencePct, used: r.used,
+      reason: r.isPro ? (cfg.proBanReason || "Pro priority ban") : (mode.reason || null),
+      isPro: r.isPro,
+    })),
+  };
+}
+
 export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30 }) {
   const strength = (teamKeys, enemyKeys) => {
     const classes = teamKeys.map(draftClassOf);

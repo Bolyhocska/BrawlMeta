@@ -1767,5 +1767,28 @@
       "minPresencePct": 1.5,
       "minCandidates": 12
     }
+  },
+  "banStrategy": {
+    "_comment": "Who you ban depends entirely on whether you pick FIRST or LAST, and the old list ignored that — it just showed the six strongest brawlers on the map to both teams. That is actively wrong for the first-pick team: banning the best brawler in the game when you hold first pick throws the ban away, because you could simply have taken him. First pick => you get the best opener, so what you cannot control is their LAST pick answering your revealed comp. Ban the counter-pick threats. Last pick => they will open on the best brawler and you will never see him. Ban the meta openers to deny them. firstPickSafety (draftMeta) is the discriminator: high = safe to reveal early, so that's who gets first-picked; low = wins come from favourable matchups, so that's a last-pick counter threat.",
+    "minPresencePct": 1.5,
+    "_presenceComment": "Same floor as mapPriority.lastPick — a brawler nobody plays on this map is not worth a ban.",
+    "denyOpeners": {
+      "_comment": "For the team picking LAST: rank the meta openers the enemy would first-pick. Mild tilt toward takeable-first brawlers, kept mild so a genuinely broken low-safety brawler still surfaces.",
+      "safetyBias": 0.6,
+      "safetyBase": 0.7,
+      "headline": "They pick first — deny the openers",
+      "reason": "Meta opener — they take this if you don't ban it"
+    },
+    "protectFromCounters": {
+      "_comment": "For the team picking FIRST: rank the last-pick counter threats. skipTopOpeners removes the brawlers this team would realistically open on — banning your own first pick is the exact mistake this rule exists to prevent.",
+      "counterBias": 1.3,
+      "counterBase": 0.1,
+      "skipTopOpeners": 2,
+      "headline": "You pick first — ban their counter-picks",
+      "reason": "Last-pick threat — answers your comp after you reveal",
+      "maxOpenerSafety": 0.78,
+      "_maxOpenerComment": "Hard exclusion, not just a weighting. At firstPickSafety >= this a brawler is a SAFE OPENER (same threshold blindPickLabel uses for that badge) — which means the team holding first pick can simply take them. Banning your own first pick is the specific mistake this whole rule exists to prevent, so those are removed from the first-picker's ban list outright rather than merely down-weighted."
+    },
+    "proBanReason": "Pro priority ban on this map"
   }
 }

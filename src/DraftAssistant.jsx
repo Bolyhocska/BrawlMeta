@@ -3,7 +3,7 @@ import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
 import { getDraftProfile } from "./data/draftMeta";
-import { getDraftAdvice, computeWinSplit, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
+import { getDraftAdvice, computeWinSplit, getBanAdvice, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
 import { useAuth } from "./auth";
 import { tileStyles } from "./data/brawlerTile";
 
@@ -117,7 +117,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("All");
   const [suggestions, setSuggestions] = useState([]);
-  const [recommendedBans, setRecommendedBans] = useState([]);
+  const [banIntel, setBanIntel] = useState({ headline: null, picksFirst: false, bans: [] });
   // Pro map intel for the selected map — advisory text, never part of scoring.
   const [mapNote, setMapNote] = useState(null);
   const [banAdvice, setBanAdvice] = useState([]);
@@ -207,11 +207,6 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const allUsed = [...allBanned, ...allPicked];
   const draftDone = phase === "pick" && allPicked.length === 6;
 
-  // Confidence-weighted score: penalises small samples so niche brawlers don't dominate
-  const CONFIDENCE = 30;
-  const confidenceScore = (wins, picks) =>
-    picks === 0 ? 0 : (wins / picks) * 100 * (picks / (picks + CONFIDENCE));
-
   // ── Suggestion engine (identical logic to before, now also exporting the
   //    per-brawler map stats so team strength is computed from real data) ──
   useEffect(() => {
@@ -228,16 +223,20 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     const stats = mapStatsByKey;
     const bracketMatches = mapMatches.filter(m => resolveMatchBracket(m) === rankBracket);
 
-    const bans = Object.entries(stats)
-      .filter(([, s]) => s.picks >= 15)
-      .map(([key, s]) => ({
-        key, name: formatBrawlerName(key),
-        winRate: Math.round((s.wins / s.picks) * 1000) / 10,
-        picks: s.picks, score: confidenceScore(s.wins, s.picks),
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6);
-    setRecommendedBans(bans);
+    // Ban advice depends on WHERE THE BANNING TEAM PICKS, not just who is
+    // strongest on the map: a first-picker banning the best brawler wastes the
+    // ban, because they could have taken him. Already-used brawlers stay in the
+    // list so the recommendation doesn't silently reshuffle mid-phase — they're
+    // rendered struck through instead.
+    const banningTeam = activeSlot?.phase === "ban" ? activeSlot.team : (firstPick || "blue");
+    setBanIntel(getBanAdvice({
+      mapName: selectedMap?.name,
+      banningTeamPicksFirst: !!firstPick && banningTeam === firstPick,
+      mapStats: stats,
+      intelligence,
+      unavailable: allUsedNames,
+      topN: 6,
+    }));
 
     const matchupStats = {};
     if (enemyKeys.length > 0) {
@@ -639,24 +638,71 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
 
           {phase === "ban" && (
             <>
+              {/* The strategy differs by pick order, so say which one is on
+                  screen — otherwise the list looks arbitrary when it changes
+                  as the banning team switches. */}
+              {banIntel.headline && (
+                <div style={{
+                  padding: "8px 12px", borderRadius: 14, marginBottom: 2,
+                  background: banIntel.picksFirst ? "rgba(124,196,255,.08)" : "rgba(255,143,143,.08)",
+                  border: `1px solid ${banIntel.picksFirst ? "rgba(124,196,255,.22)" : "rgba(255,143,143,.22)"}`,
+                }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.3, color: banIntel.picksFirst ? "#7cc4ff" : "#ff8f8f" }}>
+                    {activeSlot?.team ? `${activeSlot.team.toUpperCase()} BANS` : "BAN STRATEGY"}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "#e6e6ee", marginTop: 3, lineHeight: 1.45 }}>
+                    {banIntel.headline}
+                  </div>
+                </div>
+              )}
               <p style={{ fontSize: 12.5, color: "#8b8b9c", lineHeight: 1.5 }}>
-                Biggest threats on <span style={{ color: "#ffce7a" }}>{selectedMap?.name}</span> — ban these first.
+                {banIntel.picksFirst
+                  ? <>You open on <span style={{ color: "#ffce7a" }}>{selectedMap?.name}</span>, so the meta openers are yours to take — these are the picks that punish you last.</>
+                  : <>They open on <span style={{ color: "#ffce7a" }}>{selectedMap?.name}</span> — take these off the board before they do.</>}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {recommendedBans.map(b => {
+                {banIntel.bans.map(b => {
                   const full = BRAWLERS.find(x => x.key === b.key);
+                  // Already banned or picked: keep it visible but strike it out,
+                  // so pressing a ban gives immediate feedback instead of the
+                  // entry sitting there looking still-available.
+                  const done = b.used;
                   return (
-                    <div key={b.key} onClick={() => full && handleBrawlerSelect(full)} style={{
+                    <div key={b.key} onClick={() => !done && full && handleBrawlerSelect(full)} style={{
                       display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 16,
-                      background: "rgba(255,122,122,.06)", border: "1px solid rgba(255,122,122,.2)", cursor: "pointer",
+                      background: done ? "rgba(255,255,255,.02)" : "rgba(255,122,122,.06)",
+                      border: `1px solid ${done ? "rgba(255,255,255,.06)" : "rgba(255,122,122,.2)"}`,
+                      cursor: done ? "default" : "pointer",
+                      opacity: done ? 0.45 : 1,
                     }}>
-                      {full && <BrawlerTile brawler={full} size={34} />}
-                      <span style={{ fontSize: 13.5, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY }}>{b.name}</span>
-                      <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#ff8f8f" }}>{b.winRate}%</span>
+                      {full && <BrawlerTile brawler={full} size={34} dim={done} banned={done} />}
+                      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+                        <span style={{
+                          fontSize: 13.5, fontWeight: 700, fontFamily: DISPLAY,
+                          color: done ? "#6f7180" : "#f4f4fa",
+                          textDecoration: done ? "line-through" : "none",
+                        }}>{b.name}</span>
+                        {b.reason && (
+                          <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .4, color: b.isPro ? "#ffce7a" : "#8b8b9c" }}>
+                            {done ? "BANNED" : b.reason.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{
+                        marginLeft: "auto", textAlign: "right", flexShrink: 0,
+                        fontFamily: MONO, fontSize: 13, fontWeight: 700,
+                        color: done ? "#5a5a68" : "#ff8f8f",
+                        textDecoration: done ? "line-through" : "none",
+                      }}>
+                        {b.winRate}%
+                        <div style={{ fontFamily: MONO, fontSize: 8, fontWeight: 400, color: "#5a5a68", letterSpacing: .5 }}>
+                          {b.presencePct}% PICKED
+                        </div>
+                      </span>
                     </div>
                   );
                 })}
-                {recommendedBans.length === 0 && <p style={{ fontSize: 12, color: "#6f7180" }}>Not enough map data yet for ban intel.</p>}
+                {banIntel.bans.length === 0 && <p style={{ fontSize: 12, color: "#6f7180" }}>Not enough map data yet for ban intel.</p>}
               </div>
             </>
           )}
