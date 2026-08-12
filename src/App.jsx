@@ -669,9 +669,15 @@ function BrawlerGuideRoute() {
   const brawlerKey = findBrawlerKeyBySlug(brawlerSlug);
   const { stats: brawlerStats, loading } = useBrawlerStats(CURRENT_PATCH);
 
+  // BrawlerStats stores a row per rank bracket, and the two genuinely disagree
+  // — Bibi is 47.7% on New Horizons in Masters and 31.4% in Diamond/Mythic. The
+  // guide page used to hardcode masters_legendary with no way to switch, so a
+  // Diamond player was reading someone else's numbers without being told.
+  const [rankBracket, setRankBracket] = useState("masters_legendary");
+
   const { brawlers, byMode, byMap } = useMemo(
-    () => computeStatsFromAggregated(brawlerStats || [], "masters_legendary"),
-    [brawlerStats]
+    () => computeStatsFromAggregated(brawlerStats || [], rankBracket),
+    [brawlerStats, rankBracket]
   );
 
   const brawler = useMemo(() => {
@@ -724,7 +730,12 @@ function BrawlerGuideRoute() {
   return (
     <div style={styles.root}>
       <SiteHeader />
-      <BrawlerGuidePage brawler={brawler} byMode={byMode} byMap={byMap} allBrawlers={brawlers} onBack={() => navigate("/app")} />
+      <BrawlerGuidePage
+        brawler={brawler} byMode={byMode} byMap={byMap} allBrawlers={brawlers}
+        rankBracket={rankBracket} onRankBracketChange={setRankBracket}
+        rankBrackets={RANK_BRACKETS}
+        onBack={() => navigate("/app")}
+      />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>
   );

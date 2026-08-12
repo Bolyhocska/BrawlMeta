@@ -517,7 +517,23 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers = [], onBack }) {
+export default function BrawlerGuidePage({
+  brawler, byMode, byMap, allBrawlers = [], onBack,
+  rankBracket = "masters_legendary", onRankBracketChange, rankBrackets = [],
+}) {
+  // Every number on this page — overall rate, per-mode, per-map, match-ups —
+  // comes from ONE bracket. Labels are derived from it rather than hardcoded,
+  // so nothing can say "Masters+" while showing Diamond data.
+  const bracketMeta = rankBrackets.find(b => b.id === rankBracket);
+  const bracketLabel = bracketMeta?.label
+    || (rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic");
+  const bracketShort = rankBracket === "masters_legendary" ? "Masters+" : "Diamond & Mythic";
+  const bracketAccent = bracketMeta?.accent || "#ffb43d";
+  // The hand-written map and mode notes were researched against Masters+. They
+  // stay visible on the other bracket, but the page says so rather than letting
+  // prose written for one population sit unlabelled under another's numbers.
+  const notesMatchBracket = rankBracket === "masters_legendary";
+
   const guide = getBrawlerGuide(brawler.key);
   const ext = getExtendedGuide(brawler.key);
   const { tier, provisional } = getGeneralTier(brawler.key);
@@ -557,15 +573,17 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
       .select("with_brawler, vs_brawler")
       .eq("brawler", brawler.key)
       .eq("patch", "68.250")
-      .eq("rank_bracket", "masters_legendary")
+      .eq("rank_bracket", rankBracket)
       .maybeSingle()
       .then(({ data }) => {
-        if (cancelled || !data) return;
-        setLiveSynergies(rank(data.with_brawler, 1));   // highest win rate with
-        setLiveCounters(rank(data.vs_brawler, -1));      // lowest win rate against
+        if (cancelled) return;
+        // A bracket with no row must clear the old one, or switching brackets
+        // leaves the previous bracket's pairs on screen under the new label.
+        setLiveSynergies(data ? rank(data.with_brawler, 1) : []);   // highest win rate with
+        setLiveCounters(data ? rank(data.vs_brawler, -1) : []);     // lowest win rate against
       });
     return () => { cancelled = true; };
-  }, [brawler.key]);
+  }, [brawler.key, rankBracket]);
 
   // ── Live stats ─────────────────────────────────────────────────────────────
   const modeStats = useMemo(() => Object.entries(byMode).map(([mode, brawlers]) => {
@@ -821,10 +839,32 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
             )}
           </div>
 
+          {/* Rank-bracket switch. Sits with the headline numbers because it
+              governs every figure on the page, not just one section. */}
+          {rankBrackets.length > 1 && onRankBracketChange && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.6, color: "#8b8b9c" }}>RANK BRACKET</span>
+              <div style={{ display: "flex", gap: 8, padding: 5, borderRadius: 999, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
+                {rankBrackets.map(b => {
+                  const on = b.id === rankBracket;
+                  return (
+                    <button key={b.id} onClick={() => onRankBracketChange(b.id)} style={{
+                      fontFamily: BODY, fontWeight: 600, fontSize: 13, padding: "7px 16px", borderRadius: 999, cursor: "pointer",
+                      background: on ? `${b.accent}1f` : "transparent",
+                      border: `1px solid ${on ? `${b.accent}70` : "transparent"}`,
+                      color: on ? b.accent : "#b7b7c6",
+                      transition: "background .15s, color .15s, border-color .15s",
+                    }}>{b.label}</button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
             <StatCard label="Overall Rank" value={overallRank ? `#${overallRank.rank}` : "—"} sub={overallRank ? `of ${overallRank.of} ranked` : null} />
-            <StatCard label="Overall Win Rate" value={brawler.winRate != null ? `${brawler.winRate}%` : "—"} color={brawler.winRate != null ? wrColor(brawler.winRate) : "#f4f4fa"} />
-            <StatCard label="Overall Use Rate" value={brawler.pickRate != null ? `${brawler.pickRate}%` : "—"} color="#8ee6b0" />
+            <StatCard label={`Win Rate · ${bracketShort}`} value={brawler.winRate != null ? `${brawler.winRate}%` : "—"} color={brawler.winRate != null ? wrColor(brawler.winRate) : "#f4f4fa"} />
+            <StatCard label={`Use Rate · ${bracketShort}`} value={brawler.pickRate != null ? `${brawler.pickRate}%` : "—"} color="#8ee6b0" />
             {/* The design's "Meta Score" is replaced by OUR tier classification. */}
             <div title={provisional ? "Provisional — the general tier list is still being curated" : "BrawlApex general tier list"}
               style={{ padding: "20px 22px", borderRadius: 20, background: tierBand.bg, border: `1px solid ${tierBand.border}` }}>
@@ -1004,13 +1044,25 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {/* ── 5. Maps & modes (live data) ── */}
         <Section
           id="maps-modes" variant="card" title="Maps & modes"
-          subtitle="Ranked map pool & win rates by mode — live Masters+ data"
+          subtitle={`Ranked map pool & win rates by mode — live ${bracketShort} data`}
           open={isOpen("maps-modes")} onToggle={() => toggleSection("maps-modes")}
         >
           {modeKeys.length === 0 ? (
             <p style={{ fontSize: 13.5, color: "#8b8b9c" }}>Not enough ranked data for {brawler.name} yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* The written notes below were researched against Masters+. Say
+                  so when the numbers beside them come from anywhere else. */}
+              {!notesMatchBracket && guide?.mapNotes && (
+                <div style={{
+                  borderRadius: 14, padding: "11px 14px", fontSize: 12.5, lineHeight: 1.55, color: "#c9c9d6",
+                  background: `${bracketAccent}12`, border: `1px solid ${bracketAccent}38`,
+                }}>
+                  Win rates here are <strong style={{ color: bracketAccent }}>{bracketLabel}</strong>. The written map and
+                  mode notes were researched on Masters+ and can read differently against these numbers — the two brackets
+                  genuinely disagree on some maps.
+                </div>
+              )}
               <PillTrack>
                 {modeStats.map((m, i) => {
                   const on = i === modeIdx;
@@ -1154,7 +1206,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
         {guide && (liveSynergies?.length > 0 || liveCounters?.length > 0) && (
           <Section
             id="matchups" variant="card" title="Match-ups"
-            subtitle="Live Masters+ pair data — min 300 games, best teammates and worst opponents"
+            subtitle={`Live ${bracketShort} pair data — min 300 games, best teammates and worst opponents`}
             open={isOpen("matchups")} onToggle={() => toggleSection("matchups")}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
