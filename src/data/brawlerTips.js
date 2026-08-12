@@ -1144,6 +1144,278 @@ const GUIDES = {
       },
     ],
   },
+
+  SHADE: {
+    // Power-11 figures read straight off the in-game Brawler Stats card. The
+    // Shield Gear figure is not an estimate: the owner's own screenshots show
+    // Shade sitting at 8,300 with the gear equipped, which is the 7,400 base
+    // plus 900 — the same +900 already recorded on the Surge guide.
+    combatStats: [
+      { label: "Max Health", value: 7400, scaled: true, tagTpl: "+{0} → {1} with Shield Gear", tagParts: [900, 8300] },
+      { label: "Damage / Hug", value: 1600, scaled: true, tag: "Outer part of the embrace" },
+      { label: "Center Damage", value: 3200, scaled: true, tag: "Double — always aim the middle" },
+      { label: "Attack Range", value: "Short", tag: "Hugs through walls" },
+      { label: "Super Range", value: "Short" },
+      { label: "Movement Speed", value: "Very Fast" },
+      { label: "Reload Speed", value: "Very Fast" },
+      { label: "Incorporeal Form", value: "Walks through walls", tag: "Plus a speed boost" },
+      { label: "Subclass", value: "Assassin" },
+    ],
+
+    // The loadout never changes. Longarms + Hardened Hoodie with Shield and
+    // Speed in every mode on every map, so the mode tabs carry the reasoning
+    // rather than a different build.
+    builds: {
+      General: {
+        starPower: "Hardened Hoodie",
+        gadget: "Longarms",
+        gears: ["Shield", "Speed"],
+        note: "Longarms and Hardened Hoodie, always. Longarms is not just extra range — it is the gadget the entire reset trick is built on, and that trick is most of Shade's ceiling. Hardened Hoodie is what lets you sit inside a wall in the middle of their team and not die for it.",
+        gearNote: "Shield and Speed in every game. Shield takes you to 8,300 effective health, which is the difference between surviving a contested wall and feeding one.",
+      },
+      brawlBall: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general, and Shade's best mode by the numbers. Walking through the wall beside their goal is a position no other brawler can take.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+      heist: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general. Incorporeal Form ignores the wall the safe is hiding behind, and Hardened Hoodie is what gets you back out afterwards.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+      gemGrab: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general. You threaten the gem carrier from inside geometry they think is protecting them, which is worth more than contesting the mine head-on.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+      hotZone: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general — but read the mode note below before you lock him. Hot Zone is where Shade gets picked most and performs worst.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+      bounty: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general, played far more carefully. Every wall you walk into is a star if you misjudge it.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+      knockout: {
+        starPower: "Hardened Hoodie", gadget: "Longarms", gears: ["Shield", "Speed"],
+        note: "Same as general. Shade's weakest mode: no respawns means a wall dive that doesn't land costs the round, and the walls get broken as the round goes on.",
+        gearNote: "Shield and Speed in every game — 8,300 effective health is what makes the aggressive wall spots survivable.",
+      },
+    },
+
+    abilityNotes: {
+      "Longarms": { pick: "main", body: "Extra range on the next attack — and far more than that. Activated at the right point in an attack it refunds itself, which is where three gadget shots off one charge comes from. Learning that timing is the single biggest jump in Shade's ceiling." },
+      "Jump Scare": { pick: "skip", body: "A slow on nearby enemies. Perfectly reasonable in isolation, but it costs you the reset trick, and the reset trick is most of what makes Shade frightening. Leave it." },
+      "Spooky Speedster": { pick: "situational", body: "Speed boost for landing the centre of your attack. It rewards the thing you should be doing anyway, but it only pays out after you have already hit — Hardened Hoodie protects you on the way in, which matters more." },
+      "Hardened Hoodie": { pick: "main", body: "Damage reduction while in Incorporeal Form. This is what turns walking into the middle of their team from a gimmick into a position: you arrive inside the wall with the damage already halved, and you leave the same way." },
+    },
+
+    videoBase: "/guides/shade",
+
+    guideTabs: [
+      {
+        key: "gadget", label: "Gadget",
+        intro: "The gadget reset is the highest-value thing to learn on Shade, and it is pure timing rather than a read. Take everything in this tab to the training room before you take it into ranked — and be honest about your connection, because the window is small enough that bad ping will eat it.",
+        tips: [
+          { header: "Gadget 1 · Longarms" },
+          {
+            lead: "Fire it mid-attack, while the arms are still behind its head.",
+            rest: "Activate Longarms during an attack rather than before one and the gadget gives itself back — one charge, two shots. The whole trick lives in that one moment of the animation, so drill it until it is muscle memory rather than a decision.",
+            videos: [{ src: "gadget-reset-trick", label: "The reset — gadget fired mid-attack", kind: "do" }],
+          },
+          {
+            lead: "Look for the arms past the triangle.",
+            rest: "This is the reference frame. The arms have to be beyond the triangle marker for the reset to register — earlier than that and you simply spend the gadget. Learn the shape, not a count.",
+            videos: [{ image: "gadget-timing-arms.png", label: "Arms beyond the triangle — the window", ratio: "195/241" }],
+          },
+          {
+            lead: "It works exactly the same in a real game.",
+            rest: "Nothing about the timing changes under pressure — the animation is the animation. What changes is that you now have to find it while someone is shooting at you, which is the actual reason to over-drill it first.",
+            videos: [{ src: "gadget-reset-live", label: "The same reset in live gameplay" }],
+          },
+          { header: "The Super reset" },
+          {
+            lead: "Your Super resets the gadget too.",
+            rest: "Activate Incorporeal Form while the arms are behind Shade's head and you get the same refund. Same window, different button — which is what makes stacking them possible.",
+            videos: [{ src: "ult-gadget-reset", label: "Super used as the reset", kind: "do" }],
+          },
+          {
+            lead: "If it looks like this, you went too early.",
+            rest: "Firing before the arms clear the triangle still gives you the long-range shot, so it is not a disaster — it can even catch people out with the reach. But you have paid full price for the gadget and got no refund, which is the whole point of the trick.",
+            videos: [{ src: "ult-gadget-too-early", label: "Too early — no reset", kind: "dont" }],
+          },
+          {
+            lead: "Practise the Super reset on ordinary shots first.",
+            rest: "Learn the timing without spending a gadget on every attempt: throw normal attacks and reset them with the Super until the window is obvious. Only then put the gadget into it — you will learn far faster with the cheaper version.",
+            videos: [{ src: "ult-reset-practice", label: "Drilling the timing with normal attacks" }],
+          },
+          { header: "Putting it together" },
+          {
+            lead: "Chain both and you get three gadget shots off one charge.",
+            rest: "Once the gadget reset and the Super reset are both reliable you can stack them — reset the gadget twice and fire three long-range hugs from a single activation. This is the play that deletes a whole team, and it is what separates a good Shade from a Shade people are scared of.",
+            videos: [{ src: "pro-trick-triple-gadget", label: "Three gadget shots, one charge", kind: "do" }],
+            note: "Train this in the training room, and know that it needs a clean connection — on bad ping the window can disappear entirely, and forcing it anyway just throws the gadget away.",
+          },
+          { header: "Gadget 2 · Jump Scare" },
+          {
+            lead: "Don't take it.",
+            rest: "A slow on nearby enemies is a real effect and there is nothing wrong with it in a vacuum. It just costs you everything above — the reset, the triple hug, the reason to pick Shade over another assassin. Longarms every game.",
+          },
+        ],
+      },
+      {
+        key: "super", label: "Super & Star Power",
+        intro: "Incorporeal Form is not an escape you spend once. It is a position: walls stop being boundaries and start being rooms you can stand in, and the whole game is about which room you pick and how you behave inside it.",
+        tips: [
+          { header: "Super · Incorporeal Form" },
+          {
+            lead: "Move in and out of the wall — don't park in it.",
+            rest: "Sitting still inside a wall wastes it. Drifting in and out in small movements does two things at once: it extends your effective reach, because you can hug from just outside the wall and retreat inside it, and it baits ammo out of anyone watching. They spend shots on a target that steps back into geometry, and then you go in on an empty magazine.",
+            videos: [{ src: "super-in-and-out-of-walls", label: "In and out, small movements", kind: "do" }],
+          },
+          {
+            lead: "You can no longer stack the speed boost.",
+            rest: "This changed — re-ulting while the previous one is still running does not extend or stack the movement speed, so activating again early simply throws the second Super away. Let the first run out, then use the next one.",
+            videos: [{ src: "super-no-stacking-speed", label: "Re-ulting early wastes it", kind: "dont" }],
+          },
+          { header: "Star Power 2 · Hardened Hoodie" },
+          {
+            lead: "This is what makes the aggressive spots survivable.",
+            rest: "Damage reduction while incorporeal means the wall in the middle of their team is a place you can actually live, not a place you visit once. Combined with Shield Gear's 8,300 you can hold a position that no enemy can reach and most cannot punish.",
+          },
+          { header: "Star Power 1 · Spooky Speedster" },
+          {
+            lead: "It rewards the shot you should already be landing.",
+            rest: "Centre hits give a speed boost, and centre hits do double damage anyway — so it stacks a bonus on top of good play rather than fixing anything. The problem is that it pays out after you have connected, while Hardened Hoodie protects the approach. Take the Hoodie.",
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "Nothing subtle here — the hyper is a delivery system for the trick you already learned.",
+        tips: [
+          {
+            lead: "Run the triple gadget reset with it.",
+            rest: "Land the hyper and then chain the resets: three long-range hugs into a grouped team, with the centre damage on each. Done properly their whole team disappears at once. Everything in the Gadget tab is the prerequisite — the hyper does not add a new skill, it just raises the payoff on the one you drilled.",
+          },
+          {
+            lead: "Set it up from inside the wall.",
+            rest: "You do not have to announce the hyper by walking at them. Take the wall position first, let them commit to a fight they think is 3v2, and open from a place they cannot shoot back into.",
+          },
+        ],
+      },
+      {
+        key: "gameplay", label: "Gameplay",
+        intro: "Shade's whole identity is standing where nobody can answer. Everything here is about picking that spot and not giving it up.",
+        tips: [
+          {
+            lead: "Always aim the centre of the hug.",
+            rest: "1,600 on the outside, 3,200 in the middle — the same attack is worth double if you line it up properly. Most low-value Shade games are just a series of outer-edge hits, so treat the centre as the shot and the edge as the miss.",
+          },
+          {
+            lead: "Hug through the wall rather than around it.",
+            rest: "Your attack hits through walls, which means you can trade with someone who has no way to trade back. Before you Super in, ask whether you can simply stand behind the cover and take the fight for free.",
+          },
+          {
+            lead: "Pick the wall that keeps working.",
+            rest: "The best positions are the ones that stay valuable after a respawn — a wall next to where the enemy has to walk, not one next to where they happened to be. That is the difference between a Super spent for one kill and a position that charges your next Super for the rest of the game.",
+          },
+          {
+            lead: "Watch for the wall break.",
+            rest: "Everything above depends on the geometry existing. Against a comp that can remove walls your safe rooms are temporary, so take value early and have a second position picked before the first one disappears.",
+          },
+        ],
+      },
+    ],
+
+    // Shade is picked most in Hot Zone and wins least there. These notes lead
+    // with that rather than hiding it — the live win rates on this page make
+    // the point anyway, so pretending otherwise would just be a worse guide.
+    modeNotes: {
+      brawlBall: "Shade's strongest mode, and the numbers agree. Walls sit right where the fight is, the ball forces enemies into predictable lanes, and Incorporeal Form lets you hold ground beside their goal that nobody else on the map can contest.",
+      heist: "Very strong. The safe is protected by exactly the thing Shade ignores — walk through the wall, hug the safe through it, and leave incorporeal. Farm Super on their defenders and treat every wall around the safe as a door.",
+      gemGrab: "Solid. You are not the gem carrier and you are not contesting the mine head-on; you are the threat that appears inside the wall next to whoever is carrying, which forces them to play further back than they want to.",
+      bounty: "Playable, but the mode punishes his main habit. Walking into a contested wall is how you hand over a star, so take the safe positions and let the enemy come to a place where you attack through cover for free.",
+      hotZone: "Be honest about this one: Hot Zone is where Shade is picked most and where he wins least. The zone is open ground, contesting it means leaving your walls, and his damage does not hold a circle against a real controller. If you take him here, play the edges and the walls around the zone rather than the zone itself.",
+      knockout: "His weakest mode. No respawns means a wall position that goes wrong ends the round, and walls come down as the round progresses — the geometry Shade needs is exactly what Knockout removes over time.",
+    },
+
+    // The Brawl Ball spot is a mode-wide idea rather than a single map's trick,
+    // so it rides along on every map in the mode.
+    modeVideos: {
+      brawlBall: [
+        { src: "mode-brawlball-safe-charge-spot", label: "The permanent charge spot by their goal", kind: "do" },
+      ],
+    },
+
+    modeVideoNotes: {
+      brawlBall: "This is the strongest position Shade gets in the whole mode. Standing inside the wall beside their goal, you charge your Super permanently — it keeps charging even after they respawn — and you are behind geometry nothing can reach. Not even splash damage touches you here.",
+    },
+
+    // Owner's positioning references: where to actually stand on each map. The
+    // pattern is the same everywhere — the wall block you occupy in Incorporeal
+    // Form — so the notes explain what that specific spot buys you.
+    mapVideos: {
+      "Parallel Plays": [{ image: "map-parallel-plays.jpg", label: "The wall block on the zone's edge" }],
+      "Triple Dribble": [
+        { image: "map-triple-dribble.jpg", label: "Centre wall — covers both lanes" },
+        { image: "map-triple-dribble-2.jpg", label: "The wall beside the left lane" },
+      ],
+      "Layer Cake": [{ image: "map-layer-cake.jpg", label: "The wall by the left spawn lane" }],
+      "Hard Rock Mine": [{ image: "map-hard-rock-mine.jpg", label: "The right-side wall cluster" }],
+      "Pinball Dreams": [
+        { image: "map-pinball-dreams.jpg", label: "The bumper wall beside mid" },
+        { image: "map-pinball-dreams-2.jpg", label: "Pushed up — the wall in their half" },
+      ],
+      "Sneaky Fields": [{ image: "map-sneaky-fields.jpg", label: "The left wall stack off mid" }],
+      "Hot Potato": [{ image: "map-hot-potato.jpg", label: "The crate wall on the safe's lane" }],
+      "Open Business": [
+        { image: "map-open-business.jpg", label: "The wall beside the right zone" },
+        { image: "map-open-business-2.jpg", label: "The wall above the lower zone" },
+      ],
+      "Dueling Beetles": [{ image: "map-dueling-beetles.jpg", label: "The wall on the zone's north edge" }],
+      // Not in the current ranked rotation, so this never renders today — it
+      // activates by itself if Super Beach comes back round.
+      "Super Beach": [{ image: "map-super-beach.jpg", label: "The crate wall left of mid" }],
+    },
+
+    mapNotes: {
+      "Parallel Plays": "Shade's most-picked map by a distance — and one of his worse ones. The zone is wide open and he cannot hold it in a straight fight, so the picture below is the whole plan: take the wall on the zone's edge, attack through it, and let a teammate stand in the circle.\n\nIf you find yourself walking into the middle to contest, you have already lost the reason you picked him.",
+      "Triple Dribble": "One of his best maps. Three lanes means enemies commit to one, and the centre wall covers two of them at once — you threaten whichever lane the ball goes down without moving. The second position pushes further up the left lane when you already have tempo.",
+      "Layer Cake": "Heavily picked and distinctly mediocre here. Bounty punishes the aggressive wall dive, so use the spot below as a poke position: hug through the wall at anyone rotating past, and stay out of the open middle entirely.",
+      "Hard Rock Mine": "Comfortable. The right-side wall cluster puts you next to the lane their gem carrier has to use, so you threaten the carry without ever contesting the mine directly. Let your team hold the middle.",
+      "Pinball Dreams": "His best map in the pool. The bumper walls run right through the fight, so there is always a position that touches both the ball and their rotation. Start at mid and push to the second spot once you are ahead.",
+      "Sneaky Fields": "The bush density cuts both ways — you get free approaches, but so do they, and Shade does not win a surprise fight he did not choose. Use the wall stack off mid as a fixed anchor and let the bushes be their problem.",
+      "Hot Potato": "Strong. The crate wall on the safe's lane means you are hugging the safe through cover while their defenders have no angle on you. This is the shape every Heist map wants from Shade.",
+      "Open Business": "Two zones means two sets of walls, and you should be rotating between them rather than picking one. Both spots below sit adjacent to a circle without standing in it — that is the whole idea.",
+      "Dueling Beetles": "His weakest map in the pool by win rate, and worth being honest about: the zone is open, the walls sit off to the side, and there is not much geometry to hide the approach. If you take him here, hold the north wall and play purely for chip through cover.",
+    },
+
+    counterTips: [
+      {
+        lead: "Break the walls. That is the counter.",
+        rest: "Everything Shade does depends on geometry — the safe positions, the free hugs through cover, the Super that goes where you cannot follow. Take the walls down around your objective and he becomes a short-range assassin standing in the open, which is a fight he loses to almost anybody.",
+      },
+      {
+        lead: "Don't stand next to a wall you can't see behind.",
+        rest: "His attack goes through cover, so a wall between you and Shade protects him and not you. When you know he is nearby, hold ground in the open where you can actually see the hug coming, or put real distance between yourself and the geometry.",
+      },
+      {
+        lead: "Punish him the moment the Super drops.",
+        rest: "Incorporeal Form is on a clock. Shade out of form is a 7,400 health brawler with short range and no escape, so track when he entered the wall and be ready to commit the instant he becomes solid again.",
+      },
+      {
+        lead: "Make him hit the edge, not the centre.",
+        rest: "The middle of the hug does double damage. Fighting him at an angle and staying off his centre line halves what he gets out of every attack — and against a Shade who has to chase for centre hits, kiting is genuinely effective.",
+      },
+      {
+        lead: "Respect the long one.",
+        rest: "If a Shade knows the reset trick, the range on the hug is not what you measured a second ago — and it can come three times off one gadget. When you see the long-range version once, stop trusting your spacing and back up further than feels necessary.",
+      },
+    ],
+  },
 };
 
 // Local art overrides for abilities where the synced Brawlify CDN icon has

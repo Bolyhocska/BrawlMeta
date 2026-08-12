@@ -167,21 +167,23 @@ const slotBorder = (mark, tone) => mark ? `${mark.c}3d`
 // minus the LOOP chip. `src` carries its own extension, since stills aren't
 // all one format the way the clips are.
 //
-// The frame keeps VideoSlot's 16:9 box and the image is `contain`, not `cover`:
-// a diagram must not be cropped, and reserving the height stops the slot laying
-// out at 0px before the image arrives.
+// The frame keeps VideoSlot's 16:9 box by default and the image is `contain`,
+// not `cover`: a diagram must not be cropped, and reserving the height stops
+// the slot laying out at 0px before the image arrives. `ratio` overrides the
+// box for stills that aren't landscape — a portrait detail crop in a 16:9 frame
+// shrinks to the point of being unreadable.
 //
 // Deliberately NOT `loading="lazy"`. Guide stills sit inside a collapsible
 // section that UNMOUNTS when closed, so the section already does the deferring
 // that lazy would — and lazy actively broke it here: the request returned 200
 // but the element never decoded or painted.
-function ImageSlot({ base, src, label, tone = "#8ee6b0", kind }) {
+function ImageSlot({ base, src, label, tone = "#8ee6b0", kind, ratio = "16/9" }) {
   const [failed, setFailed] = useState(false);
   const mark = slotMark(kind);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SlotLabel label={label} mark={mark} />
-      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
+      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: ratio, background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
         {failed ? (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 12, textAlign: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c" }}>IMAGE UNAVAILABLE</span>
@@ -223,6 +225,20 @@ function VideoSlot({ base, src, label, tone = "#8ee6b0", kind }) {
     </div>
   );
 }
+
+// Renders one media entry as either a clip or a still, so tips and the map
+// grid can mix them freely in authored order. An entry is a still when it
+// carries `image` (a filename WITH its extension) rather than `src` (a clip
+// stem, which always resolves to .mp4). `kind` may be forced by the caller —
+// the map grid groups its clips into do/don't blocks before rendering them.
+function MediaSlot({ base, item, tone, kind }) {
+  const common = { base, label: item.label, kind: kind === undefined ? item.kind : kind, tone };
+  return item.image
+    ? <ImageSlot {...common} src={item.image} ratio={item.ratio} />
+    : <VideoSlot {...common} src={item.src} />;
+}
+
+const mediaKey = (item) => item.image || item.src;
 
 // Official mode logo. `size` is the icon box; falls back silently (no broken
 // image) if the CDN art doesn't resolve.
@@ -340,15 +356,14 @@ function TipRow({ n, tip, tone = "violet", videoBase }) {
     </div>
   );
 
-  // An entry is a still when it carries `image` instead of `src`, so a tip can
-  // interleave a diagram and its footage in one column, in authored order.
+  // Stills and clips interleave in one column, in authored order, so a diagram
+  // can sit directly above the footage that demonstrates it.
   const clips = (list) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-      {list.map(v => {
-        const Slot = v.image ? ImageSlot : VideoSlot;
-        return <Slot key={v.image || v.src} base={videoBase} src={v.image || v.src}
-          label={v.label} kind={v.kind} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />;
-      })}
+      {list.map(v => (
+        <MediaSlot key={mediaKey(v)} base={videoBase} item={v}
+          tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />
+      ))}
     </div>
   );
 
@@ -1005,7 +1020,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
                           {list.map(v => (
-                            <VideoSlot key={v.src} base={guide.videoBase} src={v.src} label={v.label}
+                            <MediaSlot key={mediaKey(v)} base={guide.videoBase} item={v} kind={null}
                               tone={kind === "dont" ? "#ff8f8f" : "#8ee6b0"} />
                           ))}
                         </div>
