@@ -8,7 +8,7 @@
 // Sections (mirroring the design's side rail): Overview · Best Build ·
 // Combat Stats · Guide · Maps & Modes · Synergies · How to Counter.
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
 import { supabase, MODE_ICONS, GEAR_ICONS } from "./appCore";
@@ -33,7 +33,12 @@ const H2_LINE = `calc(${H2_SIZE} * 1.2)`;
 const SUB = { fontFamily: BODY, fontSize: 13.5, color: "#8b8b9c", margin: "4px 0 0" };
 
 const FORMAT_MODE = (m) => (m || "").replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()).trim();
-const fmtName = (key) => (key || "").toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+// Capitalize the first LETTER of each word, not the first character — "8-BIT"
+// starts with a digit, so charAt(0) had no uppercase form and the name rendered
+// as "8-bit". Hyphenated parts capitalize too ("8-Bit", "Mr. P").
+const fmtName = (key) => (key || "").toLowerCase()
+  .replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1))
+  .replace(/\s+/g, " ").trim();
 const wrColor = (wr) => (wr >= 53 ? "#8ee6b0" : wr >= 49 ? "#ffce7a" : "#ff8f8f");
 // Title-case a video label: capitalize each word, but leave short connecting
 // words lowercase unless they lead a phrase — otherwise proper map names come
@@ -100,42 +105,6 @@ function PillTrack({ children }) {
   );
 }
 
-// 16:9 media placeholder carrying the design's "LOOP · MUTED" chip. Renders a
-// real YouTube embed when we have a verified video id for this brawler.
-function ClipSlot({ label, videoId, title, tone = "#8ee6b0" }) {
-  return (
-    <div style={{
-      position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9",
-      background: "#0c0c14", border: `1px solid ${tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)"}`,
-    }}>
-      {videoId ? (
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}`} title={title || label}
-          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-        />
-      ) : (
-        <>
-          <div style={{
-            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 6, padding: 14, textAlign: "center",
-            background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))",
-          }}>
-            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c" }}>{label}</span>
-          </div>
-          <div style={{
-            position: "absolute", top: 8, right: 8, fontFamily: MONO, fontSize: 8.5, letterSpacing: 1,
-            color: "#e9e9f2", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999,
-            display: "flex", alignItems: "center", gap: 4,
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: tone }} />LOOP · MUTED
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // Shared chrome for a media slot: the verdict badge + caption above the frame,
 // and the frame's border tint. A do/dont clip carries its verdict on the label
 // and in the frame colour, so a "wrong way" demo can never be mistaken for
@@ -197,24 +166,80 @@ function ImageSlot({ base, src, label, tone = "#8ee6b0", kind, ratio = "16/9" })
   );
 }
 
-// Owner-supplied muted loop clip. Autoplays only while on screen (one guide tab
-// is visible at a time, so at most a handful ever play). Falls back to the
-// design's placeholder if the file 404s.
+// Owner-supplied muted loop clip, gated on visibility in two stages:
+//
+//   armed   — within 400px of the viewport, so the file is worth downloading
+//   visible — at least a quarter on screen, so it should actually be playing
+//
+// Both matter. This used to be a plain `autoPlay` with `preload="metadata"`,
+// and the comment above it claimed clips played "only while on screen" — they
+// didn't. Every mounted clip downloaded and decoded immediately regardless of
+// scroll position: 3.4 MB before the first interaction on Brock, and up to 13
+// clips decoding at once with the map section open. Only tab switches and
+// section collapses stopped anything, because those unmount.
+//
+// play() is driven from an effect rather than the observer callback so it can't
+// fire before `src` exists, and its promise is caught — it rejects whenever the
+// element unmounts mid-call, which happens constantly on fast tab switching.
 function VideoSlot({ base, src, label, tone = "#8ee6b0", kind }) {
   const [failed, setFailed] = useState(false);
+  const [armed, setArmed] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const boxRef = useRef(null);
+  const vidRef = useRef(null);
+  const sawObserver = useRef(false);
   const mark = slotMark(kind);
+
+  useEffect(() => {
+    const el = boxRef.current;
+    // No IntersectionObserver: load and play everything, i.e. the old
+    // behaviour. A clip that never plays would be worse than a heavy page.
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setArmed(true); setVisible(true);
+      return;
+    }
+    const seen = () => { sawObserver.current = true; };
+    const preload = new IntersectionObserver(([e]) => {
+      seen();
+      if (e.isIntersecting) { setArmed(true); preload.disconnect(); }
+    }, { rootMargin: "400px 0px" });
+    const playback = new IntersectionObserver(([e]) => { seen(); setVisible(e.isIntersecting); }, { threshold: 0.25 });
+    preload.observe(el);
+    playback.observe(el);
+
+    // Safety net. An observer normally delivers its first callback almost
+    // immediately, even for an off-screen element — but a page that never
+    // composites (hidden pane, occluded webview) delivers NOTHING, and the clip
+    // would then sit black forever because `src` is gated on that callback.
+    // If nothing has arrived at all, assume gating is unavailable and load.
+    const bail = setTimeout(() => {
+      if (!sawObserver.current) { setArmed(true); setVisible(true); }
+    }, 1500);
+
+    return () => { clearTimeout(bail); preload.disconnect(); playback.disconnect(); };
+  }, []);
+
+  useEffect(() => {
+    const v = vidRef.current;
+    if (!v || !armed) return;
+    if (visible) v.play().catch(() => {});
+    else v.pause();
+  }, [armed, visible]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SlotLabel label={label} mark={mark} />
-      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
+      <div ref={boxRef} style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
         {failed ? (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 12, textAlign: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c" }}>CLIP UNAVAILABLE</span>
           </div>
         ) : (
           <video
-            src={`${base}/${src}.mp4`} muted loop autoPlay playsInline preload="metadata"
-            onError={() => setFailed(true)}
+            ref={vidRef}
+            src={armed ? `${base}/${src}.mp4` : undefined}
+            muted loop playsInline preload={armed ? "auto" : "none"}
+            onError={() => { if (armed) setFailed(true); }}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           />
         )}
@@ -289,6 +314,27 @@ const TIP_TONE = {
   violet: { bg: "rgba(179,107,255,.14)", fg: "#c98bff", noteBorder: "rgba(179,107,255,.35)" },
   red: { bg: "rgba(255,122,122,.14)", fg: "#ff8f8f", noteBorder: "rgba(255,122,122,.35)" },
 };
+
+// Verdict on an ability, shown on every star power and gadget rather than only
+// the recommended one — "why not the other gadget" is the question a build page
+// exists to answer, and the guides already carry the answer in
+// abilityNotes[].pick. Reuses the site's existing green/amber/red vocabulary.
+const VERDICTS = {
+  best: { label: "BEST PICK", fg: "#8ee6b0", bg: "rgba(142,230,176,.14)", border: "rgba(142,230,176,.40)", dim: false },
+  strong: { label: "ALSO STRONG", fg: "#8ee6b0", bg: "rgba(142,230,176,.10)", border: "rgba(142,230,176,.28)", dim: false },
+  situational: { label: "SITUATIONAL", fg: "#ffce7a", bg: "rgba(255,180,61,.13)", border: "rgba(255,180,61,.38)", dim: false },
+  skip: { label: "SKIP", fg: "#ff8f8f", bg: "rgba(255,122,122,.13)", border: "rgba(255,122,122,.38)", dim: true },
+  alt: { label: "ALTERNATIVE", fg: "#9a9aab", bg: "rgba(255,255,255,.05)", border: "rgba(255,255,255,.12)", dim: true },
+};
+
+function VerdictBadge({ v }) {
+  return (
+    <span style={{
+      fontFamily: MONO, fontSize: 9, letterSpacing: 1.2, fontWeight: 700, whiteSpace: "nowrap",
+      padding: "3px 9px", borderRadius: 999, color: v.fg, background: v.bg, border: `1px solid ${v.border}`,
+    }}>{v.label}</span>
+  );
+}
 
 function NumberedTip({ n, lead, rest, tone = "violet" }) {
   const c = TIP_TONE[tone] || TIP_TONE.violet;
@@ -611,6 +657,30 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
   }, [brawler.starPowers, brawler.gadgets]);
 
   const buildItems = useMemo(() => resolveBuild(build), [resolveBuild, build]);
+
+  // EVERY star power and gadget, not just the recommended pair — a build page
+  // that hides the options it rejected can't explain itself. The verdict comes
+  // from the current build first (whatever this mode picks is the best pick),
+  // then falls back to the guide's own `pick` field for the rest.
+  const abilityCards = useMemo(() => {
+    const verdictFor = (name) => {
+      if (build && (name === build.starPower || name === build.gadget)) return VERDICTS.best;
+      const pick = guide?.abilityNotes?.[name]?.pick;
+      if (pick === "main") return VERDICTS.strong;
+      if (pick === "situational") return VERDICTS.situational;
+      if (pick === "skip") return VERDICTS.skip;
+      return VERDICTS.alt;
+    };
+    const row = (list, kind, accent) => (list || []).map(a => ({
+      kind, accent, ...a,
+      img: iconOverride(brawler.key, a.name) || a.img,
+      verdict: verdictFor(a.name),
+      body: guide?.abilityNotes?.[a.name]?.body || a.desc,
+    }));
+    return [...row(brawler.starPowers, "STAR POWER", "#ffb43d"), ...row(brawler.gadgets, "GADGET", "#c98bff")];
+  }, [brawler.starPowers, brawler.gadgets, brawler.key, guide, build]);
+
+  const gearItems = useMemo(() => buildItems.filter(i => i.kind === "GEAR"), [buildItems]);
   // The header strip always shows the GENERAL build, independent of which mode
   // tab is open further down the page.
   const generalBuildItems = useMemo(
@@ -632,6 +702,15 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
       : `${labels.slice(0, -1).join(", ")} & ${labels[labels.length - 1]}`;
     return `${list.charAt(0).toUpperCase()}${list.slice(1)} — with video breakdowns`;
   }, [guide]);
+
+  // Brawlers that show up as BOTH a top teammate and a top opponent. That is a
+  // real and common result — "good beside you" and "bad across from you" are
+  // different questions — but rendered as two near-identical rows it reads as
+  // the page contradicting itself, so both panels call the overlap out.
+  const bothSides = useMemo(() => {
+    const syn = new Set((liveSynergies || []).map(s => s.key));
+    return new Set((liveCounters || []).map(c => c.key).filter(k => syn.has(k)));
+  }, [liveSynergies, liveCounters]);
 
   // The rail only lists sections this brawler actually renders — a link to a
   // section that isn't on the page is a dead click.
@@ -763,7 +842,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
           <Section
             id="best-build" variant="card"
             title={`Best ${brawler.name} build`}
-            subtitle={`Recommended gadget, star power & gear — ${buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}`}
+            subtitle={`Every star power and gadget rated, plus gear — ${buildTab === "General" ? "general purpose" : FORMAT_MODE(buildTab)}`}
             open={isOpen("best-build")} onToggle={() => toggleSection("best-build")}
           >
             {buildTabs.length > 1 && (
@@ -795,31 +874,66 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
             {build.gearNote && (
               <p style={{ fontSize: 13, lineHeight: 1.6, color: "#a4a4b5", fontStyle: "italic", margin: "0 0 18px", maxWidth: 760 }}>{build.gearNote}</p>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 16 }}>
-              {buildItems.map((item, i) => {
-                const note = guide.abilityNotes?.[item.name];
-                return (
-                  <div key={i} style={{ ...CARD, borderRadius: 22, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 11, overflow: "hidden", flexShrink: 0,
-                        border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14",
-                        display: "grid", placeItems: "center",
-                      }}>
-                        {item.img
-                          ? <img src={item.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                          : <GearIcon name={item.gear} size={20} />}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
-                      </div>
+            {/* Every star power and gadget, with the verdict on each. The
+                recommended pair carries the accent border and a BEST PICK
+                badge; the rejected ones stay on the page, dimmed, so the
+                reasoning for NOT taking them is visible instead of implied. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+              {abilityCards.map((item, i) => (
+                <div key={i} style={{
+                  ...CARD, borderRadius: 22, padding: 18, display: "flex", flexDirection: "column", gap: 12,
+                  border: `1px solid ${item.verdict.border}`,
+                  background: item.verdict.dim ? "rgba(255,255,255,.015)" : "rgba(255,255,255,.03)",
+                  opacity: item.verdict.dim ? 0.62 : 1,
+                  transition: "opacity .18s, border-color .18s",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 11, overflow: "hidden", flexShrink: 0,
+                      border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14",
+                      display: "grid", placeItems: "center",
+                      filter: item.verdict.dim ? "grayscale(.55)" : "none",
+                    }}>
+                      {item.img && <img src={item.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
                     </div>
-                    <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "#9a9aab" }}>{note?.body || item.desc}</p>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
+                    </div>
                   </div>
-                );
-              })}
+                  <div><VerdictBadge v={item.verdict} /></div>
+                  <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "#9a9aab" }}>{item.body}</p>
+                </div>
+              ))}
             </div>
+
+            {/* Gears are a separate decision from the ability pair, so they get
+                their own row rather than sitting in the same grid. */}
+            {gearItems.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.6, color: "#9a9aab", marginBottom: 12 }}>GEARS</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+                  {gearItems.map((item, i) => (
+                    <div key={i} style={{ ...CARD, borderRadius: 22, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 11, overflow: "hidden", flexShrink: 0,
+                          border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14",
+                          display: "grid", placeItems: "center",
+                        }}>
+                          <GearIcon name={item.gear} size={20} />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                          <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "#9a9aab" }}>{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Section>
         )}
 
@@ -971,10 +1085,13 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
                       {FORMAT_MODE(activeMode)} · {activeMap.map.toUpperCase()} · {activeMap.winRate}% WIN RATE · {activeMap.picks.toLocaleString("en-US")} GAMES
                     </div>
                     {/* Notes may hold multiple paragraphs (a base read plus a
-                        pro tip), separated by a blank line in the data. */}
-                    {(guide?.mapNotes?.[activeMap.map]
-                      || `${brawler.name} sits at ${activeMap.winRate}% here across ${activeMap.picks.toLocaleString("en-US")} Masters+ games. No hand-written note for this map yet — the number is the read.`
-                    ).split("\n\n").map((para, i) => (
+                        pro tip), separated by a blank line in the data.
+                        There is deliberately no fallback paragraph: the old one
+                        restated the win rate and game count printed directly
+                        above it and then apologised for having nothing to add,
+                        which read as filler on every map without a note. When
+                        there's nothing written, the eyebrow line stands alone. */}
+                    {(guide?.mapNotes?.[activeMap.map] || "").split("\n\n").filter(Boolean).map((para, i) => (
                       <p key={i} style={{ fontSize: 15, lineHeight: 1.7, color: "#c9c9d6", margin: i === 0 ? 0 : "10px 0 0" }}>
                         {para}
                       </p>
@@ -1044,17 +1161,19 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
               {liveSynergies?.length > 0 && (
                 <MatchupPanel
                   eyebrow="SYNERGIES · GOOD WITH" accent="#8ee6b0"
-                  rows={liveSynergies}
+                  rows={liveSynergies} bothSides={bothSides}
+                  bothNote={`Also one of ${brawler.name}'s worst opponents — strong alongside, painful across the net.`}
                   reasonFor={s => guide.synergyReasons?.[s.key]
-                    || `${classLabel(draftClassOf(s.key))} that pairs cleanly with ${brawler.name}'s range — a top win-rate teammate in the data.`}
+                    || `${classLabel(draftClassOf(s.key))} — one of the highest win rates alongside ${brawler.name} in the data.`}
                 />
               )}
               {liveCounters?.length > 0 && (
                 <MatchupPanel
                   eyebrow="COUNTERS · WORST AGAINST" accent="#ff8f8f"
-                  rows={liveCounters}
+                  rows={liveCounters} bothSides={bothSides}
+                  bothNote={`Also one of ${brawler.name}'s best teammates — the same strengths cut both ways.`}
                   reasonFor={s => guide.counterReasons?.[s.key]
-                    || `${classLabel(draftClassOf(s.key))} that punishes ${brawler.name} — one of his lowest win rates in the data.`}
+                    || `${classLabel(draftClassOf(s.key))} — one of the lowest win rates against ${brawler.name} in the data.`}
                 />
               )}
             </div>
@@ -1100,7 +1219,7 @@ export default function BrawlerGuidePage({ brawler, byMode, byMap, allBrawlers =
 // One half of the Match-ups section — a titled grid of brawler rows with the
 // live win rate + game count and a reason line. Used for both Synergies
 // (best teammates) and Counters (worst opponents).
-function MatchupPanel({ eyebrow, accent, rows, reasonFor }) {
+function MatchupPanel({ eyebrow, accent, rows, reasonFor, bothSides, bothNote }) {
   // Sub-panel inside a Section card — tinted to its accent rather than reusing
   // CARD, so it reads as nested content instead of a second identical box.
   return (
@@ -1124,6 +1243,11 @@ function MatchupPanel({ eyebrow, accent, rows, reasonFor }) {
                   <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
                 </div>
                 <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{reasonFor(s)}</div>
+                {bothSides?.has(s.key) && bothNote && (
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: "#8b8b9c", marginTop: 5, fontStyle: "italic" }}>
+                    ↔ {bothNote}
+                  </div>
+                )}
               </div>
             </div>
           );

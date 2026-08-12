@@ -6,7 +6,7 @@ import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
 import { getExtendedGuide } from "./data/extendedGuides";
-import { iconOverride } from "./data/brawlerTips";
+import { iconOverride, hasBrawlerGuide } from "./data/brawlerTips";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -185,6 +185,30 @@ function StarRating({ stars, size = "md" }) {
   );
 }
 
+// ─── "Has a hand-written guide" marker ────────────────────────────────────────
+// Only a handful of the 105 brawlers have a full written guide (build reasoning,
+// video breakdowns, per-map positioning); the rest fall back to generated copy.
+// Nothing used to distinguish them, so the deep guides were unfindable unless
+// you already knew which brawler to open. Gold, matching the site's "this is the
+// good stuff" accent.
+const GUIDE_GOLD = "#ffb43d";
+
+function GuideBadge({ compact = false }) {
+  return (
+    <span title="Full written guide — build reasoning, video breakdowns and map positioning"
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0,
+        fontFamily: "'JetBrains Mono', monospace", fontSize: compact ? 8 : 9,
+        fontWeight: 700, letterSpacing: compact ? 0.6 : 1,
+        padding: compact ? "2px 5px" : "3px 8px", borderRadius: 999,
+        background: "rgba(255,180,61,.15)", color: GUIDE_GOLD, border: `1px solid ${GUIDE_GOLD}55`,
+        whiteSpace: "nowrap",
+      }}>
+      {compact ? "★" : "★ GUIDE"}
+    </span>
+  );
+}
+
 // ─── Brawler portrait ─────────────────────────────────────────────────────────
 function BrawlerPortrait({ brawler, size = 56, onClick }) {
   const [imgErr, setImgErr] = useState(false);
@@ -268,16 +292,27 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <StarRating stars={brawler.stars} size="lg" />
-              <button
-                onClick={() => onOpenFullGuide?.(brawler)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
-                  color: "#c98bff", fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer", padding: 0,
-                }}
-              >
-                Full Guide →
-              </button>
+              {/* A hand-written guide and a generated one are very different
+                  things behind the same link, so the button says which. */}
+              {(() => {
+                const written = hasBrawlerGuide(brawler.key || brawler.name);
+                return (
+                  <button
+                    onClick={() => onOpenFullGuide?.(brawler)}
+                    title={written
+                      ? "Full written guide — build reasoning, video breakdowns and map positioning"
+                      : "Overview, live map and mode win rates"}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5, border: "none", cursor: "pointer", padding: 0,
+                      background: "none", fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                      letterSpacing: "0.04em", textTransform: "uppercase",
+                      color: written ? GUIDE_GOLD : "#c98bff",
+                    }}
+                  >
+                    {written ? "★ Full Written Guide →" : "Stats & Overview →"}
+                  </button>
+                );
+              })()}
             </div>
             <p style={{ fontSize: 12, color: "#64748b", marginTop: 6, lineHeight: 1.5, maxWidth: 480 }}>
               {brawler.description?.slice(0, 180)}{brawler.description?.length > 180 ? "…" : ""}
@@ -711,7 +746,10 @@ function TierChip({ brawler, onClick }) {
       }}>
       <BrawlerPortrait brawler={brawler} size={30} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.15 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{brawler.name}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>
+          {brawler.name}
+          {hasBrawlerGuide(brawler.key || brawler.name) && <GuideBadge compact />}
+        </span>
         <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#ffc663" : "#f87171") : "#64748b" }}>
           {brawler.winRate != null ? `${brawler.winRate}%` : "—"}
         </span>
@@ -741,6 +779,10 @@ function BrawlerCard({ brawler, onClick }) {
             <Star size={10} fill={starColor} color={starColor} />
             <span style={{ fontSize: 11, fontWeight: 800, color: starColor }}>{brawler.stars?.toFixed(1)}</span>
           </div>
+        )}
+        {/* Full-guide marker — top LEFT, since the stars badge owns top right */}
+        {hasBrawlerGuide(brawler.key || brawler.name) && (
+          <div style={{ position: "absolute", top: 8, left: 8 }}><GuideBadge /></div>
         )}
         {/* Rarity strip */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: brawler.rarityColor }} />

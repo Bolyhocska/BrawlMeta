@@ -370,7 +370,26 @@ const GUIDES = {
     // Brock-specific notes on OUR ranked maps. Maps without a note fall back to
     // the live win rate alone rather than inventing advice.
     mapNotes: {
-      "Safe Zone": "The best Brock map in the pool. Take a side lane and post at the very edge of your range — there's no cover for them to close through, so your job is simply to chip the safe every reload and never let anyone reach you. Rocket Fuel opens the lane in; Rocket No. 4 keeps the chip flowing.",
+      // ── Gem Grab — below even on all six; the mine is inside his dead zone. ──
+      "Hard Rock Mine": "His best Gem Grab map and still under even. The mixed layout at least gives you a lane to hold, but the mine sits where Brock cannot safely stand. Break the wall covering their approach and play as far back as the sightline allows.",
+      "Gem Fort": "Under even. The fort geometry funnels fights into close quarters, which is exactly where Brock loses. Wall-break early to open a lane for your team, then hold the longest angle you can find and let someone else contest.",
+      "Double Swoosh": "Under even. Closed and heavily bushed — the two things Brock likes least. There's almost no sightline long enough to matter, and anything that reaches you wins. Prefer a brawler that can fight up close.",
+      "Undermine": "Under even, for the same reasons as Double Swoosh. Your rockets do open useful lanes here, so if you are locked in, spend the Super on the wall protecting their carrier rather than saving it for a kill.",
+      "Crystal Arcade": "Under even. Medium bush means enemies close the gap unseen, and Brock has no answer once they arrive. If you take him, stay on the outside lanes and never rotate through the middle.",
+      "Deathcap Trap": "His weakest Gem Grab map, and the heaviest bush in the rotation. Ambush geometry against a brawler with no escape tool is a bad combination. Avoid.",
+
+      // ── Brawl Ball — flat and unremarkable; he doesn't move the ball. ──
+      "Triple Dribble": "His best Brawl Ball map, at roughly even. Three lanes give you a long angle to hold, and your wall breaks genuinely open scoring routes. Hold a lane and clear the path — don't chase the ball.",
+      "Pinball Dreams": "Around even. The mixed layout leaves real sightlines to work with, and the goal tricks in the mode clips apply here. Play the back, break the walls in front of their goal, and let a diver convert.",
+      "Center Stage": "Slightly under even. The centre is contested constantly and Brock contributes little to a scrum, so treat him as the brawler who opens walls and covers one lane rather than one who wins the middle.",
+      "Sneaky Fields": "His weakest Brawl Ball map. Closed and heavily bushed — you never get the sightline his whole kit is built around, and anyone can walk up on you. Don't pick him here.",
+
+      // ── Hot Zone — his worst mode by a distance. ──
+      "Parallel Plays": "Under even, and his best Hot Zone map only by comparison. Holding a circle means standing still in the open, which for Brock means being dived. Poke the zone from max range and accept you are not contesting it.",
+      "Dueling Beetles": "Under even. The closed layout denies you the long angles you need, and the zone forces you toward the middle. There are far better picks here.",
+      "Open Business": "His worst map in the entire pool. It looks like Brock territory — fully open, no bush — but the zone pins you in place in the middle of that openness, and everything with more mobility punishes it. Do not pick him here.",
+
+      "Safe Zone": "His best Heist map, though only around even — Heist as a whole is not kind to him, and this is the least unkind of the five. Take a side lane and post at the very edge of your range: there's no cover for them to close through, so your job is simply to chip the safe every reload and never let anyone reach you. Rocket Fuel opens the lane in; Rocket No. 4 keeps the chip flowing.",
       "Out in the Open": "Long open sightlines and a back wall worth breaking. Open it early so they can't spawn-trap you, then hold the angle.",
       "Flaring Phoenix": "Mid wants a sniper and Brock qualifies. Play the centre lane, use the poison gas as a zoning partner, and don't contest the left thrower pocket.",
       "Belle's Rock": "Play from the back rock formations and poke whoever peeks first. Rico is the pick you're answering — your range wins that neutral as long as you don't wander into the open middle.\n\nPro tip: If you have an aggro like Mina, use the aggro wall break shown below — it gives them a wall to hide behind and creates space for your team. Otherwise destroy all the walls exactly as demonstrated, because the wrong gadget shot leaves one block standing.",
@@ -383,7 +402,7 @@ const GUIDES = {
       "Dry Season": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Watch for Sprout, Kit or Bolt on their last pick.",
       "Shooting Star": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Dual ranged works well on this map, so you're rarely the only long-range pick.",
       "Hideout": "Standard Bounty play: take a side lane, poke whoever peeks first, and don't walk into the open middle. There's no specific wall break to learn here — run Rocket No. 4 and follow the aim guide above. Expect to be banned or contested; Brock is a priority pick on this map.",
-      "Ring of Fire": "The only Hot Zone map where Brock is defensible, and he's still a weak pick. His real value is opening walls against Penny — break her cover, then hold range off the zone rather than trying to contest it yourself.",
+      "Ring of Fire": "Weak — his second-worst map in the pool, and the medium bush is why: enemies reach him without warning and the zone gives them a reason to keep coming. If you are locked in, your value is opening walls against Penny — break her cover, then hold range off the zone rather than trying to contest it yourself.",
     },
 
     // Synergy DATA is live — the page reads Brock's per-teammate win rate from
@@ -634,6 +653,51 @@ const GUIDES = {
     modeVideoNotes: {
       brawlBall: "Knowing these two scores is essential if you play Crow in Brawl Ball — watch them closely and drill them.",
       heist: "Unlike against enemies, you want to AUTO-AIM the safe. Auto-aim breaks the shield; aiming behind it lands only about 13% safe damage. The same applies to the hyper-ult, and standing on the safe to ult does nothing at all. One caveat: auto-aim takes the nearest target, so if an enemy is standing between you and the safe you'll dive them instead — clear the lane first.",
+    },
+
+    // Crow's shape across the pool is unusually clean: he is a Gem Grab brawler
+    // who gets forced into every other mode by his flexibility. Presence sits
+    // near 40-48% on the Gem Grab maps and his win rate follows; Knockout is a
+    // uniform 45-46% on all four maps and no amount of play makes it better.
+    mapNotes: {
+      // ── Gem Grab — his home. Enclosed, bushy, objective in one place. ──
+      "Double Swoosh": "Tied for Crow's best map, and the highest presence he has anywhere in the pool. Closed lanes and heavy bush mean poison lands on people who cannot back out of it, and the mine sits in a pocket you can chip from three angles without ever being in the open. Poison the carrier, not the front line.",
+      "Gem Fort": "Tied for his best win rate. The mixed geometry gives you exactly what Crow wants — enough cover to approach, enough open ground that the enemy can't group tightly. Play off the side lanes and use the super as the escape after you've forced the carrier off the gems.",
+      "Crystal Arcade": "Very strong. Bush cover on both flanks means you can hold poison on the mine without committing, and the mid-range band Crow lives in is where most of the fighting happens here. Chip early, and save the dive for a carrier already sitting in poison.",
+      "Deathcap Trap": "Strong, and the heaviest bush in the Gem Grab rotation. That cuts both ways — you get free approaches, but so does every assassin on the other team, so track their dive tools before you push into a bush duel you didn't choose.",
+      "Undermine": "Closed and bushy, and the poison genuinely rules a map this tight — there is very little ground where an enemy is safely out of range of it. Your job is to make the mine expensive to stand near, not to win duels.",
+      "Hard Rock Mine": "Solid. The middle is contestable but the side routes are what matter for Crow — poison the lane their carrier rotates through, and let the chip decide fights your team is already in. Don't try to hold mid alone.",
+
+      // ── Hot Zone — good, and one map where he's genuinely a top pick. ──
+      "Ring of Fire": "His best map outside Gem Grab. Medium bush around a contested circle is ideal: poison ticks on everyone standing in the zone, and you never have to enter it yourself to be doing damage. Sit on the rim and make the zone cost health.",
+      "Dueling Beetles": "Even. The closed layout suits the poison but the low bush leaves you without the cover Crow normally uses to reposition, so you're more exposed here than the geometry first suggests. Play patient, contest with poison rather than presence.",
+      "Parallel Plays": "Even, and low priority — he's picked here far less than on the other Hot Zone maps for a reason. The open middle means chip alone doesn't hold the zone, so only take him if the rest of your comp can actually contest.",
+      "Open Business": "Slightly under even. Open ground with almost no bush is Crow's least favourite geometry: nothing to approach behind, and enemies can retreat out of poison range at will. Playable, but there are better picks here.",
+
+      // ── Heist — one strong map, then a steep decline. ──
+      "Kaboom Canyon": "His best Heist map, and one of the highest-presence maps in the pool. The mixed layout gives a real route to the safe, and the auto-aim rule in the mode section matters more here than anywhere: break the shield properly and Crow's safe damage is respectable.",
+      "Safe Zone": "Around even. Open with no bush, so the walk to the safe is fully exposed and Crow has no way to shorten it. Farm poison on their defenders from range and let a proper safe-breaker do the damage.",
+      "Pit Stop": "Above even on a modest sample — his second-best Heist map. Closed lanes suit the approach, but Heist rewards burst on the safe and chip is the wrong tool, so lean defensive: hold mid with poison and let a real safe-breaker do the damage.",
+      "Hot Potato": "Under even despite high presence — one of the clearer cases in the pool of a brawler being picked out of habit. The bush is great for reaching the safe; the problem is what you do when you arrive, which is not very much.",
+      "Bridge Too Far": "His worst Heist map and one of his worst overall. Fully open, no bush, and a long exposed approach — everything Crow is bad at. Leave him out of this draft.",
+
+      // ── Brawl Ball — flat and unremarkable across all four. ──
+      "Center Stage": "His best Brawl Ball map, at just above even, and also his most-played. Poison is genuinely useful on a ball carrier who cannot heal it off, but Crow does not win the scrum in front of the goal, so play the intercept rather than the pile.",
+      "Sneaky Fields": "Around even. Closed and heavily bushed, so you can flank the carrier instead of meeting them head on — the most forgiving approach geometry he gets in the mode. Poison the carrier the moment they commit.",
+      "Pinball Dreams": "Slightly under even. The open middle means you spend a lot of the match without cover, and Crow contributes little to actually moving the ball. Fine as a support pick, never the reason you win.",
+      "Triple Dribble": "Under even, and his weakest Brawl Ball map. Three lanes spread the fight out, which sounds good for poison but really just means you're rarely where the ball is. Prefer a brawler that can hold one lane properly.",
+
+      // ── Bounty — the mode punishes his approach. ──
+      "Layer Cake": "His best Bounty map, and about even. The mixed geometry gives you cover to poke from, which is the only way Crow works in a mode where dying costs a star. Chip from max range and never take the first engage.",
+      "Dry Season": "Under even. Wide open with no bush, so every approach is visible from across the map and the super is an escape you'll be forced to spend early. Poison chip is real, but so is handing over stars.",
+      "Hideout": "Under even, for the same reason as Dry Season — open sightlines, nothing to move behind. If you take him, treat the whole round as poke and let the enemy make the mistake.",
+      "Shooting Star": "One of his weakest maps. Open ground plus a star system that rewards safe long-range damage is the exact opposite of what Crow offers. There is almost always a better pick here.",
+
+      // ── Knockout — uniformly bad, and worth saying plainly. ──
+      "Belle's Rock": "Knockout is Crow's worst mode and this map is no exception. With no respawns his chip-then-finish pattern rarely has time to pay off, and one bad dive ends the round. Avoid.",
+      "Out in the Open": "Weak, as the name suggests — no cover to approach behind, and poison does not out-trade real damage in a single-life round. Avoid.",
+      "New Horizons": "Weak. Open ground, no respawns, and Crow needs several exchanges to convert poison into kills. The round is usually decided before that happens.",
+      "Flaring Phoenix": "Weak, and the most open Knockout map of the four. Crow has no way to close and no way to hide — this is the clearest 'do not pick' on his list.",
     },
 
     synergyReasons: {
@@ -899,6 +963,51 @@ const GUIDES = {
       brawlBall: "Learning these two scores is essential if you play Surge in Brawl Ball — watch them closely and drill them.",
     },
 
+    // Surge is above even on 23 of the 27 maps in the pool, so "is he good
+    // here" is almost never the question — these notes are about HOW the
+    // snowball gets built on each one, and about the four maps where it
+    // genuinely doesn't.
+    mapNotes: {
+      // ── Hot Zone — his best mode. Chip from the rim, upgrade, take over. ──
+      "Open Business": "His best map in the pool. Open ground with no bush would normally punish a short-range Surge, but a Hot Zone circle forces enemies to stand still in your sightline — you farm stages off contest damage without ever committing. Reach max stage before you take a real fight and the round is over.",
+      "Dueling Beetles": "Excellent. The closed layout means the walls are always near enough to ult over, and enemies holding the zone can't back away from your upgraded range. Chip the circle, bank the Super, then jump the wall onto whoever is contesting.",
+      "Parallel Plays": "Excellent. Mixed geometry with an open middle: contest from the edge at low stages, and once you're at max stage the circle is yours because nobody wants to trade with a fully upgraded Surge in a confined space.",
+      "Ring of Fire": "Very strong, and his highest-presence Hot Zone map. The medium bush is the difference here — it's the one Hot Zone map where you can approach unseen, so the early stages come much faster than usual.",
+
+      // ── Gem Grab — uniformly strong; the mine does the work for you. ──
+      "Deathcap Trap": "His best Gem Grab map. Heavy bush means the low-stage phase — normally Surge's weakest moment — is spent safely, and by the time the gem count matters you're upgraded. Farm off the bush lanes, don't carry gems early.",
+      "Hard Rock Mine": "Very strong. The mixed layout gives you cover to farm stages and walls to ult over onto the carrier. Let a teammate hold the gems; your job is to be at max stage when they contest.",
+      "Gem Fort": "Very strong. Medium bush and a defined mid mean you always know where the fight is, which suits a brawler that wants controlled chip. Take the upgrade path before the 10-gem countdown, not during it.",
+      "Crystal Arcade": "Very strong. Nothing unusual to manage — cover to farm behind and a contested middle to spend the Super on. Standard Surge: chip, upgrade, then take over the mine.",
+      "Undermine": "Very strong. Closed and bushy, so the enemy rarely gets to out-range your low stages, and the walls are dense enough that the ult is always an option. One of the easier maps to snowball on.",
+      "Double Swoosh": "Very strong, and the tightest Gem Grab map in the pool. Everything is close range, which is fine once you're upgraded and dangerous before you are — protect the early game harder than usual here.",
+
+      // ── Brawl Ball — strong, and the goal tricks above are mandatory. ──
+      "Pinball Dreams": "His best Brawl Ball map. The mixed layout puts walls right where the ball travels, so the ult is both an engage and a goal tool — the two tricks in the clips above apply here more than anywhere.",
+      "Sneaky Fields": "Very strong, and his second-best Brawl Ball map. Closed and heavily bushed: you reach the carrier without crossing open ground, and the low-stage phase is far safer than anywhere else in the mode — the most forgiving map here if you like playing Surge aggressively.",
+      "Center Stage": "Strong. Fairly open in the middle, so farm your first stages on the flanks rather than contesting mid at Stage 0, then use the upgraded range to take the centre back.",
+      "Triple Dribble": "Strong but his weakest Brawl Ball map. Three lanes mean you can be in the wrong one, and a Surge who spends the round rotating never builds stages. Pick a lane, hold it, and let the ball come to you.",
+
+      // ── Heist — good on three, then a hard exception. ──
+      "Kaboom Canyon": "His best Heist map. Mixed geometry gives a real route in, and an upgraded Surge does serious safe damage once he arrives. Farm stages on their defenders in mid first — arriving at Stage 0 achieves nothing.",
+      "Safe Zone": "Strong, despite being fully open. The mode's structure protects him: there is always chip available on defenders, so the stages come even without cover. Just don't try to walk the open lane before you're upgraded.",
+      "Pit Stop": "Strong on a modest sample. Closed lanes mean the approach is survivable and the safe is reachable — treat it like Kaboom Canyon, farm first and commit once.",
+      "Hot Potato": "Strong. The heavy bush makes the walk in genuinely safe, which is the whole battle for a short-range brawler in Heist. Chip, upgrade, then use the ult to cross the last stretch.",
+      "Bridge Too Far": "The exception — clearly his worst Heist map and one of only three below even in the entire pool. Fully open with no bush and a long exposed approach: there is nowhere to farm early stages and nothing to ult over. Don't pick him here.",
+
+      // ── Bounty — better than his short range suggests, because he out-scales. ──
+      "Layer Cake": "His best Bounty map. The mixed geometry gives cover to farm behind, and Bounty's slow start suits a brawler who wants time to upgrade. Take no risks at low stage — the stars you concede early are the ones that lose the round.",
+      "Dry Season": "Strong, which is surprising on a fully open map. It works because Bounty players hold position: they stand still at range and feed you chip. Upgrade off that, then close once your range has grown.",
+      "Hideout": "Strong, same pattern as Dry Season — open ground, but a mode where enemies commit to a position you can farm against. The danger is dying at Stage 0 and handing over a star for nothing.",
+      "Shooting Star": "Solid but his weakest Bounty map. The star mechanic rewards safe long-range damage, which is the opposite of Surge's plan, so play purely for the upgrade curve and let your team hold the star.",
+
+      // ── Knockout — the mode that breaks the snowball. ──
+      "New Horizons": "Around even, and Knockout is Surge's weakest mode by a clear margin. No respawns means a death doesn't just reset your stages — it ends your round. Play the neutral, take no early trades, and only push at max stage.",
+      "Flaring Phoenix": "Around even. Fully open with no bush, so there is nowhere to farm the early stages safely and no wall to ult over when it goes wrong. Playable, but he is not the pick that wins this map.",
+      "Out in the Open": "Below even. Open ground plus a single life is the worst combination for a brawler whose power comes from surviving long enough to upgrade. Prefer something that is strong from the first second.",
+      "Belle's Rock": "His worst Knockout map and one of only three below even overall. The round is usually decided before a Surge reaches the stage where he matters. Leave him out.",
+    },
+
     counterTips: [
       {
         lead: "Do not feed his Super. At all.",
@@ -1113,11 +1222,11 @@ const GUIDES = {
     ],
 
     modeNotes: {
-      brawlBall: "Bibi's best mode. The knockback clears the ball carrier's path and the heal is what walks the ball in, so she contributes on both sides of the objective. Push the ball, don't chase kills.",
+      brawlBall: "Her most-played mode by a huge margin, but only her third-best by win rate — worth knowing before you auto-lock her here. The knockback clears the carrier's path and the heal is what walks the ball in, so the tools are real; she just doesn't beat a dedicated Brawl Ball comp on the strength of them. Push the ball, don't chase kills.",
       gemGrab: "You are the tool that breaks their hold on mid. Poke with the bubble until the gem carrier has to commit, then heal, close, and knock them off the point — you don't need to survive it if the gems drop.",
       bounty: "The most patient Bibi mode. Every death is a star, so play the bubble from range for most of the round and only spend the bat when the count makes the trade clearly worth it.",
       knockout: "No respawns means the walk-in has to be right first time. Use the Spitball to force them out of position across the whole round, and save the heal for the one exchange that decides it.",
-      heist: "Bibi does real damage to the safe once she reaches it, and the speed burst plus the heal is exactly the package that gets a short-range brawler across open ground. Farm the bubble on their defenders, then commit.",
+      heist: "Bibi's best mode, and it isn't close — she is several points ahead here of anywhere else she's played. She does real damage to the safe once she reaches it, and the speed burst plus the heal is exactly the package that gets a short-range brawler across open ground. Farm the bubble on their defenders, then commit.",
       hotZone: "Contest with the bubble rather than by standing in the circle. Bibi holds a zone by making it expensive for anyone else to stand there — the knockback is worth more seconds on the point than her own body is.",
     },
 
@@ -1143,6 +1252,57 @@ const GUIDES = {
         rest: "The Spitball passes through enemies and bounces off walls, so a team stacked in one lane takes the same bubble three times over. Spread out, and don't stand in a narrow corridor she can rattle a shot down.",
       },
     ],
+
+    // Bibi runs from 57% on Hot Potato down to 44% on Shooting Star. Geometry
+    // explains most of it: she needs cover to reach anyone, so open maps with
+    // no bush are where she falls apart, and the mode's structure decides
+    // whether that matters.
+    //
+    // Every figure behind these notes is the masters_legendary row, which is
+    // what the page renders. The two brackets can disagree sharply for a
+    // low-sample brawler — Bibi is 47.7% on New Horizons in Masters+ and 31.4%
+    // in Diamond/Mythic — so a note written off the wrong row reads as simply
+    // wrong against the number printed beside it.
+    mapNotes: {
+      // ── Heist — her best mode by several points. ──
+      "Hot Potato": "Her best map in the pool, on a big enough sample to trust completely. Closed lanes plus the heaviest bush in the Heist rotation is the ideal geometry for a short-range tank: you cross the entire map without ever standing in the open, chipping with the bubble as you go.",
+      "Pit Stop": "Excellent, though on a much smaller sample than the rest of this list — promising rather than proven. Closed lanes mean there is no long sightline to punish the walk-in, and once she reaches the safe the knockback shoves defenders off it while she swings.",
+      "Kaboom Canyon": "Excellent. Low bush, but the mixed layout still gives a real route to the safe, and Bibi's damage on it is high enough that one successful commit swings the match. Bank the heal for the walk in, not for the fight before it.",
+      "Safe Zone": "Strong, which is notable on a fully open map with no bush — Heist's structure carries her. There's always chip available on defenders, so play the bubble at range, wait for their damage to be spent, then heal and cross.",
+      "Bridge Too Far": "Above even, and her weakest Heist map. Fully open with a long exposed approach — the one place in the mode where the walk-in genuinely might not survive. Poke with the Spitball and only commit when their cooldowns are down.",
+
+      // ── Hot Zone — consistently good; the circle brings targets to her. ──
+      "Parallel Plays": "Strong, and her most-played Hot Zone map. The circle does her work for her: enemies have to stand still in it, which is the one thing that reliably lets a short-range brawler reach them. Contest from the edge, then knock whoever is holding it out of the zone.",
+      "Dueling Beetles": "Strong. Closed layout means the walls are always near, so you approach behind cover and arrive with a full health bar. The knockback is worth more here than kills — every enemy shoved out of the circle is contest time.",
+      "Open Business": "Strong despite being fully open with no bush, because the zone forces enemies to commit to a fixed spot. Use the bubble to soften whoever is standing in it, then heal and close — don't walk the open ground on full ammo.",
+      "Ring of Fire": "Solid. The medium bush is the useful part: it's the one Hot Zone map where you can set up an approach unseen rather than walking in from range.",
+
+      // ── Brawl Ball — her most-played mode, and merely average. ──
+      "Sneaky Fields": "Tied for her best Brawl Ball map. Closed and heavily bushed, so you flank the carrier instead of meeting them head-on — exactly the geometry that makes a short-range tank work. If you're picking Bibi in this mode, this is the map for it.",
+      "Center Stage": "Tied for her best Brawl Ball map, and by far her most-played map anywhere. The tools work — knockback clears the carrier's lane, the heal walks the ball in — but the middle is open enough that you'll be poked on the way. Play the ball, not the kill feed.",
+      "Triple Dribble": "Around even. Three lanes mean you can end up in the wrong one, and Bibi contributes little while rotating. Pick the lane the ball is in and commit to it.",
+      "Pinball Dreams": "Slightly under even, and her weakest Brawl Ball map. The open middle gives ranged brawlers a clean look at her approach, and there's not enough bush to fix it. Playable, but not the reason you win.",
+
+      // ── Gem Grab — below even across the board. ──
+      "Hard Rock Mine": "Her best Gem Grab map, and still only around even. The mixed geometry gives you cover to reach the carrier, which is the only thing Bibi really offers here — she doesn't contest the mine itself well.",
+      "Deathcap Trap": "Around even. Heavy bush should suit her, and it does for the approach, but Gem Grab asks you to hold a fixed point and Bibi is much better at moving people off one than standing on it.",
+      "Crystal Arcade": "Around even. Use the flanks to threaten the carrier rather than fighting for mid — a Bibi in the middle of a Gem Grab scrum is just a large target.",
+      "Undermine": "Slightly under even. Closed and bushy, which gets you there, but the fights are tight and constant and Bibi's heal doesn't come back fast enough to win them repeatedly.",
+      "Double Swoosh": "Under even. Everything is close range, which sounds ideal and isn't — the enemy team is also always in range of each other, so you're rarely fighting anyone alone.",
+      "Gem Fort": "Her weakest Gem Grab map. The layout gives the defending team clean angles on the mine, and Bibi has no answer to being poked off it. Prefer a brawler that can hold ground.",
+
+      // ── Bounty — the mode punishes everything she wants to do. ──
+      "Layer Cake": "Her best Bounty map and still under even. The mixed geometry at least gives cover to poke from, so play the Spitball all round and treat the bat as a last resort — a dead Bibi is a star.",
+      "Dry Season": "Weak. Fully open with no bush: there is no route to anyone, so you spend the round as a slow long-range poke brawler, which is not what she's for.",
+      "Hideout": "Weak, for the same reason as Dry Season. Open sightlines mean the walk-in is visible from the moment it starts, and Bounty makes every failed attempt expensive.",
+      "Shooting Star": "One of the worst maps for her in the entire pool. Open ground, no cover, and a star mechanic that rewards exactly the safe long-range damage she can't provide. Don't pick her here.",
+
+      // ── Knockout — her worst mode, and one genuinely disastrous map. ──
+      "Belle's Rock": "Her best Knockout map and still under even. With no respawns the walk-in has to be right first time, and the mixed geometry at least gives you one route to try it from.",
+      "Out in the Open": "Weak. The name is the problem — no cover to approach behind, and a single life means one misjudged commit ends the round.",
+      "Flaring Phoenix": "Weak. Fully open, and Bibi needs to cross the whole map to do anything. Expect to be whittled down before you arrive.",
+      "New Horizons": "Under even. Open ground with no bush and no respawns — the walk-in has to be right first time and there is no cover to set it up behind. Note that she is markedly worse here at lower ranks, so this is a map where the Masters+ number flatters her.",
+    },
   },
 
   SHADE: {
@@ -1386,11 +1546,44 @@ const GUIDES = {
       "Triple Dribble": "One of his best maps. Three lanes means enemies commit to one, and the centre wall covers two of them at once — you threaten whichever lane the ball goes down without moving. The second position pushes further up the left lane when you already have tempo.",
       "Layer Cake": "Heavily picked and distinctly mediocre here. Bounty punishes the aggressive wall dive, so use the spot below as a poke position: hug through the wall at anyone rotating past, and stay out of the open middle entirely.",
       "Hard Rock Mine": "Comfortable. The right-side wall cluster puts you next to the lane their gem carrier has to use, so you threaten the carry without ever contesting the mine directly. Let your team hold the middle.",
-      "Pinball Dreams": "His best map in the pool. The bumper walls run right through the fight, so there is always a position that touches both the ball and their rotation. Start at mid and push to the second spot once you are ahead.",
+      "Pinball Dreams": "His strongest high-volume Brawl Ball map. The bumper walls run right through the fight, so there is always a position that touches both the ball and their rotation. Start at mid and push to the second spot once you are ahead.",
       "Sneaky Fields": "The bush density cuts both ways — you get free approaches, but so do they, and Shade does not win a surprise fight he did not choose. Use the wall stack off mid as a fixed anchor and let the bushes be their problem.",
       "Hot Potato": "Strong. The crate wall on the safe's lane means you are hugging the safe through cover while their defenders have no angle on you. This is the shape every Heist map wants from Shade.",
       "Open Business": "Two zones means two sets of walls, and you should be rotating between them rather than picking one. Both spots below sit adjacent to a circle without standing in it — that is the whole idea.",
-      "Dueling Beetles": "His weakest map in the pool by win rate, and worth being honest about: the zone is open, the walls sit off to the side, and there is not much geometry to hide the approach. If you take him here, hold the north wall and play purely for chip through cover.",
+      "Dueling Beetles": "His weakest Hot Zone map, and worth being honest about: the zone is open, the walls sit off to the side, and there is not much geometry to hide the approach. If you take him here, hold the north wall and play purely for chip through cover.",
+
+      // ── Heist — his strongest mode, because the safe hides behind exactly
+      //    the thing Incorporeal Form ignores. ──
+      "Safe Zone": "Excellent. The map is fully open, which normally hurts a short-range brawler, but Shade doesn't cross open ground — he walks through the wall the safe is sitting behind. Farm the Super on their defenders, then go straight in.",
+      "Bridge Too Far": "Excellent, and the clearest example of what Shade does that nobody else can. The long exposed bridge is a problem for every other short-range brawler and simply isn't one for you. Ignore the lane, take the wall.",
+      "Pit Stop": "Very strong. Closed lanes give you cover the whole way in, and the hug goes through the wall protecting the safe. One of the easiest maps in the pool to convert a Super into real damage.",
+      "Kaboom Canyon": "Around even, and his weakest Heist map. The mixed layout gives defenders clean angles into the safe area, so you get punished on the way out rather than the way in. Take value and leave incorporeal.",
+
+      // ── Gem Grab — playable, nothing special. ──
+      "Deathcap Trap": "Solid. Heavy bush plus walls means you can threaten the carrier from two kinds of cover at once, which is more than most maps give you. Poke through walls, take the carrier, get out.",
+      "Gem Fort": "Around even. The fort walls are exactly the geometry you want to stand inside, but the mine is open ground and you cannot hold it. Threaten the carrier and let a teammate hold the middle.",
+      "Undermine": "Around even on a thin sample. Closed and bushy — good for reaching people, less good for surviving the tight repeated fights Gem Grab produces. Play the edges.",
+      "Crystal Arcade": "Under even. Medium bush without much useful wall structure near the mine means you approach without a safe room to retreat into. Prefer another assassin.",
+      "Double Swoosh": "Thin data here, so treat this as geometry rather than measurement: closed and heavily bushed, which suits the approach, but the constant close-quarters fighting is not where Shade's one-target pattern shines.",
+
+      // ── Brawl Ball — strong, and the mode clip applies on all of them. ──
+      "Center Stage": "Very strong on a modest sample. Walls sit right where the ball travels, and the permanent-charge spot in the mode clip works here exactly as demonstrated. Take the wall beside their goal early.",
+
+      // ── Hot Zone — the honest weak spot. ──
+      "Ring of Fire": "Thin data, and the geometry is not encouraging: the zone is open ground and Shade cannot hold it. Consistent with the rest of Hot Zone, this is not where he belongs — play the surrounding walls if you take him at all.",
+
+      // ── Bounty — thin samples outside Layer Cake, and the mode fights his
+      //    instincts. (Layer Cake itself is covered above — it is one of his
+      //    highest-volume maps, not a thin one.) ──
+      "Dry Season": "Thin data, and the geometry is wrong for him: fully open with no bush and almost nothing to stand inside. There is very little for Shade to work with here.",
+      "Hideout": "Thin data. Open sightlines and a mode that punishes death — the two things Shade least wants together. Treat him as an off-pick at best.",
+      "Shooting Star": "Thin data, and the weakest fit of the four Bounty maps. Open ground plus a star mechanic rewarding safe long-range damage is the opposite of what Shade offers.",
+
+      // ── Knockout — his worst mode, and the reason is structural. ──
+      "Belle's Rock": "Weak. Knockout removes the thing Shade depends on: walls come down as the round progresses, and with no respawns a wall position that goes wrong ends it. Take early value or don't take him.",
+      "Flaring Phoenix": "Weak. Fully open with little to stand inside, and a single life means one bad commit decides the round. Avoid.",
+      "New Horizons": "Under even on a thin sample. Open geometry in his worst mode — there is little to stand inside and no second life if the commit is wrong. Treat the number as provisional either way.",
+      "Out in the Open": "Almost no data here, and the map name describes the problem. Open ground with no geometry to disappear into is the one thing Shade cannot play around.",
     },
 
     counterTips: [
