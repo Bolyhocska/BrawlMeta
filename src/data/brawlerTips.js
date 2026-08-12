@@ -926,6 +926,224 @@ const GUIDES = {
       },
     ],
   },
+
+  BIBI: {
+    // Power-11 figures read straight off the in-game Brawler Stats card. Bibi's
+    // card quotes range and both speeds as words rather than numbers, so they
+    // are stored as words — inventing tile counts here would be dressing a
+    // guess up as a measurement.
+    combatStats: [
+      { label: "Max Health", value: 10000, scaled: true, tag: "One of the biggest in the game" },
+      { label: "Damage / Swing", value: 2800, scaled: true, tag: "Three Strikes" },
+      { label: "Super Damage", value: 1800, scaled: true, tag: "Per hit — one bubble can hit twice" },
+      { label: "Attack Range", value: "Short" },
+      { label: "Super Range", value: "Very Long", tag: "Passes through enemies" },
+      { label: "Movement Speed", value: "Very Fast", tag: "Faster again on a full Home Run bar" },
+      { label: "Reload Speed", value: "Very Fast" },
+      { label: "Home Run Bar", value: "Charges over time", tag: "Full bar = knockback swing" },
+      { label: "Subclass", value: "Tank" },
+    ],
+
+    // The loadout does not move between modes. Vitamin Booster and Home Run
+    // everywhere, so the mode tabs carry the mode-specific reasoning rather
+    // than a different build.
+    builds: {
+      General: {
+        starPower: "Home Run",
+        gadget: "Vitamin Booster",
+        gears: ["Shield", "Speed"],
+        note: "This is the Bibi build in every mode. Vitamin Booster keeps you alive through the walk-in, Home Run turns a full bar into the speed that gets you there, and the two gears cover the moment it goes wrong.",
+        gearNote: "Batting Stance replaces Home Run when the enemy has drafted several tanks — flat damage reduction beats movement in a stand-up fight you can't dodge your way out of.",
+      },
+      brawlBall: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general, and the mode where the gadget earns most. Carrying the ball means you cannot swing, so the heal is the only defence you have on the walk-in.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+      gemGrab: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general. You are the one who breaks the enemy's hold on mid — heal, close, and make the gem carrier's position untenable.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+      knockout: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general, played more patiently. With no respawns the heal is worth more as the thing that survives the first exchange than as the thing that funds a dive.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+      bounty: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general. Bounty is the mode where the Spitball does most of your work — chip from range, and only commit the bat when the star count makes the trade worth it.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+      heist: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general. Bibi hits the safe hard once she reaches it, and the heal plus the speed burst is exactly the package that gets a short-range brawler across the open ground.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+      hotZone: {
+        starPower: "Home Run", gadget: "Vitamin Booster", gears: ["Shield", "Speed"],
+        note: "Same as general — with the single exception in the game where Extra Sticky is worth a thought. Read the gadget note below before you swap.",
+        gearNote: "Batting Stance if they've drafted several tanks; otherwise Home Run every time.",
+      },
+    },
+
+    abilityNotes: {
+      "Home Run": { pick: "main", body: "A full Home Run bar makes Bibi very fast. That speed is what turns a short-range tank into a brawler that actually arrives — and, just as importantly, what walks her back out. This is the default in every mode." },
+      "Batting Stance": { pick: "situational", body: "Turns the same full bar into damage reduction instead of speed. Take it when the enemy has drafted several tanks: against sustained close-range damage you aren't dodging anything, so mitigation beats movement." },
+      "Vitamin Booster": { pick: "main", body: "A heal on demand, and the reason Bibi survives the approach at all. It also leaves your Home Run bar full, so the star power bonus arrives with it — one button for health and mobility at the same time." },
+      "Extra Sticky": { pick: "skip", body: "The slow is genuine utility, but it does nothing about the problem Bibi actually has, which is crossing open ground alive. Only consider it in Hot Zone alongside a teammate who can punish everything caught in the gum." },
+    },
+
+    videoBase: "/guides/bibi",
+
+    guideTabs: [
+      {
+        key: "gadget", label: "Gadget",
+        tips: [
+          { header: "Gadget 1 · Vitamin Booster" },
+          {
+            lead: "Heal after their ammo is gone, not before.",
+            rest: "The whole value of Vitamin Booster is in the timing. Take the poke, let them empty the magazine into you, and heal once there is nothing left coming — with Shield Gear layered on top that puts you somewhere around 15,000 effective health, which is more than most brawlers can chew through before you're on them. Heal early and you have just restored damage they are delighted to re-apply.",
+          },
+          {
+            lead: "It hands you your star power for free.",
+            rest: "Activating the gadget leaves your Home Run bar full, so whichever star power you're running comes online in the same moment — Home Run's speed to close the gap, or Batting Stance's damage reduction to walk through the answer. That is why the heal is an engage tool and not just a panic button.",
+          },
+          {
+            lead: "Pin them against a wall, then swing.",
+            rest: "A full bar means your next swing knocks the target back. Line it up so the knockback drives them into a wall and they are stuck there with nowhere to retreat — and a target that cannot move, inside Bibi's range, is a dead one. The heal is what buys you the walk-up to set it.",
+            videos: [{ src: "gadget1-kill-confirm", label: "Knock them into the wall, then confirm", kind: "do" }],
+          },
+          {
+            lead: "In Brawl Ball it is how you walk the ball in.",
+            rest: "Holding the ball means you cannot attack, so your health bar is your only defence. Popping Vitamin Booster on the run gives you a second health bar for the walk-in and the star power bonus to shorten it.",
+          },
+          { header: "Gadget 2 · Extra Sticky" },
+          {
+            lead: "Leave it at home.",
+            rest: "The slow field is real utility, but it does not solve the problem Bibi has. Every hard moment in a Bibi game is about surviving the ground between you and the target, and Vitamin Booster answers that where Extra Sticky doesn't.",
+            note: "The one exception is Hot Zone with a teammate who can convert the slow — a Pierce or similar punishing everything stuck in the gum. That is narrow enough that Vitamin Booster stays the default and the swap is a deliberate read, never a habit.",
+          },
+        ],
+      },
+      {
+        key: "super", label: "Super & Star Power",
+        intro: "Spitball passes through enemies and bounces off walls, so one bubble is rarely one hit. Most of playing Bibi well is turning a single Super into three or four connections — and using the movement the star power gives you to be somewhere the answering shot isn't.",
+        tips: [
+          { header: "Super · Spitball" },
+          {
+            lead: "Swing first, then bubble.",
+            rest: "Fire the Super immediately after a bat swing connects and the bubble catches the same target on its way out — a free double hit. It works from any range once you have the rhythm, and it is a timing habit rather than a read, so take it into the training room and drill it before you rely on it in a game.",
+            videos: [
+              { src: "super-double-hit-1", label: "Double hit — swing, then bubble" },
+              { src: "super-double-hit-2", label: "Same trick, longer range" },
+            ],
+          },
+          { header: "Star Power 1 · Home Run" },
+          {
+            lead: "The speed is a dodging tool first, a chasing tool second.",
+            rest: "A full Home Run bar makes Bibi fast enough that shots already aimed at her stop landing — snipers and single-shot brawlers have to lead you, and at that speed their lead is wrong. Getting on top of people is the second thing it buys. Watch how much of the movement in these clips is sideways rather than forwards.",
+            videos: [
+              { src: "sp1-dodging-1", label: "Dodging with the speed boost — full sequence" },
+              { src: "sp1-dodging-2", label: "Dodging in a real fight" },
+            ],
+          },
+          {
+            lead: "Aim the bubble into a narrow gap.",
+            rest: "Spitball bounces, so pick a line where it rattles between two walls a short distance apart. It then passes through whatever is standing in that lane several times instead of once, which is the difference between chip and a kill — and it is how you touch someone who believes a wall is protecting them.",
+            videos: [
+              { image: "spitball-aim-angle.jpg", label: "The angle to look for — a tight lane between walls" },
+              { src: "spitball-aim", label: "The same bounce in motion" },
+            ],
+          },
+          {
+            lead: "Let the bubble win the fight before you commit.",
+            rest: "Watch this one properly: the Spitball rattles through Colt several times before Bibi ever steps in, and by the time she walks up to Fang the fight has already been decided. The bat confirms the kill — the bubble is what earned it.",
+            videos: [{ src: "hyper-bubble-aim", label: "Bubble does the damage, bat confirms" }],
+          },
+          { header: "Star Power 2 · Batting Stance" },
+          {
+            lead: "Swap to it when they draft tanks.",
+            rest: "Batting Stance turns the full bar into damage reduction rather than speed. Against a comp built on tanks and sustained close-range damage there is nothing to dodge — you are trying to win a stand-up fight in their faces, and flat mitigation does that better than movement ever will.",
+          },
+          {
+            lead: "Dying is not always losing the trade.",
+            rest: "In this clip Bibi pushes into a 2v1, does not survive it, and it is still the right play — she pulled two opponents out of the fight for long enough that her team could move up and hold the ground. Bibi's job is making space. Measure the play by where your team ends up, not by your own health bar.",
+            videos: [{ src: "sp2-trade-for-space", label: "Trading a life for map position", kind: "do" }],
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "The hypercharge gives Bibi a lot of damage in a very short window. The trap is reading that as permission to run at everybody.",
+        tips: [
+          {
+            lead: "Don't get blinded by wanting to laser everyone down.",
+            rest: "The damage is high enough that players charge in swinging and skip the setup entirely. Aim the bubble first and take the multi-hit, then close on whatever survived it — the hyper punishes a comp that is already hurt far harder than one at full health.",
+            videos: [{ src: "hyper-bubble-aim", label: "Aim first, then close" }],
+          },
+          {
+            lead: "Chain the Supers.",
+            rest: "A well-aimed Spitball hits several times, and every one of those hits charges the next Super. Play the hyper as the opening of a sequence — bubble, close, swing, bubble again — rather than as one big moment you spend and then walk away from.",
+          },
+        ],
+      },
+      {
+        key: "gameplay", label: "Gameplay",
+        intro: "Bibi is a tank who has to arrive. Everything here is about arriving with a health bar left.",
+        tips: [
+          {
+            lead: "Cross through cover, never through the open.",
+            rest: "A short-range brawler walking a straight line at a ranged one is just handing over free damage. Route your approach through bushes and behind walls, and treat the open walk-up as the losing line even when your health bar says you can afford it.",
+          },
+          {
+            lead: "Protect the full bar.",
+            rest: "The bar empties the moment you swing with it, so poking a wall or a stray minion at the wrong time strips exactly the tool you needed for the engage. When you are not committing, hold the swing and keep the knockback banked.",
+          },
+          {
+            lead: "The Spitball is your ranged game — use it.",
+            rest: "Bibi has a genuinely long-range attack and most players sit on it waiting for the perfect engage. Poke with the bubble across the whole neutral game: it charges quickly, it costs you no position, and it softens the target you're about to walk at.",
+          },
+          {
+            lead: "Go past the front line.",
+            rest: "The knockback is wasted on the enemy tank, who is happy to fight you. Your targets are the brawlers standing behind him — the marksman, the thrower, the support — and the speed burst exists precisely so you can reach them.",
+          },
+        ],
+      },
+    ],
+
+    modeNotes: {
+      brawlBall: "Bibi's best mode. The knockback clears the ball carrier's path and the heal is what walks the ball in, so she contributes on both sides of the objective. Push the ball, don't chase kills.",
+      gemGrab: "You are the tool that breaks their hold on mid. Poke with the bubble until the gem carrier has to commit, then heal, close, and knock them off the point — you don't need to survive it if the gems drop.",
+      bounty: "The most patient Bibi mode. Every death is a star, so play the bubble from range for most of the round and only spend the bat when the count makes the trade clearly worth it.",
+      knockout: "No respawns means the walk-in has to be right first time. Use the Spitball to force them out of position across the whole round, and save the heal for the one exchange that decides it.",
+      heist: "Bibi does real damage to the safe once she reaches it, and the speed burst plus the heal is exactly the package that gets a short-range brawler across open ground. Farm the bubble on their defenders, then commit.",
+      hotZone: "Contest with the bubble rather than by standing in the circle. Bibi holds a zone by making it expensive for anyone else to stand there — the knockback is worth more seconds on the point than her own body is.",
+    },
+
+    counterTips: [
+      {
+        lead: "Break the walls she is walking behind.",
+        rest: "Bibi's whole approach is routed through cover. Take the walls down and the short-range brawler has to cross open ground at you, which is the fight she cannot win — this is the single highest-value thing you can do against her.",
+      },
+      {
+        lead: "Bring high damage, not chip.",
+        rest: "A 10,000 health bar plus a heal on demand shrugs off poke. What actually kills Bibi is burst arriving faster than Vitamin Booster can answer it, so pick the brawlers that delete a health bar in a couple of connections rather than the ones that whittle it.",
+      },
+      {
+        lead: "Watch the Home Run bar, not the health bar.",
+        rest: "A full bar means her next swing knocks you back — into a wall if she has set it up, and that is where you die. When the bar is full, break line of sight or take the fight in the open where the knockback has nothing to pin you against.",
+      },
+      {
+        lead: "Bait the heal before you commit.",
+        rest: "Vitamin Booster is what converts a losing walk-in into a won one. Spend a little damage to draw it out, then step back and re-engage on the cooldown — a Bibi with no gadget is a very short-range brawler with no way to close.",
+      },
+      {
+        lead: "Don't line up behind each other.",
+        rest: "The Spitball passes through enemies and bounces off walls, so a team stacked in one lane takes the same bubble three times over. Spread out, and don't stand in a narrow corridor she can rattle a shot down.",
+      },
+    ],
+  },
 };
 
 // Local art overrides for abilities where the synced Brawlify CDN icon has

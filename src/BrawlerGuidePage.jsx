@@ -136,30 +136,75 @@ function ClipSlot({ label, videoId, title, tone = "#8ee6b0" }) {
   );
 }
 
+// Shared chrome for a media slot: the verdict badge + caption above the frame,
+// and the frame's border tint. A do/dont clip carries its verdict on the label
+// and in the frame colour, so a "wrong way" demo can never be mistaken for
+// instruction.
+function slotMark(kind) {
+  return kind === "do" ? { c: "#8ee6b0", s: "✓" } : kind === "dont" ? { c: "#ff8f8f", s: "✕" } : null;
+}
+
+function SlotLabel({ label, mark }) {
+  if (!label) return null;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: mark ? mark.c : "#9a9aab" }}>
+      {mark && (
+        <span style={{
+          width: 15, height: 15, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center",
+          fontSize: 9, fontWeight: 700, background: `${mark.c}1f`, border: `1px solid ${mark.c}59`,
+        }}>{mark.s}</span>
+      )}
+      {titleCase(label)}
+    </span>
+  );
+}
+
+const slotBorder = (mark, tone) => mark ? `${mark.c}3d`
+  : tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)";
+
+// Owner-supplied still, for the cases where a single annotated frame teaches
+// better than motion (Bibi's bubble-bounce angle). Same chrome as VideoSlot
+// minus the LOOP chip. `src` carries its own extension, since stills aren't
+// all one format the way the clips are.
+//
+// The frame keeps VideoSlot's 16:9 box and the image is `contain`, not `cover`:
+// a diagram must not be cropped, and reserving the height stops the slot laying
+// out at 0px before the image arrives.
+//
+// Deliberately NOT `loading="lazy"`. Guide stills sit inside a collapsible
+// section that UNMOUNTS when closed, so the section already does the deferring
+// that lazy would — and lazy actively broke it here: the request returned 200
+// but the element never decoded or painted.
+function ImageSlot({ base, src, label, tone = "#8ee6b0", kind }) {
+  const [failed, setFailed] = useState(false);
+  const mark = slotMark(kind);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <SlotLabel label={label} mark={mark} />
+      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
+        {failed ? (
+          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 12, textAlign: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c" }}>IMAGE UNAVAILABLE</span>
+          </div>
+        ) : (
+          <img src={`${base}/${src}`} alt={label || ""} onError={() => setFailed(true)}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Owner-supplied muted loop clip. Autoplays only while on screen (one guide tab
 // is visible at a time, so at most a handful ever play). Falls back to the
 // design's placeholder if the file 404s.
 function VideoSlot({ base, src, label, tone = "#8ee6b0", kind }) {
   const [failed, setFailed] = useState(false);
-  // A do/dont clip carries its verdict on the label and in the frame colour, so
-  // a "wrong way" demo can never be mistaken for instruction.
-  const mark = kind === "do" ? { c: "#8ee6b0", s: "✓" } : kind === "dont" ? { c: "#ff8f8f", s: "✕" } : null;
-  const borderTone = mark ? `${mark.c}3d`
-    : tone === "#ff8f8f" ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.08)";
+  const mark = slotMark(kind);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {label && (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: mark ? mark.c : "#9a9aab" }}>
-          {mark && (
-            <span style={{
-              width: 15, height: 15, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center",
-              fontSize: 9, fontWeight: 700, background: `${mark.c}1f`, border: `1px solid ${mark.c}59`,
-            }}>{mark.s}</span>
-          )}
-          {titleCase(label)}
-        </span>
-      )}
-      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${borderTone}` }}>
+      <SlotLabel label={label} mark={mark} />
+      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", background: "#0c0c14", border: `1px solid ${slotBorder(mark, tone)}` }}>
         {failed ? (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 12, textAlign: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c" }}>CLIP UNAVAILABLE</span>
@@ -295,9 +340,15 @@ function TipRow({ n, tip, tone = "violet", videoBase }) {
     </div>
   );
 
+  // An entry is a still when it carries `image` instead of `src`, so a tip can
+  // interleave a diagram and its footage in one column, in authored order.
   const clips = (list) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-      {list.map(v => <VideoSlot key={v.src} base={videoBase} src={v.src} label={v.label} kind={v.kind} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />)}
+      {list.map(v => {
+        const Slot = v.image ? ImageSlot : VideoSlot;
+        return <Slot key={v.image || v.src} base={videoBase} src={v.image || v.src}
+          label={v.label} kind={v.kind} tone={tone === "red" ? "#ff8f8f" : "#8ee6b0"} />;
+      })}
     </div>
   );
 
