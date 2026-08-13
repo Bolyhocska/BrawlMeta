@@ -1746,6 +1746,26 @@
     "counterWeight": 0.6,
     "_counterWeightComment": "Per-point weight of the class counter matrix in each side's comp score. MUST stay at half the intuitive value: counterMatrix is exactly antisymmetric (M[a][b] === -M[b][a]), so red's counter total is always the negation of blue's, and the differential blue-minus-red therefore counts every cross-team pairing TWICE. At the old 1.2 this let class theory swing the differential by up to ~26 points while the statistical term (a mean of true win rates) spans barely 6 — i.e. the matrix outvoted real win-rate evidence roughly 4:1, and could hand a 67% verdict to the comp with the WORSE measured win rates. 0.6 counts each pairing once, which puts theory and evidence on comparable footing and keeps the split consistent with the suggestion ranking."
   },
+  "mapPairs": {
+    "_comment": "Measured brawler-vs-brawler win rates from brawler_intelligence.vs_brawler — the counter-drafting evidence for the late picks: 'does this candidate actually beat the brawlers they are looking at'. Named mapPairs because a per-map layer slots in here later; today the numbers are patch-wide, and the engine reads them through pairEdgeVs in draftEngine.js. Worth knowing why per-map is a second-order refinement rather than the main event: the measured spread of a pair's true edge is ~4.3 win-rate points, while the spread of the MAP-SPECIFIC part of that edge is only ~2.3, so the patch-wide rate is the trunk and the map rate is a correction to it.",
+
+    "shrinkPriorGames": 135,
+    "_shrinkComment": "Empirical-Bayes shrink of a pair edge toward even. prior = 2500/sd^2, where 2500 is the squared standard error of a win rate (50/sqrt(n)) and sd is the measured spread of a pair's true edge vs 50%: 4.3 points, stable across every sample bucket from 50 games to 1000+. So a 30-game pair contributes 18% of its raw edge, a 300-game pair 69%, a 3,000-game pair 96%. This REPLACED a hard picks>=100 step gate, under which a 99-game pair counted for nothing and a 100-game pair for everything.",
+
+    "suggestWeight": 1.0,
+    "_suggestComment": "Weight of the mean head-to-head edge in getDraftAdvice's candidate score, further scaled by counterLadder.counterWeightBySlot so it matters most at the late picks. Was a hardcoded 0.8 alongside the step gate.",
+
+    "splitWeight": 0.6,
+    "_splitComment": "Weight of the same term in computeWinSplit. MUST stay half the intuitive value, for exactly the winProbability.counterWeight reason: pairEdgeVs is antisymmetric (vs_brawler is built from the same matches for both directions), so red's total is the negation of blue's and the blue-minus-red differential counts every pairing TWICE. Note also that the term is a MEAN over the 9 cross-team pairings, not a sum — a sum would let one brawler's three favourable matchups swing the verdict ~20 points through logisticScale, which is the same class of error as counterWeight at 1.2. Setting this and suggestWeight to 0 disables the whole feature in both code paths with no code change.",
+
+    "chipEdgePts": 2.5,
+    "noteMinEdgePts": 1.5,
+    "_chipComment": "Thresholds on the SHRUNK edge, not the raw win rate, so a thin fluke can never produce a 'Beats their X' chip or headline a note.",
+
+    "noteMinGames": 300,
+    "_noteMinGamesComment": "A SINGLE pairing must clear this before its raw win rate may headline a card. Shrinkage governs the score, but the note prints the unshrunk figure, and '58.3% vs their El Primo · 60 games' is the same noise-dressed-as-evidence problem mapPriority.headlineMinMapPicks solves for map rates. 300 matches the floor the brawler-guide Match-ups section uses for the same data. The comp-level note is deliberately exempt — it averages across the enemy team rather than reading one thin duel as fact."
+  },
+
   "mapPriority": {
     "_comment": "How hard the engine leans on THIS MAP's data versus the brawler's overall patch numbers. The old behaviour was a fixed 65/35 map/overall blend that applied only when the map sample cleared minMapPicks — and a brawler with NO map data silently fell through to a pure overall score, so 'unproven here' scored identically to 'proven here'. blendPriorGames replaces that with sample weighting: map weight = mapPicks / (mapPicks + blendPriorGames), so weight rises smoothly with evidence and is 0 when there is none.",
     "blendPriorGames": 400,

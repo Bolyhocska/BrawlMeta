@@ -96,6 +96,61 @@ const blendMapGlobal = (mapPicks, mapTWR, globalTWR) => {
   return mapTWR * w + globalTWR * (1 - w);
 };
 
+// Compact game counts for note copy ("7.3K games"). DraftAssistant has its own
+// copy for card chrome; this one exists so the engine's own strings don't print
+// a bare 66592.
+const fmtGames = (n) =>
+  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "")}K` : `${n}`;
+
+// ── Pair-level evidence: the same idea as blendMapGlobal, one level down ─────
+// How a brawler actually fares AGAINST a specific enemy, in win-rate points
+// either side of even, shrunk by how much evidence backs it.
+//
+// The prior is measured, not chosen: across the current patch the standard
+// deviation of a pair's TRUE edge vs 50% is ~4.3 points, stable from the 50-game
+// bucket up past 1000. prior = 2500/sd^2 (2500 being the squared standard error
+// of a win rate, 50/sqrt(n)), which gives ~135. A 30-game pair therefore
+// contributes 18% of its raw edge, a 300-game pair 69%, a 3,000-game pair 96%.
+// That is the priors-vs-evidence rule pointed the other way: thin samples must
+// not shout, and no step gate is needed to stop them.
+//
+// `mapPairs` is accepted but unused today — it is where the per-map layer slots
+// in later (a shrunk delta on top of this patch-wide trunk). Keeping it in the
+// signature now means adding that layer touches this function only.
+//
+// INVARIANT: pairEdgeVs(a, b) === -pairEdgeVs(b, a). vs_brawler is built from
+// the same matches for both directions, so anything that scores BOTH sides and
+// takes the difference counts this term twice — exactly the counterMatrix trap.
+// That is why mapPairs.splitWeight is half the intuitive value.
+const pairEdgeVs = (myKey, enemyKey, intelligence = {}, mapPairs = {}) => {
+  const v = intelligence[norm(myKey)]?.vs_brawler?.[norm(enemyKey)];
+  const n = Number(v?.picks) || 0;
+  const wr = parseFloat(v?.winRate);
+  if (!n || !Number.isFinite(wr)) return { edge: 0, games: 0, winRate: null };
+  const prior = CONFIG.mapPairs?.shrinkPriorGames ?? 135;
+  return { edge: (wr - 50) * (n / (n + prior)), games: n, winRate: wr };
+};
+
+// Mean head-to-head edge of one brawler against a set of enemies. A MEAN, not a
+// sum: it stays denominated in win-rate points, so it is dimensionally
+// comparable to the solo-rate mean that both scorers are built on.
+const meanPairEdge = (myKey, enemyKeys, intelligence = {}, mapPairs = {}) => {
+  const rows = enemyKeys
+    .map(ek => ({ name: fmtName(ek), ...pairEdgeVs(myKey, ek, intelligence, mapPairs) }))
+    .filter(r => r.games > 0);
+  if (!rows.length) return { mean: 0, rows: [], best: null, worst: null, games: 0 };
+  return {
+    mean: rows.reduce((a, r) => a + r.edge, 0) / rows.length,
+    rows,
+    // By EDGE, not by sample size. Picking the largest sample is why a card
+    // could report "51.9% vs their Pierce" (4,872 games) and stay silent about
+    // "61% vs their Nani" (290) — the second is the reason to make the pick.
+    best: rows.reduce((a, r) => (r.edge > a.edge ? r : a)),
+    worst: rows.reduce((a, r) => (r.edge < a.edge ? r : a)),
+    games: rows.reduce((a, r) => a + r.games, 0),
+  };
+};
+
 const matrixScore = (myClass, enemyClass) =>
   CONFIG.counterMatrix[myClass]?.[enemyClass] ?? 0;
 
@@ -342,7 +397,9 @@ export function getDraftAdvice({
     // Edgar is still a terrible reveal because his wins come from matchups.
     let matchupWinRate = null, matchupPicks = null;
     let dataEdge = null;                 // empirical WR-50 vs their classes
-    let bestPair = null;                 // { name, winRate, picks } best-sampled brawler-vs-brawler edge
+    let bestPair = null;                 // { name, winRate, picks, edge } strongest head-to-head edge
+    let worstPair = null;                // { name, winRate, picks, edge } weakest head-to-head edge
+    let compPair = null;                 // { mean, games, count } mean edge across the revealed enemies
     let bestEdge = 0, bestCounterName = null;   // strongest class edge we have
     let worstEdge = 0, worstCounterName = null; // worst class matchup we're in
     let stackedCounter = null;           // { cls, count } enemy class we hard-counter and they stacked
@@ -418,15 +475,21 @@ export function getDraftAdvice({
       // Data: brawler-vs-BRAWLER empirical edges — sharper than class-level and
       // able to contradict it (e.g. Brock empirically beats Mortis even though
       // sniper "loses" to space maker on the matrix). Weighted above vs_class.
-      if (intel?.vs_brawler) {
-        const pairs = enemyTeam
-          .map(ek => ({ name: fmtName(ek), v: intel.vs_brawler[norm(ek)] }))
-          .filter(p => p.v && p.v.picks >= 100);
-        if (pairs.length) {
-          const pe = pairs.reduce((a, p) => a + (parseFloat(p.v.winRate) - 50), 0) / pairs.length;
-          score += pe * 0.8 * slotCounterW;
-          const best = pairs.reduce((a, p) => (p.v.picks > a.v.picks ? p : a));
-          bestPair = { name: best.name, winRate: parseFloat(best.v.winRate), picks: best.v.picks };
+      // Shrinkage replaces the old hard `picks >= 100` step gate: a 99-game pair
+      // used to count for nothing and a 100-game pair for everything, which is
+      // not how evidence works. Now it fades in continuously.
+      if (enemyTeam.length) {
+        const mp = CONFIG.mapPairs || {};
+        const pe = meanPairEdge(key, enemyTeam, intelligence);
+        if (pe.rows.length) {
+          score += pe.mean * (mp.suggestWeight ?? 1.0) * slotCounterW;
+          bestPair = { name: pe.best.name, winRate: pe.best.winRate, picks: pe.best.games, edge: pe.best.edge };
+          worstPair = { name: pe.worst.name, winRate: pe.worst.winRate, picks: pe.worst.games, edge: pe.worst.edge };
+          compPair = { mean: pe.mean, games: pe.games, count: pe.rows.length };
+          // Chips fire off the SHRUNK edge, so a thin fluke can't produce one.
+          const chipPts = mp.chipEdgePts ?? 2.5;
+          if (pe.best.edge >= chipPts) chips.push({ label: `Beats their ${pe.best.name}`, tone: "good" });
+          else if (pe.worst.edge <= -chipPts) chips.push({ label: `Loses to their ${pe.worst.name}`, tone: "bad" });
         }
       }
 
@@ -795,12 +858,28 @@ export function getDraftAdvice({
     // matchupNote: one plain line answering "how good is this into their comp?"
     let matchupNote = null;
     if (enemyTeam.length > 0) {
+      const noteMin = CONFIG.mapPairs?.noteMinEdgePts ?? 1.5;
+      const noteMinGames = CONFIG.mapPairs?.noteMinGames ?? 300;
       if (stackedCounter) {
         matchupNote = `Hard-counters their ${stackedCounter.count}× ${classLabel(stackedCounter.cls)}`;
       } else if (matchupWinRate != null) {
         matchupNote = `${matchupWinRate}% vs this exact comp · ${matchupPicks} games`;
-      } else if (bestPair && Math.abs(bestPair.winRate - 50) >= 1.5) {
+      // Comp-level head-to-head first — it is the line that literally answers
+      // "how does this do against THEIR TEAM", rather than one duel from it.
+      } else if (compPair && compPair.count >= 2 && Math.abs(compPair.mean) >= noteMin) {
+        matchupNote = `${(50 + compPair.mean).toFixed(1)}% head-to-head into their comp · ${fmtGames(compPair.games)} games`;
+      // A single pairing may only HEADLINE a raw percentage once its sample can
+      // carry one. Shrinkage governs the score, but the card prints the raw
+      // rate, and "58.3% vs their El Primo · 60 games" is the same noise-as-
+      // evidence problem headlineMinMapPicks already solves for map rates. The
+      // comp-level line above is exempt: it averages across the enemy team, so
+      // it is not one thin duel being read as a fact.
+      } else if (bestPair && bestPair.edge >= noteMin && bestPair.picks >= noteMinGames) {
         matchupNote = `${bestPair.winRate.toFixed(1)}% vs their ${bestPair.name} · ${bestPair.picks.toLocaleString("en-US")} games`;
+      // The stop condition, made visible: Max looks great into snipers until
+      // Brock is on the board, and the card should say so rather than go quiet.
+      } else if (worstPair && worstPair.edge <= -noteMin && worstPair.picks >= noteMinGames) {
+        matchupNote = `Loses to their ${worstPair.name} · ${worstPair.winRate.toFixed(1)}% over ${fmtGames(worstPair.picks)} games`;
       } else if (bestEdge >= 1.5 && bestCounterName) {
         matchupNote = `Strong into their ${bestCounterName}`;
       } else if (dataEdge != null && dataEdge >= 2) {
@@ -1016,6 +1095,27 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     for (let i = 0; i < teamKeys.length; i++)
       for (let j = 0; j < enemyKeys.length; j++)
         s += pairEdge(teamKeys[i], classes[i], enemyKeys[j], enemyCls[j]) * cw;
+
+    // Measured head-to-head across the same 9 cross-team pairings — the SAME
+    // helper getDraftAdvice ranks with, so the two cannot disagree about who
+    // the matchup favours.
+    //
+    // This term did not exist before, and its absence was a real hole: the last
+    // pick is ranked by THIS function's rawEdge, while brawler-vs-brawler win
+    // rates were only ever read by getDraftAdvice. So in the one slot that is
+    // purely about answering the enemy comp, the ranker was blind to whether a
+    // candidate actually beats them.
+    //
+    // A MEAN, not a sum, and splitWeight is HALF the intuitive value — both for
+    // the counterWeight reason directly above. pairEdgeVs is antisymmetric, so
+    // red's total is the negation of blue's and the differential counts every
+    // pairing twice. Summing instead of averaging would let one brawler's three
+    // good matchups swing the verdict ~20 points through logisticScale.
+    const pw = CONFIG.mapPairs?.splitWeight ?? 0.6;
+    let pairPts = 0, pairN = 0;
+    for (const mine of teamKeys)
+      for (const foe of enemyKeys) { pairPts += pairEdgeVs(mine, foe, intelligence).edge; pairN++; }
+    if (pairN) s += (pairPts / pairN) * pw;
 
     // Synergy + structure
     for (let i = 0; i < classes.length; i++)
