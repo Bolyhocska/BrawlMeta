@@ -1157,19 +1157,6 @@ const GUIDES = {
               { src: "sp1-dodging-2", label: "Dodging in a real fight" },
             ],
           },
-          {
-            lead: "Aim the bubble into a narrow gap.",
-            rest: "Spitball bounces, so pick a line where it rattles between two walls a short distance apart. It then passes through whatever is standing in that lane several times instead of once, which is the difference between chip and a kill — and it is how you touch someone who believes a wall is protecting them.",
-            videos: [
-              { image: "spitball-aim-angle.jpg", label: "The angle to look for — a tight lane between walls" },
-              { src: "spitball-aim", label: "The same bounce in motion" },
-            ],
-          },
-          {
-            lead: "Let the bubble win the fight before you commit.",
-            rest: "Watch this one properly: the Spitball rattles through Colt several times before Bibi ever steps in, and by the time she walks up to Fang the fight has already been decided. The bat confirms the kill — the bubble is what earned it.",
-            videos: [{ src: "hyper-bubble-aim", label: "Bubble does the damage, bat confirms" }],
-          },
           { header: "Star Power 2 · Batting Stance" },
           {
             lead: "Swap to it when they draft tanks.",
@@ -1199,8 +1186,29 @@ const GUIDES = {
       },
       {
         key: "gameplay", label: "Gameplay",
-        intro: "Bibi is a tank who has to arrive. Everything here is about arriving with a health bar left.",
+        intro: "Bibi is a tank who has to arrive, and who does real damage on the way. This tab is the two halves of that: moving so you survive the approach, and aiming the bubble so the fight is half won before you get there.",
         tips: [
+          // The dodging clip deliberately appears here AND on the Star Power
+          // tab. There it explains what Home Run does; here it opens the
+          // movement lesson, which is the thing you actually practise.
+          {
+            lead: "Watch the movement before you watch the bat.",
+            rest: "This is the clip to study first. Almost none of Bibi's movement here is straight at anybody — it is sideways, across the shots rather than into them, using the speed from a full Home Run bar to make every lead the enemy takes the wrong one. Learn to move like this and the rest of the kit starts working; walk in a straight line and no amount of health saves you.",
+            videos: [{ src: "sp1-dodging-1", label: "Dodging with the speed boost — full sequence", kind: "do" }],
+          },
+          {
+            lead: "Aim the bubble into a narrow gap.",
+            rest: "Spitball bounces, so pick a line where it rattles between two walls a short distance apart. It then passes through whatever is standing in that lane several times instead of once, which is the difference between chip and a kill — and it is how you touch someone who believes a wall is protecting them.",
+            videos: [
+              { image: "spitball-aim-angle.jpg", label: "The angle to look for — a tight lane between walls" },
+              { src: "spitball-aim", label: "The same bounce in motion" },
+            ],
+          },
+          {
+            lead: "Let the bubble win the fight before you commit.",
+            rest: "Watch this one properly: the Spitball rattles through Colt several times before Bibi ever steps in, and by the time she walks up to Fang the fight has already been decided. The bat confirms the kill — the bubble is what earned it.",
+            videos: [{ src: "hyper-bubble-aim", label: "Bubble does the damage, bat confirms" }],
+          },
           {
             lead: "Cross through cover, never through the open.",
             rest: "A short-range brawler walking a straight line at a ranged one is just handing over free damage. Route your approach through bushes and behind walls, and treat the open walk-up as the losing line even when your health bar says you can afford it.",
