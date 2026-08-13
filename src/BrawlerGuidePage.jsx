@@ -76,6 +76,10 @@ const CLIP_GROUPS = [
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
+  // Generated-page sections. They only render for brawlers with no written
+  // guide, and `present` below drops them from the rail otherwise.
+  { id: "game-plan", label: "How to Play" },
+  { id: "abilities", label: "Abilities" },
   { id: "best-build", label: "Best Build" },
   { id: "combat-stats", label: "Combat Stats" },
   { id: "guide", label: "Guide" },
@@ -750,11 +754,16 @@ export default function BrawlerGuidePage({
   // section that isn't on the page is a dead click.
   const present = {
     overview: true,
+    "game-plan": !guide,
+    abilities: !guide && Boolean(brawler.starPowers?.length || brawler.gadgets?.length),
     "best-build": Boolean(guide && build),
     "combat-stats": Boolean(guide?.combatStats),
     guide: Boolean(guide?.guideTabs?.length),
     "maps-modes": true,
-    matchups: Boolean(guide && (liveSynergies?.length || liveCounters?.length)),
+    // Not gated on `guide`: the pair data is live for every brawler, and the
+    // reason lines fall back to generated copy. Requiring a written guide hid
+    // real measured data on ~100 pages for no reason.
+    matchups: Boolean(liveSynergies?.length || liveCounters?.length),
     counter: Boolean(guide?.counterTips?.length),
   };
   const railSections = SECTIONS.filter(s => present[s.id]);
@@ -892,6 +901,86 @@ export default function BrawlerGuidePage({
             </div>
           </div>
         </div>
+
+        {/* Generated guide for the ~100 brawlers with nothing hand-written.
+            extendedGuides has always produced strengths, weaknesses, draft
+            timing, counter-play and the ability list; the page rendered only
+            the class and the game plan and discarded the rest, so these pages
+            were two paragraphs and an apology. Everything below is that same
+            generator, finally shown. */}
+        {!guide && (
+          <>
+            <Section
+              id="game-plan" variant="card" title={`How to play ${brawler.name}`}
+              subtitle={`${classLabel(draftClassOf(brawler.key))} game plan — generated from class archetype and draft profile`}
+              open={isOpen("game-plan")} onToggle={() => toggleSection("game-plan")}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {ext.gameplan.map((p, i) => (
+                  <p key={i} style={{ fontSize: 14.5, lineHeight: 1.7, color: "#c9c9d6", margin: 0, maxWidth: 800 }}>{p}</p>
+                ))}
+              </div>
+
+              {(ext.strengths?.length > 0 || ext.weaknesses?.length > 0) && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginTop: 22 }}>
+                  <TraitPanel title="STRENGTHS" accent="#8ee6b0" kind="do" items={ext.strengths} />
+                  <TraitPanel title="WEAKNESSES" accent="#ff8f8f" kind="dont" items={ext.weaknesses} />
+                </div>
+              )}
+
+              {(ext.draftTiming || ext.counterText) && (
+                <div style={{
+                  marginTop: 22, borderRadius: 18, padding: "16px 18px",
+                  background: "rgba(255,180,61,.06)", border: "1px solid rgba(255,180,61,.20)",
+                }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 8 }}>
+                    DRAFT TIMING
+                  </div>
+                  {ext.draftTiming && <p style={{ fontSize: 14, lineHeight: 1.65, color: "#c9c9d6", margin: 0 }}>{ext.draftTiming}</p>}
+                  {ext.counterText && <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#a4a4b5", margin: "10px 0 0" }}>{ext.counterText}</p>}
+                </div>
+              )}
+            </Section>
+
+            {/* Abilities. Every brawler has these from brawlerMeta, and a page
+                that lists them is strictly more useful than one that doesn't —
+                they just carry no recommendation until someone writes one. */}
+            {(brawler.starPowers?.length > 0 || brawler.gadgets?.length > 0) && (
+              <Section
+                id="abilities" variant="card" title="Star powers & gadgets"
+                subtitle="Official descriptions — no recommendation until this brawler has a written guide"
+                open={isOpen("abilities")} onToggle={() => toggleSection("abilities")}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+                  {[
+                    ...(brawler.starPowers || []).map(a => ({ ...a, kind: "STAR POWER", accent: "#ffb43d" })),
+                    ...(brawler.gadgets || []).map(a => ({ ...a, kind: "GADGET", accent: "#c98bff" })),
+                  ].map((item, i) => (
+                    <div key={i} style={{ ...CARD, borderRadius: 22, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 11, overflow: "hidden", flexShrink: 0,
+                          border: "1px solid rgba(255,255,255,.1)", background: "#0c0c14", display: "grid", placeItems: "center",
+                        }}>
+                          {(iconOverride(brawler.key, item.name) || item.img) &&
+                            <img src={iconOverride(brawler.key, item.name) || item.img} alt="" loading="lazy"
+                              style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                          <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "#9a9aab" }}>
+                        {(item.desc || "").replace(/<[^>]*>/g, "") || "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+          </>
+        )}
 
         {/* ── 2. Best build ── */}
         {guide && build && (
@@ -1223,7 +1312,7 @@ export default function BrawlerGuidePage({
         </Section>
 
         {/* ── 6. Match-ups (live from with_brawler + vs_brawler) ── */}
-        {guide && (liveSynergies?.length > 0 || liveCounters?.length > 0) && (
+        {(liveSynergies?.length > 0 || liveCounters?.length > 0) && (
           <Section
             id="matchups" variant="card" title="Match-ups"
             subtitle={`Live ${bracketShort} pair data — min 300 games, best teammates and worst opponents`}
@@ -1235,7 +1324,7 @@ export default function BrawlerGuidePage({
                   eyebrow="SYNERGIES · GOOD WITH" accent="#8ee6b0"
                   rows={liveSynergies} bothSides={bothSides}
                   bothNote={`Also one of ${brawler.name}'s worst opponents — strong alongside, painful across the net.`}
-                  reasonFor={s => guide.synergyReasons?.[s.key]
+                  reasonFor={s => guide?.synergyReasons?.[s.key]
                     || `${classLabel(draftClassOf(s.key))} — one of the highest win rates alongside ${brawler.name} in the data.`}
                 />
               )}
@@ -1244,7 +1333,7 @@ export default function BrawlerGuidePage({
                   eyebrow="COUNTERS · WORST AGAINST" accent="#ff8f8f"
                   rows={liveCounters} bothSides={bothSides}
                   bothNote={`Also one of ${brawler.name}'s best teammates — the same strengths cut both ways.`}
-                  reasonFor={s => guide.counterReasons?.[s.key]
+                  reasonFor={s => guide?.counterReasons?.[s.key]
                     || `${classLabel(draftClassOf(s.key))} — one of the lowest win rates against ${brawler.name} in the data.`}
                 />
               )}
@@ -1266,16 +1355,6 @@ export default function BrawlerGuidePage({
           </Section>
         )}
 
-        {/* Generated fallback for brawlers with no hand-written guide yet */}
-        {!guide && (
-          <section style={{ ...CARD, padding: 26, display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>GAME PLAN · {ext.class.toUpperCase()}</span>
-            {ext.gameplan.map((p, i) => <p key={i} style={{ fontSize: 14.5, lineHeight: 1.7, color: "#b0b0c0" }}>{p}</p>)}
-            <p style={{ fontSize: 13, color: "#6f7180", marginTop: 6 }}>
-              A full guide for {brawler.name} — build, combat stats, aim and counter-play — hasn't been written yet.
-            </p>
-          </section>
-        )}
       </div>
 
       <style>{`
@@ -1325,6 +1404,29 @@ function MatchupPanel({ eyebrow, accent, rows, reasonFor, bothSides, bothNote })
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Strengths / weaknesses list for the generated pages. Reuses the do/don't
+// vocabulary from the guide clips so the two page types read as one system.
+function TraitPanel({ title, accent, kind, items }) {
+  if (!items?.length) return null;
+  return (
+    <div style={{ borderRadius: 20, padding: 20, background: `${accent}0f`, border: `1px solid ${accent}2e` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{
+          width: 20, height: 20, borderRadius: 999, flexShrink: 0,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          background: `${accent}1f`, color: accent, border: `1px solid ${accent}59`,
+        }}><MarkGlyph kind={kind} size={11} /></span>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color: accent }}>{title}</span>
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((t, i) => (
+          <li key={i} style={{ fontSize: 13.5, lineHeight: 1.6, color: "#c9c9d6" }}>{t}</li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -67,12 +67,16 @@ export const formatMode = (mode) => {
   return spaced.replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+// Capitalize the first LETTER of each word, not the first character — "8-BIT"
+// starts with a digit, so charAt(0).toUpperCase() was a no-op and the name
+// rendered as "8-bit" everywhere it appeared. Hyphenated parts capitalize too,
+// which is what "Jae-Yong" and "Mr. P" want anyway.
 export const formatBrawlerName = (name) =>
-  name
+  (name || "")
     .toLowerCase()
-    .split(/\s+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+    .replace(/[a-z]+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const resolveMatchBracket = (match) => {
   if (match.rank_bracket) return match.rank_bracket;
