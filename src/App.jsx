@@ -730,11 +730,13 @@ function BrawlerGuideRoute() {
   return (
     <div style={styles.root}>
       <SiteHeader />
+      {/* onBack goes to ?tab=brawlers, not "/app" — bare "/app" lands on the
+          Draft Assistant, which is not where a link labelled "Tier List" goes. */}
       <BrawlerGuidePage
         brawler={brawler} byMode={byMode} byMap={byMap} allBrawlers={brawlers}
         rankBracket={rankBracket} onRankBracketChange={setRankBracket}
         rankBrackets={RANK_BRACKETS}
-        onBack={() => navigate("/app")}
+        onBack={() => navigate("/app?tab=brawlers")}
       />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>

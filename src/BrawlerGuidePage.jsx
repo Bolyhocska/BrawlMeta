@@ -69,8 +69,8 @@ const statText = (c, power) => {
 // Map clips render in this order: the right way first, the wrong way second,
 // then anything untagged (mode-wide technique, which is neither).
 const CLIP_GROUPS = [
-  { kind: "do", label: "DO", color: "#8ee6b0", mark: "✓" },
-  { kind: "dont", label: "DON'T", color: "#ff8f8f", mark: "✕" },
+  { kind: "do", label: "DO", color: "#8ee6b0", mark: "do" },
+  { kind: "dont", label: "DON'T", color: "#ff8f8f", mark: "dont" },
   { kind: null, label: null, color: null, mark: null },
 ];
 
@@ -105,12 +105,27 @@ function PillTrack({ children }) {
   );
 }
 
+// Tick and cross drawn as SVG paths rather than the "✓"/"✕" glyphs. Those two
+// characters sit off-centre inside a small round badge — their ink doesn't fill
+// the em box symmetrically, so no amount of grid/flex centring moves them, and
+// the exact offset changes with whichever font the browser falls back to. Same
+// reasoning as the Chevron above.
+function MarkGlyph({ kind, size = 9 }) {
+  const d = kind === "do" ? "M4 12.5l5 5 11-11" : "M5.5 5.5l13 13M18.5 5.5l-13 13";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+      <path d={d} />
+    </svg>
+  );
+}
+
 // Shared chrome for a media slot: the verdict badge + caption above the frame,
 // and the frame's border tint. A do/dont clip carries its verdict on the label
 // and in the frame colour, so a "wrong way" demo can never be mistaken for
 // instruction.
 function slotMark(kind) {
-  return kind === "do" ? { c: "#8ee6b0", s: "✓" } : kind === "dont" ? { c: "#ff8f8f", s: "✕" } : null;
+  return kind === "do" ? { c: "#8ee6b0", kind: "do" } : kind === "dont" ? { c: "#ff8f8f", kind: "dont" } : null;
 }
 
 function SlotLabel({ label, mark }) {
@@ -119,9 +134,10 @@ function SlotLabel({ label, mark }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 10, letterSpacing: .8, color: mark ? mark.c : "#9a9aab" }}>
       {mark && (
         <span style={{
-          width: 15, height: 15, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center",
-          fontSize: 9, fontWeight: 700, background: `${mark.c}1f`, border: `1px solid ${mark.c}59`,
-        }}>{mark.s}</span>
+          width: 15, height: 15, borderRadius: 999, flexShrink: 0,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          color: mark.c, background: `${mark.c}1f`, border: `1px solid ${mark.c}59`,
+        }}><MarkGlyph kind={mark.kind} size={8} /></span>
       )}
       {titleCase(label)}
     </span>
@@ -1120,7 +1136,11 @@ export default function BrawlerGuidePage({
                         padding: "2px 8px", borderRadius: 999,
                         background: strong ? "rgba(142,230,176,.16)" : "rgba(255,255,255,.08)",
                         color: strong ? "#8ee6b0" : "#9a9aab",
-                      }}>{strong ? "STRONG" : `${mp.winRate}%`}</span>
+                        // Always the number. This used to print "STRONG" instead of
+                        // the rate above 55%, which hid the figure on exactly the
+                        // maps worth comparing — you couldn't tell a 55% map from a
+                        // 60% one. The green tint already carries "this is strong".
+                      }}>{mp.winRate}%</span>
                     </button>
                   );
                 })}
@@ -1181,9 +1201,9 @@ export default function BrawlerGuidePage({
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{
                               width: 20, height: 20, borderRadius: 999, flexShrink: 0,
-                              display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700,
+                              display: "inline-flex", alignItems: "center", justifyContent: "center",
                               background: `${color}1f`, color, border: `1px solid ${color}59`,
-                            }}>{mark}</span>
+                            }}><MarkGlyph kind={mark} size={11} /></span>
                             <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color }}>{label}</span>
                           </div>
                         )}

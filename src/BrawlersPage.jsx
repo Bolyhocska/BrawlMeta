@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, Users, Map, X } from "lucide-react";
 import BRAWLER_META from "./data/brawlerMeta.json";
@@ -6,7 +6,8 @@ import BRAWLER_GUIDES from "./data/brawlerGuides.json";
 import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
 import { getExtendedGuide } from "./data/extendedGuides";
-import { iconOverride, hasBrawlerGuide } from "./data/brawlerTips";
+import { iconOverride, hasBrawlerGuide, getBrawlerGuide } from "./data/brawlerTips";
+import { supabase, CURRENT_PATCH, GEAR_ICONS } from "./appCore";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -256,9 +257,38 @@ function useMapModeStats(brawler, byMode, byMap) {
   return { mapStats, modeStats };
 }
 
-function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
+function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankBracket = "masters_legendary" }) {
   const [activeSection, setActiveSection] = useState("overview");
   const { mapStats, modeStats } = useMapModeStats(brawler, byMode, byMap);
+
+  // Live pair data. The Synergies tab used to be a hardcoded "coming soon"
+  // saying this "requires per-matchup aggregation which will be added in the
+  // next update" — that aggregation has existed for a while in
+  // brawler_intelligence.with_brawler / vs_brawler, and the full guide page has
+  // been rendering it. Only this modal never caught up.
+  const [pairs, setPairs] = useState({ loading: true, with: [], vs: [] });
+  useEffect(() => {
+    let cancelled = false;
+    setPairs({ loading: true, with: [], vs: [] });
+    const rank = (obj, dir) => Object.entries(obj || {})
+      .map(([key, v]) => ({ key: key.toUpperCase(), winRate: Math.round(Number(v.winRate) * 10) / 10, picks: Number(v.picks) }))
+      .filter(r => r.picks >= 300 && Number.isFinite(r.winRate) && r.key !== brawler.key)
+      .sort((a, b) => dir * (b.winRate - a.winRate))
+      .slice(0, 6);
+    supabase
+      .from("brawler_intelligence")
+      .select("with_brawler, vs_brawler")
+      .eq("brawler", brawler.key).eq("patch", CURRENT_PATCH).eq("rank_bracket", rankBracket)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setPairs({ loading: false, with: data ? rank(data.with_brawler, 1) : [], vs: data ? rank(data.vs_brawler, -1) : [] });
+      });
+    return () => { cancelled = true; };
+  }, [brawler.key, rankBracket]);
+
+  const writtenGuide = getBrawlerGuide(brawler.key);
+  const generalBuild = writtenGuide?.builds?.General || null;
 
   const sections = ["overview", "maps", "synergies", "abilities", "guide"];
 
@@ -355,6 +385,37 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
 
           {activeSection === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* The recommended loadout, for brawlers we've written one for.
+                  It's the first thing most people open a brawler to find. */}
+              {generalBuild && (
+                <div>
+                  <h3 style={sectionTitle}>Best Build</h3>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    {[
+                      { kind: "STAR POWER", name: generalBuild.starPower, color: "#ffb43d",
+                        img: iconOverride(brawler.key, generalBuild.starPower) || brawler.starPowers?.find(x => x.name === generalBuild.starPower)?.img },
+                      { kind: "GADGET", name: generalBuild.gadget, color: "#c98bff",
+                        img: iconOverride(brawler.key, generalBuild.gadget) || brawler.gadgets?.find(x => x.name === generalBuild.gadget)?.img },
+                      ...(generalBuild.gears || []).map(g => ({ kind: "GEAR", name: `${g} Gear`, color: "#8ee6b0", img: GEAR_ICONS[g] })),
+                    ].filter(x => x.name).map((x, i) => (
+                      <div key={i} title={`${x.kind} · ${x.name}`} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 12,
+                        background: "rgba(255,255,255,.04)", border: `1px solid ${x.color}33`,
+                      }}>
+                        {x.img && <img src={x.img} alt="" style={{ width: 26, height: 26, objectFit: "contain", flexShrink: 0 }} />}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 8.5, letterSpacing: "0.1em", color: x.color, fontFamily: "'JetBrains Mono', monospace" }}>{x.kind}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#e2e8f0" }}>{x.name}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {generalBuild.note && (
+                    <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.55, marginTop: 10 }}>{generalBuild.note}</p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h3 style={sectionTitle}>Performance by Mode</h3>
                 {modeStats.length === 0 && <p style={emptyText}>Not enough data across modes.</p>}
@@ -418,11 +479,35 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
           )}
 
           {activeSection === "synergies" && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
-              <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Synergy data coming soon</p>
-              <p style={{ fontSize: 12 }}>Teammate & counter stats require per-matchup aggregation which will be added in the next update.</p>
-            </div>
+            pairs.loading ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
+                <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>Loading match-up data…</p>
+              </div>
+            ) : (pairs.with.length === 0 && pairs.vs.length === 0) ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
+                <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Not enough pair data yet</p>
+                <p style={{ fontSize: 12 }}>{brawler.name} has no teammate or opponent pairing with 300+ games in this bracket.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {pairs.with.length > 0 && (
+                  <div>
+                    <h3 style={sectionTitle}>Best Teammates</h3>
+                    <p style={{ ...emptyText, marginTop: 4, marginBottom: 10 }}>Highest win rate playing alongside {brawler.name} — min 300 games.</p>
+                    {pairs.with.map(p => <PairRow key={p.key} entry={p} color="#10b981" />)}
+                  </div>
+                )}
+                {pairs.vs.length > 0 && (
+                  <div>
+                    <h3 style={sectionTitle}>Worst Opponents</h3>
+                    <p style={{ ...emptyText, marginTop: 4, marginBottom: 10 }}>{brawler.name}'s lowest win rates against — min 300 games.</p>
+                    {pairs.vs.map(p => <PairRow key={p.key} entry={p} color="#ef4444" />)}
+                  </div>
+                )}
+              </div>
+            )
           )}
 
           {activeSection === "abilities" && (
@@ -453,8 +538,14 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide }) {
             </div>
           )}
 
+          {/* A brawler with a full written guide gets a real preview and a way
+              into it. It used to say "Guide coming soon" on Surge, whose guide
+              has four tabs and fifteen clips — brawler.guide reads the legacy
+              brawlerGuides.json, which only ever had one entry. */}
           {activeSection === "guide" && (
-            <GuideSection guide={brawler.guide} />
+            writtenGuide
+              ? <WrittenGuidePreview brawler={brawler} guide={writtenGuide} onOpen={() => onOpenFullGuide?.(brawler)} />
+              : <GuideSection guide={brawler.guide} />
           )}
         </div>
       </div>
@@ -480,6 +571,64 @@ function SynergyRow({ brawler, color }) {
       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{brawler.name}</span>
       <span style={{ fontSize: 13, fontWeight: 800, color }}>{brawler.winRate}%</span>
       <span style={{ fontSize: 10, color: "#475569" }}>{brawler.picks}g</span>
+    </div>
+  );
+}
+
+// One live pair row in the modal's Synergies tab. Art and display name come
+// from BRAWLER_META so a key like "8-BIT" renders as the real brawler.
+function PairRow({ entry, color }) {
+  const meta = BRAWLER_META[entry.key] || {};
+  const name = entry.key.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, marginBottom: 6 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 6, overflow: "hidden", background: `${meta.rarityColor || "#94a3b8"}20`, flexShrink: 0 }}>
+        {meta.imageUrl && <img src={meta.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+      </div>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{name}</span>
+      <span style={{ fontSize: 13, fontWeight: 800, color }}>{entry.winRate}%</span>
+      <span style={{ fontSize: 10, color: "#475569", minWidth: 46, textAlign: "right" }}>{entry.picks.toLocaleString("en-US")}g</span>
+    </div>
+  );
+}
+
+// Shown in place of "Guide coming soon" for brawlers that actually have one.
+// Lists what's in the guide and links to it rather than duplicating it here.
+function WrittenGuidePreview({ brawler, guide, onOpen }) {
+  const tabs = (guide.guideTabs || []).map(t => t.label);
+  const clips = new Set();
+  for (const t of guide.guideTabs || [])
+    for (const tip of t.tips || [])
+      for (const v of [...(tip.videos || []), ...(tip.noteVideos || [])]) if (v.src) clips.add(v.src);
+  for (const list of Object.values(guide.mapVideos || {})) for (const v of list) if (v.src) clips.add(v.src);
+  for (const list of Object.values(guide.modeVideos || {})) for (const v of list) if (v.src) clips.add(v.src);
+  const mapNotes = Object.keys(guide.mapNotes || {}).length;
+
+  const Bullet = ({ children }) => (
+    <li style={{ fontSize: 12.5, color: "#94a3b8", lineHeight: 1.7 }}>{children}</li>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <h3 style={sectionTitle}>★ Full written guide</h3>
+        <p style={{ fontSize: 12.5, color: "#94a3b8", lineHeight: 1.6, marginTop: 8 }}>
+          {brawler.name} has a complete hand-written guide — not generated copy.
+        </p>
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 2 }}>
+        {tabs.length > 0 && <Bullet><strong style={{ color: "#e2e8f0" }}>{tabs.length} sections</strong> — {tabs.join(", ")}</Bullet>}
+        {clips.size > 0 && <Bullet><strong style={{ color: "#e2e8f0" }}>{clips.size} gameplay clips</strong> with do/don't breakdowns</Bullet>}
+        {mapNotes > 0 && <Bullet><strong style={{ color: "#e2e8f0" }}>{mapNotes} map notes</strong> — where to play on every ranked map</Bullet>}
+        {guide.combatStats?.length > 0 && <Bullet>Combat stats at every power level, and a full build breakdown</Bullet>}
+        {guide.counterTips?.length > 0 && <Bullet>How to counter {brawler.name}</Bullet>}
+      </ul>
+      <button onClick={onOpen} style={{
+        alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+        padding: "10px 18px", borderRadius: 999, background: "rgba(255,180,61,.14)",
+        border: "1px solid rgba(255,180,61,.45)", color: GUIDE_GOLD,
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, fontWeight: 700, letterSpacing: "0.04em",
+      }}>OPEN THE FULL GUIDE →</button>
     </div>
   );
 }
@@ -729,6 +878,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
           brawler={selectedBrawlerFull}
           byMode={byMode}
           byMap={byMap}
+          rankBracket={rankBracket}
           onClose={() => setSelectedBrawler(null)}
           onOpenFullGuide={(b) => { setSelectedBrawler(null); navigate(`/brawlers/${slugifyBrawlerKey(b.key)}`); }}
         />
