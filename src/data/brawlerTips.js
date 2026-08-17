@@ -283,19 +283,6 @@ const GUIDES = {
     // Why Brock LOSES these matchups — hand-written for the regulars at the top
     // of his worst-against list; class-derived fallback for the rest. The DATA
     // (win rate, games, ordering) is live from vs_brawler.
-    counterReasons: {
-      BOLT: "The same tank that carries Brock as a teammate wrecks him across the net — Bolt closes behind his own wall-break, slows the retreat, and out-trades point-blank where Brock can't kite.",
-      FINX: "Out-ranges and out-DPSes Brock in the open; his hypercharge shreds an immobile marksman from a distance Brock can't answer.",
-      "STARR NOVA": "A space-maker that dives the backline — exactly Brock's blind spot. The mobility skips his comfort band before he gets a second rocket off.",
-      ASH: "Builds rage off Brock's own chip and walks him down; sustained frontline pressure Brock can't kite forever on a closed lane.",
-      KAZE: "Fast, slippery aggressor that closes the gap and deletes a stationary marksman before the single-shot can track her.",
-      MELODIE: "Repeated dashes Brock's one rocket at a time can't track — she's on top of him before the reload, and there's no falloff to save him up close.",
-      SURGE: "Snowballs past Brock's range with his upgrades and jumps the wall to reach him; once Surge is charged, Brock's spacing stops mattering.",
-      STU: "Dashes on every attack — closes and resets faster than Brock can zone, and ignores the reload window Brock relies on.",
-      "8-BIT": "A mirror at longer effective range with a damage booster; in a straight poke war 8-Bit out-values Brock and never has to approach.",
-      DAMIAN: "A mobile tank that reaches the backline — Brock's cover comes down and the dive lands before he can reposition.",
-    },
-
     // Owner-supplied map clips. `mapVideos` are keyed by canonical DB map name
     // and show only on that map; `modeVideos` are keyed by mode and show on
     // EVERY map in it (the Brawl Ball goal tricks are general technique, not
@@ -409,19 +396,6 @@ const GUIDES = {
     // brawler_intelligence.with_brawler and ranks it. These are only the
     // hand-written reasons for the teammates that tend to top that list; any
     // teammate without one falls back to a class-derived line.
-    synergyReasons: {
-      BOLT: "A tank frontline that also slows and stuns — Bolt holds the aggro and the space so Brock is never the closest target, then locks down whoever tries to close in.",
-      SPROUT: "Two zoners stacking walls and chip. Sprout's hedge splits the map into lanes Brock already dominates, and neither of them wants to be approached.",
-      PEARL: "Pearl punishes exactly the divers that punish Brock — hand her the frontline duel and poke over the top while the assassin is busy.",
-      DAMIAN: "A tank frontline means Brock is never the closest target — the single condition his whole kit depends on.",
-      "8-BIT": "Two immobile long-range carries, but 8-Bit's damage booster turns Brock's already-safe poke into lethal chip from range nobody can close.",
-      SURGE: "Surge takes the flanks and snowballs while Brock owns the lane — his mobility covers the one thing Brock can't, the enemy who gets in.",
-      "STARR NOVA": "Starr Nova's zoning and Brock's wall-breaking split the map from both sides, leaving the enemy nowhere to hold.",
-      GENE: "Gene's pull drags enemies out of cover into the open, which is exactly the geometry Brock's splash wants.",
-      BYRON: "Heals and damage amp stack with Brock's range — safe chip turns into a two-person siege the enemy can't approach without eating both.",
-      POCO: "Passive area healing keeps Brock topped up while he holds max range, letting him contest a lane far longer than his health alone allows.",
-    },
-
     counterTips: [
       {
         lead: "Close the gap fast or not at all.",
@@ -513,7 +487,7 @@ const GUIDES = {
 
     guideTabs: [
       {
-        key: "aim", label: "Aim",
+        key: "aim", label: "Main Attack",
         intro: "Crow fires three daggers in a spread. Almost everything about aiming him comes down to landing more than one dagger per shot — that single habit roughly doubles your damage.",
         tips: [
           {
@@ -557,7 +531,7 @@ const GUIDES = {
           { header: "Gadget 2 · Slowing Toxin" },
           {
             lead: "Reset your reload with it.",
-            rest: "Shoot, tap the gadget, shoot again — the kunai's poison is a separate instance from your attack poison, so the two stack. That chain is 4,520 damage.",
+            rest: "Shoot, tap Gadget 2, shoot again — the kunai's poison is a separate instance from your attack poison, so the two stack. That chain is 3,720 damage.",
             videos: [{ src: "gadget2-shot-reset", label: "Gadget 2 shot reset" }],
           },
           {
@@ -567,7 +541,7 @@ const GUIDES = {
           },
           {
             lead: "Bait the dive with it.",
-            rest: "At low health, sit at the distance that tempts an aggro brawler to commit. When they do, back off while shooting — that's an instant 4,520 minimum on someone who can no longer disengage.",
+            rest: "At low health, sit at the distance that tempts an aggro brawler to commit. When they do, back off while shooting — that's an instant 3,720 minimum on someone who can no longer disengage.",
             videos: [{ src: "gadget2-defensive", label: "Gadget 2 as a defensive tool" }],
           },
         ],
@@ -700,18 +674,6 @@ const GUIDES = {
       "Flaring Phoenix": "Weak, and the most open Knockout map of the four. Crow has no way to close and no way to hide — this is the clearest 'do not pick' on his list.",
     },
 
-    synergyReasons: {
-      POCO: "Sustain behind a brawler whose whole plan is surviving long enough for poison to finish the job.",
-      BYRON: "Byron's amp turns Crow's chip into real damage, and the heal keeps him at the health where he wants to dive.",
-      GENE: "Gene drags a target out of position and Crow's spread punishes them wherever they land.",
-    },
-
-    counterReasons: {
-      PIPER: "Out-ranges Crow outright and can leave the moment he commits — the matchup he least wants to see.",
-      BELLE: "Long range plus a mark that follows him; Crow has to cross open ground to answer and rarely survives it.",
-      "8-BIT": "Out-ranges and out-damages him from a position Crow can't dive profitably.",
-    },
-
     counterTips: [
       {
         lead: "Out-range him.",
@@ -747,7 +709,7 @@ const GUIDES = {
       { label: "Damage / Shot", value: 2360, scaled: true, tag: "Splits in two on contact" },
       { label: "Wall Shot · To The Max", tpl: "{0} – {1}", parts: [3540, 4720], scaled: true, tag: "One or both splits return" },
       { label: "Super Damage", value: 2000, scaled: true, tag: "Party Tricks" },
-      { label: "Shots to Super", value: 3, tag: "2 if the Super hit two enemies" },
+      { label: "Shots to Super", value: 3, tag: "2 if the Super hits two enemies" },
       { label: "Ammo", value: 3 },
       { label: "Attack Range", value: "Normal", tag: "Longer from Stage 2" },
       { label: "Super Range", value: "Short" },
@@ -1851,6 +1813,252 @@ const GUIDES = {
       {
         lead: "Punish the spread.",
         rest: "His beams fan out with distance, so at long range only part of the volley lands. Fighting him at maximum range is far safer than the middle band where the full 4,080 connects — either be very far away, or be on top of him.",
+      },
+    ],
+  },
+
+  MAX: {
+    // Power-11 figures read straight off the in-game Brawler Stats card. The
+    // attack is a 4-projectile burst, so the headline is the full volley
+    // (4 x 640 = 2,560) with the per-shot figure as its tag.
+    combatStats: [
+      { label: "Max Health", value: 7000, scaled: true, tagTpl: "+{0} → {1} with Shield Gear", tagParts: [900, 7900] },
+      { label: "Damage / Volley", tpl: "{0}", parts: [2560], scaled: true, tagTpl: "4 shots × {0}", tagParts: [640] },
+      { label: "Attack Range", value: "Long" },
+      { label: "Reload Speed", value: "Very Fast", tag: "Holds a lot of rounds" },
+      { label: "Movement Speed", value: "Very Fast", tag: "Faster again while landing shots" },
+      { label: "Super Duration", value: "4s", tag: "Speed boost for Max and nearby allies" },
+      { label: "Subclass", value: "Support" },
+    ],
+
+    // Like 8-Bit, Max genuinely changes loadout by mode — Hot Zone is the one
+    // place Sneaky Sneakers is unambiguously the better gadget.
+    builds: {
+      General: {
+        starPower: "Run N Gun",
+        gadget: "Phase Shifter",
+        gears: ["Shield", "Health"],
+        note: "Phase Shifter and Run N Gun as the default. Every gadget and star power is playable on Max, but Run N Gun is the one you take unless you have a specific reason not to — Super Charged is a preference pick in Bounty and Knockout rather than an upgrade.",
+        gearNote: "Shield and Health in every build. Health Gear is the one that matters day to day: it gets you back to full quickly so a support brawler this mobile never has to leave the fight to recover.",
+      },
+      brawlBall: {
+        starPower: "Run N Gun", gadget: "Phase Shifter", gears: ["Shield", "Health"],
+        note: "Phase Shifter, for the goal tricks. The gadget plus your own speed boost is the fastest route from midfield to the back of their net — both variants are in the Gadget tab.",
+        gearNote: "Shield and Health, always.",
+      },
+      hotZone: {
+        starPower: "Run N Gun", gadget: "Sneaky Sneakers", gears: ["Shield", "Health"],
+        note: "The one mode where Sneaky Sneakers is unanimously the better gadget. Blink in, make them empty their ammo at you, and blink back out — you have taken the position and cost them the exchange without spending health.",
+        gearNote: "Shield and Health, always.",
+      },
+      heist: {
+        starPower: "Run N Gun", gadget: "Sneaky Sneakers", gears: ["Shield", "Health"],
+        note: "Sneaky Sneakers here too. The blink gets you onto the safe and back out again, which is worth more than the dodge when there is no sniper to close down.",
+        gearNote: "Shield and Health, always.",
+      },
+      bounty: {
+        starPower: "Run N Gun", gadget: "Phase Shifter", gears: ["Shield", "Health"],
+        note: "Phase Shifter, because staying alive is the whole mode and this is what closes the gap on their sniper. Super Charged is a legitimate preference here if you like the extra Super uptime — most players are still better off with Run N Gun.",
+        gearNote: "Shield and Health, always.",
+      },
+      knockout: {
+        starPower: "Run N Gun", gadget: "Phase Shifter", gears: ["Shield", "Health"],
+        note: "Same as Bounty. One life means the dodge matters more than anything else, and Phase Shifter is how you both survive a committed shot and punish the brawler who fired it.",
+        gearNote: "Shield and Health, always.",
+      },
+      gemGrab: {
+        starPower: "Run N Gun", gadget: "Phase Shifter", gears: ["Shield", "Health"],
+        note: "Phase Shifter. You are the fastest brawler on the map — the speed boost gets the carrier out and the gadget gets you in, whichever the situation needs.",
+        gearNote: "Shield and Health, always.",
+      },
+    },
+
+    abilityNotes: {
+      "Run N Gun": { pick: "main", body: "Reloads while running. It is the default in every mode, because it removes the one moment Max is genuinely vulnerable — the pause where a fast, squishy brawler would otherwise have to stand still." },
+      "Super Charged": { pick: "situational", body: "Charges the Super faster. Perfectly viable, and some players prefer it in Bounty and Knockout for the extra uptime on the team speed boost. It just does not fix anything, which is why Run N Gun is the general pick." },
+      "Phase Shifter": { pick: "main", body: "A short dash that makes Max briefly untargetable. Two jobs: closing on snipers to confirm a kill, and eating a committed attack outright — a Tick Super, a Mandy Super, a Piper gadget. The default gadget in five of six modes." },
+      "Sneaky Sneakers": { pick: "situational", body: "Blink out and back. Narrow but genuinely the better pick in Hot Zone and Heist, where the job is taking a position and baiting ammo rather than chasing a sniper. It is also immune to freezes, which most people do not know." },
+    },
+
+    videoBase: "/guides/max",
+
+    guideTabs: [
+      {
+        key: "main-attack", label: "Main Attack",
+        intro: "Max is a support brawler who wins by being somewhere the enemy's aim is not. It starts with how you shoot.",
+        tips: [
+          {
+            lead: "Run parallel to your target, never straight at it.",
+            rest: "Watch which way they are moving and move WITH them while you fire. You dodge their shots because you are crossing their aim instead of walking into it, and you land yours because the angle stays constant. And because Max moves faster while landing shots, spamming the attack is itself a movement tool — hold the trigger down.",
+            videos: [{ src: "main-attack-parallel", label: "Moving parallel while shooting", kind: "do" }],
+          },
+          {
+            lead: "Shooting is how you go fast.",
+            rest: "The speed bonus for landing shots is the part people leave on the table. Max at full tilt with the attack flowing is faster than almost anything chasing her, so there is very little reason to ever stop firing — even chip damage into a wall of enemies is buying you movement.",
+          },
+        ],
+      },
+      {
+        key: "gadget", label: "Gadget",
+        tips: [
+          { header: "Gadget 1 · Phase Shifter" },
+          {
+            lead: "Close the gap on snipers.",
+            rest: "The biggest use by far. A sniper's whole game is the distance between you — Phase Shifter deletes it, and Max's damage up close is more than enough to finish what she started.",
+            videos: [{ src: "gadget1-close-snipers", label: "Closing on a sniper to confirm the kill", kind: "do" }],
+          },
+          {
+            lead: "Dodge sideways first to throw off the aim.",
+            rest: "Do not dash in a straight line at them. A sideways dodge before you commit makes their lead wrong, and then the gap-close arrives from an angle they were not tracking.",
+            videos: [{ src: "gadget1-sideways-dodge", label: "Sideways dodge, then close" }],
+          },
+          {
+            lead: "Or eat a Super outright.",
+            rest: "The other big use: you are briefly untargetable, so a committed attack simply passes through you. A Tick Super is the classic — same for a Mandy Super, a Piper gadget, and anything else that arrives as one big committed hit.",
+            videos: [{ src: "gadget1-tank-damage", label: "Phasing through a Tick Super", kind: "do" }],
+          },
+          { header: "Gadget 2 · Sneaky Sneakers" },
+          {
+            lead: "It works even when you are frozen.",
+            rest: "There is a widespread myth that being frozen stops the blink back. It does not — you will still be frozen when you arrive, but you WILL arrive. Worth knowing before you write the gadget off against a freeze comp.",
+            videos: [{ src: "gadget2-blink-frozen", label: "Blinking back while frozen", kind: "do" }],
+          },
+          {
+            lead: "Use it to bait ammo and take position.",
+            rest: "This is the Hot Zone and Heist pattern: blink in, make them dump their ammo at a target that is about to disappear, blink out. You have taken the ground and spent none of your health for it.",
+          },
+        ],
+      },
+      {
+        key: "super", label: "Super & Star Power",
+        intro: "The Super is a team speed boost, and the most commonly misplayed part of Max — mostly because people think their teammates have to be standing on top of them.",
+        tips: [
+          { header: "Super · Let's Go!" },
+          {
+            lead: "Teammates do not have to be inside it when you cast.",
+            rest: "This is the misconception worth unlearning. Activate the Super and anyone who TOUCHES the circle picks up the boost — so you can cast it early, from a position you can see them from, and they collect it as they rotate through. You do not need to group up first.",
+            videos: [{ src: "super-activation-range", label: "Teammates collect the boost by touching the circle", kind: "do" }],
+          },
+          {
+            lead: "It is also a gap-closer when the gadget is down.",
+            rest: "If Phase Shifter is on cooldown, the Super does the same job more slowly: boost yourself into the sniper rather than waiting for the gadget. Losing the team utility is worth it when the alternative is losing the fight.",
+            videos: [{ src: "super-close-snipers", label: "Using the Super to close instead" }],
+          },
+          { header: "Star Power 2 · Run N Gun" },
+          {
+            lead: "The default, in every mode.",
+            rest: "Reloading while running removes the only moment Max has to stand still. On a brawler whose entire defence is movement, that is not a bonus — it is the thing that makes the defence work.",
+          },
+          { header: "Star Power 1 · Super Charged" },
+          {
+            lead: "A preference pick, not an upgrade.",
+            rest: "Faster Super charge is real value, and some players like it in Bounty and Knockout for the extra uptime on the team boost. It just does not solve a problem the way Run N Gun does, so treat it as playstyle rather than a matchup answer.",
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "Max's hypercharge is the most team-dependent hyper in the game — used properly it charges your whole team's Supers, and used carelessly it charges almost nothing.",
+        tips: [
+          {
+            lead: "Everyone stands in one spot. This is the whole trick.",
+            rest: "The hyper throws out bottles that charge your Super and your teammates' Supers and hypers. Each bottle is worth 25% of a Super, so a teammate who absorbs three gets 75% — but only if they are standing where the bottles land. Spread out, and each of you collects one. Compare the two clips below: identical hyper, completely different payoff.",
+            videos: [
+              { src: "hyper-wrong-use", label: "Spread out — most of the value wasted", kind: "dont" },
+              { src: "hyper-stacking-pov-max", label: "Stacked up, from Max's point of view", kind: "do" },
+              { src: "hyper-stacking-pov-teammate", label: "The same play from the teammate's side", kind: "do" },
+            ],
+            block: {
+              title: "Bottles absorbed",
+              rows: [
+                { label: "1 bottle", value: "25%", extra: "of a Super" },
+                { label: "2 bottles", value: "50%" },
+                { label: "3 bottles", value: "75%" },
+              ],
+            },
+          },
+          {
+            lead: "Your main attack charges them too.",
+            rest: "While the hyper is active, the shots you land also feed your teammates' Supers. So do not stop shooting to babysit the bottles — the attack is part of the same engine.",
+            videos: [{ src: "hyper-main-attack-farming", label: "Landing shots charges teammates' Supers" }],
+          },
+          {
+            lead: "Hyper plus Super makes you nearly untouchable.",
+            rest: "Stack the hypercharge with your own speed boost and the dodging gets absurd. This is the window to walk into places you have no business being.",
+            videos: [{ src: "hyper-dodge", label: "Dodging with hyper and Super together" }],
+          },
+        ],
+      },
+      {
+        key: "gameplay", label: "Gameplay",
+        intro: "Everything above, in one clip — plus the single most useful matchup trick Max has.",
+        tips: [
+          {
+            lead: "Watch all of it come together.",
+            rest: "Parallel movement, the gadget used both to close and to dodge, the Super cast for the team rather than for herself. This is what a full Max round looks like when the habits are in place.",
+            videos: [{ src: "gameplay-full", label: "Full round — every tip in one clip" }],
+          },
+          {
+            lead: "Stand in Tick's own firing line to dodge him.",
+            rest: "You will meet Tick in Bounty and Knockout, and this is close to a free answer. When he shoots, he telegraphs a dark path — stand exactly ON that path and all three of his bombs miss you. It feels completely wrong and it works every time.",
+            videos: [
+              { image: "tick-dodge-path.jpg", label: "The path to stand in" },
+              { src: "tick-dodge-1", label: "Dodging Tick by standing in the line", kind: "do" },
+              { src: "tick-dodge-2", label: "The same dodge again" },
+            ],
+          },
+          {
+            lead: "You are support — the boost is the job.",
+            rest: "It is easy to play Max as a fast damage dealer and forget the Super exists for the other two. A boost that gets your tank into position or your carrier out is worth more than the kill you were lining up.",
+          },
+        ],
+      },
+    ],
+
+    modeNotes: {
+      hotZone: "The one mode built for Sneaky Sneakers. Blink in, drain their ammo, blink out — you take the circle without paying health for it, and your speed boost keeps the whole team rotating faster than they can answer.",
+      brawlBall: "Very strong, and the goal tricks in the Gadget tab are the reason. Phase Shifter plus your own boost is the quickest route from midfield to the back of their net, and the team speed makes every counter-attack land before they have reset.",
+      heist: "Sneaky Sneakers again. Blink onto the safe, hit it, blink out before the defence collapses on you — and boost the rest of your team in for the same window.",
+      gemGrab: "Solid. You are not the carrier; you are the reason the carrier survives. Keep the Super for the moment they get jumped rather than spending it to rotate.",
+      bounty: "Playable and entirely about not dying. Phase Shifter is what closes on their sniper and what eats the shot that was meant to end your round.",
+      knockout: "Same as Bounty, with less margin. One life means the gadget is your whole defence — hold it for a committed attack rather than spending it to chase a kill.",
+    },
+
+    // Brawl Ball technique applies on every map in the mode. (The owner's notes
+    // said "gem grab" here, but all three clips are Brawl Ball goal tricks —
+    // filed by what they actually show.)
+    modeVideos: {
+      brawlBall: [
+        { src: "mode-brawlball-gadget1-speed-goal", label: "Gadget 1 + speed boost goal" },
+        { src: "mode-brawlball-gadget1-goal", label: "Gadget 1 goal trick" },
+        { src: "mode-brawlball-gadget2-goal", label: "Gadget 2 situational goal" },
+      ],
+    },
+
+    modeVideoNotes: {
+      brawlBall: "The two Phase Shifter goals are the ones to drill — gadget plus your own speed boost is the fastest way anyone scores from midfield. The third is there for the rare game where you took Sneaky Sneakers anyway. Full breakdown in the Gadget tab.",
+    },
+
+    counterTips: [
+      {
+        lead: "Do not commit a big attack at her.",
+        rest: "Phase Shifter makes Max briefly untargetable, and she will use it on exactly the thing you spent — a Tick Super, a Mandy Super, a Piper gadget. Fire the committed shot after the gadget is gone, not before.",
+      },
+      {
+        lead: "Fight her at range, not in a chase.",
+        rest: "She is one of the fastest brawlers in the game and gets faster while landing shots, so you will never catch her and she will always catch you. Hold a long angle and make her come to you.",
+      },
+      {
+        lead: "Kill her first in a team fight.",
+        rest: "The speed boost is a team-wide effect and the hypercharge feeds everyone's Supers. Max alive is a multiplier on the other two — she is a higher-priority target than her own damage suggests.",
+      },
+      {
+        lead: "Punish the 7,000 health.",
+        rest: "For all the mobility she is squishy. Anything that reaches her wins immediately, so an assassin with a dash beats her whenever the gadget is down — track that cooldown and go the moment it is spent.",
+      },
+      {
+        lead: "Group carefully against the hyper.",
+        rest: "Her hypercharge pays out most when your team is stacked, but the bottles charge HER team. Once you see it come out, avoid clumping in the area she is throwing into.",
       },
     ],
   },

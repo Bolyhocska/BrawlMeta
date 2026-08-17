@@ -1318,23 +1318,25 @@ export default function BrawlerGuidePage({
             subtitle={`Live ${bracketShort} pair data — min 300 games, best teammates and worst opponents`}
             open={isOpen("matchups")} onToggle={() => toggleSection("matchups")}
           >
+            {/* No per-brawler reason line. The panel heading already says what
+                the list is, and the name + win rate + game count say the rest —
+                a sentence under every row restating "this is a good teammate"
+                six times was noise. The ONE thing worth a note is the genuinely
+                surprising case: a brawler that is both a top teammate and a top
+                opponent, which reads as a contradiction unless it's called out. */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {liveSynergies?.length > 0 && (
                 <MatchupPanel
                   eyebrow="SYNERGIES · GOOD WITH" accent="#8ee6b0"
                   rows={liveSynergies} bothSides={bothSides}
-                  bothNote={`Also one of ${brawler.name}'s worst opponents — strong alongside, painful across the net.`}
-                  reasonFor={s => guide?.synergyReasons?.[s.key]
-                    || `${classLabel(draftClassOf(s.key))} — one of the highest win rates alongside ${brawler.name} in the data.`}
+                  bothNote="Also one of their worst opponents — strong alongside, painful across the net."
                 />
               )}
               {liveCounters?.length > 0 && (
                 <MatchupPanel
                   eyebrow="COUNTERS · WORST AGAINST" accent="#ff8f8f"
                   rows={liveCounters} bothSides={bothSides}
-                  bothNote={`Also one of ${brawler.name}'s best teammates — the same strengths cut both ways.`}
-                  reasonFor={s => guide?.counterReasons?.[s.key]
-                    || `${classLabel(draftClassOf(s.key))} — one of the lowest win rates against ${brawler.name} in the data.`}
+                  bothNote="Also one of their best teammates — the same strengths cut both ways."
                 />
               )}
             </div>
@@ -1370,7 +1372,7 @@ export default function BrawlerGuidePage({
 // One half of the Match-ups section — a titled grid of brawler rows with the
 // live win rate + game count and a reason line. Used for both Synergies
 // (best teammates) and Counters (worst opponents).
-function MatchupPanel({ eyebrow, accent, rows, reasonFor, bothSides, bothNote }) {
+function MatchupPanel({ eyebrow, accent, rows, bothSides, bothNote }) {
   // Sub-panel inside a Section card — tinted to its accent rather than reusing
   // CARD, so it reads as nested content instead of a second identical box.
   return (
@@ -1393,9 +1395,8 @@ function MatchupPanel({ eyebrow, accent, rows, reasonFor, bothSides, bothNote })
                   <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: accent }}>{s.winRate}%</span>
                   <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
                 </div>
-                <div style={{ fontSize: 13, lineHeight: 1.5, color: "#9a9aab", marginTop: 3 }}>{reasonFor(s)}</div>
                 {bothSides?.has(s.key) && bothNote && (
-                  <div style={{ fontSize: 12, lineHeight: 1.45, color: "#8b8b9c", marginTop: 5, fontStyle: "italic" }}>
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: "#8b8b9c", marginTop: 4, fontStyle: "italic" }}>
                     ↔ {bothNote}
                   </div>
                 )}
