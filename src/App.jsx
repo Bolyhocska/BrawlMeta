@@ -687,7 +687,7 @@ function BrawlerGuideRoute() {
     if (live) return live;
     return {
       key: brawlerKey,
-      name: brawlerKey.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      name: brawlerKey.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1)),
       picks: 0, wins: 0, winRate: null, pickRate: null, stars: null,
       imageUrl: meta.imageUrl || null,
       rarity: meta.rarity || "Common",

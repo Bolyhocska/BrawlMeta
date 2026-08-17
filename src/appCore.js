@@ -13,7 +13,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 export const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
   id: i + 1,
   key,
-  name: key.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+  name: key.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1)),
   role: meta.class || "Fighter",
   color: meta.rarityColor || "#94a3b8",
   rarity: meta.rarity || "Common",

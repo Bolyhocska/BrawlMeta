@@ -163,7 +163,7 @@ const GUIDES = {
     // A tab-level `intro` renders above the first tip.
     guideTabs: [
       {
-        key: "aim", label: "Aim",
+        key: "aim", label: "Main Attack",
         tips: [
           {
             lead: "Lead the target, don't chase it.",
@@ -1614,6 +1614,243 @@ const GUIDES = {
       {
         lead: "Respect the long one.",
         rest: "If a Shade knows the reset trick, the range on the hug is not what you measured a second ago — and it can come three times off one gadget. When you see the long-range version once, stop trusting your spacing and back up further than feels necessary.",
+      },
+    ],
+  },
+
+  "8-BIT": {
+    // Power-11 figures read straight off the in-game Brawler Stats card. The
+    // attack is a 6-beam burst, so the headline is the FULL volley (6 x 680 =
+    // 4,080) with the per-beam figure beside it — quoting 680 alone would read
+    // as a very weak attack, and quoting 4,080 alone hides that the spread
+    // means you rarely land all six.
+    combatStats: [
+      { label: "Max Health", value: 10400, scaled: true, tagTpl: "+{0} → {1} with Shield Gear", tagParts: [900, 11300] },
+      { label: "Damage / Volley", tpl: "{0}", parts: [4080], scaled: true, tagTpl: "6 beams × {0}", tagParts: [680] },
+      { label: "Attack Range", value: "Very Long", tag: "Beams spread as they travel" },
+      { label: "Reload Speed", value: "Very Fast" },
+      { label: "Movement Speed", value: "Very Slow", tag: "Faster near the turret with Plugged In" },
+      { label: "Turret Health", value: 5600, scaled: true, tag: "Damage Booster" },
+      { label: "Damage Boost", value: "35%", tag: "To every friendly in range" },
+      { label: "Subclass", value: "Damage Dealer" },
+    ],
+
+    // Unusually for these guides, 8-Bit genuinely changes loadout by mode —
+    // every gadget and star power is viable, which is why the mode tabs matter
+    // here more than on any other brawler in the pool.
+    builds: {
+      General: {
+        starPower: "Plugged In",
+        gadget: "Extra Credits",
+        gears: ["Shield", "Health"],
+        note: "Extra Credits and Plugged In as the default. Unusually for a brawler this popular, every gadget and star power is genuinely viable — the real rule is Boosted Booster against tanks and space makers, Plugged In against snipers and control, and the mode tabs above spell out which each mode wants.",
+        gearNote: "Shield and Health in every single build, no exceptions. You are the slowest brawler on the map with the biggest health bar, so the gear that matters is the gear that keeps that health bar full without walking you out of position.",
+      },
+      hotZone: {
+        starPower: "Boosted Booster", gadget: "Extra Credits", gears: ["Shield", "Health"],
+        note: "Boosted Booster here. The enemy has to come to you to contest the zone, so a bigger, stronger booster field is worth more than your own movement — you are not going anywhere anyway.",
+        gearNote: "Shield and Health, always.",
+      },
+      brawlBall: {
+        starPower: "Boosted Booster", gadget: "Extra Credits", gears: ["Shield", "Health"],
+        note: "Boosted Booster, same reasoning as Hot Zone: the ball drags enemies into your range, so widen the buff field and let your team fight inside it.",
+        gearNote: "Shield and Health, always.",
+      },
+      heist: {
+        starPower: "Boosted Booster", gadget: "Extra Credits", gears: ["Shield", "Health"],
+        note: "Boosted Booster is the preference, though this is the one mode where the matchup can genuinely argue for either. A wider booster field over the safe multiplies your whole team's damage on the push.",
+        gearNote: "Shield and Health, always.",
+      },
+      bounty: {
+        starPower: "Plugged In", gadget: "Extra Credits", gears: ["Shield", "Health"],
+        note: "Plugged In. Staying alive is the entire mode, and the movement speed near your turret is what lets the slowest brawler in the game reposition at all.",
+        gearNote: "Shield and Health, always.",
+      },
+      knockout: {
+        starPower: "Plugged In", gadget: "Extra Credits", gears: ["Shield", "Health"],
+        note: "Plugged In, for the same reason as Bounty — no respawns means the speed boost is not a convenience, it is the difference between rotating and dying where you stand.",
+        gearNote: "Shield and Health, always.",
+      },
+      gemGrab: {
+        starPower: "Plugged In", gadget: "Cheat Cartridge", gears: ["Shield", "Health"],
+        note: "The one mode that wants Cheat Cartridge. You are the gem carrier, and a teleport straight back to your turret is both how you collect gems aggressively and how you survive carrying them. See the Gadget tab for the full pattern.",
+        gearNote: "Shield and Health, always.",
+      },
+    },
+
+    abilityNotes: {
+      "Boosted Booster": { pick: "main", body: "Widens the Damage Booster's field and adds more damage on top. The pick whenever the enemy has to come to you — Hot Zone, Brawl Ball, Heist — and generally the answer to tanks and space makers, who have to walk into the field to reach you anyway." },
+      "Plugged In": { pick: "main", body: "Movement speed while near your own booster. On the slowest brawler in the game that is not a small bonus, it is mobility you otherwise do not have. Take it in Bounty, Knockout and Gem Grab, and against snipers and control brawlers who would otherwise pin you in place." },
+      "Cheat Cartridge": { pick: "situational", body: "Instant teleport to your turret. Narrow but genuinely powerful: it is the Gem Grab pick, because it turns an aggressive gem collection into a safe one, and it doubles as a dodge for enemy Supers. Mind the short delay after the port." },
+      "Extra Credits": { pick: "main", body: "Loads the next attack with extra projectiles. The default gadget in five of six modes — it is burst on demand, and the timing trick in the Gadget tab lets you fire it straight after a normal volley so the two arrive almost together." },
+    },
+
+    videoBase: "/guides/8-bit",
+
+    guideTabs: [
+      {
+        key: "main-attack", label: "Main Attack",
+        intro: "8-Bit has the longest reach in the game attached to the slowest body. Everything starts with learning to shoot while moving — because standing still to aim is how a brawler this slow dies.",
+        tips: [
+          {
+            lead: "Run parallel to your target, never straight at it.",
+            rest: "Watch which way the enemy is moving and move WITH them, sideways, while you fire. Two things happen at once: their shots miss because you are crossing their aim rather than walking into it, and yours land because you are holding a constant angle instead of chasing one. Walking directly at someone is the single most common way to waste 8-Bit's range advantage.",
+            videos: [{ src: "main-attack-parallel", label: "Moving parallel while shooting", kind: "do" }],
+          },
+          {
+            lead: "The beams spread — distance costs you damage.",
+            rest: "A volley is six separate beams that fan out as they travel, so the full 4,080 only lands close in. At maximum range you are chipping with a fraction of it. That is fine when you are zoning, but do not expect a kill from across the map just because the shot connects.",
+          },
+        ],
+      },
+      {
+        key: "gadget", label: "Gadget",
+        tips: [
+          { header: "Gadget 1 · Cheat Cartridge" },
+          {
+            lead: "It is a Gem Grab tool first.",
+            rest: "Place the turret somewhere safe, then play far more aggressively than a brawler this slow has any right to. When the gem spawns on their side, walk up, apply pressure, take the gem — and port home before the punish arrives. This is the whole reason Cheat Cartridge is the Gem Grab pick.",
+            videos: [
+              { src: "gemgrab-gadget1-collect", label: "Pro gameplay — collecting under pressure, then porting out", kind: "do" },
+              { src: "gemgrab-gadget1-retrieve", label: "Retrieving a contested gem the same way" },
+            ],
+            note: "The first clip is pro footage from the NA 2026 August Monthly Finals semi-finals — worth watching for how early the port is decided, not just how it ends.",
+          },
+          {
+            lead: "It also dodges Supers.",
+            rest: "A teleport is a teleport. If an enemy commits a Super at you and your turret is alive somewhere safe, you can simply leave — the animation they spent is gone and you are across the map.",
+            videos: [{ src: "gadget1-dodge-ults", label: "Porting out of an enemy Super", kind: "do" }],
+          },
+          {
+            lead: "And it surprises people.",
+            rest: "Nobody expects the slowest brawler in the game to appear behind them. A port into an unattended flank turns 8-Bit into a brawler with an engage, briefly.",
+            videos: [{ src: "gadget1-surprise", label: "Porting in to catch them out" }],
+          },
+          {
+            lead: "Watch the turret and mind the delay.",
+            rest: "Two things get people killed here: porting to a turret that is about to die or is already surrounded, and forgetting the short pause after you land. Always know where your turret is and what is standing near it before you press it.",
+          },
+          { header: "Gadget 2 · Extra Credits" },
+          {
+            lead: "Fire it immediately after a normal volley.",
+            rest: "Pressing the gadget mid-attack skips the gap between shots. Land your main attack and fire the gadget straight at them — done properly the two arrive so close together that they cannot dodge the second after reacting to the first.",
+            videos: [{ src: "gadget2-faster-shooting", label: "Skipping the gap between shots", kind: "do" }],
+          },
+          {
+            lead: "Keep moving sideways while it lands.",
+            rest: "Same rule as the main attack: adjust the gadget shot by moving your body parallel to them rather than re-aiming from a standstill. Watch this clip for the timing skip as well — both techniques are in it at once.",
+            videos: [{ src: "gadget2-adjusting-aim", label: "Adjusting aim with your body, plus the timing skip" }],
+          },
+        ],
+      },
+      {
+        key: "super", label: "Super & Star Power",
+        intro: "The Damage Booster is the reason your team wants you. Where you put it decides how much of the map your team can fight on — and a turret in the wrong lane is worse than no turret, because it dies and gives them a free Super.",
+        tips: [
+          { header: "Super · Damage Booster" },
+          {
+            lead: "Place it in the lane you already control.",
+            rest: "Behind a wall, most of the time — but the wall matters less than the lane. Put the turret where your team already holds ground, not where you wish it did. In the picture below, placing it on the right would have been the mistake: the enemy can walk out of that bush and break it for free.",
+            videos: [{ image: "turret-placement-lanes.jpg", label: "Right lane vs wrong lane — control decides, not cover" }],
+          },
+          {
+            lead: "Read their comp before you place.",
+            rest: "Against aggro brawlers, put the turret in the open where you can see them coming and shoot them off it. Against ranged brawlers, tuck it beside a wall so they cannot chip it down from safety. Getting this backwards is how the turret dies for nothing.",
+          },
+          { header: "Star Power 1 · Boosted Booster" },
+          {
+            lead: "Take it when they have to come to you.",
+            rest: "A bigger, stronger field is worth most in Hot Zone, Brawl Ball and Heist, where the objective drags enemies into your range regardless. It is also the general answer to tanks and space makers, who cannot threaten you without walking through the buffed ground.",
+          },
+          { header: "Star Power 2 · Plugged In" },
+          {
+            lead: "Take it when you need to move at all.",
+            rest: "8-Bit is the slowest brawler in the game, so speed near your own turret is not a luxury. Bounty, Knockout and Gem Grab all want it, and so does any draft with snipers or control brawlers who would otherwise pin you in one spot and whittle you down.",
+          },
+        ],
+      },
+      {
+        key: "hyper", label: "Hyper",
+        intro: "The hypercharge turns turret placement from a defensive decision into an offensive one.",
+        tips: [
+          {
+            lead: "Place it behind THEIR walls to squeeze throwers out.",
+            rest: "A hyper turret dropped behind the enemy's own cover pinches out whoever is hiding there — throwers especially, who rely on that wall existing — while you laser down anyone who steps out to deal with it. It attacks the one position your beams cannot reach.",
+            videos: [{ src: "hyper-aggressive-turret", label: "Aggressive placement behind their cover", kind: "do" }],
+          },
+          {
+            lead: "Same placement rule, higher stakes.",
+            rest: "Aggro comp: put it in the open where you can defend it. Ranged comp: put it against a wall so they cannot break it from range. The hyper does not change the rule, it just makes getting it wrong more expensive.",
+          },
+        ],
+      },
+      {
+        key: "gameplay", label: "Gameplay",
+        intro: "A 10,400 health bar and the longest range in the game, on a body that cannot run away. Everything below is about never needing to.",
+        tips: [
+          {
+            lead: "Position for the whole fight, not the next second.",
+            rest: "You cannot reposition mid-fight the way other brawlers can, so the decision that matters is where you stand before it starts. Pick a spot with a wall at your back, your turret in the lane you hold, and a sightline down the ground the enemy has to cross.",
+          },
+          {
+            lead: "Your health bar is a resource, not a safety net.",
+            rest: "Big health on a slow brawler means you survive mistakes, not that you can afford them — you will still be standing there when the second wave arrives. Health Gear exists so you can top back up without giving up the position you spent the whole fight earning.",
+          },
+          {
+            lead: "Never be the closest target.",
+            rest: "Everything that kills 8-Bit is something that got close. Play behind whatever front line your comp has, and treat any assassin with a Super up as a reason to move early rather than a problem to solve when it lands.",
+          },
+          {
+            lead: "The turret is a second objective — for both teams.",
+            rest: "Enemies will go out of their way to break it, which is sometimes exactly what you want: a turret placed in a lane you control pulls them into your sightline to deal with it. Just be honest about whether you can actually punish them for trying.",
+          },
+        ],
+      },
+    ],
+
+    modeNotes: {
+      gemGrab: "The mode that changes his loadout. You are the gem carrier here — Cheat Cartridge is what lets you collect aggressively and get out, and Plugged In is what moves you at all while holding a count. Watch the two clips in the Gadget tab before you try it.",
+      hotZone: "Excellent. The zone forces enemies into your range and holds them still there, which is the ideal situation for a very slow brawler with very long reach. Boosted Booster over the circle multiplies your whole team's contest damage.",
+      brawlBall: "Strong for the same reason as Hot Zone: the ball dictates where the fight happens, so you can set up in advance rather than chase it. Place the turret on the lane the ball is actually travelling down.",
+      heist: "Strong. A booster field over the safe multiplies every teammate hitting it, and your own volley does real damage once you are in range. The hard part is surviving the walk in — go with your team, never before it.",
+      bounty: "Playable, and entirely about not dying. Plugged In for the movement, hold the long sightlines your range gives you, and let the enemy make the first mistake rather than walking out to force one.",
+      knockout: "His hardest mode. No respawns plus the slowest movement in the game means one bad position ends the round. Play the longest angle available, keep the turret close for the speed boost, and rotate early — you cannot rotate late.",
+    },
+
+    // The Gem Grab clips live in the Gadget tab where the technique is taught;
+    // they ride along here too because this is the mode that wants them, with
+    // the note pointing back rather than repeating the lesson.
+    modeVideos: {
+      gemGrab: [
+        { src: "gemgrab-gadget1-collect", label: "Pro gameplay — aggressive collect, then port out" },
+        { src: "gemgrab-gadget1-retrieve", label: "Retrieving a contested gem" },
+      ],
+    },
+
+    modeVideoNotes: {
+      gemGrab: "This is the Cheat Cartridge pattern that makes 8-Bit a gem carrier: place the turret safe, collect aggressively, port home before the punish lands. The full breakdown — including the delay after porting that gets people killed — is in the Gadget tab above.",
+    },
+
+    counterTips: [
+      {
+        lead: "Break the turret, then fight him.",
+        rest: "The Damage Booster is most of his value and, with Plugged In, most of his mobility. Kill it and you are fighting a very slow brawler with no speed boost and a team that just lost 35% of its damage.",
+      },
+      {
+        lead: "Get close — he cannot leave.",
+        rest: "Very Slow movement and no escape means anything that reaches him decides the fight. Assassins, divers and tanks all beat him once the gap is closed; the whole trick is closing it through cover rather than down his sightline.",
+      },
+      {
+        lead: "Do not walk down his lane.",
+        rest: "Very Long range and a fast reload means the open ground in front of 8-Bit is his. Rotate around it. If you must cross, cross while he is reloading or while something else is holding his attention.",
+      },
+      {
+        lead: "Expect the teleport.",
+        rest: "If he is running Cheat Cartridge, committing your Super at him can be spent for nothing — he simply ports to his turret. Break the turret first and the escape disappears with it.",
+      },
+      {
+        lead: "Punish the spread.",
+        rest: "His beams fan out with distance, so at long range only part of the volley lands. Fighting him at maximum range is far safer than the middle band where the full 4,080 connects — either be very far away, or be on top of him.",
       },
     ],
   },

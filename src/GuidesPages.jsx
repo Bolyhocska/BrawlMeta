@@ -831,7 +831,7 @@ export function BrawlerGuidesPage() {
   const brawlers = Object.entries(BRAWLER_META)
     .map(([key, meta]) => ({
       key,
-      name: key.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      name: key.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1)),
       imageUrl: meta.imageUrl, rarity: meta.rarity || "—", rarityColor: meta.rarityColor || "#94a3b8",
     }))
     .filter(b => b.name.toLowerCase().includes(search.toLowerCase()))

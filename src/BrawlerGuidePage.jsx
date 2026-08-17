@@ -1458,12 +1458,17 @@ const GEAR_DESC = {
   Shield: "Damage reduction below 50% health — buys an extra hit of survivability while kiting back.",
   Damage: "Bonus damage below 50% health — punishes anyone who tries to trade back at close range.",
   Vision: "Reveals enemies hiding in bushes nearby — spots the flank before it lines up.",
+  Health: "Heals faster out of combat — gets a slow, high-health brawler back to full without giving up the position.",
+  Reload: "Faster reload below 50% health — keeps damage flowing through the window where you'd normally go quiet.",
 };
 
 // Gear artwork isn't in brawlerMeta.json (the Brawlify payload we sync carries
 // star powers and gadgets only), so gears pull the official icons from the same
 // CDN via GEAR_ICONS. Tints are only used for the card accent border.
-const GEAR_TINT = { Speed: "#7cc4ff", Shield: "#8ee6b0", Damage: "#ff8f8f", Vision: "#ffce7a" };
+const GEAR_TINT = {
+  Speed: "#7cc4ff", Shield: "#8ee6b0", Damage: "#ff8f8f",
+  Vision: "#ffce7a", Health: "#8ee6b0", Reload: "#c98bff",
+};
 
 function GearIcon({ name, size = 20 }) {
   const url = GEAR_ICONS[name];

@@ -198,7 +198,7 @@ const dampPrior = (mult, hasData, damp = 0.5) =>
   mult === 1 || !hasData ? mult : 1 + (mult - 1) * damp;
 
 const fmtName = (key) =>
-  norm(key).toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  norm(key).toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1));
 
 // ── final_sanity_check ───────────────────────────────────────────────────────
 // A legal comp has a mid (objective player), at least one lane anchor for the

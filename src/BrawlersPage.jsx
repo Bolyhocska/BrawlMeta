@@ -44,7 +44,7 @@ const FORMAT_MODE = (mode) => {
 };
 
 const FORMAT_NAME = (name) =>
-  name.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  name.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1));
 
 // Convert win rate (0-100) to 1-7 star rating
 // 50% = 3.5 stars baseline, each ~3% above/below = 1 star

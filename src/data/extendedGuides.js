@@ -108,7 +108,7 @@ export function getExtendedGuide(key) {
   const meta = BRAWLER_META[k] || {};
   const profile = getDraftProfile(k);
   const playbook = CLASS_PLAYBOOK[profile.class] || CLASS_PLAYBOOK.Unknown;
-  const name = k.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const name = k.toLowerCase().replace(/[a-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1));
 
   const draftTiming = profile.firstPickSafety >= 0.75
     ? `${name} is a safe early pick — hard to punish even when the enemy drafts with full knowledge of it. Comfortable as a first pick or blind pick.`
