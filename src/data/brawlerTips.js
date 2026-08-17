@@ -2072,6 +2072,7 @@ const GUIDES = {
 // full badge art, not re-cropped to match the CDN's borderless style.
 const ICON_OVERRIDES = {
   "BROCK::More Rockets": "/icons/star-powers/BROCK_MORE_ROCKETS.png",
+  "8-BIT::Plugged In": "/icons/star-powers/8-BIT_PLUGGED_IN.png",
 };
 export const iconOverride = (brawlerKey, abilityName) =>
   ICON_OVERRIDES[`${norm(brawlerKey)}::${abilityName}`] || null;
