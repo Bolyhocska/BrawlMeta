@@ -40,7 +40,15 @@ def main():
     print("🛰️ Diamond/Mythic scraper: harvesting ranked matches...")
     lookups = LookupCache()
 
-    masters_stored = get_stored_match_count(lookups, "masters_legendary")
+    # patch_name=None on purpose: MASTERS_BASELINE is the size of the retention
+    # WINDOW, and prune_ranked_matches caps that window across all patches. The
+    # gate used to count only CURRENT_PATCH, so it compared a per-patch number
+    # against an all-patch cap — and once Masters hit the cap with any old-patch
+    # rows still inside it, the current-patch count could never reach the
+    # baseline. Diamond/Mythic skipped every run from 2026-07-20 (when windowed
+    # retention shipped) until this was fixed. The failure repeats at every
+    # patch rollover if the counts are ever mismatched again.
+    masters_stored = get_stored_match_count(lookups, "masters_legendary", patch_name=None)
     if masters_stored < MASTERS_BASELINE:
         print(f"Skipping Diamond/Mythic this run — Masters baseline not yet met "
               f"({masters_stored}/{MASTERS_BASELINE}).")

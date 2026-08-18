@@ -202,7 +202,14 @@ def main():
     # Fill to the full 1.5M window baseline first (up to MASTERS_RUN_CAP per
     # run); once met, throttle down to a steady 50k per run — the FIFO window
     # prune then trims each run's surplus back to 1.5M.
-    stored = get_stored_match_count(lookups, BRACKET)
+    # patch_name=None: MASTERS_BASELINE is the size of the retention WINDOW, and
+    # the FIFO prune caps that window across all patches. Counting only
+    # CURRENT_PATCH understated `stored` by however many old-patch rows were
+    # still inside the window, so this branch believed the baseline was unmet
+    # and set target = MASTERS_BASELINE - stored — throttling the scrape to
+    # ~2k matches per run instead of the 50k steady state. That, not spider
+    # saturation, is what cut daily collection ~95% through August 2026.
+    stored = get_stored_match_count(lookups, BRACKET, patch_name=None)
     if stored < MASTERS_BASELINE:
         target = min(MASTERS_BASELINE - stored, MASTERS_RUN_CAP)
         print(f"{BRACKET}: {stored} stored, filling {MASTERS_BASELINE} baseline (target {target} this run).")

@@ -181,13 +181,24 @@ class LookupCache:
         return self._ensure("rank_brackets", self.brackets, name)
 
 def get_stored_match_count(lookups, bracket_name, patch_name=CURRENT_PATCH):
-    """Count of matches already stored for this bracket on the given patch."""
+    """Count of matches already stored for this bracket.
+
+    patch_name=None counts EVERY patch in the bracket, which is what you want
+    when comparing against the retention window: prune_ranked_matches caps the
+    bracket as a whole, so a per-patch count can never reach that cap while any
+    older-patch rows survive inside the window. Comparing the two deadlocked the
+    Diamond/Mythic gate for a month — see diamond_mythic.py.
+    """
     bracket_id = lookups.brackets.get(bracket_name)
-    patch_id = lookups.patches.get(patch_name)
-    if bracket_id is None or patch_id is None:
+    if bracket_id is None:
         return 0  # lookup row doesn't exist yet → nothing stored under it
     url = (f"{SUPABASE_URL}/rest/v1/ranked_matches?select=match_hash"
-           f"&bracket_id=eq.{bracket_id}&patch_id=eq.{patch_id}")
+           f"&bracket_id=eq.{bracket_id}")
+    if patch_name is not None:
+        patch_id = lookups.patches.get(patch_name)
+        if patch_id is None:
+            return 0
+        url += f"&patch_id=eq.{patch_id}"
     headers = {**SUPABASE_HEADERS, "Prefer": "count=exact", "Range": "0-0"}
     res = requests.get(url, headers=headers)
     if res.status_code not in (200, 206):
