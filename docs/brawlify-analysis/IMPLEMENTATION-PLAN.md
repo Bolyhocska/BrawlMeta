@@ -41,21 +41,45 @@ every previously-collapsed match, the row count jumps, and the 1.5M FIFO window 
 (Core principle 5). **This is not a side effect to slip into the tracker work.**
 Magnitude is a code-derived inference, not a measurement — see §7.1 for the cheap way to measure it.
 
-### 0.3 Our organizer-subscription revenue line may violate Supercell's Fan Content Policy
-> "You are **not permitted to charge a fee of any kind** … from customers or visitors to your Fan
-> Content, unless this has expressly been approved by Supercell." Exceptions: **ads, donations,
-> coaching**.
+### 0.3 CORRECTED — a paid tier IS permitted, but only inside Supercell's Creator Program
 
-A B2B organizer subscription is none of the three, and an organizer is a visitor to our fan
-content. Separately, the Tournament Guidelines state tournaments must be **"free to enter for the
-players — no exceptions, including membership fees or season passes"** — which our "players never
-pay" principle already satisfies, and which is now confirmed as Supercell's rule, not just ours.
+**An earlier draft of this section concluded that a premium subscription fell outside all three
+exceptions and was therefore non-compliant. That conclusion was wrong.** The Fan Content Policy's
+three exceptions (ads, donations, coaching) are the rule for fan content *outside* the Creator
+Program. **Since October 2023, Supercell expressly permits fan sites that are IN the Creator
+Program to sell premium services** — naming "better match data, improved record keeping, analysis,
+pro tips, coaching services". Supercell states that premium services offered by sites in the
+Program **have received their approval**.
 
-**This does not block the stats plan** (all of it is free-to-player, which is the safe side of the
-policy). It is flagged because it affects how the site is funded. The policy has an explicit
-approval path — "unless expressly approved by Supercell" — and Brawlify operates with a Creator
-Code, so the relationship is obtainable. **Recommendation: ask Supercell in writing before building
-more billing.** Details and citations in `W2 §3.1-3.3`.
+Source: [The Next Step for Community Sites](https://supercell.com/en/news/next-step-community-sites/)
+(canonical; corroborated via search index — see the caveat below). The change followed RoyaleAPI
+raising the issue with Supercell in June 2023.
+
+**So the question is not "is a paid tier allowed?" but "are we in the Creator Program?"** Today we
+are not. Joining is now the highest-leverage item in the entire monetization plan.
+
+**Two things this does not rescue, and one it reframes:**
+- **Organizer fees are still not covered.** The approved list is player-facing analytics; charging
+  organizers is not on it, and the 2023 change does not address it. Do not build billing for this.
+- **Tournaments must still be free to enter for players** — no membership fees, no season passes.
+  That is a separate document (the Tournament Guidelines) and is unchanged.
+- **The compliance picture is inverted from what we assumed.** The things Supercell now expressly
+  blesses selling are *exactly* the player-facing stats features of this plan — the ones our own
+  Core principle 1 says we will never charge for. That is a strategic choice we are free to make,
+  but it is now our choice, not a policy constraint.
+
+Also note **coaching is broader than assumed**: the policy defines it as "training and guidance"
+and names *selling base layouts* as an example, which blesses productised static guidance artefacts
+(draft/map prep packs, scouting reports) with **no Program membership required**.
+
+**Caveat on confidence:** `supercell.com` is egress-blocked from the analysis environment, so the
+policy text was reconstructed from search-index metadata of the canonical URLs plus independent
+corroboration, without using archives or cache proxies. The finding was confirmed twice from
+independent searches. **Someone on an unblocked browser must read the Fan Content Policy and the
+community-sites announcement in full before acting on this or sending the approval letter.**
+
+Full analysis, comparables, ad-network and child-audience constraints, and a ready-to-send request
+letter: `MONETIZATION-STRATEGY.md`.
 
 ---
 
