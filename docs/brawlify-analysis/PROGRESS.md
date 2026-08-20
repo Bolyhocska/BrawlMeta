@@ -47,7 +47,17 @@ file first, then continue at the first unchecked box. Commit + push after every 
 - [x] W4.2 Feature opportunity matrix (impact x effort x moat)
 - [x] W4.3 Concrete implementation plan (schema, scrapers, API, UI, phased)
 - [x] W4.4 Final deliverable committed locally
-- [ ] W4.5 BLOCKED: push to origin — session lacks GitHub write access (see log)
+- [x] W4.5 Pushed to origin — the owner fetched the branch from a bundle and merged it to
+      `master` on 2026-08-20. The block was environmental (the analysis session's git proxy
+      allowed reads but denied writes); it does not apply to the owner's own remote.
+
+### Phase 0 — Measure & decide (IMPLEMENTATION-PLAN.md §6)
+- [x] P0.1 Instrument the scraper to measure the composition-hash collapse
+- [x] P0.2 Instrument HTTP statuses + rate-limit headers (was silently swallowed)
+- [ ] P0.3 Read the production measurement off the next Masters run
+- [ ] P0.4 **Owner decision:** fix `make_hash`? (§0.2, §8.1)
+- [ ] P0.5 **Owner decision:** send the Supercell Creator Program letter? (§0.3, §8.2)
+- [ ] P0.6 Owner (unblocked browser) does the visual pass on Brawlify's player pages (§1, §8.6)
 
 ## Session log
 - 2026-08-19: scaffolding created. First agent fan-out (3 agents) killed by session limit reset.
@@ -64,3 +74,21 @@ file first, then continue at the first unchecked box. Commit + push after every 
   4 commits sit unpushed on the local branch. Needs the owner to grant this session's
   GitHub App write access to Bolyhocska/BrawlMeta, then a re-push. Work was delivered
   to the owner directly as files in the meantime.
+
+- 2026-08-20: branch fetched from bundle and fast-forwarded onto `master` (d2c360d). Push
+  block was environmental, not a repo problem — resolved by using the owner's own remote.
+
+- 2026-08-20: **Phase 0 instrumentation shipped** (`scrapers/common.py`, commit b67742f).
+  Correction to the plan: §7.1's proposed `attempted - inserted` logging does NOT measure
+  the collision bug. "Already in DB" is dominated by benign re-scraping — one match sits in
+  up to six battlelogs and the spider revisits the same players every run — so that delta
+  cannot separate a re-read from a genuine collision. Replaced with an identity hash
+  (battleTime + all six player tags) computed alongside the composition hash at parse time;
+  counting distinct identities per composition key measures the collapse directly.
+  A mock run through the real parse path CONFIRMS the mechanism: two games, different
+  players, different times, same map+comp → exactly one stored row. §0.2 is therefore no
+  longer an inference about mechanism; only its production magnitude is still unmeasured.
+  The reported figure is a lower bound (in-run collapse only, not against stored rows).
+  Same commit makes non-200 responses visible — they were swallowed by a bare `return []`,
+  so a 429 storm was indistinguishable from "no ranked games" and the key's headroom was
+  unobservable. Awaiting the next scheduled Masters run (00/06/12/18 UTC) for real numbers.
