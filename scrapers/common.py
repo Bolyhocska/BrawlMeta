@@ -221,6 +221,106 @@ def make_hash(entry):
     raw = f"{entry['map']}{entry['mode']}{entry['rank_bracket']}{''.join(winners)}{''.join(losers)}"
     return hashlib.md5(raw.encode()).hexdigest()
 
+def make_identity_hash(battle_time, tags):
+    """A second hash that identifies the PHYSICAL game rather than its
+    composition: battleTime plus all six player tags. Never stored and never
+    used for dedupe — it exists only so RunStats can measure how many distinct
+    real games `make_hash` is collapsing together (see RunStats below).
+
+    Deliberately stable across battlelogs: the same match seen from six
+    different players' logs carries the same battleTime and the same six tags,
+    so it hashes identically and is counted once."""
+    return hashlib.md5(f"{battle_time}{''.join(sorted(t for t in tags if t))}".encode()).hexdigest()
+
+# ==========================================
+# RUN INSTRUMENTATION — measurement only, changes no behaviour (Phase 0)
+# ==========================================
+class RunStats:
+    """Counters for one scraper run. Nothing here alters what is parsed,
+    stored, or deduped — it only observes.
+
+    WHY THIS EXISTS. `make_hash` keys on composition only: map + mode + bracket
+    + the six brawler names. No timestamp, no player tags. So two genuinely
+    different games with the same six brawlers on the same map collapse into a
+    single stored row, permanently. That loss is invisible in the database —
+    the second game was simply never written — and it is ALSO invisible in
+    `push_matches`' attempted-vs-inserted delta, because that delta is
+    dominated by benign duplicates: one match appears in up to six battlelogs,
+    and the spider revisits the same players on every run. Counting "already in
+    DB" therefore measures re-scraping, not collisions.
+
+    So the collapse is measured here, at parse time, by hashing every battle a
+    second way (`make_identity_hash`) and counting how many distinct physical
+    games share one composition key. `collapse_rate` is the fraction of real
+    games that would be lost if every game in this run were new to the DB.
+
+    Scope caveat, stated so the number is not over-read: this measures collapse
+    WITHIN one run. Collisions against rows stored by EARLIER runs are real too
+    and are not counted here, so the reported rate is a lower bound on the
+    steady-state loss.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.comp_to_identities = {}   # comp_hash -> set(identity_hash)
+        self.battles_parsed = 0        # ranked battles that survived every filter
+        self.status_counts = {}        # HTTP status -> count, for the API budget question
+        self.rate_limit_headers = {}   # any rate-limit header the API actually returns
+
+    # -- collision measurement -------------------------------------------------
+    def record_battle(self, comp_hash, identity_hash):
+        with self._lock:
+            self.battles_parsed += 1
+            self.comp_to_identities.setdefault(comp_hash, set()).add(identity_hash)
+
+    # -- API budget measurement ------------------------------------------------
+    def record_response(self, res):
+        """Track status codes and surface whatever rate-limit headers the Brawl
+        Stars API actually returns. Non-200s are currently swallowed silently by
+        fetch_player_battles, which means a 429 storm is indistinguishable from
+        'these players have no ranked games' — this makes that visible."""
+        with self._lock:
+            self.status_counts[res.status_code] = self.status_counts.get(res.status_code, 0) + 1
+            for name, value in res.headers.items():
+                low = name.lower()
+                if "ratelimit" in low.replace("-", "") or low in ("retry-after", "x-quota-remaining"):
+                    self.rate_limit_headers[name] = value
+
+    def report(self, label=""):
+        with self._lock:
+            distinct_games = sum(len(v) for v in self.comp_to_identities.values())
+            distinct_rows = len(self.comp_to_identities)
+            collided_keys = sum(1 for v in self.comp_to_identities.values() if len(v) > 1)
+            worst = max((len(v) for v in self.comp_to_identities.values()), default=0)
+            statuses = dict(self.status_counts)
+            headers = dict(self.rate_limit_headers)
+
+        tag = f" [{label}]" if label else ""
+        print(f"\n📊 RUN STATS{tag}")
+        if distinct_games:
+            lost = distinct_games - distinct_rows
+            rate = lost / distinct_games * 100
+            print(f"  Composition-hash collapse (in-run):")
+            print(f"    {distinct_games:,} distinct real games → {distinct_rows:,} storable row(s)")
+            print(f"    {lost:,} game(s) lost to composition collisions ({rate:.2f}%)")
+            print(f"    {collided_keys:,} composition key(s) held >1 real game (worst held {worst})")
+            print(f"    NOTE: in-run only — collisions against previously stored rows are extra.")
+        else:
+            print("  No ranked battles parsed — nothing to measure.")
+
+        if statuses:
+            ok = statuses.get(200, 0)
+            total = sum(statuses.values())
+            print(f"  Battlelog requests: {total} ({ok} ok)")
+            for code in sorted(statuses):
+                if code != 200:
+                    print(f"    ⚠️ HTTP {code}: {statuses[code]}")
+            if 429 in statuses:
+                print("    ⚠️ 429s present — the shared Supercell key IS rate-limited at this volume.")
+        print(f"  Rate-limit headers seen: {headers if headers else 'none returned by the API'}\n")
+
+STATS = RunStats()
+
 # ==========================================
 # BATTLELOG SPIDER
 # ==========================================
@@ -244,6 +344,7 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
     player_url_tag = player_tag.replace("#", "%23")
     log_url = f"{BASE_URL}/players/{player_url_tag}/battlelog"
     log_res = requests.get(log_url, headers=HEADERS, proxies=PROXIES)
+    STATS.record_response(log_res)
 
     if log_res.status_code != 200:
         return []
@@ -278,11 +379,16 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
             # Ranked is strictly 3v3 — the team-size check guards against any
             # 5v5 event that reports a mode name colliding with RANKED_MODES.
             if len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]:
+                # battle_tags is this ONE battle's six players; candidate_tags
+                # accumulates across the whole battlelog for the spider frontier.
+                # The per-battle list is what identifies the physical game.
+                battle_tags = []
                 for team in teams:
                     for p in team:
                         tag = p.get("tag")
                         if tag:
-                            candidate_tags.append(tag)
+                            battle_tags.append(tag)
+                candidate_tags.extend(battle_tags)
 
                 player_team_idx = 0
                 for idx, team in enumerate(teams):
@@ -323,6 +429,13 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
                     "match_hash": None
                 }
                 match_entry["match_hash"] = make_hash(match_entry)
+                # Measurement only — the identity hash is never stored and never
+                # deduped on; it exists so RunStats can see how many distinct
+                # real games this composition key is absorbing.
+                STATS.record_battle(
+                    match_entry["match_hash"],
+                    make_identity_hash(match.get("battleTime"), battle_tags),
+                )
                 candidate_entries.append(match_entry)
 
     # All shared-state reads/writes happen here under lock, in one short critical
@@ -389,6 +502,7 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
     collected = len(extracted_data) - collected_start
     reason = "reached target" if collected >= target_matches else ("ran out of players" if not queue else "hit player safety cap")
     print(f"{bracket} done. {collected} matches from {processed} players ({reason}).")
+    STATS.report(bracket)
 
 # ==========================================
 # SAVE PIPELINE — normalized rows into ranked_matches
