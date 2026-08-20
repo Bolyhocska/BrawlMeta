@@ -56,7 +56,8 @@ file first, then continue at the first unchecked box. Commit + push after every 
 - [x] P0.2 Instrument HTTP statuses + rate-limit headers (was silently swallowed)
 - [ ] P0.3 Read the production measurement off the next Masters run
 - [ ] P0.4 **Owner decision:** fix `make_hash`? (§0.2, §8.1)
-- [ ] P0.5 **Owner decision:** send the Supercell Creator Program letter? (§0.3, §8.2)
+- [x] P0.5a Verify §0.3 against the canonical policy pages (was reconstructed, not read)
+- [ ] P0.5b **Owner decision:** send the Supercell Creator Program letter? (§0.3, §8.2)
 - [ ] P0.6 Owner (unblocked browser) does the visual pass on Brawlify's player pages (§1, §8.6)
 
 ## Session log

@@ -72,11 +72,30 @@ Also note **coaching is broader than assumed**: the policy defines it as "traini
 and names *selling base layouts* as an example, which blesses productised static guidance artefacts
 (draft/map prep packs, scouting reports) with **no Program membership required**.
 
-**Caveat on confidence:** `supercell.com` is egress-blocked from the analysis environment, so the
-policy text was reconstructed from search-index metadata of the canonical URLs plus independent
-corroboration, without using archives or cache proxies. The finding was confirmed twice from
-independent searches. **Someone on an unblocked browser must read the Fan Content Policy and the
-community-sites announcement in full before acting on this or sending the approval letter.**
+**~~Caveat on confidence~~ — RESOLVED 2026-08-20. Both documents were read directly from
+`supercell.com` and the reconstruction was accurate.** Verbatim from the announcement
+(dated **9 October 2023**): *"Starting in October of 2023, we are allowing fan sites within our
+Creator Program to begin offering premium services on their site"*, and the named examples are
+*"better match data, improved record keeping, analysis, pro tips, coaching services, and more!"* —
+i.e. precisely this plan's feature list. Premium offerings additionally carry conduct rules
+(no gambling, no cryptocurrency, and transparency about what the customer actually receives).
+
+The Fan Content Policy confirms the base rule and the three exceptions verbatim: *"The three
+exceptions to this rule are generally monetization of your Fan Content through ads, by donations
+or by coaching."* Donations *"must be purely donations in nature and not tied to any special
+features, IAPs or other benefits of any kind"* — so a "donate for perks" tier is not a workaround.
+Coaching is defined as *"training and guidance provided to other players"* and the policy states
+outright that *"Selling base layouts is considered coaching"*, which does bless productised static
+guidance (draft/map prep packs, scouting reports) **with no Program membership required**.
+
+**Organizer fees: confirmed as the actual exposure.** The Fan Content Policy does not mention
+community-tournament entry or organizer fees at all. They are not among the three exceptions, so
+charging them is caught by the general prohibition unless Supercell expressly approves it — and
+the 2023 Creator Program change does not cover them, since its approved list is player-facing
+analytics. **This directly contradicts `CLAUDE.md` Core principle 1**, which currently records the
+business model as "premium subscriptions + organizer fees only". The subscription half is now
+clearly permitted (inside the Program); the organizer half is the half that is not. That should be
+reconciled in `CLAUDE.md` once the owner decides how to proceed.
 
 Full analysis, comparables, ad-network and child-audience constraints, and a ready-to-send request
 letter: `MONETIZATION-STRATEGY.md`.
