@@ -43,7 +43,7 @@ an afternoon.
 |---|---|---|
 | A1 | **Confirm you are 16+** | Hard gate on the general track, no way around it. If you are under 16 this whole plan stalls until you aren't, and the honest move is to plan around ads + coaching in the meantime (both need no Program membership). |
 | A2 | **Make sure you have a Supercell ID (SCID)** on the account you want associated | Registration is SCID-based. |
-| A3 | **Open [creators.supercell.com/en/register](https://creators.supercell.com/en/register) yourself** and read what the form actually asks | I cannot — it's blocked here. **You are the only one who can answer this.** Look specifically for: a site/fansite option vs. a channel-only form; whether follower counts are mandatory fields; whether it asks for a URL. |
+| A3 | ~~Open the registration form and read what it asks~~ **PARTLY RESOLVED 2026-08-24 — see "Phase A findings" below.** The form URL in this plan was wrong, the public requirements are confirmed, and no fansite track is visible from outside. What remains yours: stepping through the signup wizard itself (age gate + reCAPTCHA + Supercell ID). |
 | A4 | **If the form is channel-only or ambiguous, ask before you apply** | An enquiry costs nothing; a rejected application may carry a cooldown. Draft below (§A5). |
 
 ### A5 — Enquiry to send if the form doesn't make the fansite path obvious
@@ -76,6 +76,33 @@ Fan Content Policy as the route for policy questions. For tournament-specific ma
 
 ---
 
+### Phase A findings (checked directly, 2026-08-24)
+
+Read live from `creators.supercell.com`, which turned out to be reachable after all:
+
+- **The registration URL in this plan was wrong.** `/en/register` returns PAGE NOT FOUND. The real
+  entry point is **[creators.supercell.com/en/signup](https://creators.supercell.com/en/signup)**,
+  linked from the site as "Go to application".
+- **The published requirements are confirmed verbatim:** act in good manner; **at least 16 years
+  old**; **minimum 100 followers on YouTube, 25 on Twitch, or 1,000 on TikTok**. The page also
+  states plainly that meeting them is "not a guarantee for getting accepted".
+- **A second, higher tier exists that this plan did not know about:** "Trusted Creators" at
+  **5,000 YouTube / 3,000 Twitch / 15,000 TikTok**, which unlocks the Creators Discord and update
+  previews. Super Creator status above that is handpicked. Useful context — the follower bar in
+  Phase D is the *entry* bar, not the bar for the visible perks.
+- **No fansite or website track is visible anywhere on the public site.** The eligibility list is
+  channel-only; there is no "I run a website" option advertised, and no field for a site URL on any
+  public page. This does not disprove the fansite path — Supercell's October 2023 announcement does
+  invite fansite developers to apply — but it does mean **you cannot confirm it from outside**, and
+  the signup wizard is gated behind an age step and reCAPTCHA before it reveals what it asks.
+
+**What this changes:** the enquiry in §A5 is now clearly the right first move rather than a
+fallback. Applying blind through a channel-shaped form, as a site with no channel, is the scenario
+most likely to produce a rejection — and §A4's caution about cooldowns still stands. Send the
+enquiry, and update the URL in it to `/en/signup`.
+
+---
+
 ## Phase B — Make the site application-ready (~1 day, do before applying either way)
 
 A reviewer will open the site. Right now there are two **policy-required** gaps that would make an
@@ -83,15 +110,46 @@ application look careless, and both are quick.
 
 | # | Task | Why | Effort |
 |---|---|---|---|
-| B1 | **Fan content disclaimer in the footer of every page** — "This material is unofficial and is not endorsed by Supercell." | **Required by the Fan Content Policy.** Currently missing. Applying without it is applying while visibly out of compliance. `src/SiteFooter.jsx` is 24 lines — this is a one-line change. | 30 min |
-| B2 | **Privacy policy + cookie policy** | Legally required in the EU (you're in Hungary) before any ads, and a credibility signal. | 2 h |
-| B3 | **An About page**: who runs it, what it is, a contact address | Programs approve *people*. An anonymous site is a weaker application. | 1 h |
+| B1 | ~~Fan content disclaimer in the footer of every page~~ **DONE 2026-08-24 (commit 05ad8a0).** | **This plan's claim that the disclaimer was "currently missing" was wrong** — `SiteFooter.jsx` already had the exact required wording and linked the policy. The real gap was coverage: the footer was mounted only on tournament pages, with the homepage carrying a separate copy, so the tier list, leaderboards, draft assistant, brawler guides, scrims and guides all rendered without it. Now mounted once in `AppRoutes` outside `<Routes>`, so no route can ship without it. | done |
+| B2 | ~~Privacy policy + cookie policy~~ **DONE 2026-08-24 — `/privacy`.** | Written from the code, not from a template: fields taken from the real `Profiles`/`Registrations` columns, uploads from the three storage buckets, OCR from `api/_lib/ocr.js`. Two findings are stated plainly on the page — uploaded proof is served at PUBLIC urls, and there is no analytics or tracking script anywhere, so it claims essential-cookies-only honestly. **Blocked on you:** `CONTROLLER` is a placeholder; the policy is not valid until it names a real contactable person. | done |
+| B3 | ~~An About page~~ **DONE 2026-08-24 — `/about`.** | Covers what the site is, where the data comes from, and the three principles that make it low-risk to approve. **Blocked on you:** same `CONTROLLER` placeholder — an About page that won't say who runs it defeats its own purpose. | done |
 | B4 | **Do not register any domain containing "brawlstars"**, and use no Supercell logos in branding | Trademark clause. Current posture ("brawl" alone on a `vercel.app` subdomain) is what every incumbent does — tolerated, not permitted. Don't make it worse right before applying. | — |
-| B5 | **Have your numbers ready**: monthly pageviews/uniques, tournaments run, registered users, DB size (1.5M+ ranked matches) | The application asks what your site is and how big. "Over a million ranked matches analysed" is a strong, true, specific line. | 30 min |
+| B5 | ~~Have your numbers ready~~ **PULLED 2026-08-24 — see "Your actual numbers" below.** | The database is the strong number; the audience is not, and the application should lead with the former. | done |
 
 **A note on B1:** it's tempting to treat the disclaimer as trivial. It isn't — it's the single
 cheapest compliance signal you can send, it's explicitly required, and its absence is the first
 thing a reviewer checking policy adherence would notice.
+
+---
+
+### Your actual numbers (measured 2026-08-24)
+
+| Metric | Value |
+|---|---|
+| Ranked matches analysed | **1,807,280** |
+| — Masters/Legendary bracket | 1,500,000 (at the retention cap) |
+| — Diamond/Mythic bracket | 307,280 |
+| Brawlers covered | 105 |
+| Ranked maps covered | 29 |
+| Database size | 281 MB |
+| Tournaments run | 6 (2 completed) |
+| Tournament registrations | 21 |
+| Registered accounts | 2 |
+| Data freshness | continuous; newest match 2026-08-23 19:38 UTC |
+
+**Read this honestly before writing the application.** The database is genuinely impressive and
+completely true: *"over 1.8 million ranked matches analysed, separated by rank bracket, refreshed
+four times a day"* is a strong, specific, verifiable line that most applicants cannot write.
+
+The audience numbers are not impressive yet, and the application should not invite the comparison.
+Two registered accounts is a pre-launch site. **Lead with what you built and the data behind it,
+not with reach** — and note this cuts against any framing that leans on community size. If the form
+asks for traffic, answer plainly; do not volunteer it otherwise.
+
+There is also no analytics on the site, so **pageview/unique figures do not exist**. If the
+application asks for them, you will need to either install analytics first (which then requires the
+cookie policy to change — see `/privacy`) or answer that the site does not track visitors, which is
+itself a defensible and increasingly respected answer.
 
 ---
 
