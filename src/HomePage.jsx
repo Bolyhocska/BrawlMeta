@@ -172,11 +172,6 @@ export default function HomePage() {
           <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
           <span>v2026.1 · META SNAPSHOT</span>
         </div>
-        <p style={{ margin: 0, lineHeight: 1.7, color: "#4a4a58", maxWidth: 760 }}>
-          This material is unofficial and is not endorsed by Supercell. For more information see{" "}
-          <a href="https://supercell.com/en/fan-content-policy/" target="_blank" rel="noreferrer" style={{ color: "#9a8fc0" }}>Supercell's Fan Content Policy</a>.
-          Brawl Stars and its assets are trademarks of Supercell.
-        </p>
       </footer>
 
       <style>{`

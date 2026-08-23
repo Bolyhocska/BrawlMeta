@@ -7,6 +7,8 @@ import SiteHeader from "./SiteHeader";
 import ComingSoonPage from "./ComingSoonPage";
 import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, SafeZoneGuidePage, BrawlerGuidesPage } from "./GuidesPages";
 import ScrimsPage from "./ScrimsPage";
+import SiteFooter from "./SiteFooter";
+import { PrivacyPolicyPage, AboutPage } from "./LegalPages";
 import DraftAssistant from "./DraftAssistant";
 import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
@@ -744,7 +746,13 @@ function BrawlerGuideRoute() {
 }
 
 export default function AppRoutes() {
+  // SiteFooter is mounted here, once, rather than per page. The Supercell Fan
+  // Content Policy requires the disclaimer wherever fan content is shown, and
+  // per-page footers meant every new route silently shipped without one — the
+  // tier list, draft assistant and brawler guides had all been missing it.
+  // Mounting it outside <Routes> means a route cannot be added without it.
   return (
+    <>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/app" element={<BrawlApex />} />
@@ -762,7 +770,11 @@ export default function AppRoutes() {
       <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
       <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
       <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<BrawlApex />} />
     </Routes>
+    <SiteFooter />
+    </>
   );
 }

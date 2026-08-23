@@ -11,7 +11,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn } from "lucide-react";
 import SiteHeader from "./SiteHeader";
-import SiteFooter from "./SiteFooter";
 import { supabase } from "./appCore";
 import { useAuth } from "./auth";
 import { groupIntoTeams, totalRoundsFor, roundLabel, nextPowerOfTwo, byesNeeded } from "./data/bracket";
@@ -191,7 +190,6 @@ export function TournamentLandingPage() {
           </p>
         </div>
       </div>
-      <SiteFooter />
     </div>
   );
 }
@@ -1156,7 +1154,6 @@ export function TournamentDetailPage() {
           </section>
         )}
       </div>
-      <SiteFooter />
       <Toast {...(toast || {})} />
     </div>
   );

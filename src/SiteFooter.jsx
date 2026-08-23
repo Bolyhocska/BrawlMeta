@@ -2,6 +2,8 @@
 // Shown across the app. BrawlApex reads only the official public API and is not
 // a Supercell product; the disclaimer follows Supercell's Fan Content Policy.
 
+import { Link } from "react-router-dom";
+
 export default function SiteFooter() {
   return (
     <footer style={{
@@ -17,6 +19,10 @@ export default function SiteFooter() {
         </a>.
         <div style={{ marginTop: 8, color: "#4a4a58" }}>
           BrawlApex is a fan-made stats & tournament platform. Brawl Stars and its assets are trademarks of Supercell.
+        </div>
+        <div style={{ marginTop: 12, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link to="/about" style={{ color: "#6f7180", textDecoration: "none" }}>About</Link>
+          <Link to="/privacy" style={{ color: "#6f7180", textDecoration: "none" }}>Privacy &amp; Cookies</Link>
         </div>
       </div>
     </footer>
