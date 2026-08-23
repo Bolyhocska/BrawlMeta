@@ -54,8 +54,10 @@ file first, then continue at the first unchecked box. Commit + push after every 
 ### Phase 0 — Measure & decide (IMPLEMENTATION-PLAN.md §6)
 - [x] P0.1 Instrument the scraper to measure the composition-hash collapse
 - [x] P0.2 Instrument HTTP statuses + rate-limit headers (was silently swallowed)
-- [ ] P0.3 Read the production measurement off the next Masters run
-- [ ] P0.4 **Owner decision:** fix `make_hash`? (§0.2, §8.1)
+- [x] P0.3 Read the production measurement off the next Masters run
+- [x] P0.4 ~~Owner decision: fix `make_hash`?~~ **Recommendation now: NO.** The measurement
+      shows genuine collisions at 0.03%; the 42% is Ranked series rounds, which are correlated
+      samples. See §0.2. Owner may still overrule, but the case for changing it has gone.
 - [x] P0.5a Verify §0.3 against the canonical policy pages (was reconstructed, not read)
 - [ ] P0.5b **Owner decision:** send the Supercell Creator Program letter? (§0.3, §8.2)
 - [ ] P0.6 Owner (unblocked browser) does the visual pass on Brawlify's player pages (§1, §8.6)

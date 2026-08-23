@@ -35,11 +35,58 @@ almost entirely on the **head** of the distribution. Direction of bias: **the mo
 the most under-counted**, which is exactly what pick rate and win rate for meta brawlers are
 computed from. Effect (2) additionally corrupts the opening days of every new patch.
 
-**Status: flagged, NOT fixed.** The docstring says the formula is deliberately identical to the
-historical one to preserve dedupe continuity, so changing it is an owner decision: it re-admits
-every previously-collapsed match, the row count jumps, and the 1.5M FIFO window churns faster
-(Core principle 5). **This is not a side effect to slip into the tracker work.**
-Magnitude is a code-derived inference, not a measurement — see §7.1 for the cheap way to measure it.
+**Status: MEASURED 2026-08-24 — and the mechanism above is wrong. Do not act on it as written.**
+
+Instrumented run (masters, 7,595 battlelogs, 132,338 sightings):
+
+```
+Sightings 132,338 -> 71,972 distinct games -> 41,639 storable rows
+Cross-battlelog dedupe: 60,366 repeat sightings removed (45.6%)
+  distinct-party : 18 games over 18 keys   <- different players, same comp
+  same-party     : 30,309 keys             <- same six players, >1 timestamp
+                   gaps: min 1s / median 131s / max 476s; only 8 of 30,315 are <=10s
+```
+
+**The random-collision story this section tells is false.** Genuinely different players landing on
+the same composition accounts for **18 games out of 71,972 — 0.03%**. It is negligible, and the
+claim that "the most-played comps are the most under-counted" is not what the data shows.
+
+**What is actually happening: Ranked series rounds collapse.** 30,309 keys hold the same six
+players at multiple timestamps, clustered 1-8 minutes apart with a 131s median. That is far too
+tight to be players requeuing into each other by chance, and far too common (73% of stored rows).
+It is the rounds of a single Ranked series — same six players, same map, same draft, played
+back to back. The ratio corroborates it: 71,972 games to 41,639 rows is 1.73 games per row, and a
+best-of-three mix of 2-0 sweeps (2 games -> 1 row) and 2-1 splits (3 games -> 2 rows) predicts
+almost exactly that. The 8 sub-10-second gaps are the only genuine timestamp noise in the set,
+which also confirms battleTime is stable across battlelogs.
+
+**So 42% of collected games are discarded, but they are extra rounds of series we already have,
+not distinct matchups we are missing.** That reframes the decision completely, and there is a
+real argument on each side:
+
+- *Against changing it:* rounds of one series are **not independent samples**. Same players, same
+  draft, same map, minutes apart — round 2's outcome correlates heavily with round 1's. Counting
+  them separately would inflate the effective sample size and narrow confidence intervals that the
+  Bayesian shrink and the "confidence-honest" UI language depend on. The current behaviour
+  accidentally does something statistically defensible.
+- *For changing it:* it is **inconsistent** about it. A 2-0 sweep stores one row; a 2-1 split
+  stores two (one per orientation), so a series won 2-1 is recorded as 1-1. That systematically
+  drags decisive series toward 50% and is arbitrary rather than principled.
+
+**Recommendation, revised: do not make the change §8.1 proposed.** Adding battleTime and player
+tags to the hash would re-admit 30k correlated rounds per run for a genuine-collision recovery of
+0.03%, while breaking dedupe continuity, jumping the row count and churning the 1.5M FIFO window
+faster (Core principle 5). The cost is real and the benefit is not.
+
+If the 2-1 inconsistency is worth addressing later, the right fix is **series-aware**, not
+hash-aware: collapse a series to one weighted observation deliberately, rather than letting the
+hash do it by accident. That is a change to aggregation, not to ingestion, and it does not touch
+retention.
+
+**Note for §5.1:** this also removes the stated reason `player_matches` needed an identity-based
+`match_key` "so it never inherits the collision bug". The key is still correct — a player history
+genuinely needs per-round rows — but the justification is now "series rounds are distinct events in
+a player's history", not "the composition hash is broken".
 
 ### 0.3 CORRECTED — a paid tier IS permitted, but only inside Supercell's Creator Program
 
