@@ -221,16 +221,16 @@ def make_hash(entry):
     raw = f"{entry['map']}{entry['mode']}{entry['rank_bracket']}{''.join(winners)}{''.join(losers)}"
     return hashlib.md5(raw.encode()).hexdigest()
 
-def make_identity_hash(battle_time, tags):
-    """A second hash that identifies the PHYSICAL game rather than its
-    composition: battleTime plus all six player tags. Never stored and never
-    used for dedupe — it exists only so RunStats can measure how many distinct
-    real games `make_hash` is collapsing together (see RunStats below).
-
-    Deliberately stable across battlelogs: the same match seen from six
-    different players' logs carries the same battleTime and the same six tags,
-    so it hashes identically and is counted once."""
-    return hashlib.md5(f"{battle_time}{''.join(sorted(t for t in tags if t))}".encode()).hexdigest()
+def _battletime_delta_seconds(a, b):
+    """Seconds between two API battleTime strings ('20260819T120000.000Z').
+    Returns None if either fails to parse. Used only by RunStats, to tell a
+    genuine rematch (minutes apart) from the same game reported at slightly
+    different timestamps in two battlelogs (seconds apart)."""
+    try:
+        fmt = "%Y%m%dT%H%M%S.%fZ"
+        return abs((datetime.strptime(b, fmt) - datetime.strptime(a, fmt)).total_seconds())
+    except (ValueError, TypeError):
+        return None
 
 # ==========================================
 # RUN INSTRUMENTATION — measurement only, changes no behaviour (Phase 0)
@@ -249,10 +249,11 @@ class RunStats:
     and the spider revisits the same players on every run. Counting "already in
     DB" therefore measures re-scraping, not collisions.
 
-    So the collapse is measured here, at parse time, by hashing every battle a
-    second way (`make_identity_hash`) and counting how many distinct physical
-    games share one composition key. `collapse_rate` is the fraction of real
-    games that would be lost if every game in this run were new to the DB.
+    So the collapse is measured here, at parse time, by indexing every battle
+    under its composition key by (six player tags, battleTime) — which
+    identifies the physical game — and counting how many distinct games share
+    one composition key. report() then splits those collisions by cause,
+    because only some of them are the bug.
 
     Scope caveat, stated so the number is not over-read: this measures collapse
     WITHIN one run. Collisions against rows stored by EARLIER runs are real too
@@ -262,16 +263,20 @@ class RunStats:
 
     def __init__(self):
         self._lock = threading.Lock()
-        self.comp_to_identities = {}   # comp_hash -> set(identity_hash)
-        self.battles_parsed = 0        # ranked battles that survived every filter
+        # comp_hash -> {six-player-tag tuple -> set(battleTime)}
+        # Indexed this way rather than as opaque identity hashes so the report
+        # can tell the two explanations for a collision apart — see report().
+        self.comp_index = {}
+        self.battles_parsed = 0        # raw sightings, before any dedupe
         self.status_counts = {}        # HTTP status -> count, for the API budget question
         self.rate_limit_headers = {}   # any rate-limit header the API actually returns
 
     # -- collision measurement -------------------------------------------------
-    def record_battle(self, comp_hash, identity_hash):
+    def record_battle(self, comp_hash, battle_time, tags):
         with self._lock:
             self.battles_parsed += 1
-            self.comp_to_identities.setdefault(comp_hash, set()).add(identity_hash)
+            party = tuple(sorted(t for t in tags if t))
+            self.comp_index.setdefault(comp_hash, {}).setdefault(party, set()).add(battle_time)
 
     # -- API budget measurement ------------------------------------------------
     def record_response(self, res):
@@ -287,23 +292,68 @@ class RunStats:
                     self.rate_limit_headers[name] = value
 
     def report(self, label=""):
+        """Classifies every collision rather than just counting it.
+
+        A composition key holding more than one game has two very different
+        possible causes, and they demand opposite conclusions:
+
+          REMATCH  — same six players, different battleTimes. Either a genuine
+                     rematch (they requeued and drafted the same comp), or the
+                     SAME game seen from several battlelogs with an unstable
+                     timestamp. The time gap separates them: seconds apart is
+                     clock skew and the collision is an artifact of this
+                     measurement; minutes apart is a real second game.
+          DISTINCT — different sets of six players. Unambiguously two different
+                     real games sharing one composition key. This is the bug.
+
+        Reporting only the total conflates a measurement artifact with the
+        thing being measured, so the two are kept apart here.
+        """
         with self._lock:
-            distinct_games = sum(len(v) for v in self.comp_to_identities.values())
-            distinct_rows = len(self.comp_to_identities)
-            collided_keys = sum(1 for v in self.comp_to_identities.values() if len(v) > 1)
-            worst = max((len(v) for v in self.comp_to_identities.values()), default=0)
+            sightings = self.battles_parsed
+            rows = len(self.comp_index)
+            games = 0
+            rematch_parties = 0     # one party, >1 timestamp
+            distinct_party_keys = 0  # one comp key, >1 different party
+            distinct_party_games = 0
+            deltas = []
+            for parties in self.comp_index.values():
+                for times in parties.values():
+                    games += len(times)
+                    if len(times) > 1:
+                        rematch_parties += 1
+                        ordered = sorted(times)
+                        for a, b in zip(ordered, ordered[1:]):
+                            d = _battletime_delta_seconds(a, b)
+                            if d is not None:
+                                deltas.append(d)
+                if len(parties) > 1:
+                    distinct_party_keys += 1
+                    distinct_party_games += len(parties) - 1
             statuses = dict(self.status_counts)
             headers = dict(self.rate_limit_headers)
 
         tag = f" [{label}]" if label else ""
         print(f"\n📊 RUN STATS{tag}")
-        if distinct_games:
-            lost = distinct_games - distinct_rows
-            rate = lost / distinct_games * 100
-            print(f"  Composition-hash collapse (in-run):")
-            print(f"    {distinct_games:,} distinct real games → {distinct_rows:,} storable row(s)")
-            print(f"    {lost:,} game(s) lost to composition collisions ({rate:.2f}%)")
-            print(f"    {collided_keys:,} composition key(s) held >1 real game (worst held {worst})")
+        if games:
+            print(f"  Sightings {sightings:,} → {games:,} distinct (party, time) → {rows:,} storable row(s)")
+            print(f"  Cross-battlelog dedupe: {sightings - games:,} repeat sightings removed "
+                  f"({(sightings - games) / sightings * 100:.1f}% of sightings)")
+            print(f"  COLLISIONS, split by cause:")
+            print(f"    distinct-party : {distinct_party_games:,} game(s) over {distinct_party_keys:,} key(s) "
+                  f"— different players, same comp. REAL LOSS.")
+            print(f"    same-party     : {rematch_parties:,} key(s) — same six players at >1 timestamp.")
+            if deltas:
+                deltas.sort()
+                mid = deltas[len(deltas) // 2]
+                near = sum(1 for d in deltas if d <= 10)
+                print(f"      gaps: min {deltas[0]:.0f}s / median {mid:.0f}s / max {deltas[-1]:.0f}s; "
+                      f"{near:,} of {len(deltas):,} are <=10s")
+                print(f"      → gaps of seconds mean unstable timestamps (measurement artifact);")
+                print(f"        gaps of minutes mean genuine rematches (real loss).")
+            real = distinct_party_games
+            print(f"  Lower-bound REAL loss (distinct-party only): {real:,} of {games:,} "
+                  f"({real / games * 100:.2f}%)")
             print(f"    NOTE: in-run only — collisions against previously stored rows are extra.")
         else:
             print("  No ranked battles parsed — nothing to measure.")
@@ -433,8 +483,7 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
                 # deduped on; it exists so RunStats can see how many distinct
                 # real games this composition key is absorbing.
                 STATS.record_battle(
-                    match_entry["match_hash"],
-                    make_identity_hash(match.get("battleTime"), battle_tags),
+                    match_entry["match_hash"], match.get("battleTime"), battle_tags,
                 )
                 candidate_entries.append(match_entry)
 
