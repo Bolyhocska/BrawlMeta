@@ -77,13 +77,23 @@ def parse_battle_time(value):
 
 
 def fetch_due_players(limit=MAX_POLLS_PER_RUN):
-    """Players whose next_poll_at has come, most important tier first."""
-    now = datetime.now(timezone.utc).isoformat()
-    url = (f"{SUPABASE_URL}/rest/v1/tracked_players"
-           f"?select=player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket"
-           f"&active=eq.true&next_poll_at=lte.{now}"
-           f"&order=tier.asc,next_poll_at.asc&limit={limit}")
-    res = requests.get(url, headers=SUPABASE_HEADERS)
+    """Players whose next_poll_at has come, most important tier first.
+
+    Filters go through `params` rather than an f-string URL on purpose: an ISO
+    timestamp ends in "+00:00", and a raw "+" in a query string decodes to a
+    space, so PostgREST rejected it with 22007 "invalid input syntax for type
+    timestamp with time zone". Letting requests percent-encode it fixes that."""
+    res = requests.get(
+        f"{SUPABASE_URL}/rest/v1/tracked_players",
+        headers=SUPABASE_HEADERS,
+        params={
+            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket",
+            "active": "eq.true",
+            "next_poll_at": f"lte.{datetime.now(timezone.utc).isoformat()}",
+            "order": "tier.asc,next_poll_at.asc",
+            "limit": str(limit),
+        },
+    )
     if res.status_code != 200:
         print(f"⚠️ could not read tracked_players: {res.status_code} {res.text[:200]}")
         return []
