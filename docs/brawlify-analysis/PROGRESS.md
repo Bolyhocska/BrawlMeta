@@ -71,12 +71,15 @@ file first, then continue at the first unchecked box. Commit + push after every 
 - [x] P1.6 Seeded 1,432 players from the three existing lists
 - [x] P1.7 Verified live: 5,616 rows / 332 players; 313 opposing-pair results cross-checked
       with zero contradictions; schedules advancing; 9 dead tags auto-deactivated
-- [ ] P1.8 Watch a few scheduled runs before building anything on top
+- [x] P1.8 Scheduled runs watched; snapshot path verified live 2026-08-24 (one boosted profile
+      produced two Supercell requests and one stored snapshot with 106 per-brawler entries).
 
 ### Phase 2 prerequisites (plan §5.5, risk 5)
 - [x] P2.0a Self-host the game art — competitor CDN dependency removed (commit 0e5a321)
-- [ ] P2.0b Lift the Supercell client into `api/_lib/supercell.js` before five new endpoints
-      copy-paste the undici gotcha out of `api/player.js`
+- [x] P2.0b Supercell client lifted into `api/_lib/supercell.js` (commit 633cd92). Found the two
+      callers disagreed: proxyFetch.js embedded proxy credentials in the URI, which undici
+      ignores, so verify-match would have failed 407 against an authenticated proxy. Latent
+      only — the Verifications table is empty — but fixed rather than copied forward.
 - [x] P2.0c ~~Owner decision: enrol-on-lookup?~~ **DECIDED: enrol everyone on lookup**, with a
       free opt-in Boost tier and an unauthenticated opt-out. Owner also asked for the privacy
       policy to be restructured after reviewing Brawlify's.
