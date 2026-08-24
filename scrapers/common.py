@@ -113,8 +113,55 @@ RANKED_MAPS = {
         # no further Rustic Arcade matches are ingested. Crystal Arcade and
         # Deathcap Trap replace it and have never been collected before.
         "Crystal Arcade", "Deathcap Trap",
+        # 2026-08-24: Spiraling Out (Brawl Ball) confirmed in the live rotation.
+        # Its absence meant every match on it was being silently dropped, which
+        # is what motivated the dynamic pool below.
+        "Spiraling Out",
     },
 }
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DYNAMIC MAP POOL
+# ──────────────────────────────────────────────────────────────────────────────
+# RANKED_MAPS above is hand-maintained, so a map rotating IN is invisible until
+# somebody edits this file — and until they do, every match on that map is
+# dropped. scrapers/map_pool.py observes the live rotation daily and records it
+# in the ranked_map_pool table; this set is loaded from there at the start of a
+# run and treated as an ADDITION to the hardcoded allowlist.
+#
+# Union only, never intersection. A wrong addition costs some unwanted data that
+# can be pruned later; a wrong removal silently discards real matches for as
+# long as nobody notices. Those are not symmetric, so the code refuses to shrink
+# the allowlist from a remote source.
+#
+# Empty by default: a scraper that never calls refresh_dynamic_map_pool() keeps
+# exactly the old behaviour, and a failed fetch leaves it empty rather than
+# leaving the pipeline in a half-updated state.
+EXTRA_RANKED_MAPS = set()
+
+def refresh_dynamic_map_pool():
+    """Load the observed rotation into EXTRA_RANKED_MAPS. Safe to call from any
+    scraper's main(); failures are non-fatal and simply leave the set empty."""
+    global EXTRA_RANKED_MAPS
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/ranked_map_pool",
+            headers=SUPABASE_HEADERS,
+            params={"select": "map_name,mode", "in_rotation": "eq.true"},
+            timeout=30,
+        )
+        if res.status_code != 200:
+            print(f"⚠️ could not load ranked_map_pool: {res.status_code}")
+            return
+        names = {r["map_name"] for r in res.json() if r.get("map_name")}
+        extra = names - RANKED_MAPS.get(CURRENT_PATCH, set())
+        EXTRA_RANKED_MAPS = names
+        if extra:
+            print(f"🗺️ dynamic map pool adds {len(extra)} map(s) not in the hardcoded list: {', '.join(sorted(extra))}")
+        else:
+            print(f"🗺️ dynamic map pool: {len(names)} map(s), all already allowed")
+    except Exception as e:
+        print(f"⚠️ ranked_map_pool load failed (continuing with hardcoded list): {e}")
 
 # ==========================================
 # THROTTLES & TARGETS
@@ -460,7 +507,9 @@ def parse_battle(match, player_tag, bracket):
         return battle_tags, None
 
     allowed_maps = RANKED_MAPS.get(match_patch)
-    if allowed_maps is not None and map_name not in allowed_maps:
+    # EXTRA_RANKED_MAPS is the live rotation observed by scrapers/map_pool.py.
+    # It widens the allowlist and never narrows it — see the note on that set.
+    if allowed_maps is not None and map_name not in allowed_maps and map_name not in EXTRA_RANKED_MAPS:
         return battle_tags, None
 
     record = {

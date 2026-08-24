@@ -29,7 +29,7 @@ except ImportError:
     _HTTP = requests
 
 from scrapers.common import (
-    require_credentials, LookupCache, get_stored_match_count,
+    require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
     harvest_bracket, push_matches, reaggregate, prune_bracket,
     SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
     MASTERS_BASELINE, MASTERS_STEADY, MASTERS_RUN_CAP, SPIDER_DEPTH,
@@ -198,6 +198,9 @@ def main():
     require_credentials()
     print("🛰️ Masters scraper: harvesting Masters+ ranked matches...")
     lookups = LookupCache()
+    # Widen the map allowlist with the live rotation observed by map_pool.py,
+    # so a newly rotated-in map is collected without a code edit.
+    refresh_dynamic_map_pool()
 
     # Fill to the full 1.5M window baseline first (up to MASTERS_RUN_CAP per
     # run); once met, throttle down to a steady 50k per run — the FIFO window

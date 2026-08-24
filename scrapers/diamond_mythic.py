@@ -11,7 +11,7 @@
 import requests
 
 from scrapers.common import (
-    require_credentials, LookupCache, get_stored_match_count,
+    require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
     harvest_bracket, push_matches, reaggregate,
     SUPABASE_URL, SUPABASE_HEADERS,
     MASTERS_BASELINE, DIAMOND_RUN_CAP, SPIDER_DEPTH,
@@ -39,6 +39,9 @@ def main():
     require_credentials()
     print("🛰️ Diamond/Mythic scraper: harvesting ranked matches...")
     lookups = LookupCache()
+    # Widen the map allowlist with the live rotation observed by map_pool.py,
+    # so a newly rotated-in map is collected without a code edit.
+    refresh_dynamic_map_pool()
 
     # patch_name=None on purpose: MASTERS_BASELINE is the size of the retention
     # WINDOW, and prune_ranked_matches caps that window across all patches. The

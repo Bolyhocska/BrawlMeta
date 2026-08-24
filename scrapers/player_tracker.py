@@ -34,7 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 
 from scrapers.common import (
-    require_credentials, LookupCache, parse_battle,
+    require_credentials, LookupCache, refresh_dynamic_map_pool, parse_battle,
     BASE_URL, HEADERS, PROXIES, SUPABASE_URL, SUPABASE_HEADERS,
     REQUEST_DELAY, CONCURRENCY, INSERT_BATCH_SIZE, DB_BATCH_DELAY, STATS,
 )
@@ -332,6 +332,9 @@ def main():
     require_credentials()
     print("🛰️ Player tracker: polling tracked battlelogs...")
     lookups = LookupCache()
+    # Widen the map allowlist with the live rotation observed by map_pool.py,
+    # so a newly rotated-in map is collected without a code edit.
+    refresh_dynamic_map_pool()
 
     due = fetch_due_players()
     if not due:

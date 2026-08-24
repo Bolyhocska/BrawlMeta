@@ -1,0 +1,42 @@
+name: Check — Ranked Map Pool
+
+# Observes the live ranked rotation daily and records it in ranked_map_pool, so
+# a map rotating IN starts being collected without waiting for someone to edit
+# scrapers/common.py by hand. Until this existed, a new map's matches were
+# dropped silently — a filtered battle looks identical to one that never
+# happened, so nothing in any log said so.
+#
+# 04:40 UTC: clear of masters (00/06/12/18, ~70-85 min each), leaderboard
+# (05/11/17/23), diamond (07:30), intelligence (08:30) and the player tracker
+# (02:20/10:20/14:20/20:20). Deliberately BEFORE the 05:00 and 06:00 runs so a
+# rotation change is picked up before the day's heavy collection starts.
+#
+# Touches no Supercell API budget — it reads one public HTML page.
+on:
+  schedule:
+    - cron: '40 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-map-pool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Check the ranked map pool
+        env:
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python -m scrapers.map_pool
