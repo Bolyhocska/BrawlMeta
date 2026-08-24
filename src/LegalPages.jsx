@@ -24,10 +24,11 @@
 // no ads and set no advertising cookies — describing cookies we don't set
 // would make this document false in the opposite direction.
 //
-// OWNER TODO: fill in CONTROLLER. This policy tells people they are tracked
-// without being asked and explains how to object — and then has to name
-// someone to object to. That makes the placeholder the weakest point on the
-// site, not a cosmetic gap.
+// CONTROLLER.email is set. CONTROLLER.name is still a placeholder: GDPR wants a
+// named controller, not only an address, and "who is responsible" is the first
+// question this document answers. An email alone is enough to receive an
+// objection, so the policy is functional — but it is not complete until a real
+// name or registered entity is there.
 
 import { Link } from "react-router-dom";
 import { GuideShell } from "./GuidesPages";
@@ -35,10 +36,10 @@ import { GuideShell } from "./GuidesPages";
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 
-// ⚠️ OWNER: replace both fields before relying on this page.
+// ⚠️ OWNER: `name` still needs filling in. The email is live.
 const CONTROLLER = {
   name: "[YOUR NAME OR REGISTERED ENTITY]",
-  email: "[CONTACT EMAIL]",
+  email: "brawlapex.dev@gmail.com",
 };
 
 const META = {

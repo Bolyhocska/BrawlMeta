@@ -21,7 +21,7 @@
 # form so it can be checked against RANKED_MODES directly.
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import requests
 
@@ -51,6 +51,11 @@ BROWSER_HEADERS = {
 # is that it must never be able to make the allowlist worse.
 MIN_MAPS = 12
 MIN_MODES = 4
+
+# A map must be unseen for this long before it counts as out of rotation. The
+# source renders partially — one Hot Zone map on 2026-08-24 — so a single miss
+# is far more likely to be a bad scrape than a real change.
+ROTATION_GRACE_DAYS = 3
 
 MAP_JSON = re.compile(r'"map":"([^"]{2,40})","mode":"([a-zA-Z]{3,20})"')
 
@@ -105,11 +110,48 @@ def fetch_pool():
 
 
 def publish(pool):
-    """Upsert the observed rotation; mark anything absent as out of rotation."""
-    now = datetime.now(timezone.utc).isoformat()
+    """Record what was observed, and seed anything the baseline knows about.
+
+    TWO THINGS THIS DELIBERATELY DOES NOT DO.
+
+    It does not treat the source as authoritative about what is OUT. The page is
+    demonstrably partial — it listed a single Hot Zone map on 2026-08-24, when
+    the mode plainly has more — so a map missing from one scrape is far more
+    likely to be an incomplete render than a real rotation change. in_rotation is
+    therefore derived from how recently a map was last seen, not from whether it
+    appeared in this one run, so a flaky scrape self-corrects instead of marking
+    real maps dead.
+
+    It also does not let the table be limited to whatever the source showed. The
+    hardcoded RANKED_MAPS baseline is seeded in on every run, so ranked_map_pool
+    holds the union of "everything we already knew" and "everything the source
+    has ever shown" — which is what the scrapers read.
+    """
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
     rows = [{"map_name": name, "mode": mode, "source": "brawltime",
-             "last_seen": now, "in_rotation": True}
+             "last_seen": now_iso, "in_rotation": True}
             for name, mode in sorted(pool.items())]
+
+    # Seed the baseline for anything the source has never shown us. last_seen is
+    # left at the epoch so these never masquerade as "currently in rotation"
+    # purely because we happen to know the name.
+    known = RANKED_MAPS.get(CURRENT_PATCH, set())
+    unseen = sorted(known - set(pool))
+    baseline_rows = [{"map_name": name, "mode": "unknown", "source": "baseline",
+                      "last_seen": "1970-01-01T00:00:00+00:00", "in_rotation": False}
+                     for name in unseen]
+
+    if baseline_rows:
+        # on_conflict DO NOTHING: never overwrite a real observation with a stub.
+        res0 = requests.post(
+            f"{SUPABASE_URL}/rest/v1/ranked_map_pool?on_conflict=map_name",
+            json=baseline_rows,
+            headers={**SUPABASE_HEADERS, "Prefer": "resolution=ignore-duplicates"},
+        )
+        if res0.status_code not in (200, 201, 204):
+            print(f"\u26a0\ufe0f baseline seed failed: {res0.status_code} {res0.text[:200]}")
 
     res = requests.post(
         f"{SUPABASE_URL}/rest/v1/ranked_map_pool?on_conflict=map_name",
@@ -117,23 +159,17 @@ def publish(pool):
         headers={**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"},
     )
     if res.status_code not in (200, 201, 204):
-        print(f"⚠️ map pool upsert failed: {res.status_code} {res.text[:200]}")
+        print(f"\u26a0\ufe0f map pool upsert failed: {res.status_code} {res.text[:200]}")
         return False
 
-    # Anything we did NOT see this run has left the rotation. This only flips a
-    # flag; it never deletes collected matches, and because scrapers union this
-    # table with the hardcoded allowlist, a map dropping out here cannot by
-    # itself stop collection — that stays a human decision.
-    quoted = ",".join(f'"{n}"' for n in pool)
-    res2 = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/ranked_map_pool?map_name=not.in.({quoted})&in_rotation=eq.true",
+    # Demote only what has been unseen for a while. One missing scrape means
+    # nothing; several days of absence is a rotation change worth recording.
+    stale = (now - timedelta(days=ROTATION_GRACE_DAYS)).isoformat()
+    requests.patch(
+        f"{SUPABASE_URL}/rest/v1/ranked_map_pool?last_seen=lt.{stale}&in_rotation=eq.true",
         json={"in_rotation": False},
-        headers={**SUPABASE_HEADERS, "Prefer": "return=representation"},
+        headers={**SUPABASE_HEADERS, "Prefer": "return=minimal"},
     )
-    if res2.status_code in (200, 204):
-        left = res2.json() if res2.text else []
-        for r in left:
-            print(f"   ↘ {r['map_name']} has left the rotation")
     return True
 
 
@@ -154,6 +190,7 @@ def main():
         print(f"   {mode:<10} {', '.join(by_mode[mode])}")
 
     hardcoded = RANKED_MAPS.get(CURRENT_PATCH, set())
+    union = hardcoded | set(pool)
     missing = sorted(set(pool) - hardcoded)
     if missing:
         # Informational, not a task. Rotation is automatic: these maps are
