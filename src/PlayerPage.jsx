@@ -18,7 +18,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
-import { supabase, formatBrawlerName, MODE_COLORS, formatMode } from "./appCore";
+import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH } from "./appCore";
+import { computeWinSplit } from "./data/draftEngine";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -38,17 +39,21 @@ function usePlayerHistory(tag) {
     (async () => {
       setState(s => ({ ...s, loading: true }));
       try {
-        const [{ data: brawlers }, { data: maps }] = await Promise.all([
+        const [{ data: brawlers }, { data: maps }, { data: patches }, { data: brackets }] = await Promise.all([
           supabase.from("brawlers").select("id,name"),
           supabase.from("maps").select("id,name,mode"),
+          supabase.from("patches").select("id,name"),
+          supabase.from("rank_brackets").select("id,name"),
         ]);
         const bById = Object.fromEntries((brawlers || []).map(b => [b.id, b.name]));
         const mById = Object.fromEntries((maps || []).map(m => [m.id, m]));
+        const pById = Object.fromEntries((patches || []).map(x => [x.id, x.name]));
+        const rById = Object.fromEntries((brackets || []).map(x => [x.id, x.name]));
 
         const [{ data: rows, error }, { data: trackedRows }] = await Promise.all([
           supabase
             .from("player_matches")
-            .select("match_key,battle_time,map_id,brawler_id,result,is_star_player,team_brawlers,enemy_brawlers,team_tags,enemy_tags")
+            .select("match_key,battle_time,map_id,brawler_id,patch_id,bracket_id,result,is_star_player,team_brawlers,enemy_brawlers,team_tags,enemy_tags")
             .eq("player_tag", tag)
             .order("battle_time", { ascending: false })
             .limit(300),
@@ -68,6 +73,12 @@ function usePlayerHistory(tag) {
           mode: mById[r.map_id]?.mode || "",
           teamNames: (r.team_brawlers || []).map(id => bById[id] || "?"),
           enemyNames: (r.enemy_brawlers || []).map(id => bById[id] || "?"),
+          patch: pById[r.patch_id] || CURRENT_PATCH,
+          // The API exposes no per-match rank tier, so bracket_id is NULL for
+          // anyone we did not seed from a known list. Fall back to the Masters
+          // aggregate — it is by far the largest sample — and SAY SO in the UI
+          // rather than quietly grading a Diamond game against Masters data.
+          bracket: rById[r.bracket_id] || null,
         }));
         setState({ loading: false, rows: hydrated, tracked: trackedRows?.[0] || null, error: null });
       } catch (e) {
@@ -104,6 +115,7 @@ function groupIntoSeries(rows) {
       out.push({
         key: r.match_key,
         map: r.map, mode: r.mode, brawler: r.brawler,
+        patch: r.patch, bracket: r.bracket,
         teamNames: r.teamNames, enemyNames: r.enemyNames,
         newest: r.battle_time, oldest: r.battle_time,
         rounds: [r],
@@ -144,7 +156,178 @@ function Stat({ label, value, color = "#e9e9f2", sub }) {
   );
 }
 
+// ── the draft verdict ────────────────────────────────────────────────────────
+// The most defensible thing this site can show on a match: not what happened,
+// but whether the draft that produced it was any good. It runs the SAME
+// computeWinSplit the Draft Assistant grades a live draft with, over the same
+// aggregate — so a verdict here and a verdict there can never disagree.
+//
+// It needs no depth in the player's own history: one match plus a 1.8M-row
+// aggregate is enough. That is why this ships before the Phase 3 statistics,
+// which do need depth and do not have it yet.
+
+const DEFAULT_BRACKET = "masters_legendary";
+
+// Both fetches are shared across every card on the page and cached by key —
+// expanding five series must not mean five identical downloads.
+const intelCache = new Map();
+const mapStatsCache = new Map();
+
+async function loadIntelligence(patch, bracket) {
+  const key = `${patch}|${bracket}`;
+  if (intelCache.has(key)) return intelCache.get(key);
+  const p = supabase
+    .from("brawler_intelligence")
+    // Only the columns computeWinSplit actually reads. vs_brawler is a large
+    // jsonb blob, so pulling select("*") here would move far more than needed.
+    .select("brawler,true_win_rate,recent_picks,recent_wins,vs_brawler")
+    .eq("patch", patch)
+    .eq("rank_bracket", bracket)
+    .then(({ data }) => {
+      const by = {};
+      for (const r of data || []) by[(r.brawler || "").toUpperCase()] = r;
+      return by;
+    });
+  intelCache.set(key, p);
+  return p;
+}
+
+async function loadMapStats(map, patch, bracket) {
+  const key = `${map}|${patch}|${bracket}`;
+  if (mapStatsCache.has(key)) return mapStatsCache.get(key);
+  const p = supabase
+    .from("BrawlerStats")
+    .select("brawler,picks,wins")
+    .eq("map", map)
+    .eq("patch", patch)
+    .eq("rank_bracket", bracket)
+    .then(({ data }) => {
+      const by = {};
+      for (const r of data || []) {
+        const k = (r.brawler || "").toUpperCase();
+        if (!k) continue;
+        if (!by[k]) by[k] = { picks: 0, wins: 0 };
+        by[k].picks += Number(r.picks) || 0;
+        by[k].wins += Number(r.wins) || 0;
+      }
+      return by;
+    });
+  mapStatsCache.set(key, p);
+  return p;
+}
+
+function verdictLine(mine, won) {
+  const edge = mine - 50;
+  const split = `${Math.round(mine)}/${100 - Math.round(mine)}`;
+  if (Math.abs(edge) < 4) {
+    return won
+      ? `An even draft at ${split} — this one was decided by play, not picks.`
+      : `An even draft at ${split} — the picks didn't lose this, so look at the play.`;
+  }
+  if (edge > 0) {
+    return won
+      ? `You were favoured at ${split}, and converted it.`
+      : `You were favoured at ${split} and lost it — that's a game the draft had already given you.`;
+  }
+  return won
+    ? `You were the underdog at ${split} and won anyway.`
+    : `You were the underdog at ${split}. This was lost in the draft, not on the map.`;
+}
+
+function DraftVerdict({ s, won }) {
+  const [state, setState] = useState({ loading: true, split: null, error: null });
+  const bracket = s.bracket || DEFAULT_BRACKET;
+  const assumedBracket = !s.bracket;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [intelligence, mapStats] = await Promise.all([
+          loadIntelligence(s.patch, bracket),
+          loadMapStats(s.map, s.patch, bracket),
+        ]);
+        if (cancelled) return;
+        const split = computeWinSplit({
+          blueTeam: s.teamNames,
+          redTeam: s.enemyNames,
+          mode: s.mode,
+          mapStats,
+          intelligence,
+        });
+        setState({ loading: false, split, error: null });
+      } catch (e) {
+        if (!cancelled) setState({ loading: false, split: null, error: e.message });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [s.key, bracket]);
+
+  if (state.loading) {
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "10px 2px" }}>Grading the draft…</div>;
+  }
+  if (state.error || !state.split) {
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c", padding: "10px 2px" }}>
+      Couldn't grade this draft — no aggregate for {s.map} on patch {s.patch}.
+    </div>;
+  }
+
+  const mine = Number(state.split.blue);
+  const theirs = state.split.red;
+  // finalSanityCheck reports missing structural ROLES — a mid holder, a lane
+  // anchor, the mode's objective specialist — not brawlers with thin data.
+  // (Checked: it returns strings like "lane anchor", not brawler names.) That
+  // is the more useful thing to say after the fact anyway: a comp with no
+  // anchor lost for a reason a player can act on next time.
+  const myGaps = state.split.blueSanity?.missing || [];
+  const theirGaps = state.split.redSanity?.missing || [];
+
+  return (
+    <div style={{ paddingTop: 12, marginTop: 12, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.8, color: "#6f7180", marginBottom: 8 }}>
+        DRAFT VERDICT
+      </div>
+
+      <div style={{ display: "flex", height: 9, borderRadius: 999, overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ width: `${mine}%`, background: "linear-gradient(90deg,#7cc4ff,#9a8fc0)" }} />
+        <div style={{ width: `${theirs}%`, background: "rgba(255,143,143,.55)" }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 11, marginBottom: 10 }}>
+        <span style={{ color: "#7cc4ff" }}>YOUR COMP {mine.toFixed(0)}%</span>
+        <span style={{ color: "#ff8f8f" }}>{theirs.toFixed(0)}% THEIRS</span>
+      </div>
+
+      <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+        {verdictLine(mine, won)}
+      </div>
+
+      {(myGaps.length > 0 || theirGaps.length > 0) && (
+        <div style={{ marginTop: 10, display: "flex", gap: 7, flexWrap: "wrap" }}>
+          {myGaps.map(g => (
+            <span key={`m${g}`} style={{
+              fontFamily: MONO, fontSize: 10, padding: "5px 10px", borderRadius: 999,
+              background: "rgba(255,143,143,.10)", border: "1px solid rgba(255,143,143,.28)", color: "#ff8f8f",
+            }}>your comp had no {g}</span>
+          ))}
+          {theirGaps.map(g => (
+            <span key={`t${g}`} style={{
+              fontFamily: MONO, fontSize: 10, padding: "5px 10px", borderRadius: 999,
+              background: "rgba(142,230,176,.09)", border: "1px solid rgba(142,230,176,.26)", color: "#8ee6b0",
+            }}>they had no {g}</span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 9, lineHeight: 1.6 }}>
+        Matchup edge only — measured win rates on {s.map} plus head-to-head data, not player skill.
+        {assumedBracket && " Graded against Masters data, since this match's rank tier is unknown."}
+      </div>
+    </div>
+  );
+}
+
 function SeriesCard({ s }) {
+  const [open, setOpen] = useState(false);
   const wins = s.rounds.filter(r => r.result === 1).length;
   const losses = s.rounds.length - wins;
   const won = wins > losses;
@@ -154,12 +337,19 @@ function SeriesCard({ s }) {
 
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 14, alignItems: "center",
       padding: "12px 14px", borderRadius: 12, marginBottom: 8,
       background: won ? "rgba(142,230,176,.05)" : "rgba(255,143,143,.04)",
       border: `1px solid ${won ? "rgba(142,230,176,.20)" : "rgba(255,143,143,.16)"}`,
       borderLeft: `3px solid ${won ? "#8ee6b0" : "#ff8f8f"}`,
     }}>
+    <div
+      role="button" tabIndex={0}
+      onClick={() => setOpen(o => !o)}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } }}
+      style={{
+        display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 14,
+        alignItems: "center", cursor: "pointer",
+      }}>
       <BrawlerChip name={s.brawler} size={38} />
 
       <div style={{ minWidth: 0 }}>
@@ -191,7 +381,13 @@ function SeriesCard({ s }) {
           {s.rounds.length > 1 ? `${s.rounds.length} rounds · ` : ""}
           {when.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </div>
+        <div style={{ fontFamily: MONO, fontSize: 9, color: open ? "#c9a6ff" : "#5a5a6a", marginTop: 4, letterSpacing: 1 }}>
+          {open ? "HIDE ▲" : "VERDICT ▼"}
+        </div>
       </div>
+    </div>
+
+    {open && <DraftVerdict s={s} won={won} />}
     </div>
   );
 }
