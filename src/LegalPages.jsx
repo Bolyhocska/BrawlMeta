@@ -163,6 +163,52 @@ export function PrivacyPolicyPage() {
         </P>
       </Section>
 
+      <Section title="Player match history — please read this one">
+        <P>
+          Separately from the anonymous statistics above, BrawlApex keeps a <Term>match history for
+          individual players</Term>, identified by Brawl Stars player tag. This is the part of the
+          site most worth understanding, so it is spelled out rather than summarised.
+        </P>
+        <P><Term>What is stored:</Term> for each ranked match — when it was played, the map, the
+          brawler that player used, whether they won, and the tags and brawlers of the other five
+          players in the match. Nothing here comes from anywhere except the official Brawl Stars API,
+          which publishes it for any tag.</P>
+        <P><Term>Who gets recorded:</Term> two groups.</P>
+        <UL>
+          <LI>Players on public competitive leaderboards, which we track to build the ranked meta.</LI>
+          <LI><Term>Anyone whose tag is looked up on this site.</Term> Searching a tag starts
+            recording that player's history from that moment on. They are not asked first, and the
+            person searching does not have to be them.</LI>
+        </UL>
+        <P>
+          <Term>Why it works that way.</Term> The Brawl Stars API only exposes a player's last ~25
+          battles and never back-fills, so history that nobody started recording is gone for good.
+          Recording from first sight is the only way a profile is worth anything on a second visit.
+          We think that is the right trade — it is why the feature is free here and paid elsewhere —
+          but it does mean a record exists that the player did not ask for.
+        </P>
+        <P style={{
+          margin: "14px 0 4px", padding: "13px 15px", borderRadius: 10,
+          background: "rgba(142,230,176,.08)", border: "1px solid rgba(142,230,176,.3)", color: "#8ee6b0",
+        }}>
+          <Term>You can stop it at any time.</Term> Look your tag up and press
+          “Stop tracking”. That deletes the stored history immediately and marks the tag so future
+          lookups cannot start it again. No account needed — requiring one to opt out would be
+          absurd, since the people most likely to want out never signed up. You can also email us.
+        </P>
+        <P>
+          <Term>Boosting</Term> is the opposite choice: it asks us to check that profile every few
+          hours instead of twice a day, and to record trophy and progression history as well. It is
+          free and always will be. It exists because the extra requests cost us real budget, so we
+          spend them where someone actually wants them.
+        </P>
+        <P>
+          <Term>Legal basis (GDPR):</Term> legitimate interest in operating a community statistics
+          service, over data the game already publishes. You may object at any time via the control
+          above, and we will honour it without asking for a reason.
+        </P>
+      </Section>
+
       <Section title="Cookies">
         <P>
           BrawlApex uses <Term>essential cookies only</Term>. They keep you signed in and nothing

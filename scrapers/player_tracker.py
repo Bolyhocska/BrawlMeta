@@ -12,13 +12,18 @@
 # not run is a day of history that cannot be bought back later. That is the
 # whole reason this module has no user-visible output.
 #
-# SCOPE, deliberately narrow for Phase 1:
+# SCOPE:
 #   · competitive Ranked only — same filters as the spider, via parse_battle,
 #     so the two can never disagree about what counts as a real match.
-#   · battlelog only. `player_snapshots` (trophy curves) needs a second
-#     /players call per player, which would double the cost of every run against
-#     a shared, IP-allowlisted key for a feature nothing reads yet. It stays
-#     empty until the profile UI exists.
+#   · everyone tracked gets their battlelog read: one request per player.
+#   · BOOSTED profiles additionally get a /players call for trophy and
+#     progression snapshots. That doubles their per-run cost against a single
+#     IP-allowlisted key shared with four other scrapers, which is exactly why
+#     it is opt-in rather than universal — not because it is a premium feature.
+#     Boost is free (Core principle 1); asking is just how we decide where to
+#     spend a finite budget.
+#   · opted-out tags are never polled, and boosted players are ordered first so
+#     that MAX_POLLS_PER_RUN truncating the queue can never drop them.
 
 import time
 import hashlib
@@ -87,10 +92,13 @@ def fetch_due_players(limit=MAX_POLLS_PER_RUN):
         f"{SUPABASE_URL}/rest/v1/tracked_players",
         headers=SUPABASE_HEADERS,
         params={
-            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket",
+            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket,boosted",
             "active": "eq.true",
+            "opted_out": "eq.false",   # a tombstoned tag is never polled again
             "next_poll_at": f"lte.{datetime.now(timezone.utc).isoformat()}",
-            "order": "tier.asc,next_poll_at.asc",
+            # Boosted players first: they asked for this, and if MAX_POLLS_PER_RUN
+            # truncates the queue they are the ones who must not be dropped.
+            "order": "boosted.desc,tier.asc,next_poll_at.asc",
             "limit": str(limit),
         },
     )
@@ -100,7 +108,7 @@ def fetch_due_players(limit=MAX_POLLS_PER_RUN):
     return res.json()
 
 
-def poll_player(row, lookups, out_rows, out_updates, lock):
+def poll_player(row, lookups, out_rows, out_snapshots, out_updates, lock):
     """One battlelog request; append rows to store and a schedule update."""
     tag = row["player_tag"]
     last_seen = None
@@ -170,9 +178,51 @@ def poll_player(row, lookups, out_rows, out_updates, lock):
             "enemy_tags": record["enemy_tags"],
         })
 
+    # Boosted profiles get the second /players call that Phase 1 refused to spend
+    # on everybody. This is the whole substance of the boost: trophy and
+    # progression curves can only be built by diffing snapshots over time, and
+    # they double a player's per-run request cost against the shared key.
+    snapshot = fetch_snapshot(tag) if row.get("boosted") else None
+
     with lock:
         out_rows.extend(rows)
+        if snapshot:
+            out_snapshots.append(snapshot)
         out_updates.append(_schedule(row, new_count=len(rows), newest=newest))
+
+
+def fetch_snapshot(tag):
+    """One /players call → one progression snapshot. Returns None on any
+    failure: a missing snapshot is a gap in a chart, never a reason to lose the
+    match rows we already parsed."""
+    time.sleep(REQUEST_DELAY)
+    try:
+        res = requests.get(f"{BASE_URL}/players/{tag.replace('#', '%23')}",
+                           headers=HEADERS, proxies=PROXIES)
+        STATS.record_response(res)
+        if res.status_code != 200:
+            return None
+        p = res.json()
+    except Exception:
+        return None
+
+    brawlers = p.get("brawlers") or []
+    return {
+        "player_tag": tag,
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+        "trophies": p.get("trophies"),
+        "highest_trophies": p.get("highestTrophies"),
+        "exp_level": p.get("expLevel"),
+        "victories_3v3": p.get("3vs3Victories"),
+        "solo_victories": p.get("soloVictories"),
+        "duo_victories": p.get("duoVictories"),
+        "brawlers_owned": len(brawlers),
+        "club_tag": (p.get("club") or {}).get("tag"),
+        # Per-brawler trophies, so a boosted profile can show which brawler a
+        # push actually came from rather than just a total moving.
+        "brawler_trophies": {str(b.get("id")): b.get("trophies")
+                             for b in brawlers if b.get("id") is not None},
+    }
 
 
 def _schedule(row, new_count, newest=None, dead=False):
@@ -237,6 +287,25 @@ def save_player_matches(rows):
     return stored
 
 
+def save_player_snapshots(rows):
+    if not rows:
+        return 0
+    url = f"{SUPABASE_URL}/rest/v1/player_snapshots?on_conflict=player_tag,taken_at"
+    headers = {**SUPABASE_HEADERS, "Prefer": "resolution=ignore-duplicates,return=representation"}
+    stored = 0
+    for i in range(0, len(rows), INSERT_BATCH_SIZE):
+        if i:
+            time.sleep(DB_BATCH_DELAY)
+        res = requests.post(url, json=rows[i:i + INSERT_BATCH_SIZE], headers=headers)
+        if res.status_code in (200, 201):
+            stored += len(res.json())
+        else:
+            print(f"⚠️ player_snapshots insert failed at {i}: {res.status_code} {res.text[:200]}")
+            break
+    print(f"📈 {stored} progression snapshot(s) stored for boosted profiles.")
+    return stored
+
+
 def save_schedules(updates):
     if not updates:
         return
@@ -268,15 +337,17 @@ def main():
     if not due:
         print("No players due for polling.")
         return
-    print(f"{len(due)} player(s) due (cap {MAX_POLLS_PER_RUN}).")
+    boosted = sum(1 for r in due if r.get("boosted"))
+    print(f"{len(due)} player(s) due (cap {MAX_POLLS_PER_RUN}); {boosted} boosted.")
 
-    rows, updates, lock = [], [], threading.Lock()
+    rows, snapshots, updates, lock = [], [], [], threading.Lock()
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        futures = [pool.submit(poll_player, r, lookups, rows, updates, lock) for r in due]
+        futures = [pool.submit(poll_player, r, lookups, rows, snapshots, updates, lock) for r in due]
         for f in futures:
             f.result()
 
     save_player_matches(rows)
+    save_player_snapshots(snapshots)
     save_schedules(updates)
     prune()
     STATS.report("player_tracker")

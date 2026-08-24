@@ -36,6 +36,21 @@ export async function dbInsert(table, rows) {
   return res.json();
 }
 
+// Call a Postgres function. The player-tracking RPCs (enrol_player,
+// boost_player, untrack_player) have EXECUTE revoked from anon/authenticated
+// precisely so they can only be reached this way — through a route that has
+// already validated the request — rather than straight from the browser.
+export async function dbRpc(fn, args = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) throw Object.assign(new Error(`db rpc ${fn}: ${res.status} ${await res.text()}`), { status: 502 });
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
 export async function dbUpdate(table, query, patch) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
     method: "PATCH",

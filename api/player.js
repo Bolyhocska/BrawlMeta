@@ -7,7 +7,7 @@
 // Requires SUPERCELL_API_KEY (+ PROXY_HOST/PORT/USER/PASS) in Vercel env.
 
 import { getPlayer, isConfigured } from "./_lib/supercell.js";
-import { json } from "./_lib/db.js";
+import { json, dbRpc } from "./_lib/db.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return json(res, 405, { error: "GET only" });
@@ -21,6 +21,19 @@ export default async function handler(req, res) {
     const result = await getPlayer(tag);
     if (!result.ok) return json(res, result.status, { error: result.error, message: result.message, cause: result.cause });
     const p = result.data;
+
+    // ENROL-ON-LOOKUP. Looking a player up starts recording their match history
+    // from this moment on — free, automatic, and the direct answer to Brawlify
+    // paywalling a player's own past. The battlelog is a ~25-battle rolling
+    // buffer that never back-fills, so a tag nobody has ever looked up has no
+    // recoverable history; enrolling on first sight is the only way the second
+    // visit is worth anything.
+    //
+    // Fire-and-forget on purpose: this is a side effect of the lookup, not part
+    // of answering it, and a tracking write must never make a page fail to load.
+    // enrol_player itself refuses to resurrect an opted-out tag.
+    dbRpc("enrol_player", { p_tag: `#${tag}`, p_name: p.name ?? null })
+      .catch(e => console.error("enrol_player failed (non-fatal):", e.message));
 
     const brawlers = Array.isArray(p.brawlers) ? p.brawlers : [];
     const best = [...brawlers].sort((a, b) => (b.trophies || 0) - (a.trophies || 0)).slice(0, 3)
