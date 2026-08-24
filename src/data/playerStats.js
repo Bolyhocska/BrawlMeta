@@ -444,3 +444,78 @@ export function classFingerprint(series, intelligence) {
   }
   return out.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 }
+
+// ── OP-2 the nemesis table ───────────────────────────────────────────────────
+// Two columns, and the split is the whole design. Column A is the POPULATION's
+// head-to-head rate, which exists today for every pairing from 1.8M matches.
+// Column B is the player's own record, which for most people will never reach a
+// usable sample against most brawlers (the deepest personal pairing in the whole
+// database is ~6 series).
+//
+// Shipping A filled and B showing its own progress means the reader gets real,
+// sourced information on day one — which matchups are structurally hard — and
+// watches their own column fill in. The threshold is the product, not an excuse.
+
+// Personal rate needs this many series against that specific brawler.
+const NEMESIS_PERSONAL_MIN = 15;
+// Population pairs below this are noise even at 1.8M matches. The config's
+// pairMinPicks is 20, but a 20-game rate carries ~11 points of error, which is
+// far too loose to call something a nemesis; 200 gives ~3.5 and still keeps
+// 6,160 of 10,171 stored pairs (measured 2026-08-24).
+const NEMESIS_POP_MIN_PICKS = 200;
+
+// The table is anchored to the brawler the player actually plays, so there has
+// to BE one. With a handful of drafts spread across a handful of brawlers the
+// "most played" is whichever they picked once, and calling that a signature is
+// simply false — the panel stays hidden until a real main exists.
+const MIN_SIGNATURE_DRAFTS = 3;
+
+/**
+ * Worst population matchups for the player's signature brawler, with their own
+ * record against each overlaid.
+ * @returns {{brawler, rows:[{enemy, popRate, popPicks, mine:{n,wins}|null, qualified}]}|null}
+ */
+export function nemesisTable(series, intelligence) {
+  if (!series.length) return null;
+
+  // Signature brawler = most drafted. Anything else would mix matchup profiles
+  // from different brawlers into one row and mean nothing.
+  const byBrawler = {};
+  for (const s of series) byBrawler[s.brawler] = (byBrawler[s.brawler] || 0) + 1;
+  const [brawler, played] = Object.entries(byBrawler).sort((a, b) => b[1] - a[1])[0] || [];
+  if (!brawler || played < MIN_SIGNATURE_DRAFTS) return null;
+
+  const vs = intelligence?.[brawler.toUpperCase()]?.vs_brawler;
+  if (!vs || typeof vs !== "object") return null;
+
+  // The player's own record against each enemy, but ONLY from series where they
+  // actually played this brawler — otherwise the two columns describe different
+  // things and the comparison is meaningless.
+  const mine = {};
+  for (const s of series) {
+    if (s.brawler !== brawler) continue;
+    for (const e of s.enemyNames || []) {
+      if (!e) continue;
+      mine[e] = mine[e] || { n: 0, wins: 0 };
+      mine[e].n += 1;
+      if (s.won) mine[e].wins += 1;
+    }
+  }
+
+  const rows = [];
+  for (const [enemy, v] of Object.entries(vs)) {
+    const picks = Number(v?.picks) || 0;
+    const rate = parseFloat(v?.winRate);
+    if (picks < NEMESIS_POP_MIN_PICKS || !Number.isFinite(rate)) continue;
+    const m = mine[enemy.toUpperCase()] || mine[enemy] || null;
+    rows.push({
+      enemy, popRate: rate, popPicks: picks,
+      mine: m, qualified: !!m && m.n >= NEMESIS_PERSONAL_MIN,
+    });
+  }
+  // Sorted by the population edge, since that is the column that is actually
+  // populated. Re-sorting by personal difference only makes sense once enough
+  // rows qualify, which for most players is months away.
+  rows.sort((a, b) => a.popRate - b.popRate);
+  return { brawler, played, rows, personalMin: NEMESIS_PERSONAL_MIN };
+}

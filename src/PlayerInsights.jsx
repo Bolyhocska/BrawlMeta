@@ -15,10 +15,11 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   toSeries, gradeSeries, aboveDraft, draftBuckets, eventFacts,
-  squadAndRivals, ladderState, LADDER, classFingerprint,
+  squadAndRivals, ladderState, LADDER, classFingerprint, nemesisTable,
   loadIntelligence, DEFAULT_BRACKET,
 } from "./data/playerStats";
 import { classLabel } from "./data/draftEngine";
+import { formatBrawlerName } from "./appCore";
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -289,6 +290,59 @@ function FingerprintPanel({ rows, n }) {
   );
 }
 
+
+// ── OP-2 the nemesis table ───────────────────────────────────────────────────
+// Two columns on purpose. The field column is real today, from 1.8M matches.
+// The personal column will take most players months to fill for most brawlers,
+// so it shows its own progress instead of pretending. Watching your column
+// arrive is the point, not a consolation for it being empty.
+
+function NemesisPanel({ table }) {
+  if (!table || table.rows.length < 3) return null;
+  const worst = table.rows.slice(0, 6);
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>WHAT BEATS YOUR {formatBrawlerName(table.brawler).toUpperCase()}</div>
+
+      <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c", marginBottom: 11 }}>
+        Your most-drafted brawler — {table.played} draft{table.played === 1 ? "" : "s"}.
+        Hardest matchups across everyone in your bracket:
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        {worst.map(r => (
+          <div key={r.enemy} style={{
+            display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center",
+            padding: "9px 12px", borderRadius: 10,
+            background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)",
+          }}>
+            <span style={{ fontSize: 13, color: "#e2e2ec" }}>{formatBrawlerName(r.enemy)}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: r.popRate < 45 ? "#ff8f8f" : "#c9c9d6", textAlign: "right" }}>
+              {r.popRate.toFixed(1)}%
+              {/* the sample is what justifies trusting this column, so show it */}
+              <span style={{ color: "#5a5a6a", fontSize: 9 }}> · {r.popPicks.toLocaleString("en-US")} games</span>
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180", textAlign: "right", minWidth: 96 }}>
+              {r.mine
+                ? (r.qualified
+                    ? `you ${((r.mine.wins / r.mine.n) * 100).toFixed(0)}%`
+                    : `you ${r.mine.wins}–${r.mine.n - r.mine.wins} · +${table.personalMin - r.mine.n} more`)
+                : "not faced yet"}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={NOTE}>
+        Field rates come from every ranked match we hold at your bracket, so they are solid now.
+        Your own column needs {table.personalMin} drafts against a brawler before it becomes a
+        percentage — until then it shows the raw record and how far off it is.
+      </div>
+    </div>
+  );
+}
+
 // ── OV-4 coverage ────────────────────────────────────────────────────────────
 
 export function CoverageLine({ tracked, seriesCount }) {
@@ -360,6 +414,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer })
       <AboveDraftPanel ad={ad} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}
+      {intel && <NemesisPanel table={nemesisTable(series, intel)} />}
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
     </>
   );

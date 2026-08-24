@@ -20,7 +20,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH } from "./appCore";
 import { computeWinSplit } from "./data/draftEngine";
-import { toSeries, bestSwap, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
+import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights from "./PlayerInsights";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
@@ -428,6 +428,33 @@ export default function PlayerPage() {
   }, [tag]);
 
   const series = useMemo(() => toSeries(rows), [rows]);
+
+  // DR-1: the series list is filterable by RESULT (table stakes) and by DRAFT
+  // LABEL — which nothing else in the category can offer, because nothing else
+  // grades the draft. Grading the whole list once here also warms the caches
+  // the insight panels need.
+  const [filter, setFilter] = useState("all");
+  const [labels, setLabels] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!series.length) { setLabels({}); return; }
+    gradeSeries(series)
+      .then(g => {
+        if (cancelled) return;
+        const by = {};
+        for (const x of g) by[x.key] = bucketOf(x.p);
+        setLabels(by);
+      })
+      .catch(() => { if (!cancelled) setLabels({}); });
+    return () => { cancelled = true; };
+  }, [series]);
+
+  const shown = useMemo(() => {
+    if (filter === "all") return series;
+    if (filter === "won") return series.filter(s => s.won);
+    if (filter === "lost") return series.filter(s => !s.won);
+    return series.filter(s => labels?.[s.key] === filter);
+  }, [series, filter, labels]);
   const wins = rows.filter(r => r.result === 1).length;
   const wr = rows.length ? (wins / rows.length) * 100 : null;
   const starGames = rows.filter(r => r.is_star_player === true).length;
@@ -517,8 +544,29 @@ export default function PlayerPage() {
           onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
 
         {/* History */}
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", margin: "0 0 12px" }}>
-          [ MATCH HISTORY ]
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "0 0 12px" }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180" }}>
+            [ MATCH HISTORY ]
+          </span>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {[["all", "ALL"], ["won", "WON"], ["lost", "LOST"],
+              ["favoured", "FAVOURED"], ["even", "EVEN"], ["underdog", "UNDERDOG"]].map(([k, label]) => {
+              const on = filter === k;
+              const needsGrade = ["favoured", "even", "underdog"].includes(k);
+              return (
+                <button key={k} onClick={() => setFilter(k)}
+                  disabled={needsGrade && !labels}
+                  style={{
+                    fontFamily: MONO, fontSize: 9, letterSpacing: 1.1, padding: "5px 10px",
+                    borderRadius: 999, cursor: needsGrade && !labels ? "default" : "pointer",
+                    color: on ? "#0d0d14" : "#8a8a9c", fontWeight: on ? 700 : 400,
+                    background: on ? "#c9a6ff" : "transparent",
+                    border: `1px solid ${on ? "#c9a6ff" : "rgba(255,255,255,.12)"}`,
+                    opacity: needsGrade && !labels ? .4 : 1,
+                  }}>{label}</button>
+              );
+            })}
+          </div>
         </div>
 
         {loading && <div style={{ fontFamily: MONO, fontSize: 12, color: "#6f7180" }}>Loading history…</div>}
@@ -538,7 +586,13 @@ export default function PlayerPage() {
           </div>
         )}
 
-        {!loading && series.map(s => <SeriesCard key={s.key} s={s} />)}
+        {!loading && shown.map(s => <SeriesCard key={s.key} s={s} />)}
+
+        {!loading && series.length > 0 && shown.length === 0 && (
+          <div style={{ fontFamily: MONO, fontSize: 11.5, color: "#6f7180", padding: "14px 2px" }}>
+            No drafts match that filter.
+          </div>
+        )}
 
         {rows.length >= 300 && (
           <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 10 }}>
