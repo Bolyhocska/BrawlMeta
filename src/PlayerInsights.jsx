@@ -19,6 +19,7 @@ import {
   loadIntelligence, DEFAULT_BRACKET,
 } from "./data/playerStats";
 import { classLabel } from "./data/draftEngine";
+import { supabase } from "./appCore";
 import { formatBrawlerName } from "./appCore";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -343,6 +344,55 @@ function NemesisPanel({ table }) {
   );
 }
 
+
+// ── PR-1 trophy curve ────────────────────────────────────────────────────────
+// Free, for every tracked player, no account and no boost. Brawlify charges
+// $4.99/mo for roughly this and our own analysis called that "the least
+// defensible paywall on the site" — shipping it behind a signup wall would have
+// been the same shape. Boost only buys per-brawler detail daily instead of
+// weekly; the curve itself is never withheld.
+
+function TrophyCurve({ snapshots }) {
+  if (!snapshots || snapshots.length < 2) return null;
+  const pts = snapshots
+    .filter(s => Number.isFinite(Number(s.trophies)))
+    .map(s => ({ t: new Date(s.taken_at).getTime(), v: Number(s.trophies) }))
+    .sort((a, b) => a.t - b.t);
+  if (pts.length < 2) return null;
+
+  const W = 560, H = 110, PAD = 8;
+  const lo = Math.min(...pts.map(p => p.v)), hi = Math.max(...pts.map(p => p.v));
+  const span = Math.max(1, hi - lo);
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t || t0 + 1;
+  const x = (t) => PAD + ((t - t0) / Math.max(1, t1 - t0)) * (W - 2 * PAD);
+  const y = (v) => H - PAD - ((v - lo) / span) * (H - 2 * PAD);
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("");
+  const net = pts[pts.length - 1].v - pts[0].v;
+  const days = Math.max(1, Math.round((t1 - t0) / 86400000));
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>TROPHY HISTORY</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 11, flexWrap: "wrap", marginBottom: 10 }}>
+        <span style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 800, color: "#ffce7a" }}>
+          {pts[pts.length - 1].v.toLocaleString("en-US")}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: net >= 0 ? "#8ee6b0" : "#ff8f8f" }}>
+          {net >= 0 ? "+" : ""}{net.toLocaleString("en-US")} over {days} day{days === 1 ? "" : "s"}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+        <path d={d} fill="none" stroke="#ffce7a" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={x(pts[pts.length - 1].t)} cy={y(pts[pts.length - 1].v)} r="3.4" fill="#ffce7a" />
+      </svg>
+      <div style={NOTE}>
+        One point a day from when tracking started — free for everyone, no account needed.
+        {pts.length < 7 && ` ${pts.length} days so far; the shape gets meaningful after a week or two.`}
+      </div>
+    </div>
+  );
+}
+
 // ── OV-4 coverage ────────────────────────────────────────────────────────────
 
 export function CoverageLine({ tracked, seriesCount }) {
@@ -373,6 +423,19 @@ export function CoverageLine({ tracked, seriesCount }) {
  *   and route, not re-render everything that lives on /player/:tag.
  */
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
+  const [snapshots, setSnapshots] = useState([]);
+  useEffect(() => {
+    if (!selfTag) return;
+    let cancelled = false;
+    supabase.from("player_snapshots")
+      .select("taken_at,trophies")
+      .eq("player_tag", selfTag)
+      .order("taken_at", { ascending: false })
+      .limit(400)
+      .then(({ data }) => { if (!cancelled) setSnapshots(data || []); });
+    return () => { cancelled = true; };
+  }, [selfTag]);
+
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
 
@@ -418,6 +481,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
         <CoverageLine tracked={tracked} seriesCount={series.length} />
         <FactsStrip facts={facts.slice(0, 2)} />
         <AboveDraftPanel ad={ad} />
+        <TrophyCurve snapshots={snapshots} />
       </>
     );
   }
@@ -430,6 +494,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}
       {intel && <NemesisPanel table={nemesisTable(series, intel)} />}
+      <TrophyCurve snapshots={snapshots} />
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
     </>
   );

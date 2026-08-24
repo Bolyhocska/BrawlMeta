@@ -16,12 +16,13 @@
 #   · competitive Ranked only — same filters as the spider, via parse_battle,
 #     so the two can never disagree about what counts as a real match.
 #   · everyone tracked gets their battlelog read: one request per player.
-#   · BOOSTED profiles additionally get a /players call for trophy and
-#     progression snapshots. That doubles their per-run cost against a single
-#     IP-allowlisted key shared with four other scrapers, which is exactly why
-#     it is opt-in rather than universal — not because it is a premium feature.
-#     Boost is free (Core principle 1); asking is just how we decide where to
-#     spend a finite budget.
+#   · EVERY tracked player gets a daily trophy snapshot, shown free. Once a day
+#     rather than once a poll: a curve needs one point a day, and that keeps it
+#     to one extra request per player per day.
+#   · Per-brawler trophies (the heavy jsonb) are captured WEEKLY for everyone and
+#     DAILY for boosted profiles. That column is ~2 KB a row against ~120 bytes
+#     for the totals, so daily-for-everyone would be ~6.9 GB a year at 10k
+#     players. Boost buys RESOLUTION, not access — nothing is withheld.
 #   · opted-out tags are never polled, and boosted players are ordered first so
 #     that MAX_POLLS_PER_RUN truncating the queue can never drop them.
 
@@ -92,7 +93,7 @@ def fetch_due_players(limit=MAX_POLLS_PER_RUN):
         f"{SUPABASE_URL}/rest/v1/tracked_players",
         headers=SUPABASE_HEADERS,
         params={
-            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket,boosted",
+            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket,boosted,last_snapshot_at,last_brawler_snapshot_at",
             "active": "eq.true",
             "opted_out": "eq.false",   # a tombstoned tag is never polled again
             "next_poll_at": f"lte.{datetime.now(timezone.utc).isoformat()}",
@@ -178,20 +179,45 @@ def poll_player(row, lookups, out_rows, out_snapshots, out_updates, lock):
             "enemy_tags": record["enemy_tags"],
         })
 
-    # Boosted profiles get the second /players call that Phase 1 refused to spend
-    # on everybody. This is the whole substance of the boost: trophy and
-    # progression curves can only be built by diffing snapshots over time, and
-    # they double a player's per-run request cost against the shared key.
-    snapshot = fetch_snapshot(tag) if row.get("boosted") else None
+    # One snapshot per player per day, for everyone — shown free. want_brawlers
+    # decides only whether this one carries the heavy per-brawler jsonb.
+    due, want_brawlers = snapshot_due(row)
+    snapshot = fetch_snapshot(tag, want_brawlers) if due else None
 
     with lock:
         out_rows.extend(rows)
         if snapshot:
             out_snapshots.append(snapshot)
-        out_updates.append(_schedule(row, new_count=len(rows), newest=newest))
+        out_updates.append(_schedule(row, new_count=len(rows), newest=newest,
+                                     snapped=bool(snapshot), snapped_brawlers=bool(snapshot and want_brawlers)))
 
 
-def fetch_snapshot(tag):
+SNAPSHOT_EVERY_HOURS = 20        # "daily", with slack so cron drift never skips a day
+BRAWLER_DETAIL_EVERY_DAYS = 7    # weekly for everyone, daily for boosted
+
+
+def _age_hours(value):
+    if not value:
+        return None                  # never captured
+    try:
+        then = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    return (datetime.now(timezone.utc) - then).total_seconds() / 3600
+
+
+def snapshot_due(row):
+    """(take_one, include_per_brawler) for this player, this run."""
+    age = _age_hours(row.get("last_snapshot_at"))
+    if not (age is None or age >= SNAPSHOT_EVERY_HOURS):
+        return False, False
+    b_age = _age_hours(row.get("last_brawler_snapshot_at"))
+    want = (b_age is None or bool(row.get("boosted"))
+            or b_age >= BRAWLER_DETAIL_EVERY_DAYS * 24)
+    return True, want
+
+
+def fetch_snapshot(tag, include_brawlers):
     """One /players call → one progression snapshot. Returns None on any
     failure: a missing snapshot is a gap in a chart, never a reason to lose the
     match rows we already parsed."""
@@ -218,14 +244,14 @@ def fetch_snapshot(tag):
         "duo_victories": p.get("duoVictories"),
         "brawlers_owned": len(brawlers),
         "club_tag": (p.get("club") or {}).get("tag"),
-        # Per-brawler trophies, so a boosted profile can show which brawler a
-        # push actually came from rather than just a total moving.
-        "brawler_trophies": {str(b.get("id")): b.get("trophies")
-                             for b in brawlers if b.get("id") is not None},
+        # The heavy column — omitted on most days, see BRAWLER_DETAIL_EVERY_DAYS.
+        "brawler_trophies": ({str(b.get("id")): b.get("trophies")
+                              for b in brawlers if b.get("id") is not None}
+                             if include_brawlers else None),
     }
 
 
-def _schedule(row, new_count, newest=None, dead=False):
+def _schedule(row, new_count, newest=None, dead=False, snapped=False, snapped_brawlers=False):
     """Adaptive interval for one player. Pure function of what we just saw."""
     interval = row.get("poll_interval_mins") or 1440
     empty = row.get("consecutive_empty") or 0
@@ -263,6 +289,12 @@ def _schedule(row, new_count, newest=None, dead=False):
         "consecutive_empty": empty,
         "active": active,
         "last_battle_at": newest.isoformat() if newest is not None else row.get("last_battle_at"),
+        # Both always present, carrying the stored value forward when nothing was
+        # taken. A missing key would break the batch (PGRST102), and a None would
+        # merge over the timestamp and make every run think a snapshot was due.
+        "last_snapshot_at": now.isoformat() if snapped else row.get("last_snapshot_at"),
+        "last_brawler_snapshot_at": (now.isoformat() if snapped_brawlers
+                                     else row.get("last_brawler_snapshot_at")),
     }
 
 

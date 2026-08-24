@@ -1378,21 +1378,23 @@ export function TournamentProfilePage() {
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
 
-        {/* PROGRESSION. Trophy curves come from player_snapshots, which is only
-            written for boosted profiles — so rather than a locked teaser or a
-            generic upsell banner, the prompt sits exactly where the missing
-            chart would be. A boost costs the reader nothing and costs us one
-            extra API call per poll, which is the honest thing to say. */}
+        {/* PROGRESSION. Trophy history is free for everyone — a curve is not
+            something to withhold, and gating it behind signup would be the same
+            shape as the paywall our own analysis criticises Brawlify for. The
+            curve renders in the insight panels above once there are two days of
+            it. Boost buys per-brawler detail daily instead of weekly, which is
+            a genuine cost difference rather than an artificial lock. */}
         {myTag && !trackedRow?.boosted && (
           <>
             <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 12 }}>◈ PROGRESSION</span>
             <div style={{ ...page.card, padding: "18px 20px", marginBottom: 28 }}>
               <div style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 700, color: "#f4f4fa", marginBottom: 5 }}>
-                No trophy history yet
+                Want to see which brawler the push came from?
               </div>
               <div style={{ fontSize: 13, color: "#8b8b9c", lineHeight: 1.65, marginBottom: 12 }}>
-                We only record trophy and per-brawler progression for boosted profiles — it needs a
-                second lookup on every poll. Boost is free; it just tells us the data is wanted.
+                Your trophy curve is recorded daily and shown free. Boosting adds per-brawler
+                trophies every day instead of once a week — that column is bulky, so we only keep
+                it at full resolution where someone actually wants it.
               </div>
               <Link to={`/player/${myTag.replace("#", "")}`} style={{
                 ...page.btn, display: "inline-flex", alignItems: "center", gap: 8,
