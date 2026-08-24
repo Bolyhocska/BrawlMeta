@@ -62,6 +62,17 @@ file first, then continue at the first unchecked box. Commit + push after every 
 - [ ] P0.5b **Owner decision:** send the Supercell Creator Program letter? (§0.3, §8.2)
 - [ ] P0.6 Owner (unblocked browser) does the visual pass on Brawlify's player pages (§1, §8.6)
 
+### Phase 1 — Start the clock (SHIPPED 2026-08-24)
+- [x] P1.1 Schema: tracked_players, player_matches, player_snapshots (+ seed_bracket)
+- [x] P1.2 prune_player_matches RPC, EXECUTE revoked from browser roles
+- [x] P1.3 parse_battle extracted from fetch_player_battles, spider behaviour verified unchanged
+- [x] P1.4 scrapers/player_tracker.py with adaptive polling
+- [x] P1.5 .github/workflows/track-players.yml
+- [x] P1.6 Seeded 1,432 players from the three existing lists
+- [x] P1.7 Verified live: 5,616 rows / 332 players; 313 opposing-pair results cross-checked
+      with zero contradictions; schedules advancing; 9 dead tags auto-deactivated
+- [ ] P1.8 Watch a few scheduled runs before building anything on top
+
 ## Session log
 - 2026-08-19: scaffolding created. First agent fan-out (3 agents) killed by session limit reset.
 
