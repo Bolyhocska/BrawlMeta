@@ -14,20 +14,18 @@
 //   409 { status:"invalid_state" }    → match not active / already verified
 
 import {
-  normalizeTag, encodeTag, findTournamentMatch, rateLimited, rateLimitRemaining,
+  normalizeTag, findTournamentMatch, rateLimited, rateLimitRemaining,
 } from "../src/data/verifyLogic.js";
 import { assertEnv, dbSelect, dbInsert, dbUpdate, advanceWinner, creditWallets, json } from "./_lib/db.js";
-import { supercellFetch } from "./_lib/proxyFetch.js";
+import { getBattlelog, isConfigured } from "./_lib/supercell.js";
 
-const SUPERCELL_API_KEY = process.env.SUPERCELL_API_KEY;
-const API_BASE = process.env.SUPERCELL_API_BASE || "https://api.brawlstars.com/v1";
 const WINDOW_MS = 45 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "POST only" });
   try {
     assertEnv();
-    if (!SUPERCELL_API_KEY) return json(res, 500, { error: "Server missing SUPERCELL_API_KEY" });
+    if (!isConfigured()) return json(res, 500, { error: "Server missing SUPERCELL_API_KEY" });
 
     const { matchId, playerTag } = req.body ?? {};
     if (!matchId || !playerTag) return json(res, 400, { error: "matchId and playerTag required" });
@@ -52,16 +50,11 @@ export default async function handler(req, res) {
       return json(res, 429, { status: "rate_limited", retryAfterMs: rateLimitRemaining(prior[0].last_attempt_time) });
     }
 
-    // Target player = first tag of team A; one battle-log call verifies all 6.
-    // Routed through the same static-IP proxy the scrapers package uses —
-    // Supercell
-    // keys are locked to an allowlisted IP, and Vercel's outbound IP isn't
-    // static, so a direct call would be rejected.
+    // Target player = first tag of team A; one battle-log call verifies all 6,
+    // since their log already lists every participant. Proxy routing and the
+    // undici gotchas live in _lib/supercell.js.
     const targetTag = normalizeTag(match.team_a_tags[0]);
-    const scRes = await supercellFetch(
-      `${API_BASE}/players/${encodeTag(targetTag)}/battlelog`,
-      { headers: { Authorization: `Bearer ${SUPERCELL_API_KEY}` }, signal: AbortSignal.timeout(15000) }
-    );
+    const scRes = await getBattlelog(targetTag);
 
     const logAttempt = async (status, resultJson) => {
       if (prior.length) {
@@ -78,11 +71,14 @@ export default async function handler(req, res) {
       }
     };
 
+    // getBattlelog returns { ok, data } | { ok:false, status, error, message },
+    // not a raw Response — the shared client reads and classifies the body so
+    // every route reports upstream failures the same way.
     if (!scRes.ok) {
-      await logAttempt("error", { supercellStatus: scRes.status });
+      await logAttempt("error", { supercellStatus: scRes.status, reason: scRes.error });
       return json(res, 502, { status: "error", reason: `supercell_api_${scRes.status}` });
     }
-    const battleLog = await scRes.json();
+    const battleLog = scRes.data;
 
     const anchor = match.scheduled_time ? Date.parse(match.scheduled_time) : null;
     const now = Date.now();

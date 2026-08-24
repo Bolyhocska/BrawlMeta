@@ -6,39 +6,21 @@
 //
 // Requires SUPERCELL_API_KEY (+ PROXY_HOST/PORT/USER/PASS) in Vercel env.
 
-// Use undici's OWN fetch (not Node's global fetch): a ProxyAgent from the
-// standalone undici@8 package must be driven by the matching undici@8 fetch,
-// or the global fetch's internal undici rejects it with UND_ERR_INVALID_ARG.
-import { fetch as undiciFetch, ProxyAgent } from "undici";
+import { getPlayer, isConfigured } from "./_lib/supercell.js";
 import { json } from "./_lib/db.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return json(res, 405, { error: "GET only" });
   try {
-    const key = process.env.SUPERCELL_API_KEY;
-    if (!key) return json(res, 501, { error: "not_configured", message: "SUPERCELL_API_KEY is not set on the server." });
+    if (!isConfigured()) return json(res, 501, { error: "not_configured", message: "SUPERCELL_API_KEY is not set on the server." });
 
     const raw = String(req.query?.tag || "");
     const tag = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
     if (tag.length < 3) return json(res, 400, { error: "bad_tag", message: "Enter a player tag like #2C20JJRG." });
 
-    // undici's ProxyAgent ignores credentials embedded in the URI, so the
-    // Proxy-Authorization header has to be passed explicitly as `token`.
-    const { PROXY_HOST, PROXY_PORT, PROXY_USER, PROXY_PASS } = process.env;
-    let dispatcher;
-    if (PROXY_HOST) {
-      const opts = { uri: `http://${PROXY_HOST}:${PROXY_PORT}` };
-      if (PROXY_USER) opts.token = `Basic ${Buffer.from(`${PROXY_USER}:${PROXY_PASS}`).toString("base64")}`;
-      dispatcher = new ProxyAgent(opts);
-    }
-
-    const r = await undiciFetch(`https://api.brawlstars.com/v1/players/%23${tag}`, {
-      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
-      dispatcher,
-    });
-    if (r.status === 404) return json(res, 404, { error: "player_not_found", message: "No player with that tag — check it against your in-game profile." });
-    if (!r.ok) return json(res, 502, { error: `upstream_${r.status}`, message: "The Brawl Stars API didn't answer — try again in a minute." });
-    const p = await r.json();
+    const result = await getPlayer(tag);
+    if (!result.ok) return json(res, result.status, { error: result.error, message: result.message, cause: result.cause });
+    const p = result.data;
 
     const brawlers = Array.isArray(p.brawlers) ? p.brawlers : [];
     const best = [...brawlers].sort((a, b) => (b.trophies || 0) - (a.trophies || 0)).slice(0, 3)
