@@ -40,6 +40,12 @@ const W = {
   noHyperPenalty: 0.55,
 };
 
+// A brawler counts as a real option in its role only if it is fully fieldable
+// AND worth fielding. 0.5 on the metaStrength scale is a ~51% true win rate.
+const READY_META = 0.5;
+// Three fieldable brawlers in a role is enough to never be stuck in a draft.
+const READY_TARGET = 3;
+
 const STEP = {
   toEleven: 1.00,       // unplayable in ranked below 11 — nothing beats this
   firstSp: 0.50,
@@ -114,19 +120,37 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   const owned = (roster || []).filter(b => num(b.power) >= 1);
   if (!owned.length) return { picks: [], classes: [], saveAdvice: null };
 
-  const maxedByClass = {}, ownedByClass = {};
+  // "Do I have options in this role?" is not the same question as "how many of
+  // these have I maxed?". Measuring raw maxed count made the term useless on any
+  // developed roster: 44 maxed brawlers spread over seven classes cleared the
+  // threshold everywhere except Thrower, so class need was 0.00 for six of seven
+  // and the whole term stopped discriminating. What matters when drafting is how
+  // many brawlers in a role are genuinely FIELDABLE — power 11 (below it there is
+  // no ranked game from Mythic up), hypercharge owned (or you are a tier down on
+  // every exchange), and actually good in the current meta.
+  const readyByClass = {}, maxedByClass = {}, ownedByClass = {};
   for (const b of owned) {
     const cls = draftClassOf(b.name);
     ownedByClass[cls] = (ownedByClass[cls] || 0) + 1;
     if (num(b.power) >= MAX_POWER) maxedByClass[cls] = (maxedByClass[cls] || 0) + 1;
+    const m = metaStrength(b.name, intelligence, rotationStats);
+    if (num(b.power) >= MAX_POWER && (b.hyperCharges || []).length > 0 && num(m) >= READY_META) {
+      readyByClass[cls] = (readyByClass[cls] || 0) + 1;
+    }
   }
   const classes = Object.keys(ownedByClass).map(cls => ({
     cls, label: classLabel(cls),
     owned: ownedByClass[cls] || 0, maxed: maxedByClass[cls] || 0,
-  })).sort((a, b) => a.maxed - b.maxed);
+    ready: readyByClass[cls] || 0,
+  })).sort((a, b) => a.ready - b.ready);
 
-  const totalMaxed = Object.values(maxedByClass).reduce((a, v) => a + v, 0);
-  const classNeed = (cls) => (totalMaxed ? Math.max(0, 1 - (maxedByClass[cls] || 0) / 3) : 0.5);
+  // `banked` counts picks already chosen higher up the list. A recommendation is
+  // a PLAN, not five independent scores: once the list has told you to build a
+  // Thrower, the second Thrower is worth less than it was, because the hole is
+  // already being filled. Folding banked picks into the same count is what makes
+  // the top five a coherent set rather than five answers to the same question.
+  const classNeed = (cls, banked = 0) =>
+    Math.max(0, 1 - ((readyByClass[cls] || 0) + banked) / READY_TARGET);
   const maxPlayed = Math.max(1, ...Object.values(playedCounts));
 
   const scored = [];
@@ -156,12 +180,11 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
 
     const gain = meta * stepImpact(b) * hyperMult;
     const ease = 0.6 + 0.4 * sunk;
-    const demand = 1 + W.classGap * need + W.affinity * affinity;
-    const score = gain * ease * demand + W.waste * waste;
 
     scored.push({
+      gain, ease,
       name: b.name, cls, label: classLabel(cls), power: num(b.power, 1),
-      meta, sunk, waste, classNeed: need, affinity, ownsHyper, rescued,
+      meta, sunk, waste, affinity, ownsHyper, rescued,
       buffieCount: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
       // The full inventory, so the card can state what is already owned rather
       // than mentioning only the parts that happen to drive the score.
@@ -175,19 +198,42 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
           : [],
         hyper: (b.hyperCharges || []).length > 0,
       },
-      step, cost: costToComplete(b), score,
+      step, cost: costToComplete(b),
       odds: buffieOdds(b.name, roster),
-      // Value per 1,000 coins of the immediate step — the only way a 20-coin
-      // level-up and a 5,000-coin hypercharge are comparable at all.
-      perK: step.coins > 0 ? score / (step.coins / 1000) : score,
       played: playedCounts[(b.name || "").toUpperCase()] || 0,
     });
   }
 
-  scored.sort((a, b) => b.score - a.score);
-  for (const p of scored) p.reasons = buildReasons(p);
+  // Greedy selection rather than one sort. Each pick is scored against the roster
+  // AS IT WOULD BE after the picks above it are done, so the list stops
+  // recommending the same hole five times. The class term is a nudge, not a
+  // quota — a genuinely outstanding second Thrower still beats a mediocre Tank.
+  const banked = {};
+  const picks = [];
+  const pool = scored.slice();
+  while (pool.length) {
+    let bestI = 0, bestScore = -Infinity, bestNeed = 0;
+    for (let i = 0; i < pool.length; i++) {
+      const p = pool[i];
+      const need = classNeed(p.cls, banked[p.cls] || 0);
+      const sc = p.gain * p.ease * (1 + W.classGap * need + W.affinity * p.affinity) + W.waste * p.waste;
+      if (sc > bestScore) { bestScore = sc; bestI = i; bestNeed = need; }
+    }
+    const [p] = pool.splice(bestI, 1);
+    p.score = bestScore;
+    p.classNeed = bestNeed;
+    p.classReady = readyByClass[p.cls] || 0;
+    p.classBanked = banked[p.cls] || 0;
+    // Value per 1,000 coins of the immediate step — the only way a 20-coin
+    // level-up and a 5,000-coin hypercharge are comparable at all.
+    p.perK = p.step.coins > 0 ? bestScore / (p.step.coins / 1000) : bestScore;
+    banked[p.cls] = (banked[p.cls] || 0) + 1;
+    picks.push(p);
+  }
 
-  return { picks: scored, classes, saveAdvice: saveOrSpend(scored, owned, classes, roster) };
+  for (const p of picks) p.reasons = buildReasons(p);
+
+  return { picks, classes, saveAdvice: saveOrSpend(picks, owned, classes, roster) };
 }
 
 /**
@@ -204,7 +250,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
  */
 function saveOrSpend(scored, owned, classes, roster) {
   const top = scored[0];
-  const thinRoles = classes.filter(c => c.maxed <= 1).length;
+  const thinRoles = classes.filter(c => c.ready <= 1).length;
   const maxed = owned.filter(b => num(b.power) >= MAX_POWER).length;
   const cheapAndStrong = scored.filter(p => p.meta >= 0.55 && p.step.coins <= 3000).length;
 
@@ -261,15 +307,45 @@ function buildReasons(p) {
         ? " Buffies can't be bought for a chosen brawler, so that's spend you can't redirect."
         : "";
       out.push({
-        tone: "warn",
-        text: `You already own ${listJoin(bits)} here, and at power ${p.power} none of it is usable.${tail}`,
+        tone: p.buffieCount ? "warn" : "info",
+        text: `You already own ${listJoin(bits)} here.${tail}`,
       });
     }
   }
 
-  if (p.meta >= 0.65) out.push({ tone: "good", text: "One of the strongest picks on the maps in rotation right now." });
-  else if (p.meta >= 0.5) out.push({ tone: "good", text: "Solid on the current rotation." });
-  else if (p.meta <= 0.3) out.push({ tone: "muted", text: "Not a standout in the meta — this is about finishing what you started, not chasing a strong brawler." });
+  // Role scarcity and meta strength are ONE argument, not two — "you're thin on
+  // Throwers" and "Sprout is strong" only justify an upgrade together, and split
+  // across two bullets the reader has to join them up. Fold them when both hold,
+  // and fall back to either alone when only one does.
+  const nice = p.name.charAt(0) + p.name.slice(1).toLowerCase();
+  const metaPhrase =
+    p.meta >= 0.65 ? `${nice} is one of the strongest in the meta right now`
+    : p.meta >= 0.5 ? `${nice} is solid in the current meta`
+    : null;
+
+  if (p.classNeed >= 0.33) {
+    const n = p.classReady;
+    // "{label} brawlers", never "{label}s" — the class names don't pluralise
+    // ("no Controls", "no Space Makers" read like nonsense).
+    const have = n === 0
+      ? `You have no ${p.label} brawlers that are fully built and actually good`
+      : `You don't have many strong ${p.label} brawlers — only ${n} of yours ${n > 1 ? "are" : "is"} fully built and actually good`;
+    const banked = p.classBanked
+      ? ` (counting the ${p.classBanked === 1 ? "one" : p.classBanked} above this)`
+      : "";
+    out.push({
+      tone: "info",
+      text: metaPhrase
+        ? `${have}${banked}, and ${metaPhrase}. This fills a real hole in your drafts.`
+        : `${have}${banked}, so this fills a real hole in your drafts.`,
+    });
+  } else if (p.meta >= 0.65) {
+    out.push({ tone: "good", text: "One of the strongest picks on the maps in rotation right now." });
+  } else if (p.meta >= 0.5) {
+    out.push({ tone: "good", text: "Solid on the current rotation." });
+  }
+
+  if (p.meta <= 0.3) out.push({ tone: "muted", text: "Not a standout in the meta — this is about finishing what you started, not chasing a strong brawler." });
 
   if (p.step.unlocks) out.push({ tone: "info", text: `This unlocks the ${p.step.unlocks}.` });
 
@@ -294,7 +370,6 @@ function buildReasons(p) {
     });
   }
 
-  if (p.classNeed >= 0.66) out.push({ tone: "info", text: `You have no maxed ${p.label} — this fills a hole in your drafts.` });
   if (p.affinity >= 0.5) out.push({ tone: "info", text: "One of the brawlers you actually draft." });
 
   if (!out.length) out.push({ tone: "muted", text: "Best remaining value for the coins among what's left." });
