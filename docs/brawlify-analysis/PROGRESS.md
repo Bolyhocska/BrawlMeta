@@ -73,6 +73,13 @@ file first, then continue at the first unchecked box. Commit + push after every 
       with zero contradictions; schedules advancing; 9 dead tags auto-deactivated
 - [ ] P1.8 Watch a few scheduled runs before building anything on top
 
+### Phase 2 prerequisites (plan §5.5, risk 5)
+- [x] P2.0a Self-host the game art — competitor CDN dependency removed (commit 0e5a321)
+- [ ] P2.0b Lift the Supercell client into `api/_lib/supercell.js` before five new endpoints
+      copy-paste the undici gotcha out of `api/player.js`
+- [ ] P2.0c **Owner decision:** enrol-on-lookup — everyone at a low tier, or opt-in only?
+      Privacy posture, and the one Phase 2 feature that cannot be built either way.
+
 ## Session log
 - 2026-08-19: scaffolding created. First agent fan-out (3 agents) killed by session limit reset.
 

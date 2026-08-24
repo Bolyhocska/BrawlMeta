@@ -511,9 +511,19 @@ performance percentile boards. Correct strategy given players can never pay.
 4. **The dedupe bug (§0.2) contaminates the comparison baseline.** "You vs the world" compares a
    player against an aggregate that is biased against popular comps. Either fix the hash first or
    state the caveat — do **not** ship the comparison silently on a known-biased baseline.
-5. **CDN dependency on a competitor.** We hotlink `cdn.brawlify.com` for brawler, mode and gear art
-   (`src/appCore.js:40,54`). They can hotlink-block or rename paths at will, and a player-stats
-   product that competes with them raises the incentive. Self-host the assets before Phase 2.
+5. ~~**CDN dependency on a competitor.**~~ **RESOLVED 2026-08-24 (commit 0e5a321).** 505 assets
+   self-hosted into `public/icons` (1.75 MB) and 495 references rewritten. Two residuals, both
+   deliberate: the 28 urls that 404 on Brawlify's own CDN (see below) stay hotlinked so behaviour
+   is unchanged, and `profile-icons` stay hotlinked because they are keyed on arbitrary per-player
+   iconIds — an open-ended set that cannot be vendored, and `api.brawlify.com` is Cloudflare-gated
+   so it cannot be enumerated either. All three profile-icon render sites already carry `onError`
+   handlers, so that surface degrades to a blank avatar rather than a broken one.
+
+   **Pre-existing bug this surfaced:** the star power and gadget art for **GIGI, GLOWY, MINA,
+   NAJIA, PIERCE, SIRIUS and ZIGGY** (the seven newest brawlers) 404s on Brawlify. Those icons
+   have been broken in production all along — hotlinking hid it, because a missing image and an
+   unreachable one look identical. Their portraits were fine and are now local. Fixing them needs
+   art from another source, or Brawlify publishing it.
 6. **Storage growth** repeating the `ranked_matches` emergency — pre-empted by §5.4.
 7. **Monetization exposure** (§0.3) — orthogonal to this plan, but it funds it.
 
@@ -533,6 +543,6 @@ performance percentile boards. Correct strategy given players can never pay.
    everyone, at a low tier. It is our direct answer to Brawlify's paywall, and it is the cheapest
    moat available. Note it is a privacy posture, not just a technical choice — but the data is
    already public via the official API, and the whole category operates this way.*
-5. **Self-host brawler art** before Phase 2? *Recommendation: yes (risk 5).*
+5. ~~**Self-host brawler art** before Phase 2?~~ **DONE 2026-08-24** — see risk 5.
 6. **Someone with an unblocked browser must do a visual pass on Brawlify's player pages** (§1) —
    the one input this analysis could not obtain.
