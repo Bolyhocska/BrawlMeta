@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Routes, Route, useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, Star, TrendingUp, Check, Crown, LineChart, ArrowUpRight } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
@@ -9,6 +9,7 @@ import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, Saf
 import ScrimsPage from "./ScrimsPage";
 import SiteFooter from "./SiteFooter";
 import { PrivacyPolicyPage, AboutPage } from "./LegalPages";
+import PlayerPage from "./PlayerPage";
 import DraftAssistant from "./DraftAssistant";
 import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
@@ -353,90 +354,16 @@ function PlayerCardSearch() {
               ))}
             </div>
           )}
-          <TrackingControls tag={player.tag} />
+          <div style={{ padding: "0 20px 18px" }}>
+            <Link to={`/player/${(player.tag || "").replace("#", "")}`} style={{
+              display: "inline-block", fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 1.3,
+              padding: "9px 16px", borderRadius: 999, textDecoration: "none", color: "#0d0d14",
+              fontWeight: 700, background: "linear-gradient(135deg,#c9a6ff,#b36bff)",
+            }}>VIEW FULL PROFILE & HISTORY →</Link>
+          </div>
         </div>
       )}
     </section>
-  );
-}
-
-// Tracking is already on by the time this renders — looking a player up enrols
-// them. So this is not an on/off switch; it says plainly what is happening,
-// offers to deepen it, and offers a way out. Saying nothing would be the wrong
-// call: tracking-by-default that the page never mentions is the part people
-// would reasonably object to, not the tracking itself.
-function TrackingControls({ tag }) {
-  const [state, setState] = useState(null);   // null | "boosted" | "untracked"
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(null);
-
-  const call = async (action) => {
-    setBusy(true); setErr(null);
-    try {
-      const r = await fetch("/api/track-player", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tag, action }),
-      });
-      const body = await r.json().catch(() => ({}));
-      if (!r.ok) { setErr(body.message || "That didn't work — try again."); return; }
-      setState(action === "boost" ? "boosted" : "untracked");
-    } catch {
-      setErr("That didn't work — try again.");
-    } finally { setBusy(false); }
-  };
-
-  const box = {
-    margin: "0 20px 18px", padding: "13px 15px", borderRadius: 12,
-    background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
-    fontFamily: MONO_FONT, fontSize: 11.5, lineHeight: 1.65, color: "#8a8a9c",
-  };
-
-  if (state === "untracked") {
-    return (
-      <div style={box}>
-        Tracking stopped and stored history deleted. Looking this tag up again won't re-add it.
-      </div>
-    );
-  }
-
-  if (state === "boosted") {
-    return (
-      <div style={{ ...box, borderColor: "rgba(142,230,176,.35)", background: "rgba(142,230,176,.07)", color: "#8ee6b0" }}>
-        ⚡ Boosted. This profile now updates several times a day and records trophy history.
-      </div>
-    );
-  }
-
-  return (
-    <div style={box}>
-      <div style={{ marginBottom: 10 }}>
-        We've started recording this profile's ranked match history — free, and it stays free.
-      </div>
-      <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-        <button onClick={() => call("boost")} disabled={busy}
-          style={{
-            fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 1.2, cursor: busy ? "default" : "pointer",
-            padding: "8px 15px", borderRadius: 999, color: "#0d0d14", fontWeight: 700,
-            background: "linear-gradient(135deg,#ffce7a,#ffb43d)", border: "none", opacity: busy ? .6 : 1,
-          }}>
-          ⚡ BOOST TRACKING
-        </button>
-        <button onClick={() => call("untrack")} disabled={busy}
-          style={{
-            fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 1.2, cursor: busy ? "default" : "pointer",
-            padding: "8px 15px", borderRadius: 999, color: "#8a8a9c",
-            background: "transparent", border: "1px solid rgba(255,255,255,.14)", opacity: busy ? .6 : 1,
-          }}>
-          STOP TRACKING
-        </button>
-      </div>
-      <div style={{ marginTop: 9, fontSize: 10.5, color: "#6f7180" }}>
-        Boost polls this profile every few hours instead of twice a day, and adds trophy
-        progression. It's free — <a href="/privacy" style={{ color: "#9a8fc0" }}>how we handle your data</a>.
-      </div>
-      {err && <div style={{ marginTop: 8, color: "#ff8f8f" }}>{err}</div>}
-    </div>
   );
 }
 
@@ -851,6 +778,7 @@ export default function AppRoutes() {
       <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
       <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
       <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
+      <Route path="/player/:tag" element={<PlayerPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<BrawlApex />} />
