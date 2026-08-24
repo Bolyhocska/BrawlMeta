@@ -1,6 +1,6 @@
 {
   "BOLT": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000106.png",
+    "imageUrl": "/icons/brawlers/16000106.png",
     "id": 16000106,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -10,39 +10,39 @@
       {
         "name": "Toss Up",
         "desc": "Bolt will knock enemies upwards when he's at full speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001279.png"
+        "img": "/icons/star-powers/23001279.png"
       },
       {
         "name": "Unstoppaball",
         "desc": "Bolt is immune to crowd control and gains x% top speed during his Super.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001280.png"
+        "img": "/icons/star-powers/23001280.png"
       }
     ],
     "gadgets": [
       {
         "name": "Rocket Laces",
         "desc": "Brock blasts the ground below him and propels himself into the air. The explosion deals x damage to nearby enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000245.png"
+        "img": "/icons/gadgets/23000245.png"
       },
       {
         "name": "Rocket Fuel",
         "desc": "Brock's next attack is a mega rocket that is bigger, badder, faster and destroys walls.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000316.png"
+        "img": "/icons/gadgets/23000316.png"
       },
       {
         "name": "Oil Change",
         "desc": "Bolt gains a x - x health shield based on his current speed.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001281.png"
+        "img": "/icons/gadgets/23001281.png"
       },
       {
         "name": "Bouncy Ball",
         "desc": "Bolt jumps to a target location and deals area damage. Breaks environments but loses all speed when landing.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001282.png"
+        "img": "/icons/gadgets/23001282.png"
       }
     ]
   },
   "STARR NOVA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000105.png",
+    "imageUrl": "/icons/brawlers/16000105.png",
     "id": 16000105,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -52,29 +52,29 @@
       {
         "name": "Power Level Maximum",
         "desc": "Hitting an enemy Brawler while transformed increases your damage by <!card.statuseffect.damageboostpercent>% to a maximum of <!card.statuseffect.damageboostpercent.scalecardvalue2>%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001253.png"
+        "img": "/icons/star-powers/23001253.png"
       },
       {
         "name": "Mystical Starr Technique",
         "desc": "Starr Nova's main attack also heals teammates for <!card.character.weaponSkill.damage.scaleStatToLevel.scaleByCardProjectileHealOwnPercent>.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001254.png"
+        "img": "/icons/star-powers/23001254.png"
       }
     ],
     "gadgets": [
       {
         "name": "Floaty Time",
         "desc": "Starr Nova deploys an anti-gravity device, allowing teammates to float inside of the area!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001255.png"
+        "img": "/icons/gadgets/23001255.png"
       },
       {
         "name": "Shining Starr Of Friendship And Justice",
         "desc": "Starr Nova fires an energy ball that damages enemies and heals teammates for <!card.accessory.skill.damage.scaleStatToLevel>. This energy ball can also be teleported to before it hits a target!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001256.png"
+        "img": "/icons/gadgets/23001256.png"
       }
     ]
   },
   "DAMIAN": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000104.png",
+    "imageUrl": "/icons/brawlers/16000104.png",
     "id": 16000104,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -84,29 +84,29 @@
       {
         "name": "Crowdkill",
         "desc": "Knocking a target into a wall stuns them for <!card.value1.ticksasseconds> sec.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001245.png"
+        "img": "/icons/star-powers/23001245.png"
       },
       {
         "name": "Vulgar Display Of Punch",
         "desc": "Damian has a flaming fist during his Super, which burns enemies.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001246.png"
+        "img": "/icons/star-powers/23001246.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spiritual Healing",
         "desc": "Damian throws his microphone to a target location. The first teammate to pick it up is healed for <!card.accessory.skill.spawneditem.statuseffectally.healing.scaletolevel> health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001247.png"
+        "img": "/icons/gadgets/23001247.png"
       },
       {
         "name": "Wall Of Sound",
         "desc": "Damian summons a temporary wall of indestructible amps!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001248.png"
+        "img": "/icons/gadgets/23001248.png"
       }
     ]
   },
   "NAJIA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000103.png",
+    "imageUrl": "/icons/brawlers/16000103.png",
     "id": 16000103,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -138,7 +138,7 @@
     ]
   },
   "SIRIUS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000102.png",
+    "imageUrl": "/icons/brawlers/16000102.png",
     "id": 16000102,
     "rarity": "Ultra Legendary",
     "rarityColor": "#e1fb2a",
@@ -170,7 +170,7 @@
     ]
   },
   "GLOWY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000101.png",
+    "imageUrl": "/icons/brawlers/16000101.png",
     "id": 16000101,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -202,7 +202,7 @@
     ]
   },
   "GIGI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000100.png",
+    "imageUrl": "/icons/brawlers/16000100.png",
     "id": 16000100,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -234,7 +234,7 @@
     ]
   },
   "PIERCE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000099.png",
+    "imageUrl": "/icons/brawlers/16000099.png",
     "id": 16000099,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -266,7 +266,7 @@
     ]
   },
   "ZIGGY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000098.png",
+    "imageUrl": "/icons/brawlers/16000098.png",
     "id": 16000098,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -298,7 +298,7 @@
     ]
   },
   "MINA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000097.png",
+    "imageUrl": "/icons/brawlers/16000097.png",
     "id": 16000097,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -330,7 +330,7 @@
     ]
   },
   "TRUNK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000096.png",
+    "imageUrl": "/icons/brawlers/16000096.png",
     "id": 16000096,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -340,29 +340,29 @@
       {
         "name": "New Insect Overlords",
         "desc": "Ants also reduce the damage of enemies by x%",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000998.png"
+        "img": "/icons/star-powers/23000998.png"
       },
       {
         "name": "Colony Scouts",
         "desc": "Ants reveal hidden enemies.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000999.png"
+        "img": "/icons/star-powers/23000999.png"
       }
     ],
     "gadgets": [
       {
         "name": "For The Queen",
         "desc": "Trunk instantly spreads ants in a large area.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001000.png"
+        "img": "/icons/gadgets/23001000.png"
       },
       {
         "name": "Worker Ants",
         "desc": "Trunk heals from the first source of damage taken for the next x secs.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001001.png"
+        "img": "/icons/gadgets/23001001.png"
       }
     ]
   },
   "ALLI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000095.png",
+    "imageUrl": "/icons/brawlers/16000095.png",
     "id": 16000095,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -372,29 +372,29 @@
       {
         "name": "Lizard Limbs",
         "desc": "While enraged Alli regenerates health faster out of combat after only x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000989.png"
+        "img": "/icons/star-powers/23000989.png"
       },
       {
         "name": "You Better Run You Better Take Cover",
         "desc": "Alli reloads x% faster while enraged.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000990.png"
+        "img": "/icons/star-powers/23000990.png"
       }
     ],
     "gadgets": [
       {
         "name": "Feed The Gators",
         "desc": "The next main attack heals Alli for x% of damage dealt.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000991.png"
+        "img": "/icons/gadgets/23000991.png"
       },
       {
         "name": "Cold-Blooded",
         "desc": "Alli becomes enraged for the next x secs. Can only be activated when an enemy is visible.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000992.png"
+        "img": "/icons/gadgets/23000992.png"
       }
     ]
   },
   "KAZE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000094.png",
+    "imageUrl": "/icons/brawlers/16000094.png",
     "id": 16000094,
     "rarity": "Ultra Legendary",
     "rarityColor": "#e1fb2a",
@@ -404,29 +404,29 @@
       {
         "name": "Advanced Techniques",
         "desc": "Hitting an enemy in a Strike Spot also slows them by x% for x sec",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000938.png"
+        "img": "/icons/star-powers/23000938.png"
       },
       {
         "name": "Gratuity Included",
         "desc": "Removes x% ammo from Brawlers initially caught in the Fan Storm",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000939.png"
+        "img": "/icons/star-powers/23000939.png"
       }
     ],
     "gadgets": [
       {
         "name": "Gracious Host",
         "desc": "Switch to Ninja Aspect and gain x% Movement Speed for x sec",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000940.png"
+        "img": "/icons/gadgets/23000940.png"
       },
       {
         "name": "Hensojutsu",
         "desc": "Switch to Ninja Aspect and gain short invisibility",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000941.png"
+        "img": "/icons/gadgets/23000941.png"
       }
     ]
   },
   "JAE-YONG": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000093.png",
+    "imageUrl": "/icons/brawlers/16000093.png",
     "id": 16000093,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -436,29 +436,29 @@
       {
         "name": "The Crowd Goes Mild",
         "desc": "Being near teammates gives Jae-yong a x% speed boost per teammate in range.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000929.png"
+        "img": "/icons/star-powers/23000929.png"
       },
       {
         "name": "Extra High Note",
         "desc": "Main Attacks now deal an additional x% Damage per target pierced.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000930.png"
+        "img": "/icons/star-powers/23000930.png"
       }
     ],
     "gadgets": [
       {
         "name": "Weekend Warrior",
         "desc": "Deals area damage and increases main attack damage for x sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000931.png"
+        "img": "/icons/gadgets/23000931.png"
       },
       {
         "name": "Time For A Slow Song",
         "desc": "Jae-yong slows enemies around him and his attacks will leave trails of slowing paperwork for x sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000932.png"
+        "img": "/icons/gadgets/23000932.png"
       }
     ]
   },
   "FINX": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000092.png",
+    "imageUrl": "/icons/brawlers/16000092.png",
     "id": 16000092,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -468,29 +468,29 @@
       {
         "name": "Hieroglyph Halt",
         "desc": "Finx reduces the reload speed of any enemy Brawlers hit by his main attack by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000915.png"
+        "img": "/icons/star-powers/23000915.png"
       },
       {
         "name": "Primer",
         "desc": "Damage dealt only from Finx's projectiles that are sped up by Time Warp, will increase the Super duration by x seconds each.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000916.png"
+        "img": "/icons/star-powers/23000916.png"
       }
     ],
     "gadgets": [
       {
         "name": "Back To The Finxture",
         "desc": "Finx steps back in time, returning to the position and ammo he had x seconds ago.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000917.png"
+        "img": "/icons/gadgets/23000917.png"
       },
       {
         "name": "No Escape",
         "desc": "Finx's next projectiles from his main attack freeze the enemies in time for x seconds, making them unable to take actions for the duration, but also making them immune to any damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000918.png"
+        "img": "/icons/gadgets/23000918.png"
       }
     ]
   },
   "LUMI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000091.png",
+    "imageUrl": "/icons/brawlers/16000091.png",
     "id": 16000091,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -500,29 +500,29 @@
       {
         "name": "42% Burnt",
         "desc": "The explosions from Lumi's Blast Beat also set the area alight for x seconds. Fire damage also scales with explosion damage. Damage per second for the biggest explosion: x",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000905.png"
+        "img": "/icons/star-powers/23000905.png"
       },
       {
         "name": "Half-Time",
         "desc": "Lumi slows enemies hit by her recalled morning stars for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000906.png"
+        "img": "/icons/star-powers/23000906.png"
       }
     ],
     "gadgets": [
       {
         "name": "Hit The Lights",
         "desc": "Lumi ignites her morning stars on the ground, producing flames which damage nearby enemies for x seconds. Damage per second: x",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000907.png"
+        "img": "/icons/gadgets/23000907.png"
       },
       {
         "name": "Grim And Frostbitten",
         "desc": "Lumi creates freezing winds around her morning stars on the ground, creating a slippery surface for x secs.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000908.png"
+        "img": "/icons/gadgets/23000908.png"
       }
     ]
   },
   "OLLIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000090.png",
+    "imageUrl": "/icons/brawlers/16000090.png",
     "id": 16000090,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -532,29 +532,29 @@
       {
         "name": "Kick Push",
         "desc": "While near walls Ollie kicks off his hoverboard and gains x% extra movement speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000883.png"
+        "img": "/icons/star-powers/23000883.png"
       },
       {
         "name": "Renegade",
         "desc": "After dashing forward with his Super, Ollie gains a x decaying shield over x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000884.png"
+        "img": "/icons/star-powers/23000884.png"
       }
     ],
     "gadgets": [
       {
         "name": "Regulate",
         "desc": "Ollie jumps and does a rad kickflip, hypnotizing all enemies where he lands for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000885.png"
+        "img": "/icons/gadgets/23000885.png"
       },
       {
         "name": "All Eyez On Me",
         "desc": "Ollie's next attack will hypnotize any enemies hit for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000886.png"
+        "img": "/icons/gadgets/23000886.png"
       }
     ]
   },
   "MEEPLE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000089.png",
+    "imageUrl": "/icons/brawlers/16000089.png",
     "id": 16000089,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -564,29 +564,29 @@
       {
         "name": "Do Not Pass Go",
         "desc": "When you shoot through environment deal x more damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000875.png"
+        "img": "/icons/star-powers/23000875.png"
       },
       {
         "name": "Rule Bending",
         "desc": "Critical success also increases allies reload speed within the area by <VALUE>%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000876.png"
+        "img": "/icons/star-powers/23000876.png"
       }
     ],
     "gadgets": [
       {
         "name": "Mansions Of Meeple",
         "desc": "Meeple's next attack creates dice towers around the impact area and deals x damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000877.png"
+        "img": "/icons/gadgets/23000877.png"
       },
       {
         "name": "Ragequit",
         "desc": "Meeple lashes out in rage at nearby enemies, stunning and knocking them back. The less hitpoints Meeple has, the stun and knockback effects increase.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000878.png"
+        "img": "/icons/gadgets/23000878.png"
       }
     ]
   },
   "JUJU": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000087.png",
+    "imageUrl": "/icons/brawlers/16000087.png",
     "id": 16000087,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -596,29 +596,29 @@
       {
         "name": "Guarded Gris-Gris",
         "desc": "Gris-Gris is summoned with a protective shield.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000848.png"
+        "img": "/icons/star-powers/23000848.png"
       },
       {
         "name": "Numbing Needles",
         "desc": "Gris-Gris' attack now also slows the enemy for <!card.projectile.statuseffectenemy.duration.ticksasseconds> sec",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000849.png"
+        "img": "/icons/star-powers/23000849.png"
       }
     ],
     "gadgets": [
       {
         "name": "Voodoo Chile",
         "desc": "Juju's next main attack has the power of all three elements.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000850.png"
+        "img": "/icons/gadgets/23000850.png"
       },
       {
         "name": "Elementalist",
         "desc": "Juju gains a temporary buff based on the current environment she is standing on. Earth: Damage reduction Grass: Invisibility Water: Increased movement speed",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000851.png"
+        "img": "/icons/gadgets/23000851.png"
       }
     ]
   },
   "SHADE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000086.png",
+    "imageUrl": "/icons/brawlers/16000086.png",
     "id": 16000086,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -628,29 +628,29 @@
       {
         "name": "Spooky Speedster",
         "desc": "Hitting opponents with the center of Shade's main attack gives a short movement speed boost.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000832.png"
+        "img": "/icons/star-powers/23000832.png"
       },
       {
         "name": "Hardened Hoodie",
         "desc": "Shade gets x% damage reduction while in its Incorporeal Form.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000833.png"
+        "img": "/icons/star-powers/23000833.png"
       }
     ],
     "gadgets": [
       {
         "name": "Longarms",
         "desc": "The next main attack has x% longer range.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000834.png"
+        "img": "/icons/gadgets/23000834.png"
       },
       {
         "name": "Jump Scare",
         "desc": "Shade spooks nearby enemies, slowing them for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000835.png"
+        "img": "/icons/gadgets/23000835.png"
       }
     ]
   },
   "KENJI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000085.png",
+    "imageUrl": "/icons/brawlers/16000085.png",
     "id": 16000085,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -660,29 +660,29 @@
       {
         "name": "Studied The Blade",
         "desc": "Slashimi's slices have x% longer range",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000815.png"
+        "img": "/icons/star-powers/23000815.png"
       },
       {
         "name": "Nigiri Nemesis",
         "desc": "After avoiding damage for x seconds, gets x% damage reduction from the next enemy attack.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000816.png"
+        "img": "/icons/star-powers/23000816.png"
       }
     ],
     "gadgets": [
       {
         "name": "Dashi Dash",
         "desc": "Kenji's basic attack only uses Dash for the next x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000817.png"
+        "img": "/icons/gadgets/23000817.png"
       },
       {
         "name": "Hosomaki Healing",
         "desc": "Kenji instantly heals x% of damage taken over the last x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000818.png"
+        "img": "/icons/gadgets/23000818.png"
       }
     ]
   },
   "MOE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000084.png",
+    "imageUrl": "/icons/brawlers/16000084.png",
     "id": 16000084,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -692,29 +692,29 @@
       {
         "name": "Skipping Stones",
         "desc": "Moe's basic attacks bounce one more time. The range of the attack remains the same.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000804.png"
+        "img": "/icons/star-powers/23000804.png"
       },
       {
         "name": "Speeding Ticket",
         "desc": "Moe's Driller has increased travel speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000805.png"
+        "img": "/icons/star-powers/23000805.png"
       }
     ],
     "gadgets": [
       {
         "name": "Dodgy Digging",
         "desc": "Moe digs up some \"borrowed\" goods, increasing his Super charge rate by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000806.png"
+        "img": "/icons/gadgets/23000806.png"
       },
       {
         "name": "Rat Race",
         "desc": "Moe dashes a short distance in his Driller, destroying walls and knocking back Brawlers in the process.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000807.png"
+        "img": "/icons/gadgets/23000807.png"
       }
     ]
   },
   "CLANCY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000083.png",
+    "imageUrl": "/icons/brawlers/16000083.png",
     "id": 16000083,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -724,29 +724,29 @@
       {
         "name": "Recon",
         "desc": "Clancy starts the match with x tokens.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000772.png"
+        "img": "/icons/star-powers/23000772.png"
       },
       {
         "name": "Pumping Up",
         "desc": "Clancy reloads all of his ammo on every enemy takedown.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000773.png"
+        "img": "/icons/star-powers/23000773.png"
       }
     ],
     "gadgets": [
       {
         "name": "Snappy Shooting",
         "desc": "Clancy gains double tokens for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000774.png"
+        "img": "/icons/gadgets/23000774.png"
       },
       {
         "name": "Tactical Retreat",
         "desc": "Clancy dashes and reloads x ammo",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000775.png"
+        "img": "/icons/gadgets/23000775.png"
       }
     ]
   },
   "BERRY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000082.png",
+    "imageUrl": "/icons/brawlers/16000082.png",
     "id": 16000082,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -756,29 +756,29 @@
       {
         "name": "Floor Is Fine",
         "desc": "Berry gains x% increased reload speed when standing on his own melted ice cream.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000764.png"
+        "img": "/icons/star-powers/23000764.png"
       },
       {
         "name": "Making A Mess",
         "desc": "Berry's basic attack gains x% extra damage on impact in areas with no ice cream.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000765.png"
+        "img": "/icons/star-powers/23000765.png"
       }
     ],
     "gadgets": [
       {
         "name": "Friendship Is Great",
         "desc": "Berry swipes his tail, knocking back enemies and healing nearby allies for x health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000766.png"
+        "img": "/icons/gadgets/23000766.png"
       },
       {
         "name": "Healthy Additives",
         "desc": "Berry's next main attack area lasts for x% longer.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000767.png"
+        "img": "/icons/gadgets/23000767.png"
       }
     ]
   },
   "LILY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000081.png",
+    "imageUrl": "/icons/brawlers/16000081.png",
     "id": 16000081,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -788,29 +788,29 @@
       {
         "name": "Spiky",
         "desc": "After teleporting to an enemy, Lily's next attack deals x more damage",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000752.png"
+        "img": "/icons/star-powers/23000752.png"
       },
       {
         "name": "Vigilance",
         "desc": "Gain x% movement speed while an enemy is in her Super charge radius",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000753.png"
+        "img": "/icons/star-powers/23000753.png"
       }
     ],
     "gadgets": [
       {
         "name": "Vanish",
         "desc": "Lily enters the Shadow Realm for x seconds",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000754.png"
+        "img": "/icons/gadgets/23000754.png"
       },
       {
         "name": "Repot",
         "desc": "The next Flourish, becomes a thrown attack, and Lily teleports to the destination on impact",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000755.png"
+        "img": "/icons/gadgets/23000755.png"
       }
     ]
   },
   "DRACO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000080.png",
+    "imageUrl": "/icons/brawlers/16000080.png",
     "id": 16000080,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -820,29 +820,29 @@
       {
         "name": "Expose",
         "desc": "Every x seconds, the next Lance Stab exposes enemies on hit. Exposed enemies take x% increased damage for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000734.png"
+        "img": "/icons/star-powers/23000734.png"
       },
       {
         "name": "Shredding",
         "desc": "Dragon Solo now also heals for x when activated.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000735.png"
+        "img": "/icons/star-powers/23000735.png"
       }
     ],
     "gadgets": [
       {
         "name": "Upper Cut",
         "desc": "The next Lance Stab also throws enemies in the air for a short time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000736.png"
+        "img": "/icons/gadgets/23000736.png"
       },
       {
         "name": "Last Stand",
         "desc": "Draco can not fall under one health for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000737.png"
+        "img": "/icons/gadgets/23000737.png"
       }
     ]
   },
   "ANGELO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000079.png",
+    "imageUrl": "/icons/brawlers/16000079.png",
     "id": 16000079,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -852,29 +852,29 @@
       {
         "name": "Empower",
         "desc": "Staying inside the Super will heal Angelo for x per second.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000675.png"
+        "img": "/icons/star-powers/23000675.png"
       },
       {
         "name": "Flow",
         "desc": "Angelo gains x% increased movement speed after entering water.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000676.png"
+        "img": "/icons/star-powers/23000676.png"
       }
     ],
     "gadgets": [
       {
         "name": "Stinging Flight",
         "desc": "Fly into the air for x seconds. Drains x health from nearby enemies on takeoff.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000677.png"
+        "img": "/icons/gadgets/23000677.png"
       },
       {
         "name": "Master Fletcher",
         "desc": "The next Take Aim pierces enemies and the environment.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000678.png"
+        "img": "/icons/gadgets/23000678.png"
       }
     ]
   },
   "MELODIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000078.png",
+    "imageUrl": "/icons/brawlers/16000078.png",
     "id": 16000078,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -884,29 +884,29 @@
       {
         "name": "Fast Beats",
         "desc": "Melodie gains x% increased movement speed from each note orbiting her.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000667.png"
+        "img": "/icons/star-powers/23000667.png"
       },
       {
         "name": "Extended Mix",
         "desc": "Melodie's notes last for x% longer before vanishing.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000668.png"
+        "img": "/icons/star-powers/23000668.png"
       }
     ],
     "gadgets": [
       {
         "name": "Perfect Pitch",
         "desc": "Melodie's notes get x% increased movement speed and x% wider orbit for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000669.png"
+        "img": "/icons/gadgets/23000669.png"
       },
       {
         "name": "Interlude",
         "desc": "Melodie gains x% Shield from each note orbiting her.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000670.png"
+        "img": "/icons/gadgets/23000670.png"
       }
     ]
   },
   "LARRY & LAWRIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000077.png",
+    "imageUrl": "/icons/brawlers/16000077.png",
     "id": 16000077,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -916,29 +916,29 @@
       {
         "name": "Protocol Protect",
         "desc": "While Lawrie is in range, transfer x% incoming damage to himself instead.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000659.png"
+        "img": "/icons/star-powers/23000659.png"
       },
       {
         "name": "Protocol Assist",
         "desc": "While Lawrie is in range, reload x% of your ammo whenever he damages an enemy.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000660.png"
+        "img": "/icons/star-powers/23000660.png"
       }
     ],
     "gadgets": [
       {
         "name": "Order Swap",
         "desc": "Swap weapons with Lawrie.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000661.png"
+        "img": "/icons/gadgets/23000661.png"
       },
       {
         "name": "Order Fall Back",
         "desc": "Dash towards Lawrie while Lawrie dashes towards you, healing both for x% of max health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000662.png"
+        "img": "/icons/gadgets/23000662.png"
       }
     ]
   },
   "KIT": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000076.png",
+    "imageUrl": "/icons/brawlers/16000076.png",
     "id": 16000076,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -948,29 +948,29 @@
       {
         "name": "Power Hungry",
         "desc": "Kit gains x% power from each Power Cube.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000646.png"
+        "img": "/icons/star-powers/23000646.png"
       },
       {
         "name": "Overly Attached",
         "desc": "Kit attaches to friendly Brawlers for x seconds longer.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000647.png"
+        "img": "/icons/star-powers/23000647.png"
       }
     ],
     "gadgets": [
       {
         "name": "Cardboard Box",
         "desc": "Hide in a cardboard box becoming invisible for x seconds. Charges the Super x faster while stationary.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000648.png"
+        "img": "/icons/gadgets/23000648.png"
       },
       {
         "name": "Cheeseburger",
         "desc": "Heals himself and the friendly Brawler he is attached to for x.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000649.png"
+        "img": "/icons/gadgets/23000649.png"
       }
     ]
   },
   "MICO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000075.png",
+    "imageUrl": "/icons/brawlers/16000075.png",
     "id": 16000075,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -980,29 +980,29 @@
       {
         "name": "Monkey Business",
         "desc": "Every x seconds, Mico's basic attack steals ammo from his enemies after hitting them.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000637.png"
+        "img": "/icons/star-powers/23000637.png"
       },
       {
         "name": "Record Smash",
         "desc": "Mico deals x% extra damage against non Brawlers.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000638.png"
+        "img": "/icons/star-powers/23000638.png"
       }
     ],
     "gadgets": [
       {
         "name": "Clipping Scream",
         "desc": "Mico lets out a deafening scream towards the nearest enemy, dealing <!card.character.weaponskill.damage.scaletolevel.scaleaccessoryvalue2> damage and slowing down enemies for <!card.accessory.customobjectprojectile.statuseffectenemy.duration.ticksasseconds> seconds on hit.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000639.png"
+        "img": "/icons/gadgets/23000639.png"
       },
       {
         "name": "Presto",
         "desc": "Mico's next jump has x% longer range.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000640.png"
+        "img": "/icons/gadgets/23000640.png"
       }
     ]
   },
   "CHARLIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000074.png",
+    "imageUrl": "/icons/brawlers/16000074.png",
     "id": 16000074,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1012,29 +1012,29 @@
       {
         "name": "Digestive",
         "desc": "Cocooned enemies lose x% of their health while cocooned.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000623.png"
+        "img": "/icons/star-powers/23000623.png"
       },
       {
         "name": "Slimy",
         "desc": "Cocoon leaves a slimy trail behind it for x seconds that slows down enemies walking over it.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000624.png"
+        "img": "/icons/star-powers/23000624.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spiders",
         "desc": "Charlie releases x spiders that seek and attack the nearest enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000625.png"
+        "img": "/icons/gadgets/23000625.png"
       },
       {
         "name": "Personal Space",
         "desc": "Charlie cocoons herself, healing x% of her total health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000626.png"
+        "img": "/icons/gadgets/23000626.png"
       }
     ]
   },
   "CHUCK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000073.png",
+    "imageUrl": "/icons/brawlers/16000073.png",
     "id": 16000073,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1044,29 +1044,29 @@
       {
         "name": "Pit Stop",
         "desc": "Increase the maximum amount of Posts by x.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000609.png"
+        "img": "/icons/star-powers/23000609.png"
       },
       {
         "name": "Tickets Please",
         "desc": "Dashing through enemies with his Super will also steal <!card.trait.value>% of their ammo.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000610.png"
+        "img": "/icons/star-powers/23000610.png"
       }
     ],
     "gadgets": [
       {
         "name": "Rerouting",
         "desc": "Chuck removes the nearest Post and recharges his Super.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000611.png"
+        "img": "/icons/gadgets/23000611.png"
       },
       {
         "name": "Ghost Train",
         "desc": "Chuck's next Super can go through walls!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000612.png"
+        "img": "/icons/gadgets/23000612.png"
       }
     ]
   },
   "PEARL": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000072.png",
+    "imageUrl": "/icons/brawlers/16000072.png",
     "id": 16000072,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1076,29 +1076,29 @@
       {
         "name": "Heat Retention",
         "desc": "Super will consume x% less Heat when used.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000601.png"
+        "img": "/icons/star-powers/23000601.png"
       },
       {
         "name": "Heat Shield",
         "desc": "While the Heat is over x%, reduce damage taken by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000602.png"
+        "img": "/icons/star-powers/23000602.png"
       }
     ],
     "gadgets": [
       {
         "name": "Overcooked",
         "desc": "Next basic attack shoots burning cookies, dealing x extra damage over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000603.png"
+        "img": "/icons/gadgets/23000603.png"
       },
       {
         "name": "Made With Love",
         "desc": "Next basic attack shoots perfectly baked cookies ignoring enemies and healing allies for x over time instead.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000604.png"
+        "img": "/icons/gadgets/23000604.png"
       }
     ]
   },
   "DOUG": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000071.png",
+    "imageUrl": "/icons/brawlers/16000071.png",
     "id": 16000071,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1108,29 +1108,29 @@
       {
         "name": "Fast Food",
         "desc": "When Doug revives an ally successfully, he will heal for x% of his max health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000593.png"
+        "img": "/icons/star-powers/23000593.png"
       },
       {
         "name": "Self Service",
         "desc": "Snack Attack also heals Doug by x.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000594.png"
+        "img": "/icons/star-powers/23000594.png"
       }
     ],
     "gadgets": [
       {
         "name": "Double Sausage",
         "desc": "The next Snack Attack only heals allies but doubles the amount.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000595.png"
+        "img": "/icons/gadgets/23000595.png"
       },
       {
         "name": "Extra Mustard",
         "desc": "The next Snack Attack only damages enemies but doubles the amount.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000596.png"
+        "img": "/icons/gadgets/23000596.png"
       }
     ]
   },
   "CORDELIUS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000070.png",
+    "imageUrl": "/icons/brawlers/16000070.png",
     "id": 16000070,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -1140,29 +1140,29 @@
       {
         "name": "Comboshrooms",
         "desc": "Hitting the second mushroom to the same target as the first, deals x% extra damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000585.png"
+        "img": "/icons/star-powers/23000585.png"
       },
       {
         "name": "Mushroom Kingdom",
         "desc": "Cordelius spawns x mushrooms to the Shadow Realm after using his Super, healing allies and damaging enemies for x health on pickup.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000586.png"
+        "img": "/icons/star-powers/23000586.png"
       }
     ],
     "gadgets": [
       {
         "name": "Replanting",
         "desc": "Cordelius jumps over a piece of terrain quickly.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000587.png"
+        "img": "/icons/gadgets/23000587.png"
       },
       {
         "name": "Poison Mushroom",
         "desc": "Cordelius's next main attack shoots a poison mushroom that prevents the enemy from attacking for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000588.png"
+        "img": "/icons/gadgets/23000588.png"
       }
     ]
   },
   "HANK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000069.png",
+    "imageUrl": "/icons/brawlers/16000069.png",
     "id": 16000069,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1172,29 +1172,29 @@
       {
         "name": "Its Gonna Blow",
         "desc": "When Balloon Blast is charged over x%, Hank gains x% extra movement speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000577.png"
+        "img": "/icons/star-powers/23000577.png"
       },
       {
         "name": "Take Cover",
         "desc": "Hank takes x% less damage when near a wall.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000578.png"
+        "img": "/icons/star-powers/23000578.png"
       }
     ],
     "gadgets": [
       {
         "name": "Water Balloons",
         "desc": "The next Balloon Blast also slows down enemies for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000579.png"
+        "img": "/icons/gadgets/23000579.png"
       },
       {
         "name": "Barricade",
         "desc": "Hank takes x% reduced damage for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000580.png"
+        "img": "/icons/gadgets/23000580.png"
       }
     ]
   },
   "MAISIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000068.png",
+    "imageUrl": "/icons/brawlers/16000068.png",
     "id": 16000068,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1204,29 +1204,29 @@
       {
         "name": "Pinpoint Precision",
         "desc": "Pressure rocket deals x% more damage at max distance.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000569.png"
+        "img": "/icons/star-powers/23000569.png"
       },
       {
         "name": "Tremors",
         "desc": "Enemies hit by Shockwave are also slowed down for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000570.png"
+        "img": "/icons/star-powers/23000570.png"
       }
     ],
     "gadgets": [
       {
         "name": "Disengage",
         "desc": "Maisie blasts the ground, stunning enemies for x seconds while dashing forward.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000571.png"
+        "img": "/icons/gadgets/23000571.png"
       },
       {
         "name": "Finish Them",
         "desc": "Maisie instantly reloads x ammo and increases the next Pressure Rocket damage by x% of the target's missing HP.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000572.png"
+        "img": "/icons/gadgets/23000572.png"
       }
     ]
   },
   "WILLOW": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000067.png",
+    "imageUrl": "/icons/brawlers/16000067.png",
     "id": 16000067,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1236,29 +1236,29 @@
       {
         "name": "Love Is Blind",
         "desc": "Lantern's Curse also reduces reload speed of affected Brawlers by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000561.png"
+        "img": "/icons/star-powers/23000561.png"
       },
       {
         "name": "Obsession",
         "desc": "Hexed enemies gain x% movement speed while mind controlled.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000562.png"
+        "img": "/icons/star-powers/23000562.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spellbound",
         "desc": "Willow's next Lantern's Curse deals x more damage and applies the entire damage instantly rather than over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000563.png"
+        "img": "/icons/gadgets/23000563.png"
       },
       {
         "name": "Dive",
         "desc": "Willow dives for x seconds, becoming untargetable but unable to take any action for the duration.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000564.png"
+        "img": "/icons/gadgets/23000564.png"
       }
     ]
   },
   "R-T": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000066.png",
+    "imageUrl": "/icons/brawlers/16000066.png",
     "id": 16000066,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1268,29 +1268,29 @@
       {
         "name": "Quick Maths",
         "desc": "Marks created last x seconds longer.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000553.png"
+        "img": "/icons/star-powers/23000553.png"
       },
       {
         "name": "Recording",
         "desc": "R-T and his legs take x% less damage when split.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000554.png"
+        "img": "/icons/star-powers/23000554.png"
       }
     ],
     "gadgets": [
       {
         "name": "Out Of Line",
         "desc": "Instantly charges R-T's Super.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000555.png"
+        "img": "/icons/gadgets/23000555.png"
       },
       {
         "name": "Hacks",
         "desc": "Instantly trigger all active marks on all enemy Brawlers, dealing their damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000556.png"
+        "img": "/icons/gadgets/23000556.png"
       }
     ]
   },
   "MANDY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000065.png",
+    "imageUrl": "/icons/brawlers/16000065.png",
     "id": 16000065,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1300,29 +1300,29 @@
       {
         "name": "In My Sights",
         "desc": "Mandy shoots her candies with x% more speed while Focused.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000543.png"
+        "img": "/icons/star-powers/23000543.png"
       },
       {
         "name": "Hard Candy",
         "desc": "Mandy receives x% shield while Focused.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000544.png"
+        "img": "/icons/star-powers/23000544.png"
       }
     ],
     "gadgets": [
       {
         "name": "Caramelize",
         "desc": "Mandy's next candy from her Candy Dispenser slows down enemies on hit for <!card.accessory.statuseffectenemy.duration.ticksasseconds> seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000545.png"
+        "img": "/icons/gadgets/23000545.png"
       },
       {
         "name": "Cookie Crumbs",
         "desc": "Mandy's next candy from her Candy Dispenser pierces enemies and environment.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000546.png"
+        "img": "/icons/gadgets/23000546.png"
       }
     ]
   },
   "GRAY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000064.png",
+    "imageUrl": "/icons/brawlers/16000064.png",
     "id": 16000064,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1332,29 +1332,29 @@
       {
         "name": "Fake Injury",
         "desc": "When Gray has full health, the next damage taken is reduced by <VALUE>%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000535.png"
+        "img": "/icons/star-powers/23000535.png"
       },
       {
         "name": "New Perspective",
         "desc": "When Gray or his Allies use Doors, they recover <VALUE>% of their max hit points.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000536.png"
+        "img": "/icons/star-powers/23000536.png"
       }
     ],
     "gadgets": [
       {
         "name": "Walking Cane",
         "desc": "Gray's next hit from the Finger Pistol shoots a walking cane which pulls enemies back by a bit.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000537.png"
+        "img": "/icons/gadgets/23000537.png"
       },
       {
         "name": "Grand Piano",
         "desc": "Gray's next hit from the Finger Pistol will also leave a target on the ground where a piano will land and hurt enemies. It would be too bad if someone would get hurt, right?",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000538.png"
+        "img": "/icons/gadgets/23000538.png"
       }
     ]
   },
   "CHESTER": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000063.png",
+    "imageUrl": "/icons/brawlers/16000063.png",
     "id": 16000063,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -1364,29 +1364,29 @@
       {
         "name": "Single Bellomania",
         "desc": "The first bell of Chester's attack sequence does x% damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000527.png"
+        "img": "/icons/star-powers/23000527.png"
       },
       {
         "name": "Sneak Peek",
         "desc": "Chester will always know what his next Super will be.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000528.png"
+        "img": "/icons/star-powers/23000528.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spicy Dice",
         "desc": "Chester gets a new random Super that is different from his current one.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000529.png"
+        "img": "/icons/gadgets/23000529.png"
       },
       {
         "name": "Candy Beans",
         "desc": "Chester eats a mystery flavored candy bean from his cap, gaining a random buff for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000530.png"
+        "img": "/icons/gadgets/23000530.png"
       }
     ]
   },
   "BUSTER": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000062.png",
+    "imageUrl": "/icons/brawlers/16000062.png",
     "id": 16000062,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1396,29 +1396,29 @@
       {
         "name": "Blockbuster",
         "desc": "Buster's Lens Flare deals x% more damage for each ally in his Super's charge area.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000519.png"
+        "img": "/icons/star-powers/23000519.png"
       },
       {
         "name": "Kevlar Vest",
         "desc": "While Montage is active Buster takes x% less damage and is immune to knockbacks, slows and stuns.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000520.png"
+        "img": "/icons/star-powers/23000520.png"
       }
     ],
     "gadgets": [
       {
         "name": "Utility Belt",
         "desc": "Buster heals himself and all nearby allies for x health for each ally in his Super's charge area.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000521.png"
+        "img": "/icons/gadgets/23000521.png"
       },
       {
         "name": "Slo-Mo Replay",
         "desc": "Buster's next Lens Flare pulls enemies towards him.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000522.png"
+        "img": "/icons/gadgets/23000522.png"
       }
     ]
   },
   "GUS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000061.png",
+    "imageUrl": "/icons/brawlers/16000061.png",
     "id": 16000061,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -1428,29 +1428,29 @@
       {
         "name": "Health Bonanza",
         "desc": "Healing gained from spirits is increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000511.png"
+        "img": "/icons/star-powers/23000511.png"
       },
       {
         "name": "Spirit Animal",
         "desc": "Spooky increases the damage of a teammate by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000512.png"
+        "img": "/icons/star-powers/23000512.png"
       }
     ],
     "gadgets": [
       {
         "name": "Kooky Popper",
         "desc": "Explode all uncollected spirits, dealing x damage to nearby enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000513.png"
+        "img": "/icons/gadgets/23000513.png"
       },
       {
         "name": "Soul Switcher",
         "desc": "Gus loses <ccc0000>x% health but gains x% spirit instantly.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000514.png"
+        "img": "/icons/gadgets/23000514.png"
       }
     ]
   },
   "SAM": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000060.png",
+    "imageUrl": "/icons/brawlers/16000060.png",
     "id": 16000060,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1460,29 +1460,29 @@
       {
         "name": "Hearty Recovery",
         "desc": "Upon recalling his Knuckle Busters, Sam instantly recovers x% of his missing health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000503.png"
+        "img": "/icons/star-powers/23000503.png"
       },
       {
         "name": "Remote Recharge",
         "desc": "While the Knuckle Busters are on the ground and near enemies, they will charge up Sam's Super.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000504.png"
+        "img": "/icons/star-powers/23000504.png"
       }
     ],
     "gadgets": [
       {
         "name": "Magnetic Field",
         "desc": "While the Knuckle Busters are on the ground, Sam can activate them to pull in nearby enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000505.png"
+        "img": "/icons/gadgets/23000505.png"
       },
       {
         "name": "Pulse Repellent",
         "desc": "Upon landing on the ground, Sam's next deployed Knuckle Busters releases an electric pulse that knocks back enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000506.png"
+        "img": "/icons/gadgets/23000506.png"
       }
     ]
   },
   "OTIS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000059.png",
+    "imageUrl": "/icons/brawlers/16000059.png",
     "id": 16000059,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1492,29 +1492,29 @@
       {
         "name": "Stencil Glue",
         "desc": "Cil mightily squeezes the enemy with all his might. Preventing them from attacking for x% longer.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000495.png"
+        "img": "/icons/star-powers/23000495.png"
       },
       {
         "name": "Ink Refills",
         "desc": "Otis now shoots x% more ink drops.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000496.png"
+        "img": "/icons/star-powers/23000496.png"
       }
     ],
     "gadgets": [
       {
         "name": "Dormant Star",
         "desc": "The next starfish will stay on the ground if an enemy is not hit, laying dormant until an enemy gets close.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000497.png"
+        "img": "/icons/gadgets/23000497.png"
       },
       {
         "name": "Phat Splatter",
         "desc": "Otis's next attack shoots a giant ink ball that leaves a puddle, dealing x damage over time for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000498.png"
+        "img": "/icons/gadgets/23000498.png"
       }
     ]
   },
   "BONNIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000058.png",
+    "imageUrl": "/icons/brawlers/16000058.png",
     "id": 16000058,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1524,29 +1524,29 @@
       {
         "name": "Black Powder",
         "desc": "The range of Bonnie's Star Launcher is increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000478.png"
+        "img": "/icons/star-powers/23000478.png"
       },
       {
         "name": "Wisdom Tooth",
         "desc": "Loose Tooth shatters on hit, dealing x% extra damage to nearby enemies.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000479.png"
+        "img": "/icons/star-powers/23000479.png"
       }
     ],
     "gadgets": [
       {
         "name": "Sugar Rush",
         "desc": "Clyde's movement and reload speed are increased by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000480.png"
+        "img": "/icons/gadgets/23000480.png"
       },
       {
         "name": "Crash Test",
         "desc": "Bonnie dashes forward, knocking back enemies and dealing x damage on hit.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000481.png"
+        "img": "/icons/gadgets/23000481.png"
       }
     ]
   },
   "JANET": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000057.png",
+    "imageUrl": "/icons/brawlers/16000057.png",
     "id": 16000057,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1556,29 +1556,29 @@
       {
         "name": "Stage View",
         "desc": "While in the air with her jetpack, Janet reveals a large area of bushes around herself.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000470.png"
+        "img": "/icons/star-powers/23000470.png"
       },
       {
         "name": "Vocal Warm Up",
         "desc": "Janet's attack focuses x% faster.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000471.png"
+        "img": "/icons/star-powers/23000471.png"
       }
     ],
     "gadgets": [
       {
         "name": "Drop The Bass",
         "desc": "Janet deploys a speaker that deals x damage per second to all enemies in the area until it gets destroyed.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000472.png"
+        "img": "/icons/gadgets/23000472.png"
       },
       {
         "name": "Backstage Pass",
         "desc": "Janet's next High Note pushes her back, even over walls. The more focused her attack is, the further she'll be pushed back.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000473.png"
+        "img": "/icons/gadgets/23000473.png"
       }
     ]
   },
   "EVE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000056.png",
+    "imageUrl": "/icons/brawlers/16000056.png",
     "id": 16000056,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1588,29 +1588,29 @@
       {
         "name": "Unnatural Order",
         "desc": "Reverses the order of the eggs shot by her Egg Shooter.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000452.png"
+        "img": "/icons/star-powers/23000452.png"
       },
       {
         "name": "Happy Surprise",
         "desc": "Every x seconds, the next largest egg hitting an enemy of her Egg Shooter will spawn a hatchling.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000453.png"
+        "img": "/icons/star-powers/23000453.png"
       }
     ],
     "gadgets": [
       {
         "name": "Gotta Go",
         "desc": "Eve jumps away and leaves behind a hatchling.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000454.png"
+        "img": "/icons/gadgets/23000454.png"
       },
       {
         "name": "Motherly Love",
         "desc": "Hatchlings spawned from an active big egg will now heal allies over time instead of dealing damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000455.png"
+        "img": "/icons/gadgets/23000455.png"
       }
     ]
   },
   "FANG": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000054.png",
+    "imageUrl": "/icons/brawlers/16000054.png",
     "id": 16000054,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1620,29 +1620,29 @@
       {
         "name": "Fresh Kicks",
         "desc": "When Fang defeats an enemy Brawler with his Super, it's recharged instantly, allowing him to use his Super again!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000438.png"
+        "img": "/icons/star-powers/23000438.png"
       },
       {
         "name": "Divine Soles",
         "desc": "Reduce x damage from incoming hits once every x seconds. Maximum reduction is x% of the incoming damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000439.png"
+        "img": "/icons/star-powers/23000439.png"
       }
     ],
     "gadgets": [
       {
         "name": "Corn-Fu",
         "desc": "Fang tosses a handful of corn kernels into the air, making it rain popcorn! Each kernel pop deals x damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000440.png"
+        "img": "/icons/gadgets/23000440.png"
       },
       {
         "name": "Roundhouse Kick",
         "desc": "Fang spins and hits all enemies around him, stunning them for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000464.png"
+        "img": "/icons/gadgets/23000464.png"
       }
     ]
   },
   "LOLA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000053.png",
+    "imageUrl": "/icons/brawlers/16000053.png",
     "id": 16000053,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1652,29 +1652,29 @@
       {
         "name": "Improvise",
         "desc": "When down to her last round, Lola deals an extra x% damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000431.png"
+        "img": "/icons/star-powers/23000431.png"
       },
       {
         "name": "Sealed With A Kiss",
         "desc": "Projectiles from Lola's Ego will heal allies that are caught in its path by x health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000432.png"
+        "img": "/icons/star-powers/23000432.png"
       }
     ],
     "gadgets": [
       {
         "name": "Freeze Frame",
         "desc": "Lola's Ego stops moving to strike a pose! Gaining a x% shield for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000433.png"
+        "img": "/icons/gadgets/23000433.png"
       },
       {
         "name": "Stunt Double",
         "desc": "Lola and her Ego switch locations, both recovering x health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000456.png"
+        "img": "/icons/gadgets/23000456.png"
       }
     ]
   },
   "MEG": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000052.png",
+    "imageUrl": "/icons/brawlers/16000052.png",
     "id": 16000052,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -1684,29 +1684,29 @@
       {
         "name": "Force Field",
         "desc": "Meg is protected by a x% shield for x seconds when her Mecha is destroyed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000421.png"
+        "img": "/icons/star-powers/23000421.png"
       },
       {
         "name": "Heavy Metal",
         "desc": "Upon expiring, the Mecha suit explodes, dealing x damage to nearby opponents and pushing them away.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000422.png"
+        "img": "/icons/star-powers/23000422.png"
       }
     ],
     "gadgets": [
       {
         "name": "Jolting Volts",
         "desc": "Heal the Mecha by x health per second for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000423.png"
+        "img": "/icons/gadgets/23000423.png"
       },
       {
         "name": "Toolbox",
         "desc": "Meg drops her toolbox, which increases the reload speed for nearby allies by x% until it gets destroyed.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000489.png"
+        "img": "/icons/gadgets/23000489.png"
       }
     ]
   },
   "ASH": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000051.png",
+    "imageUrl": "/icons/brawlers/16000051.png",
     "id": 16000051,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1716,29 +1716,29 @@
       {
         "name": "First Bash",
         "desc": "When hitting an opponent with his attack charges full, Ash gets even more angry. His Rage goes up by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000414.png"
+        "img": "/icons/star-powers/23000414.png"
       },
       {
         "name": "Mad As Heck",
         "desc": "Ash progressively gains up to x% faster reload speed, equal to how enraged he's become.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000415.png"
+        "img": "/icons/star-powers/23000415.png"
       }
     ],
     "gadgets": [
       {
         "name": "Chill Pill",
         "desc": "Though furious, Ash has to collect himself. A full Rage meter will recover x health when this Gadget is popped - less Rage, less recovery.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000416.png"
+        "img": "/icons/gadgets/23000416.png"
       },
       {
         "name": "Rotten Banana",
         "desc": "Ash loses <ccc0000>x% health and instantly gains x% rage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000465.png"
+        "img": "/icons/gadgets/23000465.png"
       }
     ]
   },
   "GRIFF": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000050.png",
+    "imageUrl": "/icons/brawlers/16000050.png",
     "id": 16000050,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1748,29 +1748,29 @@
       {
         "name": "Keep The Change",
         "desc": "Griff gains a slightly wider attack and adds another row of coins to the coin toss.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000397.png"
+        "img": "/icons/star-powers/23000397.png"
       },
       {
         "name": "Business Resilience",
         "desc": "Every <!card.value2.ticksasseconds> seconds, Griff regains up to <!card.value1>% of his missing health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000398.png"
+        "img": "/icons/star-powers/23000398.png"
       }
     ],
     "gadgets": [
       {
         "name": "Piggy Bank",
         "desc": "Griff throws a firecracker-filled piggy bank that explodes after a short delay, destroying obstacles and dealing <!card.accessory.skill.damage.scaletolevel> damage to opponents within range.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000399.png"
+        "img": "/icons/gadgets/23000399.png"
       },
       {
         "name": "Coin Shower",
         "desc": "Griff throws a shower of coins at target area, dealing <!card.accessory.skill.damage.scaletolevel> damage per sec to opponents inside.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000487.png"
+        "img": "/icons/gadgets/23000487.png"
       }
     ]
   },
   "BUZZ": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000049.png",
+    "imageUrl": "/icons/brawlers/16000049.png",
     "id": 16000049,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1780,29 +1780,29 @@
       {
         "name": "Tougher Torpedo",
         "desc": "The minimum duration of Buzz's Super stun is increased by x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000390.png"
+        "img": "/icons/star-powers/23000390.png"
       },
       {
         "name": "Eyes Sharp",
         "desc": "Buzz's Super charging area is increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000391.png"
+        "img": "/icons/star-powers/23000391.png"
       }
     ],
     "gadgets": [
       {
         "name": "Reserve Buoy",
         "desc": "Instantly fills the Super meter, but the next Torpedo Throw doesn't stun opponents.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000392.png"
+        "img": "/icons/gadgets/23000392.png"
       },
       {
         "name": "X-Ray-Shades",
         "desc": "Buzz can see into all bushes in his Super charging area for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000490.png"
+        "img": "/icons/gadgets/23000490.png"
       }
     ]
   },
   "GROM": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000048.png",
+    "imageUrl": "/icons/brawlers/16000048.png",
     "id": 16000048,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1812,29 +1812,29 @@
       {
         "name": "Foot Patrol",
         "desc": "When Grom's Super is fully charged, he gains +x% faster movement speed!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000383.png"
+        "img": "/icons/star-powers/23000383.png"
       },
       {
         "name": "X-Factor",
         "desc": "The split from Grom's main attack deals up to +x% extra damage at max distance.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000384.png"
+        "img": "/icons/star-powers/23000384.png"
       }
     ],
     "gadgets": [
       {
         "name": "Watchtower",
         "desc": "Grom ejects a Watchtower from his Grom Bomb that gives all allies sight into bushes over a large area. The watchtower slowly loses health over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000385.png"
+        "img": "/icons/gadgets/23000385.png"
       },
       {
         "name": "Radio Check",
         "desc": "Grom's next attack throws x Buds in rapid succession.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000460.png"
+        "img": "/icons/gadgets/23000460.png"
       }
     ]
   },
   "SQUEAK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000047.png",
+    "imageUrl": "/icons/brawlers/16000047.png",
     "id": 16000047,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1844,29 +1844,29 @@
       {
         "name": "Chain Reaction",
         "desc": "Each opponent within the area of a Sticky Blomb's explosion increases the Blomb's damage by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000376.png"
+        "img": "/icons/star-powers/23000376.png"
       },
       {
         "name": "Super Sticky",
         "desc": "Secondary Sticky Blomb explosions from Squeak's Super also slow down opponents for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000377.png"
+        "img": "/icons/star-powers/23000377.png"
       }
     ],
     "gadgets": [
       {
         "name": "Windup",
         "desc": "Squeak's next Sticky Blomb deals x% more damage and has x% longer range.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000378.png"
+        "img": "/icons/gadgets/23000378.png"
       },
       {
         "name": "Residue",
         "desc": "Squeak's next Sticky Blomb leaves a residue area behind after exploding, slowing down enemies and giving allies sight into bushes for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000462.png"
+        "img": "/icons/gadgets/23000462.png"
       }
     ]
   },
   "BELLE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000046.png",
+    "imageUrl": "/icons/brawlers/16000046.png",
     "id": 16000046,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1876,29 +1876,29 @@
       {
         "name": "Positive Feedback",
         "desc": "Belle gains a x% shield whenever her Electro-Bolts hit a target.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000369.png"
+        "img": "/icons/star-powers/23000369.png"
       },
       {
         "name": "Grounded",
         "desc": "Getting marked by Belle's Super prevents the opponent from reloading their attack for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000370.png"
+        "img": "/icons/star-powers/23000370.png"
       }
     ],
     "gadgets": [
       {
         "name": "Nest Egg",
         "desc": "Belle places a trap on the ground that will explode when triggered by an opponent. The trap deals <!card.character.weaponskill.damage.scaletolevel.scaleaccessoryvalue1> damage, and slows down anyone within its blast radius for <!card.accessory.customobjectitem.triggerareaeffect.statuseffectenemy.duration.ticksAsSeconds> seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000371.png"
+        "img": "/icons/gadgets/23000371.png"
       },
       {
         "name": "Reverse Polarity",
         "desc": "Belle's next Electro-Bolt bounces from walls.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000463.png"
+        "img": "/icons/gadgets/23000463.png"
       }
     ]
   },
   "STU": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000045.png",
+    "imageUrl": "/icons/brawlers/16000045.png",
     "id": 16000045,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1908,29 +1908,29 @@
       {
         "name": "Zero Drag",
         "desc": "Stu's Nitro Boost Super dash distance increases by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000362.png"
+        "img": "/icons/star-powers/23000362.png"
       },
       {
         "name": "Gaso-Heal",
         "desc": "Using his Nitro Boost Super restores x of Stu's health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000363.png"
+        "img": "/icons/star-powers/23000363.png"
       }
     ],
     "gadgets": [
       {
         "name": "Speed Zone",
         "desc": "Stu drops a booster that makes himself, his teammates and other allies move faster while inside its area of effect.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000364.png"
+        "img": "/icons/gadgets/23000364.png"
       },
       {
         "name": "Breakthrough",
         "desc": "Stu's next Super can bash through obstacles, making debris fly forward. Each piece of debris deals x damage to any opponent it hits.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000401.png"
+        "img": "/icons/gadgets/23000401.png"
       }
     ]
   },
   "RUFFS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000044.png",
+    "imageUrl": "/icons/brawlers/16000044.png",
     "id": 16000044,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -1940,29 +1940,29 @@
       {
         "name": "Air Superiority",
         "desc": "Supply Drop now includes a bomb that adds x% more damage to the drop and also allows it to destroy walls.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000345.png"
+        "img": "/icons/star-powers/23000345.png"
       },
       {
         "name": "Field Promotion",
         "desc": "Friendly Brawlers have their maximum health increased by x every second that they are in range of this ability while it's active.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000346.png"
+        "img": "/icons/star-powers/23000346.png"
       }
     ],
     "gadgets": [
       {
         "name": "Take Cover",
         "desc": "Ruffs throws down x sandbags as cover. Each one has x% of Ruffs' max health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000347.png"
+        "img": "/icons/gadgets/23000347.png"
       },
       {
         "name": "Air Support",
         "desc": "Ruffs calls a barrage around the nearest opponent, dealing x damage with each hit.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000402.png"
+        "img": "/icons/gadgets/23000402.png"
       }
     ]
   },
   "EDGAR": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000043.png",
+    "imageUrl": "/icons/brawlers/16000043.png",
     "id": 16000043,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -1972,29 +1972,29 @@
       {
         "name": "Hard Landing",
         "desc": "Edgar's Super and Let's Fly Gadget will also deal <!card.areaeffect.damage.scaleweapondamagelevel> damage to nearby enemies upon landing, or <!card.areaeffect.innerradiusdamage.scaleweapondamagelevel> damage on a direct hit.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000338.png"
+        "img": "/icons/star-powers/23000338.png"
       },
       {
         "name": "Fisticuffs",
         "desc": "Edgar receives <!card.value1>% more healing from damage he deals.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000339.png"
+        "img": "/icons/star-powers/23000339.png"
       }
     ],
     "gadgets": [
       {
         "name": "Lets Fly",
         "desc": "Edgar's scarf grabs the closest Brawler and he jumps behind them. His scarf can also pull him towards walls.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000340.png"
+        "img": "/icons/gadgets/23000340.png"
       },
       {
         "name": "Hardcore",
         "desc": "Edgar gets a shield that protects him from the next <!card.character.maxhealth.scaletolevel.scaleaccessoryvalue1> damage. The shield gets weaker over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000403.png"
+        "img": "/icons/gadgets/23000403.png"
       }
     ]
   },
   "BYRON": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000042.png",
+    "imageUrl": "/icons/brawlers/16000042.png",
     "id": 16000042,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2004,29 +2004,29 @@
       {
         "name": "Malaise",
         "desc": "Byron's Super will also cause opponents to receive x% less healing from any source for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000331.png"
+        "img": "/icons/star-powers/23000331.png"
       },
       {
         "name": "Injection",
         "desc": "Every x seconds the next basic attack will pierce through targets.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000332.png"
+        "img": "/icons/star-powers/23000332.png"
       }
     ],
     "gadgets": [
       {
         "name": "Shot In The Arm",
         "desc": "Byron uses one of his shots to heal himself x per second for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000333.png"
+        "img": "/icons/gadgets/23000333.png"
       },
       {
         "name": "Booster Shots",
         "desc": "Byron's next attack shoots x darts instead of one, each dealing <ccc0000>x% less damage and <ccc0000>x% less healing.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000461.png"
+        "img": "/icons/gadgets/23000461.png"
       }
     ]
   },
   "LOU": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000041.png",
+    "imageUrl": "/icons/brawlers/16000041.png",
     "id": 16000041,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2036,29 +2036,29 @@
       {
         "name": "Supercool",
         "desc": "Opponents standing on Lou's Super area get frozen x% faster.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000324.png"
+        "img": "/icons/star-powers/23000324.png"
       },
       {
         "name": "Hypothermia",
         "desc": "Opponents lose up to x% of their damage based on how frozen they are from Lou's attacks.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000325.png"
+        "img": "/icons/star-powers/23000325.png"
       }
     ],
     "gadgets": [
       {
         "name": "Ice Block",
         "desc": "Lou shields himself with ice, becoming invulnerable for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000326.png"
+        "img": "/icons/gadgets/23000326.png"
       },
       {
         "name": "Cryo Syrup",
         "desc": "Instantly adds x% freeze meter to opponents inside Lou's Super.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000400.png"
+        "img": "/icons/gadgets/23000400.png"
       }
     ]
   },
   "AMBER": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000040.png",
+    "imageUrl": "/icons/brawlers/16000040.png",
     "id": 16000040,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -2068,29 +2068,29 @@
       {
         "name": "Wild Flames",
         "desc": "Amber can have two fuel puddles on the ground simultaneously and she will recharge her Super automatically when standing near one.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000307.png"
+        "img": "/icons/star-powers/23000307.png"
       },
       {
         "name": "Scorchin Siphon",
         "desc": "While being near a puddle of fire fluid, Amber uses it to reload her firebreathing x% faster.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000308.png"
+        "img": "/icons/star-powers/23000308.png"
       }
     ],
     "gadgets": [
       {
         "name": "Fire Starters",
         "desc": "Amber runs fast for x seconds while spilling her fire fluid, which she can then ignite.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000309.png"
+        "img": "/icons/gadgets/23000309.png"
       },
       {
         "name": "Dancing Flames",
         "desc": "Amber creates x orbiting flames around her for x seconds, dealing x damage on hit.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000488.png"
+        "img": "/icons/gadgets/23000488.png"
       }
     ]
   },
   "COLETTE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000039.png",
+    "imageUrl": "/icons/brawlers/16000039.png",
     "id": 16000039,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2100,29 +2100,29 @@
       {
         "name": "Push It",
         "desc": "All enemy Brawlers hit by Colette's charge are carried to the farthest point of the attack! At max distance, they are stunned for <!card.value2.ticksAsSeconds> sec.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000300.png"
+        "img": "/icons/star-powers/23000300.png"
       },
       {
         "name": "Mass Tax",
         "desc": "Colette takes <!card.trait.statuseffect.shieldpercent>% less damage during her Super and gains 30% shield for 3 sec if she hits a Brawler.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000301.png"
+        "img": "/icons/star-powers/23000301.png"
       }
     ],
     "gadgets": [
       {
         "name": "Na-Ah",
         "desc": "Colette fires a projectile that charms a Brawler for <!card.accessory.skill.projectile.statuseffectenemy.duration.ticksasseconds> sec. Uses ammo.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000302.png"
+        "img": "/icons/gadgets/23000302.png"
       },
       {
         "name": "Gotcha",
         "desc": "Colette fires a projectile that heals for  <!card.accessory.skill.projectile.lifestealpercent>% of damage dealt. Uses ammo and can be fired 3 times before cooldown.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000457.png"
+        "img": "/icons/gadgets/23000457.png"
       }
     ]
   },
   "SURGE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000038.png",
+    "imageUrl": "/icons/brawlers/16000038.png",
     "id": 16000038,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -2132,29 +2132,29 @@
       {
         "name": "To The Max",
         "desc": "Surge's main attack now splits when hitting walls.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000283.png"
+        "img": "/icons/star-powers/23000283.png"
       },
       {
         "name": "Serve Ice Cold",
         "desc": "Surge keeps his STAGE 1 Super upgrade for the full match duration.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000284.png"
+        "img": "/icons/star-powers/23000284.png"
       }
     ],
     "gadgets": [
       {
         "name": "Power Surge",
         "desc": "Surge overloads his circuits and increases his upgrade stage by x for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000285.png"
+        "img": "/icons/gadgets/23000285.png"
       },
       {
         "name": "Power Shield",
         "desc": "Within the next x seconds, Surge consumes x% of the damage of the next incoming hit and uses the energy to reload x ammo.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000485.png"
+        "img": "/icons/gadgets/23000485.png"
       }
     ]
   },
   "SPROUT": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000037.png",
+    "imageUrl": "/icons/brawlers/16000037.png",
     "id": 16000037,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2164,29 +2164,29 @@
       {
         "name": "Overgrowth",
         "desc": "Every x seconds, the next Seed Bomb will explode with a larger explosion radius.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000240.png"
+        "img": "/icons/star-powers/23000240.png"
       },
       {
         "name": "Photosynthesis",
         "desc": "Sprout activates a shield, partially protecting itself from all attacks while inside a bush.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000241.png"
+        "img": "/icons/star-powers/23000241.png"
       }
     ],
     "gadgets": [
       {
         "name": "Garden Mulcher",
         "desc": "Sprout consumes a bush to restore x health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000244.png"
+        "img": "/icons/gadgets/23000244.png"
       },
       {
         "name": "Transplant",
         "desc": "Sprout destroys its current Hedge, but will instantly have its Super fully charged again.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000315.png"
+        "img": "/icons/gadgets/23000315.png"
       }
     ]
   },
   "NANI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000036.png",
+    "imageUrl": "/icons/brawlers/16000036.png",
     "id": 16000036,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2196,29 +2196,29 @@
       {
         "name": "Autofocus",
         "desc": "Peep deals up to x extra damage based on his travel distance.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000234.png"
+        "img": "/icons/star-powers/23000234.png"
       },
       {
         "name": "Tempered Steel",
         "desc": "Nani takes x% less damage while her Super is active.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000235.png"
+        "img": "/icons/star-powers/23000235.png"
       }
     ],
     "gadgets": [
       {
         "name": "Warpin Time",
         "desc": "Nani teleports to Peep's last known location and ends her Super.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000278.png"
+        "img": "/icons/gadgets/23000278.png"
       },
       {
         "name": "Return To Sender",
         "desc": "For the next x seconds, the first time Nani takes damage from an enemy, x% of the damage is returned to the enemy.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000353.png"
+        "img": "/icons/gadgets/23000353.png"
       }
     ]
   },
   "GALE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000035.png",
+    "imageUrl": "/icons/brawlers/16000035.png",
     "id": 16000035,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2228,29 +2228,29 @@
       {
         "name": "Blustery Blow",
         "desc": "Gale's Super now stuns enemies for x seconds if they are pushed against obstacles.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000228.png"
+        "img": "/icons/star-powers/23000228.png"
       },
       {
         "name": "Freezing Snow",
         "desc": "Gale's snow balls now also slow down opponents for <!card.statuseffect.duration.ticksasseconds> seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000229.png"
+        "img": "/icons/star-powers/23000229.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spring Ejector",
         "desc": "Gale drops a bounce pad underfoot, launching friend and foe alike into the air.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000277.png"
+        "img": "/icons/gadgets/23000277.png"
       },
       {
         "name": "Twister",
         "desc": "Gale uses his leaf blower to create a local tornado, which will push away any opponents that try to pass through.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000407.png"
+        "img": "/icons/gadgets/23000407.png"
       }
     ]
   },
   "JACKY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000034.png",
+    "imageUrl": "/icons/brawlers/16000034.png",
     "id": 16000034,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2260,29 +2260,29 @@
       {
         "name": "Counter Crush",
         "desc": "When receiving damage, Jacky returns the favor by converting x% of the damage into a Groundbreaker counterattack.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000222.png"
+        "img": "/icons/star-powers/23000222.png"
       },
       {
         "name": "Hardy Hard Hat",
         "desc": "Jacky's Hard Hat protects her by reducing any damage she takes by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000223.png"
+        "img": "/icons/star-powers/23000223.png"
       }
     ],
     "gadgets": [
       {
         "name": "Pneumatic Booster",
         "desc": "Jacky gets a burst of energy and moves x% faster for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000256.png"
+        "img": "/icons/gadgets/23000256.png"
       },
       {
         "name": "Rebuild",
         "desc": "Jacky rebuilds the environment in a small radius around her.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000486.png"
+        "img": "/icons/gadgets/23000486.png"
       }
     ]
   },
   "MAX": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000032.png",
+    "imageUrl": "/icons/brawlers/16000032.png",
     "id": 16000032,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2292,29 +2292,29 @@
       {
         "name": "Super Charged",
         "desc": "Max now charges her Super while moving.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000210.png"
+        "img": "/icons/star-powers/23000210.png"
       },
       {
         "name": "Run N Gun",
         "desc": "Max reloads faster while moving.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000211.png"
+        "img": "/icons/star-powers/23000211.png"
       }
     ],
     "gadgets": [
       {
         "name": "Phase Shifter",
         "desc": "Max dashes forward, and becomes immune to all damage from enemies while dashing.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000254.png"
+        "img": "/icons/gadgets/23000254.png"
       },
       {
         "name": "Sneaky Sneakers",
         "desc": "Max blinks back to a place of her choosing after x seconds' delay, recovering any damage she received in the meantime.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000311.png"
+        "img": "/icons/gadgets/23000311.png"
       }
     ]
   },
   "MR. P": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000031.png",
+    "imageUrl": "/icons/brawlers/16000031.png",
     "id": 16000031,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2324,29 +2324,29 @@
       {
         "name": "Handle With Care",
         "desc": "Every x seconds, the explosion damage of Mr. P's next overstuffed suitcase is increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000204.png"
+        "img": "/icons/star-powers/23000204.png"
       },
       {
         "name": "Revolving Door",
         "desc": "All robo-porters from the home base now have x% more health and x% higher damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000205.png"
+        "img": "/icons/star-powers/23000205.png"
       }
     ],
     "gadgets": [
       {
         "name": "Service Bell",
         "desc": "Mr. P buffs his current porter by increasing its damage by x and health by x.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000269.png"
+        "img": "/icons/gadgets/23000269.png"
       },
       {
         "name": "Porter Reinforcements",
         "desc": "The next attack will spawn a weak porter where the attack lands.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000349.png"
+        "img": "/icons/gadgets/23000349.png"
       }
     ]
   },
   "EMZ": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000030.png",
+    "imageUrl": "/icons/brawlers/16000030.png",
     "id": 16000030,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2356,29 +2356,29 @@
       {
         "name": "Bad Karma",
         "desc": "Enemies that stay within the cloud of Emz's toxic hair spray suffer increasing damage, x% per hit.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000198.png"
+        "img": "/icons/star-powers/23000198.png"
       },
       {
         "name": "Hype",
         "desc": "Emz recovers x health per second for each enemy Brawler inside her Super's area of effect.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000199.png"
+        "img": "/icons/star-powers/23000199.png"
       }
     ],
     "gadgets": [
       {
         "name": "Friendzoner",
         "desc": "Emz fires off some hairspray that pushes enemies back. Deals <!card.accessory.skill.damage.scaleToLevel> damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000274.png"
+        "img": "/icons/gadgets/23000274.png"
       },
       {
         "name": "Acid Spray",
         "desc": "Emz squirts out hairspray that goes through walls! Deals <!card.accessory.skill.damage.scaleToLevel> damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000459.png"
+        "img": "/icons/gadgets/23000459.png"
       }
     ]
   },
   "BEA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000029.png",
+    "imageUrl": "/icons/brawlers/16000029.png",
     "id": 16000029,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2388,29 +2388,29 @@
       {
         "name": "Insta Beaload",
         "desc": "Instantly Supercharge Bea's Big Sting one time if she misses a Supercharged shot.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000192.png"
+        "img": "/icons/star-powers/23000192.png"
       },
       {
         "name": "Honeycomb",
         "desc": "Bea receives a x% shield while Big Sting is Supercharged.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000193.png"
+        "img": "/icons/star-powers/23000193.png"
       }
     ],
     "gadgets": [
       {
         "name": "Honey Molasses",
         "desc": "Bea drops a beehive with a splash of sticky honey around it. The honey slows down enemies that step in it.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000271.png"
+        "img": "/icons/gadgets/23000271.png"
       },
       {
         "name": "Rattled Hive",
         "desc": "Bea unleashes x angry bees that circle away from her, dealing more damage the further they go (up to x damage).",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000312.png"
+        "img": "/icons/gadgets/23000312.png"
       }
     ]
   },
   "SANDY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000028.png",
+    "imageUrl": "/icons/brawlers/16000028.png",
     "id": 16000028,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -2420,29 +2420,29 @@
       {
         "name": "Rude Sands",
         "desc": "Sandstorm now also damages enemies for x damage per second.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000186.png"
+        "img": "/icons/star-powers/23000186.png"
       },
       {
         "name": "Healing Winds",
         "desc": "Sandstorm now also heals friendly Brawlers for x health per second.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000187.png"
+        "img": "/icons/star-powers/23000187.png"
       }
     ],
     "gadgets": [
       {
         "name": "Sleep Stimulator",
         "desc": "Sandy falls asleep for x seconds and his health is fully restored.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000270.png"
+        "img": "/icons/gadgets/23000270.png"
       },
       {
         "name": "Sweet Dreams",
         "desc": "Sandy's next attack lulls opponents to sleep for x seconds. They will, however, wake up from any damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000405.png"
+        "img": "/icons/gadgets/23000405.png"
       }
     ]
   },
   "8-BIT": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000027.png",
+    "imageUrl": "/icons/brawlers/16000027.png",
     "id": 16000027,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2452,29 +2452,29 @@
       {
         "name": "Boosted Booster",
         "desc": "Increases the Damage Booster's range by x% and boosts damage by an additional x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000168.png"
+        "img": "/icons/star-powers/23000168.png"
       },
       {
         "name": "Plugged In",
         "desc": "When 8-Bit is near his Damage Booster, he will plug in and have increased movement speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000181.png"
+        "img": "/icons/star-powers/23000181.png"
       }
     ],
     "gadgets": [
       {
         "name": "Cheat Cartridge",
         "desc": "8-Bit instantly teleports to his Damage Booster.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000259.png"
+        "img": "/icons/gadgets/23000259.png"
       },
       {
         "name": "Extra Credits",
         "desc": "8-Bit's next attack has the number of projectiles increased to x.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000318.png"
+        "img": "/icons/gadgets/23000318.png"
       }
     ]
   },
   "BIBI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000026.png",
+    "imageUrl": "/icons/brawlers/16000026.png",
     "id": 16000026,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2484,29 +2484,29 @@
       {
         "name": "Home Run",
         "desc": "Bibi's movement speed is increased by x% when her Home Run bar is fully charged.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000134.png"
+        "img": "/icons/star-powers/23000134.png"
       },
       {
         "name": "Batting Stance",
         "desc": "When Bibi's Home run bar is fully charged, she shields herself from all damage by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000146.png"
+        "img": "/icons/star-powers/23000146.png"
       }
     ],
     "gadgets": [
       {
         "name": "Vitamin Booster",
         "desc": "Bibi heals <!card.value1> health per second for <!card.value2> seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000275.png"
+        "img": "/icons/gadgets/23000275.png"
       },
       {
         "name": "Extra Sticky",
         "desc": "Bibi throws bubble gum that slows all enemies in it by <!card.accessory.skill.projectile.spawnareaeffectobject.statuseffectenemy.speedreducepercent>%",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000458.png"
+        "img": "/icons/gadgets/23000458.png"
       }
     ]
   },
   "CARL": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000025.png",
+    "imageUrl": "/icons/brawlers/16000025.png",
     "id": 16000025,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2516,29 +2516,29 @@
       {
         "name": "Power Throw",
         "desc": "Carl throws his Pickaxe with x% more speed, allowing it to travel and return faster.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000129.png"
+        "img": "/icons/star-powers/23000129.png"
       },
       {
         "name": "Protective Pirouette",
         "desc": "During Carl's Super, all damage he receives is reduced by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000145.png"
+        "img": "/icons/star-powers/23000145.png"
       }
     ],
     "gadgets": [
       {
         "name": "Heat Ejector",
         "desc": "The next pickaxe Carl throws will drop a trail of hot rocks behind it! Opponents that touch them are set on fire and receive x damage per second.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000262.png"
+        "img": "/icons/gadgets/23000262.png"
       },
       {
         "name": "Flying Hook",
         "desc": "Carl's next attack makes his pickaxe pull him to the farthest point of the attack.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000317.png"
+        "img": "/icons/gadgets/23000317.png"
       }
     ]
   },
   "ROSA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000024.png",
+    "imageUrl": "/icons/brawlers/16000024.png",
     "id": 16000024,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -2548,29 +2548,29 @@
       {
         "name": "Plant Life",
         "desc": "Rosa recovers x health per second when inside a bush.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000124.png"
+        "img": "/icons/star-powers/23000124.png"
       },
       {
         "name": "Thorny Gloves",
         "desc": "Rosa's punches gain +x damage during her Super.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000147.png"
+        "img": "/icons/star-powers/23000147.png"
       }
     ],
     "gadgets": [
       {
         "name": "Grow Light",
         "desc": "Rosa fertilizes the ground around her and bushes instantly grow to provide great cover.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000242.png"
+        "img": "/icons/gadgets/23000242.png"
       },
       {
         "name": "Unfriendly Bushes",
         "desc": "All opponents hiding in bushes take <!card.character.weaponskill.damage.scaleaccessoryvalue3.scaletolevel> damage and get slowed down for <!card.accessory.statuseffectenemy.duration.ticksasseconds> seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000348.png"
+        "img": "/icons/gadgets/23000348.png"
       }
     ]
   },
   "LEON": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000023.png",
+    "imageUrl": "/icons/brawlers/16000023.png",
     "id": 16000023,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -2580,29 +2580,29 @@
       {
         "name": "Smoke Trails",
         "desc": "When Leon is not visible, he gains a x% movement speed for the duration of his invisibility.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000119.png"
+        "img": "/icons/star-powers/23000119.png"
       },
       {
         "name": "Invisiheal",
         "desc": "Leon recovers <!card.character.maxHealth.scaleToLevel.scaleCardValue1> health per second while his Super is active.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000141.png"
+        "img": "/icons/star-powers/23000141.png"
       }
     ],
     "gadgets": [
       {
         "name": "Clone Projector",
         "desc": "Leon creates an illusion of himself to confuse his enemies. The clone attacks enemies dealing minor damage",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000276.png"
+        "img": "/icons/gadgets/23000276.png"
       },
       {
         "name": "Lollipop Drop",
         "desc": "Leon throws a stealthy area for his team to hide in. The lollipop slowly loses its health over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000408.png"
+        "img": "/icons/gadgets/23000408.png"
       }
     ]
   },
   "TICK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000022.png",
+    "imageUrl": "/icons/brawlers/16000022.png",
     "id": 16000022,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2612,29 +2612,29 @@
       {
         "name": "Well Oiled",
         "desc": "When Tick takes no damage and doesn't attack, he starts recovering health x seconds sooner than normal.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000114.png"
+        "img": "/icons/star-powers/23000114.png"
       },
       {
         "name": "Automa-Tick Reload",
         "desc": "Tick's reload time is x% shorter.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000161.png"
+        "img": "/icons/star-powers/23000161.png"
       }
     ],
     "gadgets": [
       {
         "name": "Mine Mania",
         "desc": "Tick's next attack fires x mines.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000253.png"
+        "img": "/icons/gadgets/23000253.png"
       },
       {
         "name": "Last Hurrah",
         "desc": "Tick gains a x% shield for x seconds. After that, it bursts out for x damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000355.png"
+        "img": "/icons/gadgets/23000355.png"
       }
     ]
   },
   "GENE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000021.png",
+    "imageUrl": "/icons/brawlers/16000021.png",
     "id": 16000021,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2644,29 +2644,29 @@
       {
         "name": "Magic Puffs",
         "desc": "Gene heals all friendly Brawlers around him for x health per second.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000109.png"
+        "img": "/icons/star-powers/23000109.png"
       },
       {
         "name": "Spirit Slap",
         "desc": "Gene's Magic Hand also damages enemies, dealing x damage on hit.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000159.png"
+        "img": "/icons/star-powers/23000159.png"
       }
     ],
     "gadgets": [
       {
         "name": "Lamp Blowout",
         "desc": "All enemies close to Gene are instantly pushed back. If at least one enemy Brawler is within range, Gene will also restore x% of his max health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000252.png"
+        "img": "/icons/gadgets/23000252.png"
       },
       {
         "name": "Vengeful Spirits",
         "desc": "Gene shoots a homing missile at all visible opponents within a large area, dealing up to x damage based on distance.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000352.png"
+        "img": "/icons/gadgets/23000352.png"
       }
     ]
   },
   "FRANK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000020.png",
+    "imageUrl": "/icons/brawlers/16000020.png",
     "id": 16000020,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2676,29 +2676,29 @@
       {
         "name": "Power Grab",
         "desc": "Frank steals the power of a Brawler he defeats, increasing his damage by x% for x seconds!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000104.png"
+        "img": "/icons/star-powers/23000104.png"
       },
       {
         "name": "Sponge",
         "desc": "Frank gains +x health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000153.png"
+        "img": "/icons/star-powers/23000153.png"
       }
     ],
     "gadgets": [
       {
         "name": "Active Noise Canceling",
         "desc": "Fires a soundwave in a target direction, dealing <!card.accessory.skill.damage.scaleToLevel> damage to Brawlers. Frank becomes immune to Crowd Control for <!card.accessory.skill.activationSelfStatusEffect.duration.ticksAsSeconds> secs.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000261.png"
+        "img": "/icons/gadgets/23000261.png"
       },
       {
         "name": "Irresistible Attraction",
         "desc": "Frank aims a long-range attack that pulls enemies towards him. Consumes ammo. Does <!card.accessory.skill.damage.scaleToLevel> damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000351.png"
+        "img": "/icons/gadgets/23000351.png"
       }
     ]
   },
   "PENNY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000019.png",
+    "imageUrl": "/icons/brawlers/16000019.png",
     "id": 16000019,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2708,29 +2708,29 @@
       {
         "name": "Heavy Coffers",
         "desc": "Penny's gold pouches burst with a x% wider cone after each hit.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000099.png"
+        "img": "/icons/star-powers/23000099.png"
       },
       {
         "name": "Master Blaster",
         "desc": "Penny's cannon deals x damage and knocks back nearby enemies on landing.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000142.png"
+        "img": "/icons/star-powers/23000142.png"
       }
     ],
     "gadgets": [
       {
         "name": "Salty Barrel",
         "desc": "Penny drops a barrel of salt that blocks enemy projectiles. She can also use it to burst her own gold pouches.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000248.png"
+        "img": "/icons/gadgets/23000248.png"
       },
       {
         "name": "Trusty Spyglass",
         "desc": "Penny's cannon blasts at every visible enemy position within range.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000287.png"
+        "img": "/icons/gadgets/23000287.png"
       }
     ]
   },
   "DARRYL": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000018.png",
+    "imageUrl": "/icons/brawlers/16000018.png",
     "id": 16000018,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -2740,29 +2740,29 @@
       {
         "name": "Steel Hoops",
         "desc": "After Barrel Roll all damage Darryl takes is reduced by x% for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000094.png"
+        "img": "/icons/star-powers/23000094.png"
       },
       {
         "name": "Rolling Reload",
         "desc": "When Darryl uses his Super, he doubles his reload speed for x seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000157.png"
+        "img": "/icons/star-powers/23000157.png"
       }
     ],
     "gadgets": [
       {
         "name": "Recoiling Rotator",
         "desc": "Darryl spins around and sprays a barrage of shots in all directions. Each shot deals x damage and recharges his Super by x% if it hits enemies!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000260.png"
+        "img": "/icons/gadgets/23000260.png"
       },
       {
         "name": "Tar Barrel",
         "desc": "Darryl creates a slowing area around himself for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000313.png"
+        "img": "/icons/gadgets/23000313.png"
       }
     ]
   },
   "TARA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000017.png",
+    "imageUrl": "/icons/brawlers/16000017.png",
     "id": 16000017,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2772,29 +2772,29 @@
       {
         "name": "Black Portal",
         "desc": "Tara's Super cracks open a dimensional portal! A shadowy version of Tara appears and attacks her enemies.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000093.png"
+        "img": "/icons/star-powers/23000093.png"
       },
       {
         "name": "Healing Shade",
         "desc": "Tara's Super cracks open a dimensional portal! A shadowy version of Tara appears to heal Tara and her teammates.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000160.png"
+        "img": "/icons/star-powers/23000160.png"
       }
     ],
     "gadgets": [
       {
         "name": "Psychic Enhancer",
         "desc": "Tara and her allies are able to see all enemies, even inside bushes, for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000266.png"
+        "img": "/icons/gadgets/23000266.png"
       },
       {
         "name": "Support From Beyond",
         "desc": "Tara surrounds herself with three weak Shadows that attack opponents and disappear after x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000356.png"
+        "img": "/icons/gadgets/23000356.png"
       }
     ]
   },
   "PAM": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000016.png",
+    "imageUrl": "/icons/brawlers/16000016.png",
     "id": 16000016,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2804,29 +2804,29 @@
       {
         "name": "Mamas Hug",
         "desc": "Whenever Pam hits enemy Brawlers with Scrapstorm, she heals herself and nearby friendly Brawlers for x health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000092.png"
+        "img": "/icons/star-powers/23000092.png"
       },
       {
         "name": "Mamas Squeeze",
         "desc": "Healing turret now also damages enemies for x damage per second.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000139.png"
+        "img": "/icons/star-powers/23000139.png"
       }
     ],
     "gadgets": [
       {
         "name": "Pulse Modulator",
         "desc": "Pam triggers her turret to emit a pulse that heals allies inside the turret's range, including herself, for x health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000257.png"
+        "img": "/icons/gadgets/23000257.png"
       },
       {
         "name": "Scrapsucker",
         "desc": "Each hit from Pam's next attack removes x% of opposing Brawlers' maximum ammo. Pam reclaims x% of the ammo for herself.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000404.png"
+        "img": "/icons/gadgets/23000404.png"
       }
     ]
   },
   "PIPER": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000015.png",
+    "imageUrl": "/icons/brawlers/16000015.png",
     "id": 16000015,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2836,29 +2836,29 @@
       {
         "name": "Ambush",
         "desc": "Piper's attack deals +x extra damage (at max range) when she's hidden in a bush.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000091.png"
+        "img": "/icons/star-powers/23000091.png"
       },
       {
         "name": "Snappy Sniping",
         "desc": "When Piper hits an opponent with her attack, she reloads x ammo instantly.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000152.png"
+        "img": "/icons/star-powers/23000152.png"
       }
     ],
     "gadgets": [
       {
         "name": "Auto Aimer",
         "desc": "Piper pops a defensive shot at the closest enemy, dealing x damage, while also pushing them back.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000268.png"
+        "img": "/icons/gadgets/23000268.png"
       },
       {
         "name": "Homemade Recipe",
         "desc": "On activation, Piper's next main attack will home in on enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000291.png"
+        "img": "/icons/gadgets/23000291.png"
       }
     ]
   },
   "BO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000014.png",
+    "imageUrl": "/icons/brawlers/16000014.png",
     "id": 16000014,
     "rarity": "Epic",
     "rarityColor": "#d850ff",
@@ -2868,29 +2868,29 @@
       {
         "name": "Circling Eagle",
         "desc": "Bo spots enemies hidden in bushes from x% longer distance than normally.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000090.png"
+        "img": "/icons/star-powers/23000090.png"
       },
       {
         "name": "Snare A Bear",
         "desc": "Instead of a knockback, Bo's traps now stun the enemy for x seconds!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000148.png"
+        "img": "/icons/star-powers/23000148.png"
       }
     ],
     "gadgets": [
       {
         "name": "Super Totem",
         "desc": "Bo places a totem that increases allies' Super charging rate by <!card.accessory.skill.summonedCharacter.areaEffect.customValue1>%. The totem slowly loses its health over time.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000263.png"
+        "img": "/icons/gadgets/23000263.png"
       },
       {
         "name": "Tripwire",
         "desc": "Bo triggers all of his mines after x seconds. During the delay the mines are completely undetectable to opponents.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000289.png"
+        "img": "/icons/gadgets/23000289.png"
       }
     ]
   },
   "POCO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000013.png",
+    "imageUrl": "/icons/brawlers/16000013.png",
     "id": 16000013,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -2900,29 +2900,29 @@
       {
         "name": "Da Capo",
         "desc": "When Poco's attack hits friendly Brawlers they now heal for x health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000089.png"
+        "img": "/icons/star-powers/23000089.png"
       },
       {
         "name": "Screeching Solo",
         "desc": "Poco's Super now also hits enemies, dealing x damage.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000144.png"
+        "img": "/icons/star-powers/23000144.png"
       }
     ],
     "gadgets": [
       {
         "name": "Tuning Fork",
         "desc": "Poco and all nearby allies heal x health per second for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000267.png"
+        "img": "/icons/gadgets/23000267.png"
       },
       {
         "name": "Protective Tunes",
         "desc": "Removes active adverse effects from friendly Brawlers in a large area and gives a x second immunity.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000350.png"
+        "img": "/icons/gadgets/23000350.png"
       }
     ]
   },
   "CROW": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000012.png",
+    "imageUrl": "/icons/brawlers/16000012.png",
     "id": 16000012,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -2932,29 +2932,29 @@
       {
         "name": "Extra Toxic",
         "desc": "Crow's poison saps the strength of enemies, who deal x% less damage while poisoned.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000088.png"
+        "img": "/icons/star-powers/23000088.png"
       },
       {
         "name": "Carrion Crow",
         "desc": "Crow deals +x% damage with his attack and Super to targets with x% or less health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000143.png"
+        "img": "/icons/star-powers/23000143.png"
       }
     ],
     "gadgets": [
       {
         "name": "Instapoison",
         "desc": "Crow instantly deals remaining poison damage to all Crow-poisoned enemies and gains a shield for <!card.accessory.customValue2>% of the value.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000243.png"
+        "img": "/icons/gadgets/23000243.png"
       },
       {
         "name": "Slowing Toxin",
         "desc": "Throw a kunai that damages, slows and poisons the first enemy hit for <!card.accessory.skill.projectile.statusEffectEnemy.duration.ticksAsSeconds> sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000286.png"
+        "img": "/icons/gadgets/23000286.png"
       }
     ]
   },
   "MORTIS": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000011.png",
+    "imageUrl": "/icons/brawlers/16000011.png",
     "id": 16000011,
     "rarity": "Mythic",
     "rarityColor": "#fe5e72",
@@ -2964,29 +2964,29 @@
       {
         "name": "Creepy Harvest",
         "desc": "Mortis reaps the life essence of Brawlers he defeats, restoring x% of his max health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000087.png"
+        "img": "/icons/star-powers/23000087.png"
       },
       {
         "name": "Coiled Snake",
         "desc": "Mortis gains his longer dash x seconds faster.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000154.png"
+        "img": "/icons/star-powers/23000154.png"
       }
     ],
     "gadgets": [
       {
         "name": "Combo Spinner",
         "desc": "Mortis spins his shovel dealing <!card.accessory.skill.damage.scaleToLevel> damage. Can also be aimed for a short-distance bat attack.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000265.png"
+        "img": "/icons/gadgets/23000265.png"
       },
       {
         "name": "Creature Of The Night",
         "desc": "Mortis turns into a flock of bats and travels to a target location.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000290.png"
+        "img": "/icons/gadgets/23000290.png"
       }
     ]
   },
   "EL PRIMO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000010.png",
+    "imageUrl": "/icons/brawlers/16000010.png",
     "id": 16000010,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -2996,29 +2996,29 @@
       {
         "name": "El Fuego",
         "desc": "Enemies caught in El Primo's Super will burn for x damage over 4 seconds.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000086.png"
+        "img": "/icons/star-powers/23000086.png"
       },
       {
         "name": "Meteor Rush",
         "desc": "El Primo gains a x% speed boost for x seconds after using his Super.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000140.png"
+        "img": "/icons/star-powers/23000140.png"
       }
     ],
     "gadgets": [
       {
         "name": "Suplex Supplement",
         "desc": "El Primo grabs the closest enemy within his reach and flips them like a pancake over his broad shoulders.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000264.png"
+        "img": "/icons/gadgets/23000264.png"
       },
       {
         "name": "Asteroid Belt",
         "desc": "El Primo summons a small meteor to strike the nearest enemy. It deals x damage and destroys walls.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000292.png"
+        "img": "/icons/gadgets/23000292.png"
       }
     ]
   },
   "DYNAMIKE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000009.png",
+    "imageUrl": "/icons/brawlers/16000009.png",
     "id": 16000009,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -3028,29 +3028,29 @@
       {
         "name": "Dyna-Jump",
         "desc": "Dynamike can ride the blast wave of his explosives to jump over obstacles!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000085.png"
+        "img": "/icons/star-powers/23000085.png"
       },
       {
         "name": "Demolition",
         "desc": "Adds +x damage to Mike's Super.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000155.png"
+        "img": "/icons/star-powers/23000155.png"
       }
     ],
     "gadgets": [
       {
         "name": "Fidget Spinner",
         "desc": "Dynamike spins furiously with increased movement speed and throws multiple sticks of dynamite around himself. Each dynamite deals x damage to enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000258.png"
+        "img": "/icons/gadgets/23000258.png"
       },
       {
         "name": "Satchel Charge",
         "desc": "Once activated, the next main attack also stuns enemies for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000294.png"
+        "img": "/icons/gadgets/23000294.png"
       }
     ]
   },
   "NITA": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000008.png",
+    "imageUrl": "/icons/brawlers/16000008.png",
     "id": 16000008,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -3060,29 +3060,29 @@
       {
         "name": "Bear With Me",
         "desc": "Nita recovers 1092 health whenever her bear hits an enemy Brawler. When Nita deals damage to an enemy Brawler, her bear regains 1094 health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000084.png"
+        "img": "/icons/star-powers/23000084.png"
       },
       {
         "name": "Hyper Bear",
         "desc": "Nita's bear attacks faster. Time between swipes is reduced by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000136.png"
+        "img": "/icons/star-powers/23000136.png"
       }
     ],
     "gadgets": [
       {
         "name": "Bear Paws",
         "desc": "Nita commands her bear to slam the ground, stunning all enemies within its reach.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000249.png"
+        "img": "/icons/gadgets/23000249.png"
       },
       {
         "name": "Faux Fur",
         "desc": "For the next <!card.accessory.activeTime.ticksAsSeconds> seconds, Nita's bear gets a <!card.accessory.value1>% shield against damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000314.png"
+        "img": "/icons/gadgets/23000314.png"
       }
     ]
   },
   "JESSIE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000007.png",
+    "imageUrl": "/icons/brawlers/16000007.png",
     "id": 16000007,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -3092,29 +3092,29 @@
       {
         "name": "Energize",
         "desc": "Jessie can repair her gun turret for x of its missing health by zapping it with her attack.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000083.png"
+        "img": "/icons/star-powers/23000083.png"
       },
       {
         "name": "Shocky",
         "desc": "Scrappy the Turret now shoots energy orbs that bounce between enemies. The orbs' range after a bounce is x% of normal range.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000149.png"
+        "img": "/icons/star-powers/23000149.png"
       }
     ],
     "gadgets": [
       {
         "name": "Spark Plug",
         "desc": "Jessie triggers a shockwave from her turret, slowing down all enemies within its area of effect.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000251.png"
+        "img": "/icons/gadgets/23000251.png"
       },
       {
         "name": "Recoil Spring",
         "desc": "Scrappy's attack speed is doubled for x seconds.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000295.png"
+        "img": "/icons/gadgets/23000295.png"
       }
     ]
   },
   "BARLEY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000006.png",
+    "imageUrl": "/icons/brawlers/16000006.png",
     "id": 16000006,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -3124,29 +3124,29 @@
       {
         "name": "Medical Use",
         "desc": "Barley regains x health from each attack.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000082.png"
+        "img": "/icons/star-powers/23000082.png"
       },
       {
         "name": "Extra Noxious",
         "desc": "Adds +x damage per second to Barley's attack.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000158.png"
+        "img": "/icons/star-powers/23000158.png"
       }
     ],
     "gadgets": [
       {
         "name": "Sticky Syrup Mixer",
         "desc": "Barley drops a sticky concoction that leaves a puddle, slowing down all enemies that make contact with it.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000250.png"
+        "img": "/icons/gadgets/23000250.png"
       },
       {
         "name": "Herbal Tonic",
         "desc": "Barley throws a healing potion at nearby allies that creates an area that heals for x health per second.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000293.png"
+        "img": "/icons/gadgets/23000293.png"
       }
     ]
   },
   "SPIKE": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000005.png",
+    "imageUrl": "/icons/brawlers/16000005.png",
     "id": 16000005,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",
@@ -3156,29 +3156,29 @@
       {
         "name": "Fertilize",
         "desc": "Super heals for x% of damage dealt.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000081.png"
+        "img": "/icons/star-powers/23000081.png"
       },
       {
         "name": "Curveball",
         "desc": "Spikes from the cactus grenade fly in a curving motion, making it easier to hit targets.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000151.png"
+        "img": "/icons/star-powers/23000151.png"
       }
     ],
     "gadgets": [
       {
         "name": "Popping Pincushion",
         "desc": "Spike aims and fires a wave of needles that deal <!card.accessory.skill.damage.scaleToLevel> damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000247.png"
+        "img": "/icons/gadgets/23000247.png"
       },
       {
         "name": "Life Plant",
         "desc": "Spike throws a large cactus with <!card.accessory.skill.summonedCharacter.maxHealth.scaleToLevel> health to give cover to teammates. If destroyed, the cactus bursts, and all nearby teammates recover <!card.accessory.skill.cactusMinionHealing.scaleToLevel> health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000406.png"
+        "img": "/icons/gadgets/23000406.png"
       }
     ]
   },
   "RICO": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000004.png",
+    "imageUrl": "/icons/brawlers/16000004.png",
     "id": 16000004,
     "rarity": "Super Rare",
     "rarityColor": "#5ab3ff",
@@ -3188,29 +3188,29 @@
       {
         "name": "Super Bouncy",
         "desc": "Rico's bullets, from attack and Super alike, get Supercharged by their first bounce and deal +x damage!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000080.png"
+        "img": "/icons/star-powers/23000080.png"
       },
       {
         "name": "Robo Retreat",
         "desc": "When Rico falls below x% health, he runs x% faster!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000156.png"
+        "img": "/icons/star-powers/23000156.png"
       }
     ],
     "gadgets": [
       {
         "name": "Multiball Launcher",
         "desc": "Rico blasts waves of bouncy bullets in all directions.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000246.png"
+        "img": "/icons/gadgets/23000246.png"
       },
       {
         "name": "Bouncy Castle",
         "desc": "Rico's next basic attack will heal him for x health from each projectile bounce.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000409.png"
+        "img": "/icons/gadgets/23000409.png"
       }
     ]
   },
   "BROCK": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000003.png",
+    "imageUrl": "/icons/brawlers/16000003.png",
     "id": 16000003,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -3220,29 +3220,29 @@
       {
         "name": "More Rockets",
         "desc": "Rocket Rain now rains down x% more rockets.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000079.png"
+        "img": "/icons/star-powers/23000079.png"
       },
       {
         "name": "Rocket No. 4",
         "desc": "Brock loads a fourth rocket into his launcher, increasing his ammo capacity (and discarding the thermos bottle he's been keeping in his launcher's fourth tube).",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000150.png"
+        "img": "/icons/star-powers/23000150.png"
       }
     ],
     "gadgets": [
       {
         "name": "Rocket Laces",
         "desc": "Brock blasts the ground below him and propels himself into the air. The explosion deals x damage to nearby enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000245.png"
+        "img": "/icons/gadgets/23000245.png"
       },
       {
         "name": "Rocket Fuel",
         "desc": "Brock's next attack is a mega rocket that is bigger, badder, faster and destroys walls.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000316.png"
+        "img": "/icons/gadgets/23000316.png"
       }
     ]
   },
   "BULL": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000002.png",
+    "imageUrl": "/icons/brawlers/16000002.png",
     "id": 16000002,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -3252,29 +3252,29 @@
       {
         "name": "Berserker",
         "desc": "When Bull falls below x% health, his reload speed doubles!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000078.png"
+        "img": "/icons/star-powers/23000078.png"
       },
       {
         "name": "Tough Guy",
         "desc": "When Bull falls below x% health, he gains a shield that reduces all damage he takes by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000137.png"
+        "img": "/icons/star-powers/23000137.png"
       }
     ],
     "gadgets": [
       {
         "name": "T-Bone Missile",
         "desc": "Bull throws a projectile at the target Brawler, dealing <!card.accessory.skill.damage.scaleToLevel> damage and healing for <!card.accessory.skill.projectile.statusEffectSelfOnHit.healing> if he hits.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000272.png"
+        "img": "/icons/gadgets/23000272.png"
       },
       {
         "name": "Stomper",
         "desc": "Bull stomps the ground, slowing nearby enemies. If a target is already slowed, they are stunned!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000310.png"
+        "img": "/icons/gadgets/23000310.png"
       }
     ]
   },
   "COLT": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000001.png",
+    "imageUrl": "/icons/brawlers/16000001.png",
     "id": 16000001,
     "rarity": "Rare",
     "rarityColor": "#68fd58",
@@ -3284,29 +3284,29 @@
       {
         "name": "Slick Boots",
         "desc": "Colt's movement speed is increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000077.png"
+        "img": "/icons/star-powers/23000077.png"
       },
       {
         "name": "Magnum Special",
         "desc": "Colt's attack range and bullet speed are increased by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000138.png"
+        "img": "/icons/star-powers/23000138.png"
       }
     ],
     "gadgets": [
       {
         "name": "Speedloader",
         "desc": "Colt fires two quick shots that slow targets. Deals <!card.accessory.skill.damage.scaleToLevel> damage.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000273.png"
+        "img": "/icons/gadgets/23000273.png"
       },
       {
         "name": "Silver Bullet",
         "desc": "Colt fires a bullet that destroys the environment and pierces Brawlers. Deals <!card.accessory.skill.damage.scaleToLevel> damage. Consumes ammo.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000319.png"
+        "img": "/icons/gadgets/23000319.png"
       }
     ]
   },
   "SHELLY": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000000.png",
+    "imageUrl": "/icons/brawlers/16000000.png",
     "id": 16000000,
     "rarity": "Common",
     "rarityColor": "#b9eaff",
@@ -3316,29 +3316,29 @@
       {
         "name": "Shell Shock",
         "desc": "Shelly's Super shells slow down enemies for <!card.value1.ticksasseconds> sec!",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000076.png"
+        "img": "/icons/star-powers/23000076.png"
       },
       {
         "name": "Band-Aid",
         "desc": "When Shelly falls below x% health, she instantly heals for x health. Band-Aid recharges in x sec.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23000135.png"
+        "img": "/icons/star-powers/23000135.png"
       }
     ],
     "gadgets": [
       {
         "name": "Fast Forward",
         "desc": "Shelly dashes to an aimed direction or forwards, fully reloading her ammo!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000255.png"
+        "img": "/icons/gadgets/23000255.png"
       },
       {
         "name": "Clay Pigeons",
         "desc": "Shelly focuses her fire to a smaller area with an increased range. Can be used <!card.accessory.skill.maxAmmo> times per activation.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23000288.png"
+        "img": "/icons/gadgets/23000288.png"
       }
     ]
   },
   "NORI": {
-    "imageUrl": "https://cdn.brawlify.com/brawlers/borderless/16000107.png",
+    "imageUrl": "/icons/brawlers/16000107.png",
     "id": 16000107,
     "rarity": "Legendary",
     "rarityColor": "#fff11e",

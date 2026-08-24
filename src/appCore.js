@@ -35,9 +35,9 @@ export const MODE_COLORS = {
   showdown:    "#92400E", soloShowdown: "#92400E", duoShowdown: "#B45309",
 };
 
-// Official game-mode icons (Brawlify CDN — same source as the brawler art).
+// Official game-mode icons, self-hosted from public/icons/game-modes.
 // Keyed by our camelCase mode ids; lowercase aliases mirror MODE_COLORS.
-const MODE_ICON = (id) => `https://cdn.brawlify.com/game-modes/regular/${id}.png`;
+const MODE_ICON = (id) => `/icons/game-modes/${id}.png`;
 export const MODE_ICONS = {
   gemGrab: MODE_ICON("48000000"), gemgrab: MODE_ICON("48000000"),
   brawlBall: MODE_ICON("48000005"), brawlball: MODE_ICON("48000005"),
@@ -47,11 +47,11 @@ export const MODE_ICONS = {
   hotZone: MODE_ICON("48000017"), hotzone: MODE_ICON("48000017"),
 };
 
-// Official gear icons (same Brawlify CDN as the brawler / star power art).
+// Official gear icons, self-hosted from public/icons/gears.
 // The API exposes no gears endpoint, so these ids were identified by eye from
-// cdn.brawlify.com/gears/regular/: 0 Speed, 1 Health, 2 Damage, 3 Vision,
+// the gear art: 0 Speed, 1 Health, 2 Damage, 3 Vision,
 // 4 Shield, 5 Reload Speed.
-const GEAR_ICON = (id) => `https://cdn.brawlify.com/gears/regular/${id}.png`;
+const GEAR_ICON = (id) => `/icons/gears/${id}.png`;
 export const GEAR_ICONS = {
   Speed: GEAR_ICON("62000000"),
   Health: GEAR_ICON("62000001"),
