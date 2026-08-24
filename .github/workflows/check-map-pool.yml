@@ -32,11 +32,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests cloudscraper
 
       - name: Check the ranked map pool
         env:
           SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # The source 403s a GitHub Actions IP even with a browser UA — runners
+          # are flagged as datacenter traffic. Same wall brawlace puts up in
+          # masters.py, same way through it.
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
         run: python -m scrapers.map_pool

@@ -25,9 +25,17 @@ from datetime import datetime, timezone
 
 import requests
 
+try:
+    # Same escape hatch masters.py uses for brawlace: cloudscraper solves the
+    # basic Cloudflare JS check that a plain requests.get sees as a 403.
+    import cloudscraper
+    _HTTP = cloudscraper.create_scraper()
+except ImportError:
+    _HTTP = requests
+
 from scrapers.common import (
     require_credentials, RANKED_MODES, RANKED_MAPS, CURRENT_PATCH,
-    SUPABASE_URL, SUPABASE_HEADERS,
+    SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
 )
 
 SOURCE_URL = "https://brawltime.ninja/tier-list/ranked"
@@ -47,12 +55,34 @@ MIN_MODES = 4
 MAP_JSON = re.compile(r'"map":"([^"]{2,40})","mode":"([a-zA-Z]{3,20})"')
 
 
-def fetch_pool():
-    """Return {map_name: mode} for the live ranked rotation, or {} on any doubt."""
+def _get(use_proxy):
+    """One attempt. Returns a response or None."""
     try:
-        res = requests.get(SOURCE_URL, headers=BROWSER_HEADERS, timeout=30)
+        return _HTTP.get(
+            SOURCE_URL, headers=BROWSER_HEADERS, timeout=30,
+            proxies=PROXIES if use_proxy else None,
+        )
     except Exception as e:
-        print(f"⚠️ map pool fetch error: {e}")
+        print(f"⚠️ map pool fetch error ({'proxied' if use_proxy else 'direct'}): {e}")
+        return None
+
+
+def fetch_pool():
+    """Return {map_name: mode} for the live ranked rotation, or {} on any doubt.
+
+    Tries direct first, then through the Webshare static-IP proxy. The direct
+    path works from a normal machine but GitHub Actions runners are flagged as
+    datacenter traffic and get a 403 — the same thing masters.py documents for
+    brawlace. Trying direct first keeps the proxy (a paid, shared resource) out
+    of the loop whenever it isn't needed."""
+    res = _get(use_proxy=False)
+    if res is None or res.status_code != 200:
+        got = res.status_code if res is not None else "error"
+        print(f"   direct fetch got {got} — retrying through the proxy")
+        res = _get(use_proxy=True)
+
+    if res is None:
+        print("⚠️ map pool fetch failed on both paths")
         return {}
     if res.status_code != 200:
         print(f"⚠️ map pool fetch failed: HTTP {res.status_code}")
