@@ -367,7 +367,12 @@ export function CoverageLine({ tracked, seriesCount }) {
 
 // ── the composed section ─────────────────────────────────────────────────────
 
-export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer }) {
+/**
+ * @param compact  Hub mode: the headline number and the form only, with a link
+ *   through to the full public profile. /profile is a hub — it should summarise
+ *   and route, not re-render everything that lives on /player/:tag.
+ */
+export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
 
@@ -406,6 +411,16 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer })
   const ad = aboveDraft(graded);
   const buckets = draftBuckets(graded);
   const facts = eventFacts(graded, { starWins, starKnownWins });
+
+  if (compact) {
+    return (
+      <>
+        <CoverageLine tracked={tracked} seriesCount={series.length} />
+        <FactsStrip facts={facts.slice(0, 2)} />
+        <AboveDraftPanel ad={ad} />
+      </>
+    );
+  }
 
   return (
     <>

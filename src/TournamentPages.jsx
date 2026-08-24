@@ -1359,20 +1359,22 @@ export function TournamentProfilePage() {
             <LineChart size={22} color={VIOLET} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 700, color: "#f4f4fa" }}>
-                Your ranked match history
+                Your public profile
               </div>
               <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6", marginTop: 2 }}>
-                Every tracked game on {myTag}, with a draft verdict on each one
+                Full analysis, every tracked game, and a draft verdict on each one
               </div>
             </div>
             <span style={{ fontFamily: MONO, fontSize: 16, color: VIOLET }}>→</span>
           </Link>
         )}
 
-        {/* The analytical half — identical panels to /player/:tag, so the two
-            can never drift. They self-suppress when the sample is too thin. */}
+        {/* Hub mode: the headline number only. The full analysis — draft
+            buckets, fingerprint, nemesis table, people — lives on the public
+            profile, which this links to. Same component either way, so the two
+            views cannot drift apart. */}
         {myTag && ranked.length > 0 && (
-          <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag}
+          <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag} compact
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
 
