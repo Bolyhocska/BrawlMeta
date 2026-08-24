@@ -116,24 +116,24 @@
       {
         "name": "Poisonous Protector",
         "desc": "Brawlers defeated while poisoned by Najia will spawn a snake in their place.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001216.png"
+        "img": "/icons/star-powers/23001216.png"
       },
       {
         "name": "Venomous",
         "desc": "Poison damage scales with the target Brawler's current percent health, dealing up to an extra <!card.character.component.trait[1].statusEffect.damage.scaleToLevel> damage when a target is at 100% health.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001217.png"
+        "img": "/icons/star-powers/23001217.png"
       }
     ],
     "gadgets": [
       {
         "name": "Poison Puddles",
         "desc": "All enemies currently poisoned by Najia will create poisonous puddles for the next <!card.character.component.statusEffect[3].duration.ticksAsSeconds> sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001218.png"
+        "img": "/icons/gadgets/23001218.png"
       },
       {
         "name": "Najia Jar",
         "desc": "Najia hides inside a vase. Once the vase is broken, she will knock back any nearby enemies!",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001219.png"
+        "img": "/icons/gadgets/23001219.png"
       }
     ]
   },
@@ -148,24 +148,24 @@
       {
         "name": "Dusk Runners",
         "desc": "Shadows have +<!card.statusEffect.speedBoostPercent>% movement speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001189.png"
+        "img": "/icons/star-powers/23001189.png"
       },
       {
         "name": "The Darkest Starr",
         "desc": "Each hit with a Shadow Strike counts as 2 to collect Brawler Shadows, instead of 1.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001190.png"
+        "img": "/icons/star-powers/23001190.png"
       }
     ],
     "gadgets": [
       {
         "name": "A Starr Is Born",
         "desc": "Sirius fires a projectile that summons a Shadow on hit, also slowing the hit target by <!card.accessory.skill.projectile.statusEffectEnemy.speedReducePercent>% for <!card.accessory.skill.projectile.statusEffectEnemy.duration.ticksAsSeconds> sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001191.png"
+        "img": "/icons/gadgets/23001191.png"
       },
       {
         "name": "Master Of Shadows",
         "desc": "Summoned Shadows return to Sirius, who heals them for <!card.accessory.customValue1>% of their health.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001192.png"
+        "img": "/icons/gadgets/23001192.png"
       }
     ]
   },
@@ -180,24 +180,24 @@
       {
         "name": "Biotic Ecosystem",
         "desc": "If Glowy is tethered to an enemy and a teammate at the same time, it will reduce the enemy damage by x% and increase the teammate's damage by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001181.png"
+        "img": "/icons/star-powers/23001181.png"
       },
       {
         "name": "Parasitism",
         "desc": "Tethering to an enemy also heals Glowy for x% of the damage dealt.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001182.png"
+        "img": "/icons/star-powers/23001182.png"
       }
     ],
     "gadgets": [
       {
         "name": "Slippery Savior",
         "desc": "Glowy dashes in a target direction, healing himself and teammates for <!card.accessory.skill.areaEffectObject2.statusEffect.healingTotal.scaleToLevel> on arrival.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001183.png"
+        "img": "/icons/gadgets/23001183.png"
       },
       {
         "name": "More Lumens",
         "desc": "Glowy supercharges his glowbeam tethers, doubling the damage/healing rate for x secs.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001184.png"
+        "img": "/icons/gadgets/23001184.png"
       }
     ]
   },
@@ -212,24 +212,24 @@
       {
         "name": "Plie Protection",
         "desc": "Increases Super charge rate by x% if no damage has been received for x secs",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001068.png"
+        "img": "/icons/star-powers/23001068.png"
       },
       {
         "name": "A Helping Hand",
         "desc": "SHADOW PUPPET now heals for x after charging up.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001069.png"
+        "img": "/icons/star-powers/23001069.png"
       }
     ],
     "gadgets": [
       {
         "name": "Longer Strings",
         "desc": "Super charging area is bigger.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001070.png"
+        "img": "/icons/gadgets/23001070.png"
       },
       {
         "name": "Disappearing Act",
         "desc": "Gigi creates an area that makes herself and allies invisible while inside. Lasts x secs.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001071.png"
+        "img": "/icons/gadgets/23001071.png"
       }
     ]
   },
@@ -244,24 +244,24 @@
       {
         "name": "Mission Swimpossible",
         "desc": "Pierce's last ammo also slows enemies by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001060.png"
+        "img": "/icons/star-powers/23001060.png"
       },
       {
         "name": "Slip N Snipe",
         "desc": "When collecting a shell, Pierce gains a short burst (x%) of movement speed.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001061.png"
+        "img": "/icons/star-powers/23001061.png"
       }
     ],
     "gadgets": [
       {
         "name": "Bottomless Mags",
         "desc": "Reload x ammo and drop a shell next to Pierce.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001062.png"
+        "img": "/icons/gadgets/23001062.png"
       },
       {
         "name": "You Only Brawl Twice",
         "desc": "Pierce will absorb all shells and gain x shield for each one, while also pushing back nearby enemies.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001063.png"
+        "img": "/icons/gadgets/23001063.png"
       }
     ]
   },
@@ -276,24 +276,24 @@
       {
         "name": "Thunderstruck",
         "desc": "Brawlers damaged by Ziggy's Super are slowed by x% for x sec.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001047.png"
+        "img": "/icons/star-powers/23001047.png"
       },
       {
         "name": "The Great Ziggini",
         "desc": "Hitting with a lightning strike increases the damage of the next main attack by x%.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001048.png"
+        "img": "/icons/star-powers/23001048.png"
       }
     ],
     "gadgets": [
       {
         "name": "Electric Shuffle",
         "desc": "Ziggy hits the nearest enemy with lightning strikes every second for x sec. These attacks cost no ammo.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001049.png"
+        "img": "/icons/gadgets/23001049.png"
       },
       {
         "name": "Now You See Me...",
         "desc": "The next lightning strike also teleports Ziggy to the same location.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001050.png"
+        "img": "/icons/gadgets/23001050.png"
       }
     ]
   },
@@ -308,24 +308,24 @@
       {
         "name": "Zum Zum Zum",
         "desc": "Mina's combo Attack 3 also heals for x% of damage done.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001039.png"
+        "img": "/icons/star-powers/23001039.png"
       },
       {
         "name": "Blown Away",
         "desc": "Mina's Super also roots enemies on the spot.",
-        "img": "https://cdn.brawlify.com/star-powers/borderless/23001040.png"
+        "img": "/icons/star-powers/23001040.png"
       }
     ],
     "gadgets": [
       {
         "name": "Windmill",
         "desc": "Creates a wall of wind that blocks projectiles for x sec.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001041.png"
+        "img": "/icons/gadgets/23001041.png"
       },
       {
         "name": "Capo-What?",
         "desc": "Mina's next Super recharges instantly if it hits.",
-        "img": "https://cdn.brawlify.com/gadgets/borderless/23001042.png"
+        "img": "/icons/gadgets/23001042.png"
       }
     ]
   },

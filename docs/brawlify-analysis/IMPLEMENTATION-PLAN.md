@@ -519,11 +519,13 @@ performance percentile boards. Correct strategy given players can never pay.
    so it cannot be enumerated either. All three profile-icon render sites already carry `onError`
    handlers, so that surface degrades to a blank avatar rather than a broken one.
 
-   **Pre-existing bug this surfaced:** the star power and gadget art for **GIGI, GLOWY, MINA,
-   NAJIA, PIERCE, SIRIUS and ZIGGY** (the seven newest brawlers) 404s on Brawlify. Those icons
-   have been broken in production all along — hotlinking hid it, because a missing image and an
-   unreachable one look identical. Their portraits were fine and are now local. Fixing them needs
-   art from another source, or Brawlify publishing it.
+   **Pre-existing bug this surfaced, now FIXED (2026-08-24):** the star power and gadget art for
+   **GIGI, GLOWY, MINA, NAJIA, PIERCE, SIRIUS and ZIGGY** (the seven newest brawlers) 404'd, and
+   had been broken in production all along — hotlinking hid it, because a missing image and an
+   unreachable one look identical. The cause was not missing art but the wrong path variant:
+   Brawlify serves those ids under `/regular/` and simply has not generated the `/borderless/`
+   cut-out for the newest releases. All 28 resolve under `/regular/`, are now self-hosted, and
+   `brawlerMeta.json` no longer references cdn.brawlify.com at all.
 6. **Storage growth** repeating the `ranked_matches` emergency — pre-empted by §5.4.
 7. **Monetization exposure** (§0.3) — orthogonal to this plan, but it funds it.
 
