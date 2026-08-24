@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import PlayerInsights from "./PlayerInsights";
+import UpgradeAdvisor from "./UpgradeAdvisor";
 import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
@@ -1378,6 +1379,17 @@ export function TournamentProfilePage() {
         {myTag && ranked.length > 0 && (
           <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag} compact
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
+        )}
+
+        {myTag && (
+          <>
+            <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 4 }}>◈ WHAT TO UPGRADE NEXT</span>
+            <div style={{ fontSize: 13, color: "#8b8b9c", lineHeight: 1.6, marginBottom: 12, maxWidth: 620 }}>
+              Your own brawlers, ranked by how much the next upgrade would actually buy you on the
+              maps in rotation right now.
+            </div>
+            <UpgradeAdvisor tag={myTag} rankedRows={ranked} />
+          </>
         )}
 
         {/* PROGRESSION. Trophy history is free for everyone — a curve is not

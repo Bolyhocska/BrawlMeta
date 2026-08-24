@@ -47,22 +47,28 @@ export default async function handler(req, res) {
 
     // Per-brawler loadout, for the upgrade advisor. Projected rather than passed
     // through: the raw payload is ~106 brawlers deep and most of it is noise.
-    // `extra` carries any field the API adds that we do not model yet — the
-    // advisor needs to know whether hypercharges are exposed at all, and
-    // guessing at that would design a feature around data we may not have.
-    const KNOWN = new Set(["id", "name", "power", "rank", "trophies", "highestTrophies",
-                           "gears", "starPowers", "gadgets"]);
-    const roster = brawlers.map(b => {
-      const extra = Object.keys(b || {}).filter(k => !KNOWN.has(k));
-      return {
-        id: b.id, name: b.name,
-        power: b.power ?? 0, rank: b.rank ?? 0, trophies: b.trophies ?? 0,
-        gears: (b.gears || []).map(g => g.name),
-        starPowers: (b.starPowers || []).map(sp => sp.name),
-        gadgets: (b.gadgets || []).map(g => g.name),
-        ...(extra.length ? { extra: Object.fromEntries(extra.map(k => [k, b[k]])) } : {}),
-      };
-    });
+    //
+    // `buffies` is promoted to a first-class field now that we know what it is.
+    // Verified against two live rosters: it is { gadget, starPower, hyperCharge }
+    // and it is PLAYER-SPECIFIC (98/105 brawlers agreed between two accounts, 7
+    // genuinely differed), so it is real per-account investment state. It was
+    // originally discovered through a catch-all `extra` bag, and leaving it
+    // there cost a silent bug — the advisor read `b.buffies`, got undefined for
+    // every brawler, and scored a power-1 Leon carrying three buffies as having
+    // nothing invested at all.
+    //
+    // `hyperCharges` is deliberately NOT surfaced: it was near-identical across
+    // both accounts (100/105) and appears on power-1 brawlers, so it lists the
+    // hypercharge that EXISTS for a brawler rather than one the player owns.
+    // Treating it as ownership would be wrong.
+    const roster = brawlers.map(b => ({
+      id: b.id, name: b.name,
+      power: b.power ?? 0, rank: b.rank ?? 0, trophies: b.trophies ?? 0,
+      gears: (b.gears || []).map(g => g.name),
+      starPowers: (b.starPowers || []).map(sp => sp.name),
+      gadgets: (b.gadgets || []).map(g => g.name),
+      buffies: b.buffies ?? null,
+    }));
 
     return json(res, 200, {
       tag: p.tag,
