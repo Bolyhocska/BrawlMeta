@@ -18,6 +18,7 @@
 import { useState, useEffect } from "react";
 import { supabase, CURRENT_PATCH, formatBrawlerName } from "./appCore";
 import { recommendUpgrades } from "./data/upgradeAdvisor";
+import { BUFFIE_PACKS, BUFFIE_COST } from "./data/upgradeCosts";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -33,7 +34,7 @@ const TONE = {
 };
 
 function useAdvice(tag, rankedRows) {
-  const [state, setState] = useState({ loading: true, picks: [], classes: [], saveAdvice: null, error: null });
+  const [state, setState] = useState({ loading: true, picks: [], classes: [], saveAdvice: null, roster: [], error: null });
 
   useEffect(() => {
     if (!tag) return;
@@ -87,7 +88,7 @@ function useAdvice(tag, rankedRows) {
 
         if (cancelled) return;
         const { picks, classes, saveAdvice } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
-        setState({ loading: false, picks, classes, saveAdvice, error: null });
+        setState({ loading: false, picks, classes, saveAdvice, roster, error: null });
       } catch (e) {
         if (!cancelled) setState({ loading: false, picks: [], classes: [], saveAdvice: null, error: e.message });
       }
@@ -165,6 +166,58 @@ function Card({ p, rank }) {
   );
 }
 
+
+// Buffies are bought by PACK, never by brawler — a draw returns one at random
+// from the three brawlers in a pack, skipping what you already hold. So the
+// only question a player can actually act on is "which pack still has room",
+// and a full pack is money that cannot be spent there at all.
+function BuffiePacks({ roster }) {
+  if (!roster || !roster.length) return null;
+  const byName = Object.fromEntries(roster.map(b => [String(b.name || "").toUpperCase(), b]));
+  const rows = BUFFIE_PACKS.map(pack => {
+    const missing = pack.brawlers.reduce((a, n) => {
+      const bf = byName[n]?.buffies;
+      return a + (bf ? Object.values(bf).filter(v => !v).length : 3);
+    }, 0);
+    return { ...pack, missing, held: 9 - missing };
+  }).sort((a, b) => b.missing - a.missing);
+
+  const open = rows.filter(r => r.missing > 0);
+
+  return (
+    <div style={{
+      marginTop: 12, padding: "13px 15px", borderRadius: 12,
+      background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#6f7180", marginBottom: 9 }}>
+        BUFFIE PACKS — {BUFFIE_COST.pp.toLocaleString("en-US")} POWER POINTS + {BUFFIE_COST.coins.toLocaleString("en-US")} GOLD PER DRAW
+      </div>
+      <div style={{ display: "grid", gap: 5 }}>
+        {rows.map(r => (
+          <div key={r.name} style={{
+            display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto", gap: 10, alignItems: "center",
+            fontFamily: MONO, fontSize: 10.5,
+            color: r.missing === 0 ? "#5a5a6a" : "#c9c9d6",
+          }}>
+            <span>{r.name}
+              <span style={{ color: "#5a5a6a" }}> · {r.brawlers.map(n => n[0] + n.slice(1).toLowerCase()).join(", ")}</span>
+            </span>
+            <span style={{ color: r.missing === 0 ? "#5a5a6a" : "#ffce7a" }}>{r.held}/9</span>
+            <span style={{ color: "#5a5a6a", minWidth: 54, textAlign: "right" }}>
+              {r.missing === 0 ? "full" : `${r.missing} open`}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 9, lineHeight: 1.6 }}>
+        {open.length === 0
+          ? "Every pack is full — buffie draws have nothing left to give you until the next wave."
+          : `A draw returns one random buffie from the pack you buy, skipping ones you already hold, so a fuller pack is better odds on what's left. ${7 - open.length} of 7 packs are already complete.`}
+      </div>
+    </div>
+  );
+}
+
 function RoleCoverage({ classes }) {
   if (!classes.length) return null;
   const thin = classes.filter(c => c.maxed <= 1);
@@ -197,7 +250,7 @@ function RoleCoverage({ classes }) {
 }
 
 export default function UpgradeAdvisor({ tag, rankedRows }) {
-  const { loading, picks, classes, saveAdvice, error } = useAdvice(tag, rankedRows);
+  const { loading, picks, classes, saveAdvice, roster, error } = useAdvice(tag, rankedRows);
 
   if (!tag) return null;
   if (loading) {
@@ -232,6 +285,7 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
       )}
       {picks.slice(0, 5).map((p, i) => <Card key={p.name} p={p} rank={i + 1} />)}
       <RoleCoverage classes={classes} />
+      <BuffiePacks roster={roster} />
       <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 11, lineHeight: 1.65 }}>
         Ranked by what the next step buys per coin: how strong the brawler is on the maps in rotation
         now, how much you've already sunk into it, and whether your maxed roster is short of that

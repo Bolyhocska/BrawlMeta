@@ -23,7 +23,7 @@ import { draftClassOf, classLabel } from "./draftEngine";
 import {
   MAX_POWER, SLOT_LEVEL, ITEM_COST, BUFFIE_COST,
   BUFFIE_SLOTS_PER_BRAWLER, BUFFIE_DROP_MONTHS, BUFFIE_DROP_BRAWLERS,
-  levelCost, costToComplete, nextStepFor,
+  levelCost, costToComplete, nextStepFor, buffieOdds, BUFFIE_PACKS,
 } from "./upgradeCosts";
 
 const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -164,6 +164,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
       meta, sunk, waste, classNeed: need, affinity, ownsHyper, rescued,
       buffieCount: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
       step, cost: costToComplete(b), score,
+      odds: buffieOdds(b.name, roster),
       // Value per 1,000 coins of the immediate step — the only way a 20-coin
       // level-up and a 5,000-coin hypercharge are comparable at all.
       perK: step.coins > 0 ? score / (step.coins / 1000) : score,
@@ -174,7 +175,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   scored.sort((a, b) => b.score - a.score);
   for (const p of scored) p.reasons = buildReasons(p);
 
-  return { picks: scored, classes, saveAdvice: saveOrSpend(scored, owned, classes) };
+  return { picks: scored, classes, saveAdvice: saveOrSpend(scored, owned, classes, roster) };
 }
 
 /**
@@ -189,18 +190,33 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
  * Deliberately conservative: this only fires for a roster that really has run
  * out of good options, and the top five are shown either way.
  */
-function saveOrSpend(scored, owned, classes) {
+function saveOrSpend(scored, owned, classes, roster) {
   const top = scored[0];
   const thinRoles = classes.filter(c => c.maxed <= 1).length;
   const maxed = owned.filter(b => num(b.power) >= MAX_POWER).length;
   const cheapAndStrong = scored.filter(p => p.meta >= 0.55 && p.step.coins <= 3000).length;
 
-  if (!(maxed >= 25 && thinRoles === 0 && cheapAndStrong <= 1 && (!top || top.score < 0.45))) {
+  // How much buffie headroom is left across every pack. When packs are nearly
+  // full, draws are mostly duplicates-in-waiting and the next wave is the only
+  // real place for power points to go.
+  const byName = Object.fromEntries((roster || []).map(b => [String(b.name || "").toUpperCase(), b]));
+  let slotsMissing = 0, slotsTotal = 0;
+  for (const pack of BUFFIE_PACKS) {
+    for (const n of pack.brawlers) {
+      const bf = byName[n]?.buffies;
+      slotsTotal += 3;
+      slotsMissing += bf ? Object.values(bf).filter(v => !v).length : 3;
+    }
+  }
+  const packsNearlyFull = slotsTotal > 0 && slotsMissing / slotsTotal <= 0.25;
+
+  if (!(maxed >= 25 && thinRoles === 0 && cheapAndStrong <= 1 &&
+        (!top || top.score < 0.45) && packsNearlyFull)) {
     return null;
   }
   return {
     verdict: "save",
-    text: `Your roster is deep — ${maxed} maxed and no thin roles — and nothing left is both strong and cheap. `
+    text: `Your roster is deep — ${maxed} maxed, no thin roles, and only ${slotsMissing} buffie slots left across all seven packs. `
         + `New buffies land every ${BUFFIE_DROP_MONTHS[0]}–${BUFFIE_DROP_MONTHS[1]} months for around `
         + `${BUFFIE_DROP_BRAWLERS} brawlers, at ${BUFFIE_COST.pp.toLocaleString("en-US")} power points and `
         + `${BUFFIE_COST.coins.toLocaleString("en-US")} gold per draw. Holding for that wave usually beats `
@@ -239,6 +255,21 @@ function buildReasons(p) {
     out.push(p.rescued
       ? { tone: "warn", text: `No hypercharge yet (${ITEM_COST.hypercharge.toLocaleString("en-US")} coins) — but it's strong enough, and fills a role you're short of, to be worth buying anyway.` }
       : { tone: "muted", text: `No hypercharge yet, which caps what maxing buys until you spend the ${ITEM_COST.hypercharge.toLocaleString("en-US")} coins.` });
+  }
+
+  // Buffies can only be bought by PACK, so the useful thing to say is what a
+  // draw on that pack is actually worth — not "go buy this brawler's buffie",
+  // which nobody can do.
+  const o = p.odds;
+  if (o && !o.complete && o.mine > 0 && p.power >= MAX_POWER) {
+    const pct = Math.round(o.chance * 100);
+    out.push({
+      tone: "info",
+      text: `${o.mine} of its 3 buffies still missing. They only drop from the ${o.pack} pack, `
+          + `shared with ${o.others.map(n => n[0] + n.slice(1).toLowerCase()).join(" and ")} — `
+          + `${pct}% per draw right now, so about ${o.expectedDraws.toFixed(1)} draws `
+          + `(${o.expectedPp.toLocaleString("en-US")} power points, ${o.expectedCoins.toLocaleString("en-US")} gold) to land one.`,
+    });
   }
 
   if (p.classNeed >= 0.66) out.push({ tone: "info", text: `You have no maxed ${p.label} — this fills a hole in your drafts.` });

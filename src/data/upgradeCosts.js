@@ -126,3 +126,65 @@ export function nextStepFor(b) {
   if (gears < 2) return { label: "Add a Gear", pp: 0, coins: ITEM_COST.gear };
   return null;   // finished
 }
+
+// ─── Buffie packs ─────────────────────────────────────────────────────────────
+// Owner-supplied, 2026-08-25. A purchase draws ONE buffie at random from the
+// three brawlers in a pack, skipping any you already hold — so a buffie can
+// never be bought for a chosen brawler, only for a chosen PACK. That is the
+// whole reason this table exists: without it the only honest thing the advisor
+// could say was "you can't target that", which is true and useless. With it, it
+// can price the actual gamble.
+//
+// Each brawler has three buffie slots (gadget, star power, hypercharge), so a
+// pack holds nine and the odds shift as you fill them.
+export const BUFFIE_PACKS = [
+  { name: "Ranger Ranch",     brawlers: ["SHELLY", "COLT", "SPIKE"] },
+  { name: "Mortis' Mortuary", brawlers: ["MORTIS", "FRANK", "EMZ"] },
+  { name: "Retropolis",       brawlers: ["BULL", "CROW", "BIBI"] },
+  { name: "Rumble Jungle",    brawlers: ["NITA", "LEON", "BO"] },
+  { name: "Gift Shop",        brawlers: ["EDGAR", "COLETTE", "GRIFF"] },
+  { name: "Arcade",           brawlers: ["RICO", "BROCK", "8-BIT"] },
+  { name: "Super City",       brawlers: ["MAX", "SURGE", "MEG"] },
+];
+
+export const packForBrawler = (name) => {
+  const k = String(name || "").toUpperCase();
+  return BUFFIE_PACKS.find(p => p.brawlers.includes(k)) || null;
+};
+
+/**
+ * What a draw on this brawler's pack is actually worth, given what the player
+ * already holds across all three brawlers in it.
+ *
+ * Draws are uniform over the buffies still missing in the pack and without
+ * replacement, so the expected number of draws to land ANY buffie for one
+ * specific brawler is (M+1)/(m+1), where M is everything still missing in the
+ * pack and m is what is missing on that brawler.
+ */
+export function buffieOdds(name, roster) {
+  const pack = packForBrawler(name);
+  if (!pack) return null;
+  const byName = Object.fromEntries((roster || []).map(b => [String(b.name || "").toUpperCase(), b]));
+  const missingIn = (n) => {
+    const b = byName[n];
+    if (!b) return BUFFIE_SLOTS_PER_BRAWLER;          // unknown: assume none held
+    if (!b.buffies) return BUFFIE_SLOTS_PER_BRAWLER;
+    return Object.values(b.buffies).filter(v => !v).length;
+  };
+  const packMissing = pack.brawlers.reduce((a, n) => a + missingIn(n), 0);
+  const mine = missingIn(String(name || "").toUpperCase());
+  if (!packMissing || !mine) {
+    return { pack: pack.name, packMissing, mine, chance: 0, expectedDraws: null,
+             expectedCoins: 0, expectedPp: 0, complete: mine === 0 };
+  }
+  const chance = mine / packMissing;
+  const expectedDraws = (packMissing + 1) / (mine + 1);
+  return {
+    pack: pack.name,
+    others: pack.brawlers.filter(n => n !== String(name || "").toUpperCase()),
+    packMissing, mine, chance, expectedDraws,
+    expectedCoins: Math.round(expectedDraws * BUFFIE_COST.coins),
+    expectedPp: Math.round(expectedDraws * BUFFIE_COST.pp),
+    complete: false,
+  };
+}
