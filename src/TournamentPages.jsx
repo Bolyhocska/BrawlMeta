@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import PlayerInsights from "./PlayerInsights";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
 import { supabase } from "./appCore";
@@ -1191,6 +1192,7 @@ function PublicTagLookup() {
 
 export function TournamentProfilePage() {
   const { user, profile, loading, openAuth, updateProfile } = useAuth();
+  const navigate = useNavigate();
   const [tagInput, setTagInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [saved, setSaved] = useState(false);
@@ -1198,6 +1200,8 @@ export function TournamentProfilePage() {
   const [wallet, setWallet] = useState(null);
   const [history, setHistory] = useState([]);
   const [matchHistory, setMatchHistory] = useState([]);
+  const [ranked, setRanked] = useState([]);
+  const [trackedRow, setTrackedRow] = useState(null);
 
   const myTag = profile?.player_tag || null;
 
@@ -1206,7 +1210,7 @@ export function TournamentProfilePage() {
   }, [profile]);
 
   useEffect(() => {
-    if (!myTag) { setWallet(null); setHistory([]); setMatchHistory([]); return; }
+    if (!myTag) { setWallet(null); setHistory([]); setMatchHistory([]); setRanked([]); setTrackedRow(null); return; }
     supabase.from("UserWallets").select("*").eq("player_tag", myTag).maybeSingle()
       .then(({ data }) => setWallet(data));
     supabase.from("Registrations").select("*, Tournaments(name,status,prize_pool_total)").eq("player_tag", myTag)
@@ -1216,6 +1220,36 @@ export function TournamentProfilePage() {
       .or(`team_a_tags.cs.{"${myTag}"},team_b_tags.cs.{"${myTag}"}`)
       .eq("status", "completed")
       .then(({ data }) => setMatchHistory(data || []));
+
+    // Ranked history for the insight panels. Same shape PlayerPage builds, so
+    // the lookups are hydrated here too rather than duplicating the panels.
+    (async () => {
+      const [{ data: br }, { data: mp }, { data: pa }, { data: rb }] = await Promise.all([
+        supabase.from("brawlers").select("id,name"),
+        supabase.from("maps").select("id,name,mode"),
+        supabase.from("patches").select("id,name"),
+        supabase.from("rank_brackets").select("id,name"),
+      ]);
+      const B = Object.fromEntries((br || []).map(x => [x.id, x.name]));
+      const M = Object.fromEntries((mp || []).map(x => [x.id, x]));
+      const P = Object.fromEntries((pa || []).map(x => [x.id, x.name]));
+      const R = Object.fromEntries((rb || []).map(x => [x.id, x.name]));
+      const [{ data: rows }, { data: tp }] = await Promise.all([
+        supabase.from("player_matches")
+          .select("match_key,battle_time,map_id,brawler_id,patch_id,bracket_id,result,is_star_player,team_brawlers,enemy_brawlers,team_tags,enemy_tags")
+          .eq("player_tag", myTag).order("battle_time", { ascending: false }).limit(300),
+        supabase.from("tracked_players")
+          .select("player_tag,boosted,poll_interval_mins,first_seen_at").eq("player_tag", myTag).limit(1),
+      ]);
+      setRanked((rows || []).map(r => ({
+        ...r,
+        brawler: B[r.brawler_id] || "?", map: M[r.map_id]?.name || "Unknown", mode: M[r.map_id]?.mode || "",
+        teamNames: (r.team_brawlers || []).map(i => B[i] || "?"),
+        enemyNames: (r.enemy_brawlers || []).map(i => B[i] || "?"),
+        patch: P[r.patch_id] || null, bracket: R[r.bracket_id] || null,
+      })));
+      setTrackedRow(tp?.[0] || null);
+    })();
   }, [myTag]);
 
   const wins = matchHistory.filter(m =>
@@ -1304,6 +1338,13 @@ export function TournamentProfilePage() {
             </div>
             <span style={{ fontFamily: MONO, fontSize: 16, color: VIOLET }}>→</span>
           </Link>
+        )}
+
+        {/* The analytical half — identical panels to /player/:tag, so the two
+            can never drift. They self-suppress when the sample is too thin. */}
+        {myTag && ranked.length > 0 && (
+          <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag}
+            onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
 
         <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>

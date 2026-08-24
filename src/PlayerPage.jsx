@@ -20,6 +20,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH } from "./appCore";
 import { computeWinSplit } from "./data/draftEngine";
+import { toSeries } from "./data/playerStats";
+import PlayerInsights from "./PlayerInsights";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -91,39 +93,8 @@ function usePlayerHistory(tag) {
   return state;
 }
 
-// Consecutive rows sharing a map and the same six brawlers, close together in
-// time, are the rounds of ONE Ranked series — the game keeps the draft and
-// replays it. Stored separately on purpose (a player's history needs every
-// round), but listing them as three near-identical entries reads like a bug, so
-// they are folded into one card that shows the rounds it contains.
-const SERIES_GAP_MS = 15 * 60 * 1000;
-
-function groupIntoSeries(rows) {
-  const out = [];
-  for (const r of rows) {
-    const last = out[out.length - 1];
-    const sameLineup =
-      last &&
-      last.map === r.map &&
-      last.teamNames.join() === r.teamNames.join() &&
-      last.enemyNames.join() === r.enemyNames.join() &&
-      Math.abs(new Date(last.oldest).getTime() - new Date(r.battle_time).getTime()) <= SERIES_GAP_MS;
-    if (sameLineup) {
-      last.rounds.push(r);
-      last.oldest = r.battle_time;
-    } else {
-      out.push({
-        key: r.match_key,
-        map: r.map, mode: r.mode, brawler: r.brawler,
-        patch: r.patch, bracket: r.bracket,
-        teamNames: r.teamNames, enemyNames: r.enemyNames,
-        newest: r.battle_time, oldest: r.battle_time,
-        rounds: [r],
-      });
-    }
-  }
-  return out;
-}
+// Series grouping now lives in data/playerStats.js so the profile page and the
+// insight panels can never disagree about what counts as one draft.
 
 // ── presentation ─────────────────────────────────────────────────────────────
 
@@ -477,7 +448,7 @@ export default function PlayerPage() {
     return () => { cancelled = true; };
   }, [tag]);
 
-  const series = useMemo(() => groupIntoSeries(rows), [rows]);
+  const series = useMemo(() => toSeries(rows), [rows]);
   const wins = rows.filter(r => r.result === 1).length;
   const wr = rows.length ? (wins / rows.length) * 100 : null;
   const starGames = rows.filter(r => r.is_star_player === true).length;
@@ -562,6 +533,9 @@ export default function PlayerPage() {
             )}
           </div>
         )}
+
+        <PlayerInsights rows={rows} tracked={tracked} selfTag={tag}
+          onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
 
         {/* History */}
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", margin: "0 0 12px" }}>
