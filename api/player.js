@@ -57,10 +57,10 @@ export default async function handler(req, res) {
     // every brawler, and scored a power-1 Leon carrying three buffies as having
     // nothing invested at all.
     //
-    // `hyperCharges` is deliberately NOT surfaced: it was near-identical across
-    // both accounts (100/105) and appears on power-1 brawlers, so it lists the
-    // hypercharge that EXISTS for a brawler rather than one the player owns.
-    // Treating it as ownership would be wrong.
+    // `hyperCharges` — under test. It was near-identical across two accounts
+    // (100/105) and appears on power-1 brawlers, which reads like a catalogue of
+    // what exists rather than what is owned. The owner reports NOT having Bea's
+    // hypercharge unlocked in game, so whether Bea appears here settles it.
     const roster = brawlers.map(b => ({
       id: b.id, name: b.name,
       power: b.power ?? 0, rank: b.rank ?? 0, trophies: b.trophies ?? 0,
@@ -68,6 +68,7 @@ export default async function handler(req, res) {
       starPowers: (b.starPowers || []).map(sp => sp.name),
       gadgets: (b.gadgets || []).map(g => g.name),
       buffies: b.buffies ?? null,
+      hyperCharges: (b.hyperCharges || []).map(h => h.name),
     }));
 
     return json(res, 200, {
