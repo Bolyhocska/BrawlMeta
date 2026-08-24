@@ -99,6 +99,41 @@ function useAdvice(tag, rankedRows) {
   return state;
 }
 
+
+// What the player already owns on this brawler, stated as fact rather than left
+// to the prose. The reasoning below mentions only what drives the score, which
+// meant a brawler with both gadgets could be described purely in terms of its
+// buffies — true, but it read as though the gadgets weren't noticed.
+function Loadout({ owned }) {
+  const items = [
+    { label: "GADGETS", have: owned.gadgets, of: 2 },
+    { label: "STAR POWERS", have: owned.starPowers, of: 2 },
+    { label: "GEARS", have: owned.gears, of: 2 },
+    { label: "BUFFIES", have: owned.buffies, of: 3 },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+      {items.map(it => {
+        const full = it.have >= it.of;
+        return (
+          <span key={it.label} style={{
+            fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+            background: full ? "rgba(142,230,176,.10)" : it.have > 0 ? "rgba(255,255,255,.05)" : "transparent",
+            border: `1px solid ${full ? "rgba(142,230,176,.28)" : "rgba(255,255,255,.10)"}`,
+            color: full ? "#8ee6b0" : it.have > 0 ? "#c9c9d6" : "#5a5a6a",
+          }}>{it.label} {it.have}/{it.of}</span>
+        );
+      })}
+      <span style={{
+        fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+        background: owned.hyper ? "rgba(142,230,176,.10)" : "transparent",
+        border: `1px solid ${owned.hyper ? "rgba(142,230,176,.28)" : "rgba(255,143,143,.24)"}`,
+        color: owned.hyper ? "#8ee6b0" : "#ff8f8f",
+      }}>{owned.hyper ? "HYPERCHARGE ✓" : "NO HYPERCHARGE"}</span>
+    </div>
+  );
+}
+
 function Card({ p, rank }) {
   const image = art(p.name);
   return (
@@ -151,6 +186,8 @@ function Card({ p, rank }) {
             </span>
           )}
         </div>
+
+        <Loadout owned={p.owned} />
 
         {p.reasons.length > 0 && (
           <div style={{ marginTop: 8, display: "grid", gap: 4 }}>

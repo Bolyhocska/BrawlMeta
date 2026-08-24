@@ -22,6 +22,7 @@ import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH, us
 import { computeWinSplit } from "./data/draftEngine";
 import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights from "./PlayerInsights";
+import UpgradeAdvisor from "./UpgradeAdvisor";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -543,6 +544,16 @@ export default function PlayerPage() {
 
         <PlayerInsights rows={rows} tracked={tracked} selfTag={tag}
           onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
+
+        {/* Works from the very first lookup: the advisor reads the live roster
+            and our meta data, and needs no stored history at all. Without any,
+            "brawlers you actually draft" simply contributes nothing — every
+            other signal still applies. That makes it the one thing on this page
+            with something to say to a first-time visitor. */}
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", margin: "4px 0 10px" }}>
+          [ WHAT TO UPGRADE NEXT ]
+        </div>
+        <UpgradeAdvisor tag={tag} rankedRows={rows} />
 
         {/* History */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "0 0 12px" }}>

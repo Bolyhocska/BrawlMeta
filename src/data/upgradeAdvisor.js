@@ -163,6 +163,18 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
       name: b.name, cls, label: classLabel(cls), power: num(b.power, 1),
       meta, sunk, waste, classNeed: need, affinity, ownsHyper, rescued,
       buffieCount: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
+      // The full inventory, so the card can state what is already owned rather
+      // than mentioning only the parts that happen to drive the score.
+      owned: {
+        gadgets: (b.gadgets || []).length,
+        starPowers: (b.starPowers || []).length,
+        gears: (b.gears || []).length,
+        buffies: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
+        buffieKinds: b.buffies
+          ? Object.entries(b.buffies).filter(([, v]) => v).map(([k]) => k)
+          : [],
+        hyper: (b.hyperCharges || []).length > 0,
+      },
       step, cost: costToComplete(b), score,
       odds: buffieOdds(b.name, roster),
       // Value per 1,000 coins of the immediate step — the only way a 20-coin
@@ -224,13 +236,23 @@ function saveOrSpend(scored, owned, classes, roster) {
   };
 }
 
+/** "a", "a and b", "a, b and c" — join(" and ") produces "a and b and c". */
+function listJoin(items) {
+  if (items.length <= 1) return items[0] || "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 function buildReasons(p) {
   const out = [];
 
   if (p.waste > 0.12) {
+    const o = p.owned;
     const bits = [];
-    if (p.buffieCount) bits.push(`${p.buffieCount} buffie${p.buffieCount > 1 ? "s" : ""}`);
-    if (p.ownsHyper) bits.push("its hypercharge");
+    if (o.gadgets) bits.push(`${o.gadgets === 2 ? "both" : "1 of 2"} gadget${o.gadgets > 1 ? "s" : ""}`);
+    if (o.starPowers) bits.push(`${o.starPowers === 2 ? "both" : "1 of 2"} star power${o.starPowers > 1 ? "s" : ""}`);
+    if (o.gears) bits.push(`${o.gears} gear${o.gears > 1 ? "s" : ""}`);
+    if (o.buffies) bits.push(`${o.buffies} buffie${o.buffies > 1 ? "s" : ""}`);
+    if (o.hyper) bits.push("its hypercharge");
     if (bits.length) {
       // The "can't redirect" line is only true of buffies — they draw randomly
       // from a group of three brawlers. Saying it about a hypercharge would be
@@ -240,7 +262,7 @@ function buildReasons(p) {
         : "";
       out.push({
         tone: "warn",
-        text: `You already own ${bits.join(" and ")} here, and at power ${p.power} none of it is usable.${tail}`,
+        text: `You already own ${listJoin(bits)} here, and at power ${p.power} none of it is usable.${tail}`,
       });
     }
   }
