@@ -669,6 +669,8 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
         CHECKIN_EXPIRED: "Check-in window expired.",
         CHECKIN_CLOSED: "Check-in is closed for this match.",
         NOT_IN_MATCH: "Your saved tag isn't in this match.",
+        NOT_AUTHENTICATED: "Sign in to check in.",
+        NOT_YOUR_TAG: "You can only check yourself in.",
       }[code] || `Check-in failed: ${error.message}`, "error");
     } else {
       showToast("Checked in ✔", "success");
