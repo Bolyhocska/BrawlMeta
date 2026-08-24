@@ -165,14 +165,21 @@ RANKED_MAPS = {
 EXTRA_RANKED_MAPS = set()
 
 def refresh_dynamic_map_pool():
-    """Load the observed rotation into EXTRA_RANKED_MAPS. Safe to call from any
-    scraper's main(); failures are non-fatal and simply leave the set empty."""
+    """Load every map ever observed in the ranked pool into EXTRA_RANKED_MAPS.
+    Safe to call from any scraper's main(); failures are non-fatal and simply
+    leave the set empty, falling back to the hardcoded baseline."""
     global EXTRA_RANKED_MAPS
     try:
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/ranked_map_pool",
             headers=SUPABASE_HEADERS,
-            params={"select": "map_name,mode", "in_rotation": "eq.true"},
+            # EVERY map ever seen in the ranked pool, not just today's rotation.
+            # The allowlist answers "is this a real ranked map", not "is it live
+            # right now" — the rotation turns over every day or two (measured
+            # 2026-08-24: six maps swapped between two runs hours apart), and a
+            # battlelog still contains games from maps that rotated out this
+            # morning. Filtering on in_rotation would silently drop those.
+            params={"select": "map_name,mode"},
             timeout=30,
         )
         if res.status_code != 200:
