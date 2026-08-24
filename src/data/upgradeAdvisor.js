@@ -118,7 +118,7 @@ function wastedInvestment(b) {
 
 export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {}, playedCounts = {} }) {
   const owned = (roster || []).filter(b => num(b.power) >= 1);
-  if (!owned.length) return { picks: [], classes: [], saveAdvice: null };
+  if (!owned.length) return { picks: [], classes: [], readyNames: new Set(), saveAdvice: null };
 
   // "Do I have options in this role?" is not the same question as "how many of
   // these have I maxed?". Measuring raw maxed count made the term useless on any
@@ -129,6 +129,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   // no ranked game from Mythic up), hypercharge owned (or you are a tier down on
   // every exchange), and actually good in the current meta.
   const readyByClass = {}, maxedByClass = {}, ownedByClass = {};
+  const readyNames = new Set();
   for (const b of owned) {
     const cls = draftClassOf(b.name);
     ownedByClass[cls] = (ownedByClass[cls] || 0) + 1;
@@ -136,6 +137,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
     const m = metaStrength(b.name, intelligence, rotationStats);
     if (num(b.power) >= MAX_POWER && (b.hyperCharges || []).length > 0 && num(m) >= READY_META) {
       readyByClass[cls] = (readyByClass[cls] || 0) + 1;
+      readyNames.add(String(b.name || "").toUpperCase());
     }
   }
   const classes = Object.keys(ownedByClass).map(cls => ({
@@ -235,7 +237,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
 
   for (const p of picks) p.reasons = buildReasons(p);
 
-  return { picks, classes, saveAdvice: saveOrSpend(picks, owned, classes, roster) };
+  return { picks, classes, readyNames, saveAdvice: saveOrSpend(picks, owned, classes, roster) };
 }
 
 /**

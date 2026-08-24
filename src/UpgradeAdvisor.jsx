@@ -18,6 +18,7 @@
 import { useState, useEffect } from "react";
 import { supabase, CURRENT_PATCH, formatBrawlerName } from "./appCore";
 import { recommendUpgrades } from "./data/upgradeAdvisor";
+import { draftClassOf } from "./data/draftEngine";
 import { BUFFIE_PACKS, BUFFIE_COST } from "./data/upgradeCosts";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
@@ -34,7 +35,7 @@ const TONE = {
 };
 
 function useAdvice(tag, rankedRows) {
-  const [state, setState] = useState({ loading: true, picks: [], classes: [], saveAdvice: null, roster: [], error: null });
+  const [state, setState] = useState({ loading: true, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, roster: [], error: null });
 
   useEffect(() => {
     if (!tag) return;
@@ -53,7 +54,7 @@ function useAdvice(tag, rankedRows) {
         if (cancelled) return;
         const roster = profileRes?.roster;
         if (!Array.isArray(roster) || !roster.length) {
-          setState({ loading: false, picks: [], classes: [], saveAdvice: null, error: "no_roster" });
+          setState({ loading: false, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, error: "no_roster" });
           return;
         }
 
@@ -87,10 +88,10 @@ function useAdvice(tag, rankedRows) {
         }
 
         if (cancelled) return;
-        const { picks, classes, saveAdvice } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
-        setState({ loading: false, picks, classes, saveAdvice, roster, error: null });
+        const { picks, classes, readyNames, saveAdvice } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
+        setState({ loading: false, picks, classes, readyNames, saveAdvice, roster, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, picks: [], classes: [], saveAdvice: null, error: e.message });
+        if (!cancelled) setState({ loading: false, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, error: e.message });
       }
     })();
     return () => { cancelled = true; };
@@ -255,31 +256,121 @@ function BuffiePacks({ roster }) {
   );
 }
 
-function RoleCoverage({ classes }) {
+// The roster, as portraits, grouped by the role each brawler plays in a draft.
+//
+// Counts alone ("Control 6/17") could not show the thing that actually matters,
+// which is WHICH brawlers those are — and it quietly contradicted the cards:
+// the old "thin role" test counted MAXED brawlers, while the advice reasons in
+// FIELDABLE ones, so this panel would call Thrower healthy at 2 maxed while the
+// card above it said you were thin at 1 fieldable. Both now use the same test.
+//
+// Three states, because two would lie. Grey = not power 11, unusable in ranked
+// from Mythic up. Full colour = maxed. Ringed = maxed AND holding its
+// hypercharge AND good in the current meta, which is the only bar that makes a
+// brawler a real draft option and the one every "you're thin on X" line counts.
+function RosterFace({ b, ready }) {
+  const src = art(b.name);
+  const maxed = (b.power || 0) >= 11;
+  const title = `${formatBrawlerName(b.name)} — power ${b.power || 1}`
+    + (ready ? " · draft-ready" : maxed ? " · maxed" : "");
+  return (
+    <span title={title} style={{
+      width: 34, height: 34, borderRadius: 9, overflow: "hidden", flexShrink: 0,
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(255,255,255,.05)",
+      border: ready ? "1.5px solid rgba(142,230,176,.65)" : "1px solid rgba(255,255,255,.09)",
+      boxShadow: ready ? "0 0 0 1px rgba(142,230,176,.14)" : "none",
+      // Greyscale rather than hidden: seeing the brawlers you own but can't
+      // field is the point — that is the upgrade backlog.
+      filter: maxed ? "none" : "grayscale(1) brightness(.62)",
+      opacity: maxed ? 1 : .5,
+    }}>
+      {src
+        ? <img src={src} alt="" width={34} height={34} style={{ objectFit: "cover" }} loading="lazy" />
+        : <span style={{ fontFamily: MONO, fontSize: 9, color: "#8a8a9c" }}>{String(b.name).slice(0, 2)}</span>}
+    </span>
+  );
+}
+
+function RoleCoverage({ classes, roster, readyNames }) {
   if (!classes.length) return null;
-  const thin = classes.filter(c => c.maxed <= 1);
+  const ready = readyNames || new Set();
+
+  const byClass = {};
+  for (const b of roster || []) {
+    const c = draftClassOf(b.name);
+    (byClass[c] = byClass[c] || []).push(b);
+  }
+  // Draft-ready first, then maxed, then everything else by how close it is —
+  // so each row reads left to right as "what you can field" → "what's next".
+  const weight = (b) => (ready.has(String(b.name || "").toUpperCase()) ? 2 : (b.power || 0) >= 11 ? 1 : 0);
+  for (const k of Object.keys(byClass)) {
+    byClass[k].sort((a, b) => weight(b) - weight(a) || (b.power || 0) - (a.power || 0)
+      || (b.trophies || 0) - (a.trophies || 0));
+  }
+
+  const thin = classes.filter(c => c.ready <= 1);
+
   return (
     <div style={{
       marginTop: 12, padding: "13px 15px", borderRadius: 12,
       background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)",
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#6f7180", marginBottom: 9 }}>
-        MAXED BRAWLERS BY ROLE
+      <div style={{
+        display: "flex", alignItems: "baseline", justifyContent: "space-between",
+        gap: 12, flexWrap: "wrap", marginBottom: 11,
+      }}>
+        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#6f7180" }}>
+          YOUR ROSTER BY ROLE
+        </div>
+        <div style={{ display: "flex", gap: 11, flexWrap: "wrap", fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>
+          <span><span style={{
+            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
+            background: "rgba(142,230,176,.30)", border: "1.5px solid rgba(142,230,176,.65)", marginRight: 5,
+          }} />DRAFT-READY</span>
+          <span><span style={{
+            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
+            background: "rgba(255,255,255,.30)", border: "1px solid rgba(255,255,255,.18)", marginRight: 5,
+          }} />MAXED</span>
+          <span><span style={{
+            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
+            background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.12)", marginRight: 5,
+          }} />NOT POWER 11</span>
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-        {classes.map(c => (
-          <span key={c.cls} style={{
-            fontFamily: MONO, fontSize: 10, padding: "5px 10px", borderRadius: 999,
-            background: c.maxed <= 1 ? "rgba(255,143,143,.10)" : "rgba(255,255,255,.04)",
-            border: `1px solid ${c.maxed <= 1 ? "rgba(255,143,143,.26)" : "rgba(255,255,255,.09)"}`,
-            color: c.maxed <= 1 ? "#ff8f8f" : "#9a9aab",
-          }}>{c.label} {c.maxed}/{c.owned}</span>
-        ))}
-      </div>
+
+      {classes.map(c => {
+        const list = byClass[c.cls] || [];
+        const isThin = c.ready <= 1;
+        return (
+          <div key={c.cls} style={{ marginBottom: 12 }}>
+            <div style={{
+              display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6, flexWrap: "wrap",
+            }}>
+              <span style={{
+                fontFamily: MONO, fontSize: 10.5, letterSpacing: .6,
+                color: isThin ? "#ff8f8f" : "#c9c9d6",
+              }}>{c.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>
+                {c.ready} draft-ready · {c.maxed} maxed · {c.owned} owned
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {list.map(b => (
+                <RosterFace key={b.id ?? b.name} b={b}
+                  ready={ready.has(String(b.name || "").toUpperCase())} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
       {thin.length > 0 && (
-        <div style={{ marginTop: 9, fontSize: 12.5, lineHeight: 1.6, color: "#c9c9d6" }}>
-          A draft needs three working brawlers. You're thin on{" "}
-          {thin.map(c => c.label).join(", ")} — which limits what you can pick into.
+        <div style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.6, color: "#c9c9d6" }}>
+          A draft needs three working brawlers in a role. You're thin on{" "}
+          {thin.map(c => c.label).join(", ")} — not for lack of brawlers, but because
+          so few of them are power 11 with a hypercharge and worth playing right now.
+          That's what limits which picks you can actually make.
         </div>
       )}
     </div>
@@ -287,7 +378,7 @@ function RoleCoverage({ classes }) {
 }
 
 export default function UpgradeAdvisor({ tag, rankedRows }) {
-  const { loading, picks, classes, saveAdvice, roster, error } = useAdvice(tag, rankedRows);
+  const { loading, picks, classes, readyNames, saveAdvice, roster, error } = useAdvice(tag, rankedRows);
 
   if (!tag) return null;
   if (loading) {
@@ -321,7 +412,7 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
         </div>
       )}
       {picks.slice(0, 5).map((p, i) => <Card key={p.name} p={p} rank={i + 1} />)}
-      <RoleCoverage classes={classes} />
+      <RoleCoverage classes={classes} roster={roster} readyNames={readyNames} />
       <BuffiePacks roster={roster} />
       <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 11, lineHeight: 1.65 }}>
         Ranked by what the next step buys per coin: how strong the brawler is on the maps in rotation
