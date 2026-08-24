@@ -384,7 +384,7 @@ def save_player_snapshots(rows):
         else:
             print(f"⚠️ player_snapshots insert failed at {i}: {res.status_code} {res.text[:200]}")
             break
-    print(f"📈 {stored} progression snapshot(s) stored for boosted profiles.")
+    print(f"📈 {stored} trophy snapshot(s) stored.")
     return stored
 
 
