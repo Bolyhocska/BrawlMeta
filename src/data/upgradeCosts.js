@@ -144,7 +144,7 @@ export const BUFFIE_PACKS = [
   { name: "Rumble Jungle",    brawlers: ["NITA", "LEON", "BO"] },
   { name: "Gift Shop",        brawlers: ["EDGAR", "COLETTE", "GRIFF"] },
   { name: "Arcade",           brawlers: ["RICO", "BROCK", "8-BIT"] },
-  { name: "Super City",       brawlers: ["MAX", "SURGE", "MEG"] },
+  { name: "Super City",       brawlers: ["MAX", "SURGE", "MEG"] },   // MEG owner-confirmed
 ];
 
 export const packForBrawler = (name) => {
