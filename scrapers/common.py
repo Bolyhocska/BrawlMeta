@@ -82,9 +82,19 @@ CLOSED_PATCHES = {"67.306"}
 
 RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
-# Confirmed official ranked maps per patch. Any match on a map not in this
-# list for the current patch is dropped, since the API tags themed/event
-# reskins with the same mode as real ranked maps.
+# Confirmed official ranked maps per patch.
+#
+# THIS IS A FLOOR, NOT THE LIVE LIST. scrapers/map_pool.py reads the actual
+# rotation daily into ranked_map_pool and every scraper unions it in via
+# refresh_dynamic_map_pool(), so a map rotating in is collected without anyone
+# editing this file. Keeping the hardcoded set is what makes that safe: if the
+# external source breaks, changes its markup, or starts returning nonsense, the
+# allowlist degrades to this known-good baseline rather than to nothing — and an
+# empty allowlist would let themed and event reskins pollute the ranked dataset,
+# which is the whole reason the filter exists.
+#
+# So: no obligation to keep this current. Add to it when a rotation is known and
+# stable, leave it alone otherwise.
 RANKED_MAPS = {
     "67.306": {
         "Dry Season", "Hideout", "Layer Cake", "Shooting Star",
@@ -122,11 +132,12 @@ RANKED_MAPS = {
         # distinct. Safe(r) Zone simply has no hand-authored map profile or pro
         # rules yet, so the engine runs on measured data alone for it.
         "Safe(r) Zone",
-        # 2026-07-22 rotation: Rustic Arcade left the ranked pool (owner-confirmed
-        # — it belonged to the previous season) and is deliberately NOT listed, so
-        # no further Rustic Arcade matches are ingested. Crystal Arcade and
-        # Deathcap Trap replace it and have never been collected before.
-        "Crystal Arcade", "Deathcap Trap",
+        # 2026-07-22 rotation: Rustic Arcade left the ranked pool and its data was
+        # purged by hand (owner-instructed). It ROTATED BACK IN and was confirmed
+        # live on 2026-08-24, so it is listed again — the `maps` lookup row was
+        # deliberately kept through the purge for exactly this, and its id
+        # survived. Crystal Arcade and Deathcap Trap arrived in the same rotation.
+        "Crystal Arcade", "Deathcap Trap", "Rustic Arcade",
         # 2026-08-24: Spiraling Out (Brawl Ball) confirmed in the live rotation.
         # Its absence meant every match on it was being silently dropped, which
         # is what motivated the dynamic pool below.

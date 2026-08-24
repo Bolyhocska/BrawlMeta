@@ -156,16 +156,16 @@ def main():
     hardcoded = RANKED_MAPS.get(CURRENT_PATCH, set())
     missing = sorted(set(pool) - hardcoded)
     if missing:
-        # Loud on purpose. The allowlist self-heals through ranked_map_pool, but
-        # the hardcoded list is what a human reads, and letting the two drift
-        # forever would recreate exactly the blind spot this module fixes.
-        print(f"\n⚠️ {len(missing)} map(s) in rotation are NOT in RANKED_MAPS['{CURRENT_PATCH}']:")
+        # Informational, not a task. Rotation is automatic: these maps are
+        # already being collected through ranked_map_pool. RANKED_MAPS is only
+        # the floor the allowlist falls back to if this source ever breaks, so
+        # it does not need hand-syncing every time the rotation changes.
+        print(f"\n🆕 {len(missing)} map(s) new since the RANKED_MAPS['{CURRENT_PATCH}'] baseline "
+              f"-- already being collected:")
         for m in missing:
             print(f"     + {m}  ({pool[m]})")
-        print("   Collection continues via ranked_map_pool, but add them to "
-              "scrapers/common.py so the file matches reality.")
     else:
-        print(f"\n✅ every map in rotation is already in RANKED_MAPS['{CURRENT_PATCH}'].")
+        print(f"\n✅ rotation matches the RANKED_MAPS['{CURRENT_PATCH}'] baseline exactly.")
 
     publish(pool)
     print("✅ ranked_map_pool updated.")
