@@ -374,6 +374,120 @@ STATS = RunStats()
 # ==========================================
 # BATTLELOG SPIDER
 # ==========================================
+def parse_battle(match, player_tag, bracket):
+    """Parse ONE battlelog entry. Returns (frontier_tags, record).
+
+    Single source of truth for what counts as a collectable competitive Ranked
+    match, shared by the spider (which projects the record down to brawler names)
+    and the player tracker (which keeps all of it). Extracted from
+    fetch_player_battles rather than copied, so the two can never drift apart
+    about which battles are legitimate.
+
+    `frontier_tags` is returned SEPARATELY from `record` on purpose. The spider
+    feeds those tags to its queue as soon as a battle looks structurally like
+    Ranked 3v3, even if the battle is then rejected for being on a closed patch
+    or an unlisted map. Folding the tags into the record would silently shrink
+    the spider's reach, so the split preserves the original behaviour exactly.
+
+    `record` is None for anything not collectable. When present it carries both
+    the absolute view (winners/losers, for the composition hash) and the view
+    relative to `player_tag` (team/enemy, result), because a player history is
+    written from the player's side while ranked_matches is not.
+    """
+    battle_data = match.get("battle", {}) or {}
+    event_data = match.get("event", {}) or {}
+
+    match_type = battle_data.get("type", "").lower()
+    mode_name = battle_data.get("mode", "")
+    # Competitive Ranked reports "soloRanked" / "teamRanked". Plain trophy-ladder
+    # games report EXACTLY "ranked" and must be EXCLUDED: a freshly released
+    # brawler (e.g. Nori) can be trophy-legal while still absent from the
+    # competitive Ranked pool, and those lower-skill games pollute the high-rank
+    # meta the tier list and draft engine are built on. Matching the "ranked"
+    # substring while dropping the exact "ranked" string keeps every competitive
+    # variant (soloRanked / teamRanked / any future *Ranked) but sheds trophy.
+    is_competitive_ranked = "ranked" in match_type and match_type != "ranked"
+
+    # Belt-and-suspenders: trophy/casual battles carry a trophyChange field;
+    # competitive Ranked never does. Catches any mislabeled type string.
+    if "trophyChange" in battle_data:
+        return [], None
+
+    if not (is_competitive_ranked and mode_name in RANKED_MODES):
+        return [], None
+
+    teams = battle_data.get("teams", [])
+    result = battle_data.get("result", "").lower()
+
+    # Ranked is strictly 3v3 — the team-size check guards against any
+    # 5v5 event that reports a mode name colliding with RANKED_MODES.
+    if not (len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]):
+        return [], None
+
+    battle_tags = []
+    for team in teams:
+        for p in team:
+            tag = p.get("tag")
+            if tag:
+                battle_tags.append(tag)
+
+    player_team_idx = 0
+    for idx, team in enumerate(teams):
+        if any(p.get('tag') == player_tag for p in team):
+            player_team_idx = idx
+            break
+
+    if result == "victory":
+        winning_team = teams[player_team_idx]
+        losing_team = teams[1 - player_team_idx]
+    else:
+        winning_team = teams[1 - player_team_idx]
+        losing_team = teams[player_team_idx]
+
+    winners = [p['brawler']['name'] for p in winning_team if p.get('brawler') and p['brawler'].get('name')]
+    losers = [p['brawler']['name'] for p in losing_team if p.get('brawler') and p['brawler'].get('name')]
+
+    if not winners or not losers:
+        return battle_tags, None
+
+    map_name = event_data.get("map") or "Unknown Map"
+    mode_name = battle_data.get("mode") or "Unknown Mode"
+    battle_time = match.get("battleTime")
+    match_patch = determine_patch(battle_time)
+    if match_patch in CLOSED_PATCHES:
+        return battle_tags, None
+
+    allowed_maps = RANKED_MAPS.get(match_patch)
+    if allowed_maps is not None and map_name not in allowed_maps:
+        return battle_tags, None
+
+    record = {
+        "map": map_name,
+        "mode": mode_name,
+        "rank_bracket": bracket,
+        "winners": winners,
+        "losers": losers,
+        "patch": match_patch,
+        "match_hash": None,
+        # --- the rich half, used only by the player tracker ---
+        "battle_time": battle_time,
+        "result": 1 if result == "victory" else 0,
+        "team_tags": [p.get("tag") for p in teams[player_team_idx] if p.get("tag")],
+        "enemy_tags": [p.get("tag") for p in teams[1 - player_team_idx] if p.get("tag")],
+        "team_brawlers": [p['brawler']['name'] for p in teams[player_team_idx] if p.get('brawler') and p['brawler'].get('name')],
+        "enemy_brawlers": [p['brawler']['name'] for p in teams[1 - player_team_idx] if p.get('brawler') and p['brawler'].get('name')],
+        "all_tags": battle_tags,
+        # starPlayer is not guaranteed present on every payload shape, so this is
+        # None (unknown) rather than False when the field is absent — the two mean
+        # different things to a carry-rate metric built on it later.
+        "is_star_player": (
+            None if not isinstance(battle_data.get("starPlayer"), dict)
+            else battle_data["starPlayer"].get("tag") == player_tag
+        ),
+    }
+    record["match_hash"] = make_hash(record)
+    return battle_tags, record
+
 def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_hashes, lock=None):
     # lock guards all shared-state mutations (seen_tags/extracted_data/seen_hashes)
     # so this function is safe to call from multiple threads concurrently — only the
@@ -403,89 +517,28 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
     candidate_entries = []
     battles = log_res.json().get("items", [])
     for match in battles:
-        battle_data = match.get("battle", {}) or {}
-        event_data = match.get("event", {}) or {}
-
-        match_type = battle_data.get("type", "").lower()
-        mode_name = battle_data.get("mode", "")
-        # Competitive Ranked reports "soloRanked" / "teamRanked". Plain trophy-ladder
-        # games report EXACTLY "ranked" and must be EXCLUDED: a freshly released
-        # brawler (e.g. Nori) can be trophy-legal while still absent from the
-        # competitive Ranked pool, and those lower-skill games pollute the high-rank
-        # meta the tier list and draft engine are built on. Matching the "ranked"
-        # substring while dropping the exact "ranked" string keeps every competitive
-        # variant (soloRanked / teamRanked / any future *Ranked) but sheds trophy.
-        is_competitive_ranked = "ranked" in match_type and match_type != "ranked"
-
-        # Belt-and-suspenders: trophy/casual battles carry a trophyChange field;
-        # competitive Ranked never does. Catches any mislabeled type string.
-        if "trophyChange" in battle_data:
+        battle_tags, record = parse_battle(match, player_tag, bracket)
+        # Frontier tags are taken even when the battle is later rejected (closed
+        # patch, unlisted map, unreadable brawler). That is the pre-existing
+        # behaviour and it matters: those players are still Masters-adjacent and
+        # dropping them here would shrink the spider's reach.
+        candidate_tags.extend(battle_tags)
+        if record is None:
             continue
-
-        if is_competitive_ranked and mode_name in RANKED_MODES:
-            teams = battle_data.get("teams", [])
-            result = battle_data.get("result", "").lower()
-
-            # Ranked is strictly 3v3 — the team-size check guards against any
-            # 5v5 event that reports a mode name colliding with RANKED_MODES.
-            if len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]:
-                # battle_tags is this ONE battle's six players; candidate_tags
-                # accumulates across the whole battlelog for the spider frontier.
-                # The per-battle list is what identifies the physical game.
-                battle_tags = []
-                for team in teams:
-                    for p in team:
-                        tag = p.get("tag")
-                        if tag:
-                            battle_tags.append(tag)
-                candidate_tags.extend(battle_tags)
-
-                player_team_idx = 0
-                for idx, team in enumerate(teams):
-                    if any(p.get('tag') == player_tag for p in team):
-                        player_team_idx = idx
-                        break
-
-                if result == "victory":
-                    winning_team = teams[player_team_idx]
-                    losing_team = teams[1 - player_team_idx]
-                else:
-                    winning_team = teams[1 - player_team_idx]
-                    losing_team = teams[player_team_idx]
-
-                winners = [p['brawler']['name'] for p in winning_team if p.get('brawler') and p['brawler'].get('name')]
-                losers = [p['brawler']['name'] for p in losing_team if p.get('brawler') and p['brawler'].get('name')]
-
-                if not winners or not losers:
-                    continue
-
-                map_name = event_data.get("map") or "Unknown Map"
-                mode_name = battle_data.get("mode") or "Unknown Mode"
-                match_patch = determine_patch(match.get("battleTime"))
-                if match_patch in CLOSED_PATCHES:
-                    continue
-
-                allowed_maps = RANKED_MAPS.get(match_patch)
-                if allowed_maps is not None and map_name not in allowed_maps:
-                    continue
-
-                match_entry = {
-                    "map": map_name,
-                    "mode": mode_name,
-                    "rank_bracket": bracket,
-                    "winners": winners,
-                    "losers": losers,
-                    "patch": match_patch,
-                    "match_hash": None
-                }
-                match_entry["match_hash"] = make_hash(match_entry)
-                # Measurement only — the identity hash is never stored and never
-                # deduped on; it exists so RunStats can see how many distinct
-                # real games this composition key is absorbing.
-                STATS.record_battle(
-                    match_entry["match_hash"], match.get("battleTime"), battle_tags,
-                )
-                candidate_entries.append(match_entry)
+        # Project the rich record down to the brawler-only shape this pipeline
+        # has always stored. push_matches reads exactly these keys.
+        candidate_entries.append({
+            "map": record["map"],
+            "mode": record["mode"],
+            "rank_bracket": record["rank_bracket"],
+            "winners": record["winners"],
+            "losers": record["losers"],
+            "patch": record["patch"],
+            "match_hash": record["match_hash"],
+        })
+        # Measurement only — never stored, never deduped on; it exists so
+        # RunStats can see how many distinct real games a composition key absorbs.
+        STATS.record_battle(record["match_hash"], record["battle_time"], battle_tags)
 
     # All shared-state reads/writes happen here under lock, in one short critical
     # section, rather than scattered through the parsing above. seen_hashes only

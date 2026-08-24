@@ -1,0 +1,51 @@
+name: Track — Player Match History
+
+# Polls tracked players' battlelogs into player_matches. Phase 1 of the
+# player-stat plan: history only exists from the moment something writes it
+# down, and the Supercell battlelog is a ~25-battle rolling buffer that never
+# back-fills, so this runs from the day it lands even though nothing reads it yet.
+#
+# CRON CHOICE. Every scraper shares one IP-allowlisted Supercell key, so the
+# slots are picked to avoid overlap, not just collision at the minute mark:
+#   masters       0 0,6,12,18  — and it RUNS FOR ~70-85 MINUTES, so it occupies
+#                                00:00-01:25, 06:00-07:25, 12:00-13:25, 18:00-19:25
+#   leaderboard   0 5,11,17,23
+#   diamond       30 7
+#   intelligence  30 8
+# 02:20 / 10:20 / 14:20 / 20:20 sit clear of all of those windows.
+#
+# Consequence worth knowing: 4 runs/day means the real floor on poll frequency
+# is ~6h, so player_tracker's tighter tier floors (3h for a claimed profile)
+# cannot bind until this cron gets denser. That is an API-budget decision.
+on:
+  schedule:
+    - cron: '20 2,10,14,20 * * *'
+  workflow_dispatch:
+
+jobs:
+  track-players:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run player tracker
+        env:
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: python -m scrapers.player_tracker
