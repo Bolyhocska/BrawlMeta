@@ -77,8 +77,29 @@ file first, then continue at the first unchecked box. Commit + push after every 
 - [x] P2.0a Self-host the game art — competitor CDN dependency removed (commit 0e5a321)
 - [ ] P2.0b Lift the Supercell client into `api/_lib/supercell.js` before five new endpoints
       copy-paste the undici gotcha out of `api/player.js`
-- [ ] P2.0c **Owner decision:** enrol-on-lookup — everyone at a low tier, or opt-in only?
-      Privacy posture, and the one Phase 2 feature that cannot be built either way.
+- [x] P2.0c ~~Owner decision: enrol-on-lookup?~~ **DECIDED: enrol everyone on lookup**, with a
+      free opt-in Boost tier and an unauthenticated opt-out. Owner also asked for the privacy
+      policy to be restructured after reviewing Brawlify's.
+
+### Phase 2 — Make it visible (SHIPPED 2026-08-24)
+- [x] P2.1 `/player/:tag` route, live header + stored history, honest empty states
+- [x] P2.2 Ranked series folded into one card (rounds stored separately, shown together)
+- [x] P2.3 Enrol-on-lookup in `/api/player`; `/api/track-player` for boost + untrack
+- [x] P2.4 Privacy policy rewritten: discloses tracking, the bystander case, and the opt-out
+- [x] P2.5 Verified the anon privilege boundary — reads 200, writes 401, RPCs 401
+
+### Phase 4 — The moat (SHIPPED 2026-08-24, taken before Phase 3)
+- [x] P4.1 Per-match draft verdict via the same computeWinSplit the Draft Assistant uses
+- [x] P4.2 Verified on a real stored match (38/62 underdog who won 2-3); side-swap mirrors
+- [x] P4.3 Composition gap chips from finalSanityCheck (missing mid / lane anchor / specialist)
+      Taken out of order deliberately: it needs the 1.8M aggregate, NOT depth in a player's own
+      history, so it was buildable while Phase 3 still is not.
+
+### Phase 3 — Make it analytical (BLOCKED on data depth)
+- [ ] P3.x "You vs the world", sessions/tilt, played-with, personal matchups, star-player rate.
+      As of 2026-08-24 the deepest profile holds 27 matches — one battlelog — and no profile has
+      40+. Depth grows only as tracked players actually play, so this is gated on calendar time,
+      not on engineering. Revisit in ~2 weeks.
 
 ## Session log
 - 2026-08-19: scaffolding created. First agent fan-out (3 agents) killed by session limit reset.

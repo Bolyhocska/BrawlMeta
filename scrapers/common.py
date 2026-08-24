@@ -361,7 +361,9 @@ class RunStats:
         if statuses:
             ok = statuses.get(200, 0)
             total = sum(statuses.values())
-            print(f"  Battlelog requests: {total} ({ok} ok)")
+            # Counts every Supercell call, not only battlelogs — a boosted
+            # profile also costs a /players request for its snapshot.
+            print(f"  Supercell requests: {total} ({ok} ok)")
             for code in sorted(statuses):
                 if code != 200:
                     print(f"    ⚠️ HTTP {code}: {statuses[code]}")
