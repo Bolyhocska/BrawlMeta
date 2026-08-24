@@ -24,11 +24,13 @@
 // no ads and set no advertising cookies — describing cookies we don't set
 // would make this document false in the opposite direction.
 //
-// CONTROLLER.email is set. CONTROLLER.name is still a placeholder: GDPR wants a
-// named controller, not only an address, and "who is responsible" is the first
-// question this document answers. An email alone is enough to receive an
-// objection, so the policy is functional — but it is not complete until a real
-// name or registered entity is there.
+// CONTACT. The policy identifies "the operator of BrawlApex" rather than naming
+// an individual, and gives a working address — the shape every comparable fan
+// site uses, and the owner's explicit choice. Worth knowing it is thinner than
+// GDPR Art. 13(1)(a) reads on its face, which asks for the identity AND contact
+// details of the controller. It is defensible for an unincorporated personal
+// project, and it becomes a real gap the moment BrawlApex is a registered
+// entity or starts taking money — at which point put the entity name here.
 
 import { Link } from "react-router-dom";
 import { GuideShell } from "./GuidesPages";
@@ -36,9 +38,8 @@ import { GuideShell } from "./GuidesPages";
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 
-// ⚠️ OWNER: `name` still needs filling in. The email is live.
 const CONTROLLER = {
-  name: "[YOUR NAME OR REGISTERED ENTITY]",
+  operator: "the operator of BrawlApex",
   email: "brawlapex.dev@gmail.com",
 };
 
@@ -375,9 +376,10 @@ export function PrivacyPolicyPage() {
               <Sec {...SECTIONS[9]}>
                 <Q>How do you get in touch?</Q>
                 <P>
-                  BrawlApex is run by <Term>{CONTROLLER.name}</Term>, who is the data controller for
-                  the purposes of the UK/EU GDPR. Questions, access requests, deletion requests and
-                  tracking opt-outs all go to:
+                  BrawlApex is an independent fan project, run by one person rather than a company.
+                  For the purposes of the UK/EU GDPR, <Term>{CONTROLLER.operator}</Term> is the data
+                  controller. Questions, access requests, deletion requests and tracking opt-outs all
+                  go to the same place:
                 </P>
                 <Callout tone="violet">
                   <Term>{CONTROLLER.email}</Term>
@@ -460,8 +462,8 @@ export function AboutPage() {
           </Sec>
           <Sec {...sections[4]}>
             <P>
-              BrawlApex is built and maintained by <Term>{CONTROLLER.name}</Term>. It is an
-              independent project, not a company, and not affiliated with Supercell.
+              BrawlApex is built and maintained by one person. It is an independent project, not a
+              company, and not affiliated with Supercell.
             </P>
             <P>Get in touch: <Term>{CONTROLLER.email}</Term></P>
             <P>
