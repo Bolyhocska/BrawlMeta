@@ -223,6 +223,8 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
     p.score = bestScore;
     p.classNeed = bestNeed;
     p.classReady = readyByClass[p.cls] || 0;
+    p.classMaxed = maxedByClass[p.cls] || 0;
+    p.classOwned = ownedByClass[p.cls] || 0;
     p.classBanked = banked[p.cls] || 0;
     // Value per 1,000 coins of the immediate step — the only way a 20-coin
     // level-up and a 5,000-coin hypercharge are comparable at all.
@@ -323,21 +325,53 @@ function buildReasons(p) {
     : p.meta >= 0.5 ? `${nice} is solid in the current meta`
     : null;
 
+  // Every pick gets a class verdict, including the ones where the class argument
+  // runs AGAINST it. A strong brawler in a role you have already covered is
+  // ranked where it is BECAUSE the role is covered, and staying silent about
+  // that leaves the reader wondering why an obviously good brawler sits at four
+  // rather than one. "{label} brawlers", never "{label}s" — the class names do
+  // not pluralise ("no Controls" reads like nonsense).
   if (p.classNeed >= 0.33) {
     const n = p.classReady;
-    // "{label} brawlers", never "{label}s" — the class names don't pluralise
-    // ("no Controls", "no Space Makers" read like nonsense).
-    const have = n === 0
-      ? `You have no ${p.label} brawlers that are fully built and actually good`
-      : `You don't have many strong ${p.label} brawlers — only ${n} of yours ${n > 1 ? "are" : "is"} fully built and actually good`;
-    const banked = p.classBanked
-      ? ` (counting the ${p.classBanked === 1 ? "one" : p.classBanked} above this)`
-      : "";
+    let have, tail;
+    if (p.classBanked === 0) {
+      have = n === 0
+        ? `You have no ${p.label} brawlers that are fully built and actually good`
+        : `You don't have many strong ${p.label} brawlers — only ${n} of yours ${n > 1 ? "are" : "is"} fully built and actually good`;
+      tail = "this fills a real hole in your drafts";
+    } else {
+      // The count has to be restated around what the roster looks like AFTER the
+      // picks above are done, not tacked on as a parenthetical. Appending
+      // "(counting the one above this)" to "you have no Control brawlers"
+      // contradicts itself — counting it, you would have one.
+      const eff = p.classReady + p.classBanked;
+      have = `Even after the ${p.classBanked === 1 ? `${p.label} brawler` : `${p.classBanked} ${p.label} brawlers`} `
+           + `above this one, you'd have just ${eff} that ${eff === 1 ? "is" : "are"} fully built and actually good`;
+      tail = "there's still room in the role";
+    }
     out.push({
       tone: "info",
-      text: metaPhrase
-        ? `${have}${banked}, and ${metaPhrase}. This fills a real hole in your drafts.`
-        : `${have}${banked}, so this fills a real hole in your drafts.`,
+      text: metaPhrase ? `${have}, and ${metaPhrase} — so ${tail}.` : `${have}, so ${tail}.`,
+    });
+  } else if (p.classReady >= READY_TARGET) {
+    // Crowded on the roster itself. Quote the maxed count as well as the
+    // fieldable one — "3 fieldable" on its own reads as FEW, which is the
+    // opposite of the point being made.
+    const lead = metaPhrase ? `${metaPhrase}, but you` : "You";
+    out.push({
+      tone: "muted",
+      text: `${lead} already have plenty of ${p.label} brawlers — ${p.classMaxed} maxed, `
+          + `${p.classReady} of them genuinely strong right now — so this adds depth, not coverage.`,
+    });
+  } else if (p.classBanked > 0) {
+    // Only covered once the picks ABOVE this one are done. Saying "you already
+    // have plenty" here would contradict the card higher up the same list that
+    // just said the role was thin.
+    const lead = metaPhrase ? `${metaPhrase}, but the` : "The";
+    out.push({
+      tone: "muted",
+      text: `${lead} ${p.classBanked === 1 ? `${p.label} brawler` : `${p.classBanked} ${p.label} brawlers`} `
+          + `higher up this list already cover the role — do those first, and this becomes depth on top.`,
     });
   } else if (p.meta >= 0.65) {
     out.push({ tone: "good", text: "One of the strongest picks on the maps in rotation right now." });
