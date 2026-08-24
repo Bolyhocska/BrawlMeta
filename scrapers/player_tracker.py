@@ -200,17 +200,20 @@ def _schedule(row, new_count, newest=None, dead=False):
 
     interval = max(interval, TIER_FLOOR_MINS.get(row.get("tier", 3), 1440))
     now = datetime.now(timezone.utc)
-    update = {
+    # Every key must be present on EVERY object in the batch: PostgREST rejects a
+    # bulk upsert whose objects have differing key sets with PGRST102 "All object
+    # keys must match". So last_battle_at is always included — falling back to
+    # the row's existing value rather than None, since a None here would merge
+    # over a real stored timestamp and lose the incremental-fetch watermark.
+    return {
         "player_tag": row["player_tag"],
         "poll_interval_mins": interval,
         "next_poll_at": (now + timedelta(minutes=interval)).isoformat(),
         "last_polled_at": now.isoformat(),
         "consecutive_empty": empty,
         "active": active,
+        "last_battle_at": newest.isoformat() if newest is not None else row.get("last_battle_at"),
     }
-    if newest is not None:
-        update["last_battle_at"] = newest.isoformat()
-    return update
 
 
 def save_player_matches(rows):
