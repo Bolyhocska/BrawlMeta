@@ -15,8 +15,10 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   toSeries, gradeSeries, aboveDraft, draftBuckets, eventFacts,
-  squadAndRivals, ladderState, LADDER,
+  squadAndRivals, ladderState, LADDER, classFingerprint,
+  loadIntelligence, DEFAULT_BRACKET,
 } from "./data/playerStats";
+import { classLabel } from "./data/draftEngine";
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -228,6 +230,65 @@ function PeoplePanel({ squad, rivals, onOpen }) {
   );
 }
 
+
+// ── BR-2 draft fingerprint ───────────────────────────────────────────────────
+// The cold-start feature, and the reason it works is that it is a DISTRIBUTION
+// rather than a rate. At 20 drafts a win rate is worthless, but someone who has
+// picked 20 times genuinely does have a taste — and "you have never once picked
+// a tank" is true and interesting from the very first week.
+
+function FingerprintPanel({ rows, n }) {
+  if (!rows || !rows.length) return null;
+  const max = Math.max(...rows.map(r => Math.max(r.mine, r.theirs)), 0.1);
+  const never = rows.filter(r => r.count === 0 && r.theirs > 0.05);
+  const top = rows.find(r => r.notable && r.diff > 0);
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>YOUR DRAFT FINGERPRINT</div>
+
+      <div style={{ display: "grid", gap: 7 }}>
+        {rows.filter(r => r.mine > 0 || r.theirs > 0.02).map(r => (
+          <div key={r.cls} style={{ display: "grid", gridTemplateColumns: "104px 1fr 62px", gap: 10, alignItems: "center" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: r.notable ? "#e9e9f2" : "#8a8a9c" }}>
+              {classLabel(r.cls)}
+            </span>
+            <div style={{ display: "grid", gap: 3 }}>
+              <div style={{ height: 7, borderRadius: 999, background: "rgba(255,255,255,.05)" }}>
+                <div style={{ width: `${(r.mine / max) * 100}%`, height: "100%", borderRadius: 999, background: "#c9a6ff" }} />
+              </div>
+              <div style={{ height: 7, borderRadius: 999, background: "rgba(255,255,255,.05)" }}>
+                <div style={{ width: `${(r.theirs / max) * 100}%`, height: "100%", borderRadius: 999, background: "rgba(255,255,255,.20)" }} />
+              </div>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180", textAlign: "right" }}>
+              {(r.mine * 100).toFixed(0)}% / {(r.theirs * 100).toFixed(0)}%
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>
+        <span><span style={{ color: "#c9a6ff" }}>▬</span> you</span>
+        <span><span style={{ color: "rgba(255,255,255,.4)" }}>▬</span> everyone in your bracket</span>
+      </div>
+
+      {/* Prose only where the gap clears 2 SE of a multinomial share at this n. */}
+      {(top || never.length > 0) && (
+        <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+          {top && `You reach for ${classLabel(top.cls)} far more than the field — ${(top.mine * 100).toFixed(0)}% of your drafts against ${(top.theirs * 100).toFixed(0)}%. `}
+          {never.length > 0 && `You have never once picked ${never.map(x => classLabel(x.cls)).join(" or ")}.`}
+        </div>
+      )}
+
+      <div style={NOTE}>
+        Share of picks, not win rate — so this is meaningful long before any rate is.
+        {n < 20 && ` Differences aren't called out until 20 drafts; you have ${n}.`}
+      </div>
+    </div>
+  );
+}
+
 // ── OV-4 coverage ────────────────────────────────────────────────────────────
 
 export function CoverageLine({ tracked, seriesCount }) {
@@ -271,6 +332,18 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer })
 
   const people = useMemo(() => squadAndRivals(series, selfTag), [series, selfTag]);
 
+  // Population pick distribution for the fingerprint's comparison bars.
+  const [intel, setIntel] = useState(null);
+  useEffect(() => {
+    const first = series[0];
+    if (!first) return;
+    let cancelled = false;
+    loadIntelligence(first.patch, first.bracket || DEFAULT_BRACKET)
+      .then(i => { if (!cancelled) setIntel(i); })
+      .catch(() => { if (!cancelled) setIntel({}); });
+    return () => { cancelled = true; };
+  }, [series]);
+
   if (!series.length) return null;
   if (graded === null) {
     return <div style={{ ...NOTE, marginBottom: 14 }}>Grading {series.length} drafts…</div>;
@@ -286,6 +359,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer })
       <FactsStrip facts={facts} />
       <AboveDraftPanel ad={ad} />
       <BucketsPanel buckets={buckets} />
+      {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
     </>
   );

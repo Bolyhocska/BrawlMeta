@@ -20,7 +20,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH } from "./appCore";
 import { computeWinSplit } from "./data/draftEngine";
-import { toSeries } from "./data/playerStats";
+import { toSeries, bestSwap, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights from "./PlayerInsights";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
@@ -137,55 +137,9 @@ function Stat({ label, value, color = "#e9e9f2", sub }) {
 // aggregate is enough. That is why this ships before the Phase 3 statistics,
 // which do need depth and do not have it yet.
 
-const DEFAULT_BRACKET = "masters_legendary";
-
-// Both fetches are shared across every card on the page and cached by key —
-// expanding five series must not mean five identical downloads.
-const intelCache = new Map();
-const mapStatsCache = new Map();
-
-async function loadIntelligence(patch, bracket) {
-  const key = `${patch}|${bracket}`;
-  if (intelCache.has(key)) return intelCache.get(key);
-  const p = supabase
-    .from("brawler_intelligence")
-    // Only the columns computeWinSplit actually reads. vs_brawler is a large
-    // jsonb blob, so pulling select("*") here would move far more than needed.
-    .select("brawler,true_win_rate,recent_picks,recent_wins,vs_brawler")
-    .eq("patch", patch)
-    .eq("rank_bracket", bracket)
-    .then(({ data }) => {
-      const by = {};
-      for (const r of data || []) by[(r.brawler || "").toUpperCase()] = r;
-      return by;
-    });
-  intelCache.set(key, p);
-  return p;
-}
-
-async function loadMapStats(map, patch, bracket) {
-  const key = `${map}|${patch}|${bracket}`;
-  if (mapStatsCache.has(key)) return mapStatsCache.get(key);
-  const p = supabase
-    .from("BrawlerStats")
-    .select("brawler,picks,wins")
-    .eq("map", map)
-    .eq("patch", patch)
-    .eq("rank_bracket", bracket)
-    .then(({ data }) => {
-      const by = {};
-      for (const r of data || []) {
-        const k = (r.brawler || "").toUpperCase();
-        if (!k) continue;
-        if (!by[k]) by[k] = { picks: 0, wins: 0 };
-        by[k].picks += Number(r.picks) || 0;
-        by[k].wins += Number(r.wins) || 0;
-      }
-      return by;
-    });
-  mapStatsCache.set(key, p);
-  return p;
-}
+// Aggregate loading and caching live in data/playerStats.js — the same caches
+// the insight panels use, so expanding a verdict here warms the data the
+// Above Draft chart needs and neither page fetches twice.
 
 function verdictLine(mine, won) {
   const edge = mine - 50;
@@ -206,7 +160,7 @@ function verdictLine(mine, won) {
 }
 
 function DraftVerdict({ s, won }) {
-  const [state, setState] = useState({ loading: true, split: null, error: null });
+  const [state, setState] = useState({ loading: true, split: null, swap: null, error: null });
   const bracket = s.bracket || DEFAULT_BRACKET;
   const assumedBracket = !s.bracket;
 
@@ -226,9 +180,13 @@ function DraftVerdict({ s, won }) {
           mapStats,
           intelligence,
         });
-        setState({ loading: false, split, error: null });
+        // DR-3: rank every legal alternative in the player's own slot. Only
+        // returns something when their pick was in the bottom slice of options
+        // — see the note on PICK_PERCENTILE_MAX in playerStats.js.
+        const swap = bestSwap(s, mapStats, intelligence, Number(split.blue));
+        setState({ loading: false, split, swap, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, split: null, error: e.message });
+        if (!cancelled) setState({ loading: false, split: null, swap: null, error: e.message });
       }
     })();
     return () => { cancelled = true; };
@@ -286,6 +244,27 @@ function DraftVerdict({ s, won }) {
               background: "rgba(142,230,176,.09)", border: "1px solid rgba(142,230,176,.26)", color: "#8ee6b0",
             }}>they had no {g}</span>
           ))}
+        </div>
+      )}
+
+      {state.swap && (
+        <div style={{
+          marginTop: 11, padding: "12px 14px", borderRadius: 11,
+          background: "rgba(124,196,255,.07)", border: "1px solid rgba(124,196,255,.24)",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#7cc4ff", marginBottom: 6 }}>
+            THE PICK THAT WAS THERE
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.65, color: "#c9c9d6" }}>
+            {formatBrawlerName(s.brawler)} was rated below {Math.round((1 - state.swap.percentile) * 100)}% of
+            the options on {s.map}. Swapping to <strong style={{ color: "#e9e9f2" }}>{formatBrawlerName(state.swap.name)}</strong>{" "}
+            grades this draft {state.swap.to.toFixed(0)}/{(100 - state.swap.to).toFixed(0)} instead
+            of {state.swap.from.toFixed(0)}/{(100 - state.swap.from).toFixed(0)}.
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: 7, lineHeight: 1.6 }}>
+            A straight swap with the other five held fixed — we don't know draft order, so this is
+            not "you should have counter-picked". It also can't see bans or which brawlers you own.
+          </div>
         </div>
       )}
 

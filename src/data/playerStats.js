@@ -10,7 +10,7 @@
 // page by more than double and make confidence intervals that are simply wrong.
 // Everything here counts SERIES.
 
-import { computeWinSplit } from "./draftEngine";
+import { computeWinSplit, draftClassOf, classLabel } from "./draftEngine";
 import { supabase } from "../appCore";
 
 // Measured 2026-08-24 over 14,603 stored rows: median inter-round gap 131s,
@@ -113,9 +113,10 @@ export function loadIntelligence(patch, bracket) {
   if (!intelCache.has(key)) {
     intelCache.set(key, supabase
       .from("brawler_intelligence")
-      // Only what computeWinSplit reads. vs_brawler is a large jsonb blob, so
-      // select("*") here would move far more than needed.
-      .select("brawler,true_win_rate,recent_picks,recent_wins,vs_brawler")
+      // Only what computeWinSplit reads, plus pick_rate for the draft
+      // fingerprint. vs_brawler is a large jsonb blob, so select("*") here would
+      // move far more than needed.
+      .select("brawler,true_win_rate,recent_picks,recent_wins,vs_brawler,pick_rate")
       .eq("patch", patch).eq("rank_bracket", bracket)
       .then(({ data }) => {
         const by = {};
@@ -317,4 +318,129 @@ export function squadAndRivals(series, selfTag) {
   }
   const rank = (o) => Object.values(o).sort((a, b) => b.n - a.n);
   return { squad: rank(mates).filter(m => m.n >= 2), rivals: rank(foes).filter(f => f.n >= 2) };
+}
+
+// ── DR-3 the pick that was there ─────────────────────────────────────────────
+// Hold the other five brawlers fixed, substitute each candidate into the
+// player's own slot, and re-grade. THIS IS ORDER-FREE, which is what makes it
+// legal: the battlelog carries no draft order (teams[] is roster order), so we
+// can never say "you should have counter-picked". A straight swap assumes
+// nothing about who picked when.
+//
+// It is also not advice about what was *available* — bans and brawler ownership
+// are both invisible to us. It is strictly "the aggregate rates this comp
+// higher", and the UI must say so.
+
+// The engine's own floor for trusting a map sample (CONFIG.minMapPicks).
+const MIN_MAP_PICKS = 30;
+const MIN_IMPROVEMENT_PTS = 6;
+
+// THE GUARD THAT ACTUALLY MATTERS, and it is not the improvement size.
+//
+// Taking the best of ~100 candidates will beat almost any pick by a wide margin
+// — that is a property of maximising over a large pool, not evidence the player
+// misdrafted. Measured on a real profile: gating only on "best swap gains >= 6
+// points" fired on 11 of 11 drafts with gains up to +29, i.e. it would tell
+// every player they misplayed every game, which is both useless and false.
+//
+// So the real test is not "how good is the best alternative" but "how bad was
+// your pick, relative to everything else that was legal here". Only surface a
+// suggestion when the played brawler sits in the bottom slice of the option
+// distribution. That turns a statement which is trivially always true into one
+// that is sometimes true and therefore worth reading.
+const PICK_PERCENTILE_MAX = 0.30;
+
+/**
+ * @returns {{name, from, to, gain, percentile, better}|null}
+ *   `percentile` is the share of legal options the played brawler beat.
+ */
+export function bestSwap(series, mapStats, intelligence, basePct) {
+  const mine = (series.teamNames || []).slice();
+  const slot = mine.indexOf(series.brawler);
+  if (slot < 0 || basePct == null) return null;
+
+  // The brawler actually played must itself have a real sample on this map,
+  // otherwise the baseline we are improving on is guesswork.
+  const own = mapStats[(series.brawler || "").toUpperCase()];
+  if (!own || (own.picks || 0) < MIN_MAP_PICKS) return null;
+
+  const inGame = new Set([...(series.teamNames || []), ...(series.enemyNames || [])].map(n => (n || "").toUpperCase()));
+
+  const gains = [];
+  let best = null;
+  for (const [name, st] of Object.entries(mapStats)) {
+    if (inGame.has(name)) continue;                 // already in this match
+    if ((st.picks || 0) < MIN_MAP_PICKS) continue;  // thin on this map
+    const candidate = mine.slice();
+    candidate[slot] = name;
+    let split;
+    try {
+      split = computeWinSplit({
+        blueTeam: candidate, redTeam: series.enemyNames,
+        mode: series.mode, mapStats, intelligence,
+      });
+    } catch { continue; }
+    const gain = Number(split.blue) - basePct;
+    if (!Number.isFinite(gain)) continue;
+    gains.push(gain);
+    if (!best || gain > best.gain) best = { name, gain, to: Number(split.blue) };
+  }
+
+  if (!best || gains.length < 20) return null;   // too few legal options to rank against
+  if (best.gain < MIN_IMPROVEMENT_PTS) return null;
+
+  // Share of legal options the played brawler was already better than.
+  const worseThanMine = gains.filter(g => g < 0).length;
+  const percentile = worseThanMine / gains.length;
+  if (percentile > PICK_PERCENTILE_MAX) return null;
+
+  return { ...best, from: basePct, percentile, better: gains.length - worseThanMine };
+}
+
+// ── BR-2 draft fingerprint ───────────────────────────────────────────────────
+// A DISTRIBUTION, not a rate — which is why it is the cold-start feature. At 20
+// series a win rate is worthless, but a player who has picked 20 times genuinely
+// does have a taste profile, and "you have never once picked a tank" is true and
+// interesting immediately.
+
+/**
+ * @param intelligence keyed brawler -> { pick_rate } for the matching bracket.
+ * @returns [{ cls, mine, theirs, diff, count, notable }] sorted by |diff|.
+ */
+export function classFingerprint(series, intelligence) {
+  const n = series.length;
+  const mineCounts = {};
+  for (const s of series) {
+    const cls = draftClassOf(s.brawler);
+    mineCounts[cls] = (mineCounts[cls] || 0) + 1;
+  }
+
+  // Population share of picks by class, from the bracket's own pick rates.
+  const popWeight = {};
+  let popTotal = 0;
+  for (const [brawler, row] of Object.entries(intelligence || {})) {
+    const w = parseFloat(row?.pick_rate);
+    if (!Number.isFinite(w) || w <= 0) continue;
+    const cls = draftClassOf(brawler);
+    popWeight[cls] = (popWeight[cls] || 0) + w;
+    popTotal += w;
+  }
+
+  const classes = new Set([...Object.keys(mineCounts), ...Object.keys(popWeight)]);
+  const out = [];
+  for (const cls of classes) {
+    const count = mineCounts[cls] || 0;
+    const mineShare = n ? count / n : 0;
+    const theirShare = popTotal ? (popWeight[cls] || 0) / popTotal : 0;
+    // 2 SE of a multinomial share at this n — below it, the bars are shown but
+    // never described in words.
+    const se2 = n ? 2 * Math.sqrt(Math.max(mineShare * (1 - mineShare), 0.01) / n) : 1;
+    out.push({
+      cls, count,
+      mine: mineShare, theirs: theirShare,
+      diff: mineShare - theirShare,
+      notable: n >= 20 && Math.abs(mineShare - theirShare) > se2,
+    });
+  }
+  return out.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 }
