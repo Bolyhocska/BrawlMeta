@@ -13,7 +13,7 @@ import PlayerPage from "./PlayerPage";
 import DraftAssistant from "./DraftAssistant";
 import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
-import { supabase, CURRENT_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS } from "./appCore";
+import { supabase, CURRENT_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
 import { tileStyles } from "./data/brawlerTile";
 
 const RANK_BRACKETS = [
@@ -676,6 +676,7 @@ const styles = {
 function BrawlerGuideRoute() {
   const { brawlerSlug } = useParams();
   const navigate = useNavigate();
+  const guideBack = useSmartBack("/app?tab=brawlers", "Tier List");
   const brawlerKey = findBrawlerKeyBySlug(brawlerSlug);
   const { stats: brawlerStats, loading } = useBrawlerStats(CURRENT_PATCH);
 
@@ -740,13 +741,15 @@ function BrawlerGuideRoute() {
   return (
     <div style={styles.root}>
       <SiteHeader />
-      {/* onBack goes to ?tab=brawlers, not "/app" — bare "/app" lands on the
-          Draft Assistant, which is not where a link labelled "Tier List" goes. */}
+      {/* Back returns to wherever you actually came from — a guide is reachable
+          from the tier list, from search, and from another guide's match-ups.
+          The fallback is ?tab=brawlers rather than bare "/app", which lands on
+          the Draft Assistant and is not where a link labelled "Tier List" goes. */}
       <BrawlerGuidePage
         brawler={brawler} byMode={byMode} byMap={byMap} allBrawlers={brawlers}
         rankBracket={rankBracket} onRankBracketChange={setRankBracket}
         rankBrackets={RANK_BRACKETS}
-        onBack={() => navigate("/app?tab=brawlers")}
+        onBack={guideBack.goBack} backLabel={guideBack.label}
       />
       <style>{`* { box-sizing: border-box; }`}</style>
     </div>

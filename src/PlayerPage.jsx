@@ -18,7 +18,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
-import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH } from "./appCore";
+import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH, useSmartBack } from "./appCore";
 import { computeWinSplit } from "./data/draftEngine";
 import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights from "./PlayerInsights";
@@ -411,6 +411,7 @@ function TrackingBox({ tag, tracked, historyCount }) {
 export default function PlayerPage() {
   const { tag: rawTag } = useParams();
   const navigate = useNavigate();
+  const back = useSmartBack("/app?tab=trending", "Leaderboards");
   const tag = normalizeTag(rawTag);
 
   const [live, setLive] = useState(null);
@@ -472,10 +473,10 @@ export default function PlayerPage() {
       <SiteHeader />
       <div style={{ position: "relative", zIndex: 2, maxWidth: 880, margin: "0 auto", padding: "34px 5vw 60px" }}>
 
-        <button onClick={() => navigate("/app?tab=leaderboards")} style={{
+        <button onClick={back.goBack} style={{
           fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#8a8a9c",
           background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 18,
-        }}>← LEADERBOARDS</button>
+        }}>← {back.label.toUpperCase()}</button>
 
         {/* Header — always renders, even for a tag we have never stored */}
         <div style={{

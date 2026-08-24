@@ -538,7 +538,7 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function BrawlerGuidePage({
-  brawler, byMode, byMap, allBrawlers = [], onBack,
+  brawler, byMode, byMap, allBrawlers = [], onBack, backLabel = "Tier List",
   rankBracket = "masters_legendary", onRankBracketChange, rankBrackets = [],
 }) {
   // Every number on this page — overall rate, per-mode, per-map, match-ups —
@@ -806,7 +806,7 @@ export default function BrawlerGuidePage({
           display: "inline-flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 12,
           letterSpacing: 1, color: "#8b8b9c", background: "none", border: "none",
           cursor: "pointer", padding: 0, width: "fit-content",
-        }}>← Tier List</button>
+        }}>← {backLabel}</button>
 
         {/* ── 1. Overview ── */}
         <div id="overview" style={{

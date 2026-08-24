@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import PlayerInsights from "./PlayerInsights";
+import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
 import { supabase } from "./appCore";
@@ -1161,6 +1162,27 @@ export function TournamentDetailPage() {
 }
 
 // ─── Player profile: account, identity, wallet, history ──────────────────────
+// Last ten drafts, newest on the right. Series-level, so a best-of-three is one
+// pip rather than three — consistent with every other number on the profile.
+function FormPips({ series }) {
+  if (!series || !series.length) return null;
+  const last = series.slice(0, 10).reverse();
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 22, flexWrap: "wrap" }}>
+      <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#6f7180", marginRight: 4 }}>FORM</span>
+      {last.map((x, i) => (
+        <span key={i} title={x.won ? "Won" : "Lost"} style={{
+          width: 9, height: 9, borderRadius: 999,
+          background: x.won ? "#8ee6b0" : "#ff8f8f", opacity: 0.35 + (0.65 * (i + 1)) / last.length,
+        }} />
+      ))}
+      <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginLeft: 4 }}>
+        {last.filter(x => x.won).length}–{last.length - last.filter(x => x.won).length} last {last.length}
+      </span>
+    </div>
+  );
+}
+
 // No account required: type a tag, go straight to that player's history.
 function PublicTagLookup() {
   const [tag, setTag] = useState("");
@@ -1202,6 +1224,7 @@ export function TournamentProfilePage() {
   const [matchHistory, setMatchHistory] = useState([]);
   const [ranked, setRanked] = useState([]);
   const [trackedRow, setTrackedRow] = useState(null);
+  const rankedSeries = useMemo(() => toSeries(ranked), [ranked]);
 
   const myTag = profile?.player_tag || null;
 
@@ -1288,8 +1311,8 @@ export function TournamentProfilePage() {
         <div style={{ ...page.wrap, maxWidth: 440, textAlign: "center" }}>
           <div style={{ ...page.card, padding: "44px 30px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 40 }}>
             <Trophy size={30} color={GOLD} />
-            <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, color: "#f4f4fa", margin: 0 }}>Your tournament hub</h1>
-            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0 }}>Sign in to set your player tag, track your wallet, and see every tournament you've entered.</p>
+            <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, color: "#f4f4fa", margin: 0 }}>Your profile</h1>
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0 }}>Sign in to see how your drafts grade out, track your ranked history, and manage tournaments.</p>
             <button onClick={() => openAuth("signin")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}>
               <LogIn size={15} /> Sign in
             </button>
@@ -1309,14 +1332,20 @@ export function TournamentProfilePage() {
       <div style={page.glow} />
       <SiteHeader />
       <div style={page.wrap}>
-        <span style={page.eyebrow}>◈ PLAYER PROFILE</span>
+        <span style={page.eyebrow}>◈ MY PROFILE</span>
         <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 6px" }}>
-          {profile?.display_name || "Your"} <span style={{ color: VIOLET }}>tournament hub</span>
+          {profile?.display_name || "Your"} <span style={{ color: VIOLET }}>profile</span>
         </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, fontFamily: MONO, fontSize: 11, color: "#8a7fa6" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, fontFamily: MONO, fontSize: 11, color: "#8a7fa6", flexWrap: "wrap" }}>
+          {myTag && <span style={{ color: "#c9c9d6" }}>{myTag}</span>}
           {user?.email}
           {profile?.is_premium && <span style={{ color: GOLD, fontWeight: 700 }}>👑 PREMIUM</span>}
         </div>
+
+        {/* Last ten drafts as pips. Borrowed from Faceit: it is the most-glanced
+            element on sites that have it, costs nothing, and has no sample-size
+            problem — ten results are ten results. */}
+        <FormPips series={rankedSeries} />
 
         {/* The match history and its per-match draft verdicts were reachable
             only by searching a tag on the Leaderboards tab — nobody would ever
@@ -1347,6 +1376,74 @@ export function TournamentProfilePage() {
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
 
+        {/* PROGRESSION. Trophy curves come from player_snapshots, which is only
+            written for boosted profiles — so rather than a locked teaser or a
+            generic upsell banner, the prompt sits exactly where the missing
+            chart would be. A boost costs the reader nothing and costs us one
+            extra API call per poll, which is the honest thing to say. */}
+        {myTag && !trackedRow?.boosted && (
+          <>
+            <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 12 }}>◈ PROGRESSION</span>
+            <div style={{ ...page.card, padding: "18px 20px", marginBottom: 28 }}>
+              <div style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 700, color: "#f4f4fa", marginBottom: 5 }}>
+                No trophy history yet
+              </div>
+              <div style={{ fontSize: 13, color: "#8b8b9c", lineHeight: 1.65, marginBottom: 12 }}>
+                We only record trophy and per-brawler progression for boosted profiles — it needs a
+                second lookup on every poll. Boost is free; it just tells us the data is wanted.
+              </div>
+              <Link to={`/player/${myTag.replace("#", "")}`} style={{
+                ...page.btn, display: "inline-flex", alignItems: "center", gap: 8,
+                textDecoration: "none", padding: "10px 18px", fontSize: 12,
+              }}>⚡ Boost this profile</Link>
+            </div>
+          </>
+        )}
+
+        <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 12 }}>◈ TOURNAMENTS</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
+          {[
+            { label: "WALLET BALANCE", value: `$${Number(wallet?.balance || 0).toLocaleString()}`, icon: <Wallet size={15} color={GOLD} />, note: "withdrawals coming soon" },
+            { label: "LIFETIME EARNINGS", value: `$${Number(wallet?.total_earned || 0).toLocaleString()}`, icon: <Trophy size={15} color={GOLD} /> },
+            { label: "TOURNAMENTS ENTERED", value: history.length, icon: <Swords size={15} color={VIOLET} /> },
+            { label: "MATCHES WON", value: wins, icon: <CheckCircle2 size={15} color="#8ee6b0" /> },
+          ].map(s => (
+            <div key={s.label} style={{ ...page.card, padding: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>{s.icon}{s.label}</div>
+              <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700, color: "#f4f4fa", marginTop: 8 }}>{s.value}</div>
+              {s.note && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{s.note.toUpperCase()}</div>}
+            </div>
+          ))}
+        </div>
+
+        <span style={page.eyebrow}>◈ TOURNAMENT HISTORY</span>
+        {!myTag ? (
+          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>Set your player tag in the Account section below to load your history.</p>
+        ) : history.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>
+            No tournaments yet — <Link to="/tournaments" style={{ color: "#c98bff" }}>join one free</Link>.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+            {history.map(h => (
+              <Link key={h.id} to={`/tournaments/${h.tournament_id}`} style={{ ...page.card, padding: "16px 22px", display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}>
+                <Trophy size={15} color={GOLD} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14.5 }}>{h.Tournaments?.name || "Tournament"}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>TEAM {h.team_name?.toUpperCase()} · JOINED {new Date(h.joined_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, letterSpacing: 1, fontWeight: 700, color: (STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).color }}>
+                  {(STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Account settings sit LAST on purpose. They used to greet you, which
+            told every visitor this page was about admin — it is what you came
+            for once, not what you come back for. */}
+        <span style={{ ...page.eyebrow, display: "block", marginTop: 34, marginBottom: 12 }}>◈ ACCOUNT</span>
         <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#6f7180" }}>· 🔒 PERMANENT</span>}</span>
@@ -1368,45 +1465,6 @@ export function TournamentProfilePage() {
           {saved && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", alignSelf: "flex-end", paddingBottom: 12 }}>SAVED ✔</span>}
           {saveErr && <span style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", alignSelf: "flex-end", paddingBottom: 12 }}>{saveErr}</span>}
         </form>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
-          {[
-            { label: "WALLET BALANCE", value: `$${Number(wallet?.balance || 0).toLocaleString()}`, icon: <Wallet size={15} color={GOLD} />, note: "withdrawals coming soon" },
-            { label: "LIFETIME EARNINGS", value: `$${Number(wallet?.total_earned || 0).toLocaleString()}`, icon: <Trophy size={15} color={GOLD} /> },
-            { label: "TOURNAMENTS ENTERED", value: history.length, icon: <Swords size={15} color={VIOLET} /> },
-            { label: "MATCHES WON", value: wins, icon: <CheckCircle2 size={15} color="#8ee6b0" /> },
-          ].map(s => (
-            <div key={s.label} style={{ ...page.card, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>{s.icon}{s.label}</div>
-              <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700, color: "#f4f4fa", marginTop: 8 }}>{s.value}</div>
-              {s.note && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{s.note.toUpperCase()}</div>}
-            </div>
-          ))}
-        </div>
-
-        <span style={page.eyebrow}>◈ TOURNAMENT HISTORY</span>
-        {!myTag ? (
-          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>Save your player tag above to load your history.</p>
-        ) : history.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>
-            No tournaments yet — <Link to="/tournaments" style={{ color: "#c98bff" }}>join one free</Link>.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
-            {history.map(h => (
-              <Link key={h.id} to={`/tournaments/${h.tournament_id}`} style={{ ...page.card, padding: "16px 22px", display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}>
-                <Trophy size={15} color={GOLD} />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}>{h.Tournaments?.name || "Tournament"}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>TEAM {h.team_name?.toUpperCase()} · JOINED {new Date(h.joined_at).toLocaleDateString()}</div>
-                </div>
-                <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, letterSpacing: 1, fontWeight: 700, color: (STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).color }}>
-                  {(STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

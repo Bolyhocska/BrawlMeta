@@ -2,6 +2,7 @@
 // Used by both the main app shell (App.jsx) and the draft assistant.
 
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
@@ -134,4 +135,24 @@ export function useMapMatches(selectedPatch, mapName, enabled, rankBracket = nul
   }, [selectedPatch, mapName, enabled, rankBracket, limit]);
 
   return { matches, loading, failed };
+}
+
+// ─── History-aware back control ──────────────────────────────────────────────
+// A hardcoded back destination is wrong the moment a page can be reached from
+// more than one place. /player/:tag is reachable from Leaderboards, from My
+// Profile, and from a teammate link on another player's page — sending everyone
+// to Leaderboards throws away where they actually came from.
+//
+// react-router sets location.key to "default" only for the first entry in the
+// session, so it doubles as "is there anything to go back to". When there isn't
+// — someone opened a shared link directly — we fall back to a sensible page
+// rather than bouncing them off the site.
+export function useSmartBack(fallbackTo, fallbackLabel) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const canGoBack = location.key !== "default";
+  return {
+    label: canGoBack ? "Back" : fallbackLabel,
+    goBack: () => (canGoBack ? navigate(-1) : navigate(fallbackTo)),
+  };
 }
