@@ -770,6 +770,11 @@ export default function AppRoutes() {
       <Route path="/tournaments" element={<TournamentLandingPage />} />
       <Route path="/tournaments/create" element={<CreateTournamentPage />} />
       <Route path="/tournaments/profile" element={<TournamentProfilePage />} />
+      {/* Canonical home for "My Profile" in the nav. The page was always a
+          general account page — tag, display name, wallet, history — it was
+          just buried under /tournaments where nobody would look. The old
+          path still resolves so existing links keep working. */}
+      <Route path="/profile" element={<TournamentProfilePage />} />
       <Route path="/tournaments/:tournamentId/manage" element={<ManageTournamentPage />} />
       <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
       <Route path="/guides" element={<GuidesLandingPage />} />

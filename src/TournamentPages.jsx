@@ -8,8 +8,8 @@
 // security-definer RPCs (register / check-in) and the Vercel verify endpoint.
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
 import { supabase } from "./appCore";
 import { useAuth } from "./auth";
@@ -1160,6 +1160,35 @@ export function TournamentDetailPage() {
 }
 
 // ─── Player profile: account, identity, wallet, history ──────────────────────
+// No account required: type a tag, go straight to that player's history.
+function PublicTagLookup() {
+  const [tag, setTag] = useState("");
+  const navigate = useNavigate();
+  const go = (e) => {
+    e.preventDefault();
+    const clean = tag.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    if (clean.length >= 3) navigate(`/player/${clean}`);
+  };
+  return (
+    <form onSubmit={go} style={{
+      marginTop: 18, padding: "18px 20px", borderRadius: 18,
+      background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.6, color: "#8a7fa6", marginBottom: 10 }}>
+        NO ACCOUNT NEEDED
+      </div>
+      <div style={{ fontSize: 13.5, color: "#c4c4d2", marginBottom: 12, lineHeight: 1.6 }}>
+        Look up any player's ranked history and draft verdicts.
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <input value={tag} onChange={e => setTag(e.target.value)} placeholder="#2C20JJRG"
+          style={{ ...page.input, maxWidth: 190, textAlign: "center" }} />
+        <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Look up</button>
+      </div>
+    </form>
+  );
+}
+
 export function TournamentProfilePage() {
   const { user, profile, loading, openAuth, updateProfile } = useAuth();
   const [tagInput, setTagInput] = useState("");
@@ -1231,6 +1260,11 @@ export function TournamentProfilePage() {
               <LogIn size={15} /> Sign in
             </button>
           </div>
+
+          {/* An account is needed for tournaments, not for looking up stats.
+              Sending a signed-out visitor away with nothing would waste the one
+              moment they came here with a tag in mind. */}
+          <PublicTagLookup />
         </div>
       </div>
     );
@@ -1249,6 +1283,28 @@ export function TournamentProfilePage() {
           {user?.email}
           {profile?.is_premium && <span style={{ color: GOLD, fontWeight: 700 }}>👑 PREMIUM</span>}
         </div>
+
+        {/* The match history and its per-match draft verdicts were reachable
+            only by searching a tag on the Leaderboards tab — nobody would ever
+            have found them. If this account has a tag, link it directly. */}
+        {myTag && (
+          <Link to={`/player/${myTag.replace("#", "")}`} style={{
+            ...page.card, display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",
+            marginBottom: 22, textDecoration: "none",
+            borderColor: "rgba(179,107,255,.35)", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(13,13,20,.5))",
+          }}>
+            <LineChart size={22} color={VIOLET} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 700, color: "#f4f4fa" }}>
+                Your ranked match history
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6", marginTop: 2 }}>
+                Every tracked game on {myTag}, with a draft verdict on each one
+              </div>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: VIOLET }}>→</span>
+          </Link>
+        )}
 
         <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

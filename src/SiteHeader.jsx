@@ -15,6 +15,7 @@ const NAV_STYLE = {
 // in-app tab switcher anymore.
 const NAV_ITEMS = [
   { label: "News", to: "/news" },
+  { label: "My Profile", to: "/profile" },
   { label: "Tier List", to: "/app?tab=brawlers" },
   { label: "Leaderboards", to: "/app?tab=trending" },
   { label: "Guides", dropdown: [
@@ -275,6 +276,7 @@ function MobileNav() {
 
 export default function SiteHeader() {
   return (
+    <>
     <header className="site-header" style={{ position: "relative", zIndex: 40, display: "flex", alignItems: "center", gap: 22, padding: "22px 5vw", flexWrap: "nowrap" }}>
       <Link to="/" aria-label="BrawlApex home" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", flexShrink: 0 }}>
         <div style={{
@@ -301,16 +303,8 @@ export default function SiteHeader() {
           : <NavLink key={n.label} to={n.to}>{n.label}</NavLink>)}
       </nav>
 
-      <div className="site-header-right" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+      <div className="site-header-right" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <AccountMenu />
-        <div className="header-live desktop-live" style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
-          border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-          fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
-          LIVE
-        </div>
       </div>
 
       <MobileNav />
@@ -337,10 +331,27 @@ export default function SiteHeader() {
         @media (max-width: 760px) {
           .site-nav { display: none !important; }
           .mobile-nav { display: block; margin-left: auto; }
-          .site-header-right { flex-direction: row !important; align-items: center !important; gap: 10px !important; }
-          .desktop-live { display: none !important; }
         }
       `}</style>
     </header>
+
+    {/* LIVE sits under the header rather than stacked beneath the account
+        button. In the header-right column it forced that side to two rows and
+        crowded the profile; on its own line it reads as a status strip for the
+        whole site, which is what it actually is. */}
+    <div className="site-live-strip" style={{
+      position: "relative", zIndex: 39, display: "flex", alignItems: "center",
+      padding: "0 5vw 10px", marginTop: -8,
+    }}>
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
+        border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
+        LIVE
+      </span>
+    </div>
+    </>
   );
 }
