@@ -1,74 +1,72 @@
 // ─── "What should I upgrade next?" ────────────────────────────────────────────
-// Ranks a player's own brawlers by how much a further investment would actually
-// buy them, given what the meta rewards right now and what they have already
-// sunk into each one.
+// Ranks a player's own brawlers by what the next upgrade actually buys them per
+// coin spent, given the current map rotation and what they have already sunk in.
 //
-// WHAT THE API ACTUALLY GIVES US (verified against two live rosters, 2026-08-24
-// — worth writing down, because the field names are not obvious):
-//   power        1..11
-//   gears[]      owned gears, by name
-//   starPowers[] owned star powers  (0, 1 or 2)
-//   gadgets[]    owned gadgets      (0, 1 or 2)
-//   buffies{}    { gadget, starPower, hyperCharge } — PLAYER-SPECIFIC. Two
-//                rosters agreed on 98/105 brawlers and genuinely differed on 7,
-//                so this is per-account state, not game-wide balance data. It
-//                correlates with owning things but is not the same as owning
-//                them (29% vs 8%), so it is treated as its own investment axis.
-//   hyperCharges[] the hypercharge that EXISTS for that brawler — near-identical
-//                across players (100/105) and present on power-1 brawlers, so it
-//                is a catalogue, NOT ownership. Never read it as "they have it".
+// TWO THINGS ABOUT THE API THAT HAD TO BE ESTABLISHED EMPIRICALLY, both of which
+// were got wrong on a first pass and are worth stating plainly:
 //
-// THE IDEA, in one line: the best upgrade is a strong brawler you are already
-// most of the way through, in a role your maxed roster is thin on.
+//   buffies{}      { gadget, starPower, hyperCharge } — PLAYER-SPECIFIC. Two
+//                  rosters agreed on 98/105 brawlers and genuinely differed on 7.
+//   hyperCharges[] OWNERSHIP, not a catalogue. This was the wrong call the first
+//                  time: 99/105 brawlers listing one, and 100/105 agreement
+//                  between two accounts, reads exactly like a catalogue — but
+//                  both accounts were advanced and simply owned nearly all of
+//                  them. The owner reported not owning Bea's; Bea returns [].
+//                  Hypercharge drops are not power-gated, which is why a power-1
+//                  brawler can hold one and why the power correlation misled.
+//
+// COSTS ARE REAL (upgradeCosts.js), so ranking is value per coin rather than a
+// bare score. That matters because steps differ by two orders of magnitude —
+// 20 coins for level 1→2 against 5,000 for a hypercharge.
 
 import { draftClassOf, classLabel } from "./draftEngine";
+import {
+  MAX_POWER, SLOT_LEVEL, ITEM_COST, BUFFIE_COST,
+  BUFFIE_SLOTS_PER_BRAWLER, BUFFIE_DROP_MONTHS, BUFFIE_DROP_BRAWLERS,
+  levelCost, costToComplete, nextStepFor,
+} from "./upgradeCosts";
 
-const MAX_POWER = 11;
 const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
-// Weights. Deliberately few and named, so a recommendation can always be
-// explained by pointing at which term dominated.
 const W = {
-  classGap: 0.45,  // does the maxed roster lack this role
-  affinity: 0.30,  // do they actually play it
-  waste: 0.90,     // investment currently locked behind a low power level
+  classGap: 0.45,
+  affinity: 0.30,
+  waste: 0.90,
+  // A brawler whose hypercharge is not owned is capped — at power 11 it still
+  // lacks the tier everyone else has, and closing that costs 5,000 coins. A
+  // multiplier rather than a filter, so a genuinely strong pick that fills a
+  // role gap can still outrank a mediocre one that happens to own its
+  // hypercharge. That is the owner's stated rule.
+  noHyperPenalty: 0.55,
 };
 
-// How much the CHEAPEST remaining step is actually worth. This is the term that
-// makes the advice useful rather than merely true.
-//
-// A first pass scored "how far through the brawler you are", which ranked every
-// maxed brawler's missing second gear above levelling an unusable one — the
-// steps were treated as interchangeable when they are worth wildly different
-// amounts. A brawler below power 9 is not draftable in ranked at all; a second
-// gear is a rounding error. The gap between those has to be in the model.
 const STEP = {
-  toNine: 1.00,      // sub-9 is unusable — by far the biggest jump available
-  toEleven: 0.55,    // 9/10 -> 11 unlocks the hypercharge tier
-  firstSp: 0.45,     // no star power at all is a real hole
-  firstGadget: 0.40,
+  toEleven: 1.00,       // unplayable in ranked below 11 — nothing beats this
+  firstSp: 0.50,
+  firstGadget: 0.45,
+  hypercharge: 0.50,
   secondSp: 0.22,
   secondGadget: 0.20,
-  gearOnly: 0.08,    // marginal, and should almost never be the headline
+  gearOnly: 0.08,
 };
 
-function stepImpact(b, gaps) {
+function stepImpact(b) {
   const power = num(b.power, 1);
-  if (power < 9) return STEP.toNine;
-  if (gaps.spGap === 2) return STEP.firstSp;
-  if (gaps.gadgetGap === 2) return STEP.firstGadget;
+  const gadgets = (b.gadgets || []).length;
+  const sps = (b.starPowers || []).length;
+  const ownsHyper = (b.hyperCharges || []).length > 0;
+  // Below 11 a brawler cannot be played in ranked from Mythic upward, so the
+  // whole climb is one step and it outranks every item purchase. How far away
+  // it is shows up in the cost, not in the impact.
   if (power < MAX_POWER) return STEP.toEleven;
-  if (gaps.spGap > 0) return STEP.secondSp;
-  if (gaps.gadgetGap > 0) return STEP.secondGadget;
+  if (gadgets === 0) return STEP.firstGadget;
+  if (sps === 0) return STEP.firstSp;
+  if (!ownsHyper) return STEP.hypercharge;
+  if (sps < 2) return STEP.secondSp;
+  if (gadgets < 2) return STEP.secondGadget;
   return STEP.gearOnly;
 }
 
-/**
- * Meta strength on a 0..1 scale, blending the brawler's overall true win rate
- * with how it performs on the maps currently in rotation. Uses the same
- * Bayesian-ish shrink idea as the rest of the site: a map sample only counts
- * once it is big enough to mean something.
- */
 function metaStrength(name, intelligence, rotationStats) {
   const key = (name || "").toUpperCase();
   const global = num(intelligence[key]?.true_win_rate, NaN);
@@ -80,64 +78,43 @@ function metaStrength(name, intelligence, rotationStats) {
   if (Number.isFinite(global) && mapWR != null) wr = mapWR * 0.6 + global * 0.4;
   else if (Number.isFinite(global)) wr = global;
   else if (mapWR != null) wr = mapWR;
-  else return null;                       // no evidence at all — never recommend
-
-  // 45%..57% maps to 0..1; outside that is clamped. A brawler at 50 is average
-  // and should not score as "worth investing in" on meta grounds alone.
+  else return null;
   return Math.max(0, Math.min(1, (wr - 45) / 12));
 }
 
-/** What is still missing, and what it is worth. */
-function gapsFor(b) {
-  const powerGap = Math.max(0, MAX_POWER - num(b.power, 1));
-  const spGap = Math.max(0, 2 - (b.starPowers || []).length);
-  const gadgetGap = Math.max(0, 2 - (b.gadgets || []).length);
-  const gearGap = Math.max(0, 2 - (b.gears || []).length);
-  return { powerGap, spGap, gadgetGap, gearGap };
-}
-
-/** How far through this brawler the player already is, 0..1. */
 function sunkFraction(b) {
-  const power = (num(b.power, 1) - 1) / (MAX_POWER - 1);      // 0 at p1, 1 at p11
+  const power = (num(b.power, 1) - 1) / (MAX_POWER - 1);
   const sp = Math.min(1, (b.starPowers || []).length / 2);
   const gd = Math.min(1, (b.gadgets || []).length / 2);
   const gr = Math.min(1, (b.gears || []).length / 2);
-  const bf = b.buffies ? Object.values(b.buffies).filter(Boolean).length / 3 : 0;
-  return power * 0.4 + sp * 0.15 + gd * 0.15 + gr * 0.1 + bf * 0.2;
+  const bf = b.buffies ? Object.values(b.buffies).filter(Boolean).length / BUFFIE_SLOTS_PER_BRAWLER : 0;
+  const hc = (b.hyperCharges || []).length ? 1 : 0;
+  return power * 0.34 + sp * 0.13 + gd * 0.13 + gr * 0.08 + bf * 0.17 + hc * 0.15;
 }
 
 /**
- * Investment the player has ALREADY made that is doing nothing because the
- * brawler is under-levelled. This is the "3 buffies on a power-1 Leon" case:
- * the value is bought and sitting idle, so levelling is worth more here than on
- * an equally-strong brawler with nothing attached to it.
+ * Investment already bought and doing nothing because the brawler is too low to
+ * use it. Buffies weigh heaviest: they cost 2,000 power points and 1,000 gold,
+ * and a purchase draws a RANDOM buffie from a group of three brawlers — so one
+ * stranded on a power-1 brawler is the least redirectable spend in the game.
  */
 function wastedInvestment(b) {
   const power = num(b.power, 1);
-  if (power >= 9) return 0;                       // near enough to max to not be waste
+  if (power >= 9) return 0;
+  const bfCount = b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0;
   const attached =
-    (b.starPowers || []).length / 2 * 0.3 +
-    (b.gadgets || []).length / 2 * 0.3 +
-    (b.buffies ? Object.values(b.buffies).filter(Boolean).length / 3 : 0) * 0.4;
-  const shortfall = (MAX_POWER - power) / (MAX_POWER - 1);
-  return attached * shortfall;
+    (b.starPowers || []).length / 2 * 0.22 +
+    (b.gadgets || []).length / 2 * 0.22 +
+    (bfCount / BUFFIE_SLOTS_PER_BRAWLER) * 0.34 +
+    ((b.hyperCharges || []).length ? 0.22 : 0);
+  return attached * ((MAX_POWER - power) / (MAX_POWER - 1));
 }
 
-/**
- * @param roster        from /api/player
- * @param intelligence  brawler -> { true_win_rate, pick_rate }
- * @param rotationStats brawler -> { picks, wins } summed over in-rotation maps
- * @param playedCounts  brawler -> series the player has actually drafted it
- */
 export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {}, playedCounts = {} }) {
   const owned = (roster || []).filter(b => num(b.power) >= 1);
-  if (!owned.length) return { picks: [], classes: [] };
+  if (!owned.length) return { picks: [], classes: [], saveAdvice: null };
 
-  // Which roles is the player's MAXED roster thin on? A draft needs three
-  // functioning brawlers; being deep in one class and empty in another limits
-  // what they can pick into, which is exactly what the draft engine punishes.
-  const maxedByClass = {};
-  const ownedByClass = {};
+  const maxedByClass = {}, ownedByClass = {};
   for (const b of owned) {
     const cls = draftClassOf(b.name);
     ownedByClass[cls] = (ownedByClass[cls] || 0) + 1;
@@ -145,93 +122,130 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   }
   const classes = Object.keys(ownedByClass).map(cls => ({
     cls, label: classLabel(cls),
-    owned: ownedByClass[cls] || 0,
-    maxed: maxedByClass[cls] || 0,
+    owned: ownedByClass[cls] || 0, maxed: maxedByClass[cls] || 0,
   })).sort((a, b) => a.maxed - b.maxed);
 
   const totalMaxed = Object.values(maxedByClass).reduce((a, v) => a + v, 0);
-  const classNeed = (cls) => {
-    if (!totalMaxed) return 0.5;
-    const have = maxedByClass[cls] || 0;
-    // 0 maxed in a role is the strongest signal; it decays fast after that.
-    return Math.max(0, 1 - have / 3);
-  };
-
+  const classNeed = (cls) => (totalMaxed ? Math.max(0, 1 - (maxedByClass[cls] || 0) / 3) : 0.5);
   const maxPlayed = Math.max(1, ...Object.values(playedCounts));
 
   const scored = [];
   for (const b of owned) {
+    const step = nextStepFor(b);
+    if (!step) continue;                         // nothing left to buy
     const meta = metaStrength(b.name, intelligence, rotationStats);
-    if (meta == null) continue;                   // no data: stay silent
-    const gaps = gapsFor(b);
-    const anythingLeft = gaps.powerGap + gaps.spGap + gaps.gadgetGap + gaps.gearGap;
-    if (anythingLeft === 0) continue;             // already finished
+    if (meta == null) continue;                  // no evidence — stay silent
 
     const cls = draftClassOf(b.name);
     const sunk = sunkFraction(b);
     const waste = wastedInvestment(b);
     const affinity = Math.min(1, (playedCounts[(b.name || "").toUpperCase()] || 0) / maxPlayed);
+    const need = classNeed(cls);
+    const ownsHyper = (b.hyperCharges || []).length > 0;
 
-    // gain  — what the next step actually buys, gated on the brawler being worth
-    //         playing at all. A weak brawler cannot be rescued by affinity.
-    // ease  — already-invested brawlers are cheaper to finish, so this discounts
-    //         cost rather than inflating value (0.6 .. 1.0).
-    // need  — role hole and whether they actually draft it, as multipliers.
-    const impact = stepImpact(b, gaps);
-    const gain = meta * impact;
+    // Don't push a brawler whose hypercharge isn't owned UNLESS it is strong and
+    // fills a role the roster is short of.
+    //
+    // But never penalise the hypercharge PURCHASE itself: if that is the
+    // recommended step, completing it removes the very deficiency being punished.
+    // Scoring it as though the gap persists double-counts, and it buried a
+    // meta-0.71 brawler that was one purchase from finished at rank 55.
+    const buyingHyper = /Hypercharge/i.test(step.label);
+    const rescued = meta >= 0.6 && need >= 0.33;
+    const hyperMult = (ownsHyper || rescued || buyingHyper) ? 1 : W.noHyperPenalty;
+
+    const gain = meta * stepImpact(b) * hyperMult;
     const ease = 0.6 + 0.4 * sunk;
-    const need = 1 + W.classGap * classNeed(cls) + W.affinity * affinity;
-    const score = gain * ease * need + W.waste * waste;
+    const demand = 1 + W.classGap * need + W.affinity * affinity;
+    const score = gain * ease * demand + W.waste * waste;
 
     scored.push({
-      name: b.name, cls, label: classLabel(cls),
-      power: num(b.power, 1), gaps, meta, sunk, waste, impact: stepImpact(b, gaps),
-      classNeed: classNeed(cls), affinity,
+      name: b.name, cls, label: classLabel(cls), power: num(b.power, 1),
+      meta, sunk, waste, classNeed: need, affinity, ownsHyper, rescued,
+      buffieCount: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
+      step, cost: costToComplete(b), score,
+      // Value per 1,000 coins of the immediate step — the only way a 20-coin
+      // level-up and a 5,000-coin hypercharge are comparable at all.
+      perK: step.coins > 0 ? score / (step.coins / 1000) : score,
       played: playedCounts[(b.name || "").toUpperCase()] || 0,
-      buffies: b.buffies || null,
-      score,
-      reasons: buildReasons({ b, meta, sunk, waste, gaps, cls, classNeed: classNeed(cls), affinity }),
-      nextStep: nextStep(b, gaps),
     });
   }
 
   scored.sort((a, b) => b.score - a.score);
-  // Never headline a gear-only step unless the brawler is genuinely strong —
-  // otherwise the whole list becomes "add a second gear" to maxed brawlers,
-  // which is true, useless, and crowds out the upgrades that matter.
-  const worthSaying = scored.filter(p => p.impact > STEP.gearOnly || p.meta >= 0.6);
-  return { picks: worthSaying.length ? worthSaying : scored, classes };
+  for (const p of scored) p.reasons = buildReasons(p);
+
+  return { picks: scored, classes, saveAdvice: saveOrSpend(scored, owned, classes) };
 }
 
-/** The single cheapest concrete action, so the advice is do-able not abstract. */
-function nextStep(b, gaps) {
-  if (gaps.powerGap > 0 && num(b.power, 1) < 9) return `Level to 9 (currently ${num(b.power, 1)})`;
-  if (gaps.spGap === 2) return "Unlock a Star Power";
-  if (gaps.gadgetGap === 2) return "Unlock a Gadget";
-  if (gaps.powerGap > 0) return `Level to 11 (currently ${num(b.power, 1)})`;
-  if (gaps.spGap > 0) return "Unlock the second Star Power";
-  if (gaps.gadgetGap > 0) return "Unlock the second Gadget";
-  if (gaps.gearGap > 0) return "Add a Gear";
-  return "Finish the loadout";
+/**
+ * Spend now, or hold for the next buffie wave?
+ *
+ * Buffies cannot be aimed — a purchase draws one random buffie from a group of
+ * three brawlers, skipping any already held — so a player with a deep, balanced
+ * roster is largely buying lottery tickets on brawlers they have finished. New
+ * buffies arrive every 2–3 months for about six brawlers, so holding power
+ * points can genuinely beat spending them on a second gear.
+ *
+ * Deliberately conservative: this only fires for a roster that really has run
+ * out of good options, and the top five are shown either way.
+ */
+function saveOrSpend(scored, owned, classes) {
+  const top = scored[0];
+  const thinRoles = classes.filter(c => c.maxed <= 1).length;
+  const maxed = owned.filter(b => num(b.power) >= MAX_POWER).length;
+  const cheapAndStrong = scored.filter(p => p.meta >= 0.55 && p.step.coins <= 3000).length;
+
+  if (!(maxed >= 25 && thinRoles === 0 && cheapAndStrong <= 1 && (!top || top.score < 0.45))) {
+    return null;
+  }
+  return {
+    verdict: "save",
+    text: `Your roster is deep — ${maxed} maxed and no thin roles — and nothing left is both strong and cheap. `
+        + `New buffies land every ${BUFFIE_DROP_MONTHS[0]}–${BUFFIE_DROP_MONTHS[1]} months for around `
+        + `${BUFFIE_DROP_BRAWLERS} brawlers, at ${BUFFIE_COST.pp.toLocaleString("en-US")} power points and `
+        + `${BUFFIE_COST.coins.toLocaleString("en-US")} gold per draw. Holding for that wave usually beats `
+        + `spending now on a second gear. The picks below are the best of what's available if you'd rather not wait.`,
+  };
 }
 
-function buildReasons({ b, meta, sunk, waste, gaps, cls, classNeed, affinity }) {
+function buildReasons(p) {
   const out = [];
-  const bf = b.buffies ? Object.entries(b.buffies).filter(([, v]) => v).map(([k]) => k) : [];
 
-  if (waste > 0.12) {
+  if (p.waste > 0.12) {
     const bits = [];
-    if ((b.starPowers || []).length) bits.push(`${(b.starPowers || []).length} star power${(b.starPowers || []).length > 1 ? "s" : ""}`);
-    if ((b.gadgets || []).length) bits.push(`${(b.gadgets || []).length} gadget${(b.gadgets || []).length > 1 ? "s" : ""}`);
-    if (bf.length) bits.push(`${bf.length} buff${bf.length > 1 ? "ies" : "ie"}`);
-    if (bits.length) out.push({ tone: "warn", text: `You already own ${bits.join(", ")} here, but at power ${num(b.power, 1)} none of it is doing much.` });
+    if (p.buffieCount) bits.push(`${p.buffieCount} buffie${p.buffieCount > 1 ? "s" : ""}`);
+    if (p.ownsHyper) bits.push("its hypercharge");
+    if (bits.length) {
+      // The "can't redirect" line is only true of buffies — they draw randomly
+      // from a group of three brawlers. Saying it about a hypercharge would be
+      // wrong, since that one IS bought directly.
+      const tail = p.buffieCount
+        ? " Buffies can't be bought for a chosen brawler, so that's spend you can't redirect."
+        : "";
+      out.push({
+        tone: "warn",
+        text: `You already own ${bits.join(" and ")} here, and at power ${p.power} none of it is usable.${tail}`,
+      });
+    }
   }
-  if (meta >= 0.6) out.push({ tone: "good", text: "Strong on the maps in rotation right now." });
-  else if (meta <= 0.25) out.push({ tone: "muted", text: "Not a standout in the current meta." });
-  if (sunk >= 0.7 && gaps.powerGap > 0 && gaps.powerGap <= 2) {
-    out.push({ tone: "good", text: `Nearly finished — ${gaps.powerGap} power level${gaps.powerGap > 1 ? "s" : ""} from maxed.` });
+
+  if (p.meta >= 0.65) out.push({ tone: "good", text: "One of the strongest picks on the maps in rotation right now." });
+  else if (p.meta >= 0.5) out.push({ tone: "good", text: "Solid on the current rotation." });
+  else if (p.meta <= 0.3) out.push({ tone: "muted", text: "Not a standout in the meta — this is about finishing what you started, not chasing a strong brawler." });
+
+  if (p.step.unlocks) out.push({ tone: "info", text: `This unlocks the ${p.step.unlocks}.` });
+
+  if (!p.ownsHyper && p.power >= MAX_POWER) {
+    out.push(p.rescued
+      ? { tone: "warn", text: `No hypercharge yet (${ITEM_COST.hypercharge.toLocaleString("en-US")} coins) — but it's strong enough, and fills a role you're short of, to be worth buying anyway.` }
+      : { tone: "muted", text: `No hypercharge yet, which caps what maxing buys until you spend the ${ITEM_COST.hypercharge.toLocaleString("en-US")} coins.` });
   }
-  if (classNeed >= 0.66) out.push({ tone: "info", text: `You have no maxed ${classLabel(cls)} — this fills a hole in your drafts.` });
-  if (affinity >= 0.5) out.push({ tone: "info", text: "One of the brawlers you actually draft." });
+
+  if (p.classNeed >= 0.66) out.push({ tone: "info", text: `You have no maxed ${p.label} — this fills a hole in your drafts.` });
+  if (p.affinity >= 0.5) out.push({ tone: "info", text: "One of the brawlers you actually draft." });
+
+  if (!out.length) out.push({ tone: "muted", text: "Best remaining value for the coins among what's left." });
   return out;
 }
+
+export { levelCost, costToComplete };

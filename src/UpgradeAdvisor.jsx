@@ -3,11 +3,17 @@
 // rotation with data/upgradeAdvisor.js, and shows the few upgrades worth making.
 //
 // Unlike the statistical panels this is ADVICE, not a measurement, so the
-// display ladder does not apply in the same way — there is no sample size to be
-// honest about. What it must be honest about instead is its inputs: it can see
-// power level, star powers, gadgets, gears and buffies, and it cannot see how
-// much currency the player has. It ranks what is worth buying, not what they
-// can afford, and the footer says so.
+// display ladder does not apply — there is no sample size to be honest about.
+// What it must be honest about instead is its inputs: it can see power levels,
+// star powers, gadgets, gears, buffies and hypercharges, and it cannot see the
+// player's coin or power-point balance. It ranks what is worth buying, not what
+// they can afford, and the footer says so.
+//
+// It ALWAYS shows five, with reasons, rather than falling silent when the top
+// pick is weak — a player asking "what next" wants ranked options even when the
+// honest answer is "none of these are urgent". When the roster is deep enough
+// that saving genuinely beats spending, that is said above the list rather than
+// instead of it.
 
 import { useState, useEffect } from "react";
 import { supabase, CURRENT_PATCH, formatBrawlerName } from "./appCore";
@@ -27,7 +33,7 @@ const TONE = {
 };
 
 function useAdvice(tag, rankedRows) {
-  const [state, setState] = useState({ loading: true, picks: [], classes: [], error: null });
+  const [state, setState] = useState({ loading: true, picks: [], classes: [], saveAdvice: null, error: null });
 
   useEffect(() => {
     if (!tag) return;
@@ -46,7 +52,7 @@ function useAdvice(tag, rankedRows) {
         if (cancelled) return;
         const roster = profileRes?.roster;
         if (!Array.isArray(roster) || !roster.length) {
-          setState({ loading: false, picks: [], classes: [], error: "no_roster" });
+          setState({ loading: false, picks: [], classes: [], saveAdvice: null, error: "no_roster" });
           return;
         }
 
@@ -80,10 +86,10 @@ function useAdvice(tag, rankedRows) {
         }
 
         if (cancelled) return;
-        const { picks, classes } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
-        setState({ loading: false, picks, classes, error: null });
+        const { picks, classes, saveAdvice } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
+        setState({ loading: false, picks, classes, saveAdvice, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, picks: [], classes: [], error: e.message });
+        if (!cancelled) setState({ loading: false, picks: [], classes: [], saveAdvice: null, error: e.message });
       }
     })();
     return () => { cancelled = true; };
@@ -125,11 +131,25 @@ function Card({ p, rank }) {
           <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>POWER {p.power}</span>
         </div>
 
-        <div style={{
-          display: "inline-block", marginTop: 6, padding: "4px 10px", borderRadius: 999,
-          background: "rgba(179,107,255,.14)", border: "1px solid rgba(179,107,255,.3)",
-          fontFamily: MONO, fontSize: 10.5, color: "#c9a6ff",
-        }}>{p.nextStep}</div>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
+          <span style={{
+            padding: "4px 10px", borderRadius: 999,
+            background: "rgba(179,107,255,.14)", border: "1px solid rgba(179,107,255,.3)",
+            fontFamily: MONO, fontSize: 10.5, color: "#c9a6ff",
+          }}>{p.step.label}</span>
+          {(p.step.coins > 0 || p.step.pp > 0) && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#ffce7a" }}>
+              {p.step.coins > 0 && `${p.step.coins.toLocaleString("en-US")} coins`}
+              {p.step.coins > 0 && p.step.pp > 0 && " + "}
+              {p.step.pp > 0 && `${p.step.pp.toLocaleString("en-US")} power points`}
+            </span>
+          )}
+          {p.cost.totalCoins > p.step.coins && (
+            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>
+              · {p.cost.totalCoins.toLocaleString("en-US")} coins to finish entirely
+            </span>
+          )}
+        </div>
 
         {p.reasons.length > 0 && (
           <div style={{ marginTop: 8, display: "grid", gap: 4 }}>
@@ -177,7 +197,7 @@ function RoleCoverage({ classes }) {
 }
 
 export default function UpgradeAdvisor({ tag, rankedRows }) {
-  const { loading, picks, classes, error } = useAdvice(tag, rankedRows);
+  const { loading, picks, classes, saveAdvice, error } = useAdvice(tag, rankedRows);
 
   if (!tag) return null;
   if (loading) {
@@ -191,20 +211,35 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
     </div>;
   }
   if (error || !picks.length) {
+    // Only when there is genuinely nothing left to buy on any brawler.
     return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "8px 2px 18px" }}>
-      Nothing worth upgrading right now — your strong brawlers are already maxed.
+      Every brawler we can price is already finished — there is nothing left to buy.
     </div>;
   }
 
   return (
     <div style={{ marginBottom: 28 }}>
+      {saveAdvice && (
+        <div style={{
+          padding: "14px 16px", borderRadius: 12, marginBottom: 13,
+          background: "rgba(255,180,61,.08)", border: "1px solid rgba(255,180,61,.28)",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.6, color: "#ffce7a", marginBottom: 6 }}>
+            CONSIDER SAVING INSTEAD
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.65, color: "#e2d2b0" }}>{saveAdvice.text}</div>
+        </div>
+      )}
       {picks.slice(0, 5).map((p, i) => <Card key={p.name} p={p} rank={i + 1} />)}
       <RoleCoverage classes={classes} />
       <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 11, lineHeight: 1.65 }}>
-        Ranked by what the next step actually buys: how strong the brawler is on the maps in rotation
-        now, how much you have already sunk into it, and whether your maxed roster is short of that
-        role. We can see your power levels, star powers, gadgets, gears and buffies — we cannot see
-        your coins or power points, so this is what is worth buying, not what you can afford today.
+        Ranked by what the next step buys per coin: how strong the brawler is on the maps in rotation
+        now, how much you've already sunk into it, and whether your maxed roster is short of that
+        role. Levelling always targets power 11, because ranked only allows power-11 brawlers from
+        Mythic upward. Gear prices assume the cheap tier — epic and mythic gears cost more and the
+        API doesn't tell us which you'd get. We can see power levels, star powers, gadgets, gears,
+        buffies and hypercharges; we cannot see your coin or power-point balance, so this is what's
+        worth buying, not what you can afford today.
       </div>
     </div>
   );
