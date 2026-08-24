@@ -93,10 +93,16 @@ def fetch_due_players(limit=MAX_POLLS_PER_RUN):
         f"{SUPABASE_URL}/rest/v1/tracked_players",
         headers=SUPABASE_HEADERS,
         params={
-            "select": "player_tag,tier,poll_interval_mins,last_battle_at,consecutive_empty,seed_bracket,boosted,last_snapshot_at,last_brawler_snapshot_at",
+            "select": "player_tag,tier,poll_interval_mins,next_poll_at,last_polled_at,last_battle_at,consecutive_empty,seed_bracket,boosted,last_snapshot_at,last_brawler_snapshot_at",
             "active": "eq.true",
             "opted_out": "eq.false",   # a tombstoned tag is never polled again
-            "next_poll_at": f"lte.{datetime.now(timezone.utc).isoformat()}",
+            # Due if the BATTLELOG is due OR the daily snapshot is. Gating
+            # snapshots behind the battlelog schedule would mean a player who
+            # has backed off to a 48h poll gets a "daily" curve every other day,
+            # which is not what the column claims.
+            "or": f"(next_poll_at.lte.{datetime.now(timezone.utc).isoformat()},"
+                  f"last_snapshot_at.is.null,"
+                  f"last_snapshot_at.lt.{(datetime.now(timezone.utc) - timedelta(hours=SNAPSHOT_EVERY_HOURS)).isoformat()})",
             # Boosted players first: they asked for this, and if MAX_POLLS_PER_RUN
             # truncates the queue they are the ones who must not be dropped.
             "order": "boosted.desc,tier.asc,next_poll_at.asc",
@@ -118,6 +124,21 @@ def poll_player(row, lookups, out_rows, out_snapshots, out_updates, lock):
             last_seen = datetime.fromisoformat(row["last_battle_at"].replace("Z", "+00:00"))
         except ValueError:
             last_seen = None
+
+    # Snapshot-only visit: selected because the trophy snapshot is due, not the
+    # battlelog. Skipping the battlelog saves a request and, more importantly,
+    # leaves the polling schedule alone — running the adaptive back-off rules on
+    # a poll that never happened would penalise the player for our own cadence.
+    due_snap, want_brawlers = snapshot_due(row)
+    if not battlelog_due(row):
+        snap = fetch_snapshot(tag, want_brawlers) if due_snap else None
+        with lock:
+            if snap:
+                out_snapshots.append(snap)
+            out_updates.append(_schedule(row, new_count=0, schedule_only=True,
+                                         snapped=bool(snap),
+                                         snapped_brawlers=bool(snap and want_brawlers)))
+        return
 
     time.sleep(REQUEST_DELAY)
     res = requests.get(f"{BASE_URL}/players/{tag.replace('#', '%23')}/battlelog",
@@ -181,8 +202,7 @@ def poll_player(row, lookups, out_rows, out_snapshots, out_updates, lock):
 
     # One snapshot per player per day, for everyone — shown free. want_brawlers
     # decides only whether this one carries the heavy per-brawler jsonb.
-    due, want_brawlers = snapshot_due(row)
-    snapshot = fetch_snapshot(tag, want_brawlers) if due else None
+    snapshot = fetch_snapshot(tag, want_brawlers) if due_snap else None
 
     with lock:
         out_rows.extend(rows)
@@ -204,6 +224,18 @@ def _age_hours(value):
     except (ValueError, TypeError):
         return None
     return (datetime.now(timezone.utc) - then).total_seconds() / 3600
+
+
+def battlelog_due(row):
+    """Whether the battlelog poll is genuinely due, as opposed to this player
+    having been selected only because a snapshot was."""
+    nxt = row.get("next_poll_at")
+    if not nxt:
+        return True
+    try:
+        return datetime.fromisoformat(nxt.replace("Z", "+00:00")) <= datetime.now(timezone.utc)
+    except (ValueError, TypeError):
+        return True
 
 
 def snapshot_due(row):
@@ -251,7 +283,8 @@ def fetch_snapshot(tag, include_brawlers):
     }
 
 
-def _schedule(row, new_count, newest=None, dead=False, snapped=False, snapped_brawlers=False):
+def _schedule(row, new_count, newest=None, dead=False, snapped=False, snapped_brawlers=False,
+              schedule_only=False):
     """Adaptive interval for one player. Pure function of what we just saw."""
     interval = row.get("poll_interval_mins") or 1440
     empty = row.get("consecutive_empty") or 0
@@ -276,6 +309,23 @@ def _schedule(row, new_count, newest=None, dead=False, snapped=False, snapped_br
 
     interval = max(interval, TIER_FLOOR_MINS.get(row.get("tier", 3), 1440))
     now = datetime.now(timezone.utc)
+
+    # A snapshot-only visit must not touch the polling schedule: the battlelog
+    # was never read, so there is nothing to adapt to. Same key set as the full
+    # path — a differing key set breaks the batch (PGRST102).
+    if schedule_only:
+        return {
+            "player_tag": row["player_tag"],
+            "poll_interval_mins": row.get("poll_interval_mins") or 1440,
+            "next_poll_at": row.get("next_poll_at"),
+            "last_polled_at": row.get("last_polled_at"),
+            "consecutive_empty": row.get("consecutive_empty") or 0,
+            "active": True,
+            "last_battle_at": row.get("last_battle_at"),
+            "last_snapshot_at": now.isoformat() if snapped else row.get("last_snapshot_at"),
+            "last_brawler_snapshot_at": (now.isoformat() if snapped_brawlers
+                                         else row.get("last_brawler_snapshot_at")),
+        }
     # Every key must be present on EVERY object in the batch: PostgREST rejects a
     # bulk upsert whose objects have differing key sets with PGRST102 "All object
     # keys must match". So last_battle_at is always included — falling back to
