@@ -40,9 +40,21 @@ const W = {
   noHyperPenalty: 0.55,
 };
 
-// A brawler counts as a real option in its role only if it is fully fieldable
-// AND worth fielding. 0.5 on the metaStrength scale is a ~51% true win rate.
-const READY_META = 0.5;
+// metaStrength normalises a win rate onto 0..1. The endpoints live here so the
+// readiness threshold below can be stated in the unit people actually think in.
+const WR_FLOOR = 45, WR_SPAN = 12;
+
+// The bar for "worth fielding", as a WIN RATE, because that is what it means:
+// wins more than it loses.
+//
+// This was 51% and it was drawing a hard line through a dense cluster. Brawl
+// Stars win rates are compressed — median 49.5%, p10→p90 spans 4.7 points — so
+// 14% of all brawlers sat within half a point of the cut, and a 0.3pp gap
+// decided whether Rosa was "draft-ready" and Starr Nova was not. That is inside
+// the noise of a single scrape, so the label flipped between runs on its own.
+// 50% is both defensible on its face and in a sparser part of the distribution.
+const READY_WIN_RATE = 50;
+const READY_META = (READY_WIN_RATE - WR_FLOOR) / WR_SPAN;
 // Three fieldable brawlers in a role is enough to never be stuck in a draft.
 const READY_TARGET = 3;
 
@@ -85,7 +97,7 @@ function metaStrength(name, intelligence, rotationStats) {
   else if (Number.isFinite(global)) wr = global;
   else if (mapWR != null) wr = mapWR;
   else return null;
-  return Math.max(0, Math.min(1, (wr - 45) / 12));
+  return Math.max(0, Math.min(1, (wr - WR_FLOOR) / WR_SPAN));
 }
 
 function sunkFraction(b) {
@@ -412,4 +424,4 @@ function buildReasons(p) {
   return out;
 }
 
-export { levelCost, costToComplete };
+export { levelCost, costToComplete, READY_WIN_RATE };

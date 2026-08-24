@@ -17,7 +17,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase, CURRENT_PATCH, formatBrawlerName } from "./appCore";
-import { recommendUpgrades } from "./data/upgradeAdvisor";
+import { recommendUpgrades, READY_WIN_RATE } from "./data/upgradeAdvisor";
 import { draftClassOf } from "./data/draftEngine";
 import { BUFFIE_PACKS, BUFFIE_COST } from "./data/upgradeCosts";
 import BRAWLER_META from "./data/brawlerMeta.json";
@@ -337,6 +337,16 @@ function RoleCoverage({ classes, roster, readyNames }) {
             background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.12)", marginRight: 5,
           }} />NOT POWER 11</span>
         </div>
+      </div>
+
+      <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#9a9aab", marginBottom: 13 }}>
+        <strong style={{ color: "#c9c9d6", fontWeight: 600 }}>Draft-ready</strong> means power 11,
+        hypercharge owned, and a Masters win rate above {READY_WIN_RATE}% — weighted toward the maps
+        currently in rotation, so it answers "can I field this <em>this week</em>". It's the bar for a brawler
+        you can actually pick into a serious draft, and the one the advice above counts when it says
+        a role is thin. A maxed brawler without the ring is usually missing its hypercharge or sitting
+        under {READY_WIN_RATE}% right now; the second of those moves with the meta, so the ring can
+        come and go without you doing anything.
       </div>
 
       {classes.map(c => {
