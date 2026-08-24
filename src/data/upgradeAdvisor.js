@@ -30,6 +30,10 @@ const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
 const W = {
   classGap: 0.45,
+  // Having SOME strong option in a role is worth something on top of merely
+  // having three you can field — but much less than coverage, because a brawler
+  // you cannot field is worth nothing at all while a 49% one still has a job.
+  strengthGap: 0.20,
   affinity: 0.30,
   waste: 0.90,
   // A brawler whose hypercharge is not owned is capped — at power 11 it still
@@ -100,6 +104,18 @@ function metaStrength(name, intelligence, rotationStats) {
   return Math.max(0, Math.min(1, (wr - WR_FLOOR) / WR_SPAN));
 }
 
+/** The blended win rate behind metaStrength, for display. */
+function rawWinRate(name, intelligence, rotationStats) {
+  const key = (name || "").toUpperCase();
+  const global = num(intelligence[key]?.true_win_rate, NaN);
+  const rot = rotationStats[key];
+  const picks = num(rot?.picks);
+  const mapWR = picks >= 200 ? (num(rot.wins) / picks) * 100 : null;
+  if (Number.isFinite(global) && mapWR != null) return mapWR * 0.6 + global * 0.4;
+  if (Number.isFinite(global)) return global;
+  return mapWR;
+}
+
 function sunkFraction(b) {
   const power = (num(b.power, 1) - 1) / (MAX_POWER - 1);
   const sp = Math.min(1, (b.starPowers || []).length / 2);
@@ -130,33 +146,46 @@ function wastedInvestment(b) {
 
 export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {}, playedCounts = {} }) {
   const owned = (roster || []).filter(b => num(b.power) >= 1);
-  if (!owned.length) return { picks: [], classes: [], readyNames: new Set(), saveAdvice: null };
+  if (!owned.length) {
+    return { picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null };
+  }
 
-  // "Do I have options in this role?" is not the same question as "how many of
-  // these have I maxed?". Measuring raw maxed count made the term useless on any
-  // developed roster: 44 maxed brawlers spread over seven classes cleared the
-  // threshold everywhere except Thrower, so class need was 0.00 for six of seven
-  // and the whole term stopped discriminating. What matters when drafting is how
-  // many brawlers in a role are genuinely FIELDABLE — power 11 (below it there is
-  // no ranked game from Mythic up), hypercharge owned (or you are a tier down on
-  // every exchange), and actually good in the current meta.
-  const readyByClass = {}, maxedByClass = {}, ownedByClass = {};
-  const readyNames = new Set();
+  // TWO SEPARATE QUESTIONS, deliberately not merged.
+  //
+  //   BUILT   power 11 and holding its hypercharge. Purely a fact about the
+  //           account: can this be brought to a draft at all. Below power 11
+  //           there is no ranked game from Mythic up, and without the
+  //           hypercharge you are a tier down on every exchange.
+  //   STRONG  built AND winning right now (rotation-weighted win rate over the
+  //           threshold).
+  //
+  // They were one test, and folding them together was wrong. Win rate under-
+  // measures playability: a brawler can hold a real draft role without a
+  // winning record across hundreds of thousands of solo-queue games — Chuck is
+  // 47.6% in Heist over 42,893 picks and is still a Heist pick. Coverage of a
+  // role therefore counts BUILT, which the player controls and which does not
+  // drift with the meta; having a strong option is a separate, smaller bonus.
+  const builtByClass = {}, strongByClass = {}, maxedByClass = {}, ownedByClass = {};
+  const builtNames = new Set(), strongNames = new Set();
   for (const b of owned) {
     const cls = draftClassOf(b.name);
+    const key = String(b.name || "").toUpperCase();
     ownedByClass[cls] = (ownedByClass[cls] || 0) + 1;
     if (num(b.power) >= MAX_POWER) maxedByClass[cls] = (maxedByClass[cls] || 0) + 1;
-    const m = metaStrength(b.name, intelligence, rotationStats);
-    if (num(b.power) >= MAX_POWER && (b.hyperCharges || []).length > 0 && num(m) >= READY_META) {
-      readyByClass[cls] = (readyByClass[cls] || 0) + 1;
-      readyNames.add(String(b.name || "").toUpperCase());
+    if (num(b.power) >= MAX_POWER && (b.hyperCharges || []).length > 0) {
+      builtByClass[cls] = (builtByClass[cls] || 0) + 1;
+      builtNames.add(key);
+      if (num(metaStrength(b.name, intelligence, rotationStats)) >= READY_META) {
+        strongByClass[cls] = (strongByClass[cls] || 0) + 1;
+        strongNames.add(key);
+      }
     }
   }
   const classes = Object.keys(ownedByClass).map(cls => ({
     cls, label: classLabel(cls),
     owned: ownedByClass[cls] || 0, maxed: maxedByClass[cls] || 0,
-    ready: readyByClass[cls] || 0,
-  })).sort((a, b) => a.ready - b.ready);
+    built: builtByClass[cls] || 0, strong: strongByClass[cls] || 0,
+  })).sort((a, b) => a.built - b.built || a.strong - b.strong);
 
   // `banked` counts picks already chosen higher up the list. A recommendation is
   // a PLAN, not five independent scores: once the list has told you to build a
@@ -164,7 +193,17 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   // already being filled. Folding banked picks into the same count is what makes
   // the top five a coherent set rather than five answers to the same question.
   const classNeed = (cls, banked = 0) =>
-    Math.max(0, 1 - ((readyByClass[cls] || 0) + banked) / READY_TARGET);
+    Math.max(0, 1 - ((builtByClass[cls] || 0) + banked) / READY_TARGET);
+  // Does the role have ANY winning option, and would THIS brawler be it?
+  //
+  // Both halves are load-bearing. Rewarding every brawler in a role that lacks a
+  // winning option is wrong: it handed the bonus to a 49.5% Control brawler for
+  // a gap that upgrading it would not close. Only a brawler that clears the bar
+  // itself actually fixes the problem, which is why the test is on its own meta
+  // as well as the class's. Unlike coverage this does not decay as picks bank —
+  // banking a pick does not make it strong.
+  const strengthGap = (cls, meta) =>
+    ((strongByClass[cls] || 0) === 0 && num(meta) >= READY_META ? 1 : 0);
   const maxPlayed = Math.max(1, ...Object.values(playedCounts));
 
   const scored = [];
@@ -198,7 +237,8 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
     scored.push({
       gain, ease,
       name: b.name, cls, label: classLabel(cls), power: num(b.power, 1),
-      meta, sunk, waste, affinity, ownsHyper, rescued,
+      meta, winRate: rawWinRate(b.name, intelligence, rotationStats),
+      sunk, waste, affinity, ownsHyper, rescued,
       buffieCount: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
       // The full inventory, so the card can state what is already owned rather
       // than mentioning only the parts that happen to drive the score.
@@ -230,13 +270,16 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
     for (let i = 0; i < pool.length; i++) {
       const p = pool[i];
       const need = classNeed(p.cls, banked[p.cls] || 0);
-      const sc = p.gain * p.ease * (1 + W.classGap * need + W.affinity * p.affinity) + W.waste * p.waste;
+      const sc = p.gain * p.ease
+        * (1 + W.classGap * need + W.strengthGap * strengthGap(p.cls, p.meta) + W.affinity * p.affinity)
+        + W.waste * p.waste;
       if (sc > bestScore) { bestScore = sc; bestI = i; bestNeed = need; }
     }
     const [p] = pool.splice(bestI, 1);
     p.score = bestScore;
     p.classNeed = bestNeed;
-    p.classReady = readyByClass[p.cls] || 0;
+    p.classBuilt = builtByClass[p.cls] || 0;
+    p.classStrong = strongByClass[p.cls] || 0;
     p.classMaxed = maxedByClass[p.cls] || 0;
     p.classOwned = ownedByClass[p.cls] || 0;
     p.classBanked = banked[p.cls] || 0;
@@ -249,7 +292,8 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
 
   for (const p of picks) p.reasons = buildReasons(p);
 
-  return { picks, classes, readyNames, saveAdvice: saveOrSpend(picks, owned, classes, roster) };
+  return { picks, classes, builtNames, strongNames,
+           saveAdvice: saveOrSpend(picks, owned, classes, roster) };
 }
 
 /**
@@ -266,7 +310,7 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
  */
 function saveOrSpend(scored, owned, classes, roster) {
   const top = scored[0];
-  const thinRoles = classes.filter(c => c.ready <= 1).length;
+  const thinRoles = classes.filter(c => c.built <= 1).length;
   const maxed = owned.filter(b => num(b.power) >= MAX_POWER).length;
   const cheapAndStrong = scored.filter(p => p.meta >= 0.55 && p.step.coins <= 3000).length;
 
@@ -346,36 +390,35 @@ function buildReasons(p) {
   // rather than one. "{label} brawlers", never "{label}s" — the class names do
   // not pluralise ("no Controls" reads like nonsense).
   if (p.classNeed >= 0.33) {
-    const n = p.classReady;
+    const n = p.classBuilt;
     let have, tail;
     if (p.classBanked === 0) {
       have = n === 0
-        ? `You have no ${p.label} brawlers that are fully built and actually good`
-        : `You don't have many strong ${p.label} brawlers — only ${n} of yours ${n > 1 ? "are" : "is"} fully built and actually good`;
+        ? `You have no ${p.label} brawlers you can actually field — none of yours is power 11 with a hypercharge`
+        : `You can only field ${n} ${p.label} brawler${n > 1 ? "s" : ""} — the rest aren't power 11 with a hypercharge`;
       tail = "this fills a real hole in your drafts";
     } else {
       // The count has to be restated around what the roster looks like AFTER the
       // picks above are done, not tacked on as a parenthetical. Appending
       // "(counting the one above this)" to "you have no Control brawlers"
       // contradicts itself — counting it, you would have one.
-      const eff = p.classReady + p.classBanked;
+      const eff = p.classBuilt + p.classBanked;
       have = `Even after the ${p.classBanked === 1 ? `${p.label} brawler` : `${p.classBanked} ${p.label} brawlers`} `
-           + `above this one, you'd have just ${eff} that ${eff === 1 ? "is" : "are"} fully built and actually good`;
+           + `above this one, you'd be able to field just ${eff}`;
       tail = "there's still room in the role";
     }
     out.push({
       tone: "info",
       text: metaPhrase ? `${have}, and ${metaPhrase} — so ${tail}.` : `${have}, so ${tail}.`,
     });
-  } else if (p.classReady >= READY_TARGET) {
-    // Crowded on the roster itself. Quote the maxed count as well as the
-    // fieldable one — "3 fieldable" on its own reads as FEW, which is the
-    // opposite of the point being made.
+  } else if (p.classBuilt >= READY_TARGET) {
+    // Crowded on the roster itself. Quote the maxed count as well, since the
+    // built count alone can read as FEW when the point is that it is plenty.
     const lead = metaPhrase ? `${metaPhrase}, but you` : "You";
     out.push({
       tone: "muted",
-      text: `${lead} already have plenty of ${p.label} brawlers — ${p.classMaxed} maxed, `
-          + `${p.classReady} of them genuinely strong right now — so this adds depth, not coverage.`,
+      text: `${lead} already have plenty of ${p.label} brawlers — ${p.classMaxed} maxed and `
+          + `${p.classBuilt} you can field — so this adds depth, not coverage.`,
     });
   } else if (p.classBanked > 0) {
     // Only covered once the picks ABOVE this one are done. Saying "you already
@@ -394,6 +437,16 @@ function buildReasons(p) {
   }
 
   if (p.meta <= 0.3) out.push({ tone: "muted", text: "Not a standout in the meta — this is about finishing what you started, not chasing a strong brawler." });
+
+  // Coverage and quality are scored separately, so they are said separately. A
+  // role can be fully covered and still have nothing in it that wins.
+  if (p.classStrong === 0 && p.meta >= READY_META && p.classBuilt >= 1) {
+    out.push({
+      tone: "info",
+      text: `None of the ${p.label} brawlers you can field is above ${READY_WIN_RATE}% right now — `
+          + `this would be the first.`,
+    });
+  }
 
   if (p.step.unlocks) out.push({ tone: "info", text: `This unlocks the ${p.step.unlocks}.` });
 

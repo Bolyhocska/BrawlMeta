@@ -35,7 +35,7 @@ const TONE = {
 };
 
 function useAdvice(tag, rankedRows) {
-  const [state, setState] = useState({ loading: true, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, roster: [], error: null });
+  const [state, setState] = useState({ loading: true, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, roster: [], intel: {}, error: null });
 
   useEffect(() => {
     if (!tag) return;
@@ -54,7 +54,7 @@ function useAdvice(tag, rankedRows) {
         if (cancelled) return;
         const roster = profileRes?.roster;
         if (!Array.isArray(roster) || !roster.length) {
-          setState({ loading: false, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, error: "no_roster" });
+          setState({ loading: false, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, error: "no_roster" });
           return;
         }
 
@@ -88,10 +88,12 @@ function useAdvice(tag, rankedRows) {
         }
 
         if (cancelled) return;
-        const { picks, classes, readyNames, saveAdvice } = recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
-        setState({ loading: false, picks, classes, readyNames, saveAdvice, roster, error: null });
+        const { picks, classes, builtNames, strongNames, saveAdvice } =
+          recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
+        setState({ loading: false, picks, classes, builtNames, strongNames, saveAdvice,
+                   roster, intel: intelligence, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, picks: [], classes: [], readyNames: new Set(), saveAdvice: null, error: e.message });
+        if (!cancelled) setState({ loading: false, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, error: e.message });
       }
     })();
     return () => { cancelled = true; };
@@ -268,48 +270,180 @@ function BuffiePacks({ roster }) {
 // from Mythic up. Full colour = maxed. Ringed = maxed AND holding its
 // hypercharge AND good in the current meta, which is the only bar that makes a
 // brawler a real draft option and the one every "you're thin on X" line counts.
-function RosterFace({ b, ready }) {
+function RosterFace({ b, built, strong, selected, onClick }) {
   const src = art(b.name);
   const maxed = (b.power || 0) >= 11;
-  const title = `${formatBrawlerName(b.name)} — power ${b.power || 1}`
-    + (ready ? " · draft-ready" : maxed ? " · maxed" : "");
+  const state = strong ? "strong" : built ? "built" : maxed ? "maxed" : "low";
+  const title = `${formatBrawlerName(b.name)} - power ${b.power || 1}`
+    + (strong ? " - built, and winning right now" : built ? " - built" : maxed ? " - maxed, no hypercharge" : "");
+  const ring = { strong: "rgba(142,230,176,.75)", built: "rgba(154,143,192,.75)",
+                 maxed: "rgba(255,255,255,.12)", low: "rgba(255,255,255,.08)" }[state];
   return (
-    <span title={title} style={{
-      width: 34, height: 34, borderRadius: 9, overflow: "hidden", flexShrink: 0,
-      display: "inline-flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(255,255,255,.05)",
-      border: ready ? "1.5px solid rgba(142,230,176,.65)" : "1px solid rgba(255,255,255,.09)",
-      boxShadow: ready ? "0 0 0 1px rgba(142,230,176,.14)" : "none",
-      // Greyscale rather than hidden: seeing the brawlers you own but can't
-      // field is the point — that is the upgrade backlog.
+    <button type="button" onClick={onClick} title={title} aria-pressed={selected} style={{
+      width: 34, height: 34, borderRadius: 9, overflow: "hidden", flexShrink: 0, padding: 0,
+      position: "relative", cursor: "pointer", background: "rgba(255,255,255,.05)",
+      border: `${built ? 1.5 : 1}px solid ${selected ? "#fff" : ring}`,
+      boxShadow: selected ? "0 0 0 2px rgba(255,255,255,.25)"
+        : strong ? "0 0 0 1px rgba(142,230,176,.16)" : "none",
+      // Greyscale rather than hidden: seeing the brawlers you own but cannot
+      // field is the point - that is the upgrade backlog.
       filter: maxed ? "none" : "grayscale(1) brightness(.62)",
       opacity: maxed ? 1 : .5,
     }}>
       {src
-        ? <img src={src} alt="" width={34} height={34} style={{ objectFit: "cover" }} loading="lazy" />
+        ? <img src={src} alt="" width={34} height={34} style={{ objectFit: "cover", display: "block" }} loading="lazy" />
         : <span style={{ fontFamily: MONO, fontSize: 9, color: "#8a8a9c" }}>{String(b.name).slice(0, 2)}</span>}
+      {strong && (
+        <span style={{
+          position: "absolute", right: -1, bottom: -1, width: 9, height: 9, borderRadius: "50%",
+          background: "#8ee6b0", border: "1.5px solid #14141c",
+        }} />
+      )}
+    </button>
+  );
+}
+
+function Swatch({ ring, dot, fill }) {
+  return (
+    <span style={{
+      display: "inline-block", position: "relative", width: 9, height: 9, borderRadius: 3,
+      verticalAlign: "-1px", marginRight: 5, background: fill, border: `1.5px solid ${ring}`,
+    }}>
+      {dot && <span style={{
+        position: "absolute", right: -3, bottom: -3, width: 5, height: 5, borderRadius: "50%",
+        background: "#8ee6b0", border: "1px solid #14141c",
+      }} />}
     </span>
   );
 }
 
-function RoleCoverage({ classes, roster, readyNames }) {
+// What one brawler's situation is, opened by clicking its portrait. Most of this
+// is already computed for the ranked cards; the panel exists because the ranked
+// list only shows five, and the roster grid shows all hundred-odd.
+function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
+  const key = String(b.name || "").toUpperCase();
+  const wr = pick?.winRate ?? (Number.isFinite(+intel?.[key]?.true_win_rate) ? +intel[key].true_win_rate : null);
+  const o = {
+    gadgets: (b.gadgets || []).length, starPowers: (b.starPowers || []).length,
+    gears: (b.gears || []).length,
+    buffies: b.buffies ? Object.values(b.buffies).filter(Boolean).length : 0,
+    hyper: (b.hyperCharges || []).length > 0,
+  };
+  const statusText = strong
+    ? `Built and winning - power 11, hypercharge owned, and above ${READY_WIN_RATE}% right now.`
+    : built
+      ? `Built - power 11 with its hypercharge, so you can field it. It is under ${READY_WIN_RATE}% at the moment, which does not stop it being a legitimate pick.`
+      : (b.power || 0) >= 11
+        ? "Maxed, but the hypercharge is not owned - that is a tier down on every exchange."
+        : `Power ${b.power || 1}. Ranked will not let you play it from Mythic upward until it is power 11.`;
+
+  return (
+    <div style={{
+      marginTop: 9, padding: "12px 14px", borderRadius: 11,
+      background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.10)",
+    }}>
+      <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+        <span style={{
+          width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0,
+          background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.10)",
+          filter: (b.power || 0) >= 11 ? "none" : "grayscale(1) brightness(.62)",
+        }}>
+          {art(b.name) && <img src={art(b.name)} alt="" width={40} height={40} style={{ objectFit: "cover", display: "block" }} />}
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 800, color: "#e9e9f2" }}>
+              {formatBrawlerName(b.name)}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>POWER {b.power || 1}</span>
+            {wr != null && (
+              <span style={{ fontFamily: MONO, fontSize: 10, color: wr >= READY_WIN_RATE ? "#8ee6b0" : "#9a9aab" }}>
+                {wr.toFixed(1)}% WIN RATE
+              </span>
+            )}
+            {rank != null && (
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a8fc0" }}>#{rank} TO UPGRADE</span>
+            )}
+          </div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#c9c9d6", marginTop: 5 }}>{statusText}</div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close" style={{
+          background: "none", border: "none", cursor: "pointer", padding: 4,
+          fontFamily: MONO, fontSize: 13, color: "#6f7180", lineHeight: 1,
+        }}>x</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+        {[["GADGETS", o.gadgets, 2], ["STAR POWERS", o.starPowers, 2],
+          ["GEARS", o.gears, 2], ["BUFFIES", o.buffies, 3]].map(([label, have, of]) => (
+          <span key={label} style={{
+            fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+            background: have >= of ? "rgba(142,230,176,.10)" : have > 0 ? "rgba(255,255,255,.05)" : "transparent",
+            border: `1px solid ${have >= of ? "rgba(142,230,176,.28)" : "rgba(255,255,255,.10)"}`,
+            color: have >= of ? "#8ee6b0" : have > 0 ? "#c9c9d6" : "#5a5a6a",
+          }}>{label} {have}/{of}</span>
+        ))}
+        <span style={{
+          fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+          background: o.hyper ? "rgba(142,230,176,.10)" : "transparent",
+          border: `1px solid ${o.hyper ? "rgba(142,230,176,.28)" : "rgba(255,143,143,.24)"}`,
+          color: o.hyper ? "#8ee6b0" : "#ff8f8f",
+        }}>{o.hyper ? "HYPERCHARGE OWNED" : "NO HYPERCHARGE"}</span>
+      </div>
+
+      {pick ? (
+        <>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#c9c9d6", marginTop: 10 }}>
+            NEXT: {pick.step.label}
+            <span style={{ color: "#6f7180" }}>
+              {pick.step.coins ? ` - ${pick.step.coins.toLocaleString("en-US")} coins` : ""}
+              {pick.step.pp ? ` + ${pick.step.pp.toLocaleString("en-US")} pp` : ""}
+            </span>
+          </div>
+          {pick.reasons.slice(0, 2).map((r, i) => (
+            <div key={i} style={{ fontSize: 12.5, lineHeight: 1.6, color: TONE[r.tone] || "#c9c9d6", marginTop: 5 }}>
+              {r.text}
+            </div>
+          ))}
+        </>
+      ) : (
+        <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#6f7180", marginTop: 9 }}>
+          Nothing left to buy on this one.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoleCoverage({ classes, roster, picks, intel, builtNames, strongNames }) {
+  const [open, setOpen] = useState(null);
   if (!classes.length) return null;
-  const ready = readyNames || new Set();
+  const built = builtNames || new Set();
+  const strong = strongNames || new Set();
+  const isBuilt = (b) => built.has(String(b.name || "").toUpperCase());
+  const isStrong = (b) => strong.has(String(b.name || "").toUpperCase());
+
+  const rankOf = {}, pickOf = {};
+  (picks || []).forEach((p, i) => {
+    const k = String(p.name || "").toUpperCase();
+    rankOf[k] = i + 1; pickOf[k] = p;
+  });
 
   const byClass = {};
   for (const b of roster || []) {
     const c = draftClassOf(b.name);
     (byClass[c] = byClass[c] || []).push(b);
   }
-  // Draft-ready first, then maxed, then everything else by how close it is —
-  // so each row reads left to right as "what you can field" → "what's next".
-  const weight = (b) => (ready.has(String(b.name || "").toUpperCase()) ? 2 : (b.power || 0) >= 11 ? 1 : 0);
+  // Strong first, then built, then maxed, then by how close it is - so each row
+  // reads left to right as "what I can bring" then "what is next".
+  const weight = (b) => (isStrong(b) ? 3 : isBuilt(b) ? 2 : (b.power || 0) >= 11 ? 1 : 0);
   for (const k of Object.keys(byClass)) {
     byClass[k].sort((a, b) => weight(b) - weight(a) || (b.power || 0) - (a.power || 0)
       || (b.trophies || 0) - (a.trophies || 0));
   }
 
-  const thin = classes.filter(c => c.ready <= 1);
+  const thin = classes.filter(c => c.built <= 1);
+  const noStrong = classes.filter(c => c.strong === 0);
 
   return (
     <div style={{
@@ -324,63 +458,69 @@ function RoleCoverage({ classes, roster, readyNames }) {
           YOUR ROSTER BY ROLE
         </div>
         <div style={{ display: "flex", gap: 11, flexWrap: "wrap", fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>
-          <span><span style={{
-            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
-            background: "rgba(142,230,176,.30)", border: "1.5px solid rgba(142,230,176,.65)", marginRight: 5,
-          }} />DRAFT-READY</span>
-          <span><span style={{
-            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
-            background: "rgba(255,255,255,.30)", border: "1px solid rgba(255,255,255,.18)", marginRight: 5,
-          }} />MAXED</span>
-          <span><span style={{
-            display: "inline-block", width: 8, height: 8, borderRadius: 3, verticalAlign: "-1px",
-            background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.12)", marginRight: 5,
-          }} />NOT POWER 11</span>
+          <span><Swatch ring="rgba(142,230,176,.75)" fill="rgba(142,230,176,.25)" dot />BUILT + WINNING</span>
+          <span><Swatch ring="rgba(154,143,192,.75)" fill="rgba(154,143,192,.25)" />BUILT</span>
+          <span><Swatch ring="rgba(255,255,255,.12)" fill="rgba(255,255,255,.22)" />NO HYPERCHARGE</span>
+          <span><Swatch ring="rgba(255,255,255,.08)" fill="rgba(255,255,255,.06)" />NOT POWER 11</span>
         </div>
       </div>
 
       <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#9a9aab", marginBottom: 13 }}>
-        <strong style={{ color: "#c9c9d6", fontWeight: 600 }}>Draft-ready</strong> means power 11,
-        hypercharge owned, and a Masters win rate above {READY_WIN_RATE}% — weighted toward the maps
-        currently in rotation, so it answers "can I field this <em>this week</em>". It's the bar for a brawler
-        you can actually pick into a serious draft, and the one the advice above counts when it says
-        a role is thin. A maxed brawler without the ring is usually missing its hypercharge or sitting
-        under {READY_WIN_RATE}% right now; the second of those moves with the meta, so the ring can
-        come and go without you doing anything.
+        <strong style={{ color: "#c9c9d6", fontWeight: 600 }}>Built</strong> means power 11 with its
+        hypercharge, so you can bring it to a draft. That is the bar the advice counts when it calls a
+        role thin, because it is a fact about your account rather than something that moves on its own.
+        The green dot marks the ones also above {READY_WIN_RATE}% right now. A built brawler without a
+        dot is still a real pick: Chuck sits under {READY_WIN_RATE}% in Heist across tens of thousands
+        of games and is still a Heist pick. Click any brawler for its details.
       </div>
 
       {classes.map(c => {
         const list = byClass[c.cls] || [];
-        const isThin = c.ready <= 1;
+        const isThin = c.built <= 1;
+        const openB = list.find(b => (b.id ?? b.name) === open) || null;
         return (
           <div key={c.cls} style={{ marginBottom: 12 }}>
-            <div style={{
-              display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6, flexWrap: "wrap",
-            }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
               <span style={{
                 fontFamily: MONO, fontSize: 10.5, letterSpacing: .6,
                 color: isThin ? "#ff8f8f" : "#c9c9d6",
               }}>{c.label}</span>
               <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>
-                {c.ready} draft-ready · {c.maxed} maxed · {c.owned} owned
+                {c.built} built - {c.strong} winning - {c.maxed} maxed - {c.owned} owned
               </span>
             </div>
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-              {list.map(b => (
-                <RosterFace key={b.id ?? b.name} b={b}
-                  ready={ready.has(String(b.name || "").toUpperCase())} />
-              ))}
+              {list.map(b => {
+                const id = b.id ?? b.name;
+                return (
+                  <RosterFace key={id} b={b} built={isBuilt(b)} strong={isStrong(b)}
+                    selected={open === id}
+                    onClick={() => setOpen(open === id ? null : id)} />
+                );
+              })}
             </div>
+            {openB && (
+              <FaceDetail b={openB} intel={intel}
+                pick={pickOf[String(openB.name || "").toUpperCase()]}
+                rank={rankOf[String(openB.name || "").toUpperCase()]}
+                built={isBuilt(openB)} strong={isStrong(openB)}
+                onClose={() => setOpen(null)} />
+            )}
           </div>
         );
       })}
 
-      {thin.length > 0 && (
+      {(thin.length > 0 || noStrong.length > 0) && (
         <div style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.6, color: "#c9c9d6" }}>
-          A draft needs three working brawlers in a role. You're thin on{" "}
-          {thin.map(c => c.label).join(", ")} — not for lack of brawlers, but because
-          so few of them are power 11 with a hypercharge and worth playing right now.
-          That's what limits which picks you can actually make.
+          {thin.length > 0 && (
+            <>A draft needs three brawlers you can field in a role. You are thin on{" "}
+            {thin.map(c => c.label).join(", ")} - not for lack of brawlers, but because so few are
+            power 11 with a hypercharge. </>
+          )}
+          {noStrong.length > 0 && (
+            <>Nothing you can field in {noStrong.map(c => c.label).join(", ")} is above{" "}
+            {READY_WIN_RATE}% right now - playable, but you have no winning option there.</>
+          )}
         </div>
       )}
     </div>
@@ -388,7 +528,7 @@ function RoleCoverage({ classes, roster, readyNames }) {
 }
 
 export default function UpgradeAdvisor({ tag, rankedRows }) {
-  const { loading, picks, classes, readyNames, saveAdvice, roster, error } = useAdvice(tag, rankedRows);
+  const { loading, picks, classes, builtNames, strongNames, saveAdvice, roster, intel, error } = useAdvice(tag, rankedRows);
 
   if (!tag) return null;
   if (loading) {
@@ -422,7 +562,8 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
         </div>
       )}
       {picks.slice(0, 5).map((p, i) => <Card key={p.name} p={p} rank={i + 1} />)}
-      <RoleCoverage classes={classes} roster={roster} readyNames={readyNames} />
+      <RoleCoverage classes={classes} roster={roster} picks={picks} intel={intel}
+        builtNames={builtNames} strongNames={strongNames} />
       <BuffiePacks roster={roster} />
       <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 11, lineHeight: 1.65 }}>
         Ranked by what the next step buys per coin: how strong the brawler is on the maps in rotation
