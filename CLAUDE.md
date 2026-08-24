@@ -54,6 +54,8 @@ Normalized match storage (2026-07-16; DB went 149→68 MB):
   - Current full-pipeline cost at 1.42M Masters rows: intelligence refresh **16s**, masters pairs **21s**, diamond pairs **7s**.
 - RPC gotcha: when changing a tournament RPC's signature, **DROP the old overload first** — duplicate overloads break PostgREST ("could not choose best candidate function").
 - Patch bookkeeping lives in `scrapers/common.py`: `CURRENT_PATCH`, `PATCH_START_TIMES`, `CLOSED_PATCHES`, `RANKED_MAPS` per patch. On a new patch, update these + add the map list.
+- **The map allowlist now self-heals.** `scrapers/map_pool.py` reads the live rotation from brawltime daily (04:40 UTC) into `ranked_map_pool`; scrapers call `refresh_dynamic_map_pool()` and treat it as an ADDITION to `RANKED_MAPS`, never a replacement. This exists because a map rotating in was invisible — a battle dropped by the allowlist looks exactly like a battle that never happened, so Spiraling Out was silently discarded until the owner spotted it by eye. The source 403s a GitHub Actions IP, so it retries through the Webshare proxy (same wall as brawlace). It refuses to act on a parse below 12 maps / 4 modes, and can only widen the allowlist — a wrong addition is prunable, a wrong removal silently bins real matches.
+- **`Safe Zone` and `Safe(r) Zone` are DIFFERENT heist maps** (owner-confirmed 2026-08-24, correcting an earlier note that said otherwise). Never merge them. `mapSlug()` gives `safezone` vs `saferzone` so the engine's config lookups already keep them apart. Safe(r) Zone was absent from `RANKED_MAPS` until now, so its matches were dropped rather than misfiled — no cleanup needed.
 
 ## Access & credentials (where, not what)
 

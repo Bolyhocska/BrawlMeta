@@ -106,8 +106,22 @@ RANKED_MAPS = {
         # Rotation additions (2026-07-20). The API's exact spelling for
         # not-yet-collected maps is unconfirmed, so apostrophe/case variants are
         # listed too — the allowlist is additive-safe, unknown names just never match.
-        # ("Safe(r) Zone" from the draft doc turned out to be Safe Zone itself.)
         "Belle's Rock", "Ring of Fire", "Out in the Open",
+        # "Safe(r) Zone" is a SEPARATE HEIST MAP from "Safe Zone" — owner-confirmed
+        # 2026-08-24, correcting an earlier note here that claimed they were the
+        # same map. They are not, and must never be merged: they have different
+        # geometry and different metas.
+        #
+        # Because it was missing from this list, every Safe(r) Zone match was
+        # dropped rather than misfiled — verified: `maps` holds no Safe(r) Zone
+        # row, and Safe Zone's 64,490 rows are all genuinely Safe Zone. So the
+        # cost was lost collection, not corrupted data, and it starts clean.
+        #
+        # They do not collide in the engine either: mapSlug() strips punctuation,
+        # giving "safezone" and "saferzone", so draft_logic_config lookups stay
+        # distinct. Safe(r) Zone simply has no hand-authored map profile or pro
+        # rules yet, so the engine runs on measured data alone for it.
+        "Safe(r) Zone",
         # 2026-07-22 rotation: Rustic Arcade left the ranked pool (owner-confirmed
         # — it belonged to the previous season) and is deliberately NOT listed, so
         # no further Rustic Arcade matches are ingested. Crystal Arcade and
