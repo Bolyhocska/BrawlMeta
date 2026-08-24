@@ -29,11 +29,17 @@ export default async function handler(req, res) {
     // recoverable history; enrolling on first sight is the only way the second
     // visit is worth anything.
     //
-    // Fire-and-forget on purpose: this is a side effect of the lookup, not part
-    // of answering it, and a tracking write must never make a page fail to load.
-    // enrol_player itself refuses to resurrect an opted-out tag.
-    dbRpc("enrol_player", { p_tag: `#${tag}`, p_name: p.name ?? null })
-      .catch(e => console.error("enrol_player failed (non-fatal):", e.message));
+    // AWAITED, not fire-and-forget. A serverless function is frozen as soon as
+    // it sends a response, so an un-awaited promise is simply never run — the
+    // first live test of this enrolled nobody for exactly that reason. Errors
+    // are still swallowed, so the failure mode stays "lookup works, tracking
+    // silently didn't" rather than a broken page. enrol_player itself refuses
+    // to resurrect an opted-out tag.
+    try {
+      await dbRpc("enrol_player", { p_tag: `#${tag}`, p_name: p.name ?? null });
+    } catch (e) {
+      console.error("enrol_player failed (non-fatal):", e.message);
+    }
 
     const brawlers = Array.isArray(p.brawlers) ? p.brawlers : [];
     const best = [...brawlers].sort((a, b) => (b.trophies || 0) - (a.trophies || 0)).slice(0, 3)
