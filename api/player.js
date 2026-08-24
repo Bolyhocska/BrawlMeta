@@ -45,6 +45,25 @@ export default async function handler(req, res) {
     const best = [...brawlers].sort((a, b) => (b.trophies || 0) - (a.trophies || 0)).slice(0, 3)
       .map(b => ({ name: b.name, trophies: b.trophies, power: b.power, rank: b.rank }));
 
+    // Per-brawler loadout, for the upgrade advisor. Projected rather than passed
+    // through: the raw payload is ~106 brawlers deep and most of it is noise.
+    // `extra` carries any field the API adds that we do not model yet — the
+    // advisor needs to know whether hypercharges are exposed at all, and
+    // guessing at that would design a feature around data we may not have.
+    const KNOWN = new Set(["id", "name", "power", "rank", "trophies", "highestTrophies",
+                           "gears", "starPowers", "gadgets"]);
+    const roster = brawlers.map(b => {
+      const extra = Object.keys(b || {}).filter(k => !KNOWN.has(k));
+      return {
+        id: b.id, name: b.name,
+        power: b.power ?? 0, rank: b.rank ?? 0, trophies: b.trophies ?? 0,
+        gears: (b.gears || []).map(g => g.name),
+        starPowers: (b.starPowers || []).map(sp => sp.name),
+        gadgets: (b.gadgets || []).map(g => g.name),
+        ...(extra.length ? { extra: Object.fromEntries(extra.map(k => [k, b[k]])) } : {}),
+      };
+    });
+
     return json(res, 200, {
       tag: p.tag,
       name: p.name,
@@ -60,6 +79,7 @@ export default async function handler(req, res) {
       brawlersOwned: brawlers.length,
       maxedBrawlers: brawlers.filter(b => (b.power || 0) >= 11).length,
       bestBrawlers: best,
+      roster,
     });
   } catch (e) {
     console.error("player lookup error:", e, e?.cause);
