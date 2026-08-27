@@ -83,7 +83,7 @@ export default function UpgradePage() {
 
   const adv = useAdvice(myTag, ranked);
   const { loading, picks, classes, byMode, byClass, modeFreq, builtNames, strongNames,
-          saveAdvice, roster, intel, error } = adv;
+          saveAdvice, roster, intel, error, statsError } = adv;
 
   const modes = useMemo(
     () => Object.keys(byMode || {}).sort((a, b) => (modeFreq[b] || 0) - (modeFreq[a] || 0)),
@@ -185,6 +185,18 @@ export default function UpgradePage() {
             that mode, and counts a role as missing only when the meta actually drafts that role
             there.
           </SectionHead>
+          {modes.length === 0 && (
+            <div style={{
+              fontFamily: MONO, fontSize: 11, lineHeight: 1.7, color: "#ffce7a",
+              padding: "11px 13px", borderRadius: 10, marginBottom: 12,
+              background: "rgba(255,180,61,.07)", border: "1px solid rgba(255,180,61,.26)",
+            }}>
+              The per-mode split couldn't be loaded just now, so this section and the role
+              counts below fall back to patch-wide numbers. The top 5 above is unaffected.
+              Reloading usually fixes it.
+              {statsError && <span style={{ display: "block", color: "#8a8a9c", marginTop: 5 }}>{statsError}</span>}
+            </div>
+          )}
           <Tabs value={mode} onChange={setMode}
             items={modes.map(m => ({ key: m, label: modeName(m),
               hint: `${Math.round((modeFreq[m] || 0) * 100)}%` }))} />

@@ -22,6 +22,7 @@ import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH, us
 import { computeWinSplit } from "./data/draftEngine";
 import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights from "./PlayerInsights";
+import PlayerSearch from "./PlayerSearch";
 import UpgradeAdvisor from "./UpgradeAdvisor";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
@@ -541,6 +542,10 @@ export default function PlayerPage() {
             )}
           </div>
         )}
+
+        <div style={{ margin: "0 0 22px" }}>
+          <PlayerSearch compact placeholder="Look up another player" />
+        </div>
 
         <PlayerInsights rows={rows} tracked={tracked} selfTag={tag}
           onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />

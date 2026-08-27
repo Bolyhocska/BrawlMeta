@@ -25,6 +25,12 @@ import BRAWLER_META from "./data/brawlerMeta.json";
 export const MONO = "'JetBrains Mono', monospace";
 export const DISPLAY = "'Baloo 2', sans-serif";
 
+// Masters only, deliberately. Upgrade advice is about competitive ranked play,
+// and Diamond/Mythic win rates describe a different game — different draft
+// discipline, different comps. Named so it cannot drift apart between the two
+// queries below.
+const BRACKET = "masters_legendary";
+
 const art = (name) => BRAWLER_META[String(name || "").toUpperCase()]?.imageUrl || null;
 
 const TONE = {
@@ -36,7 +42,7 @@ const TONE = {
 
 export function useAdvice(tag, rankedRows) {
   const [state, setState] = useState({
-    loading: true, picks: [], classes: [], byMode: {}, byClass: {}, modeFreq: {},
+    loading: true, picks: [], classes: [], byMode: {}, byClass: {}, modeFreq: {}, statsError: null,
     builtNames: new Set(), strongNames: new Set(), saveAdvice: null,
     roster: [], intel: {}, error: null,
   });
@@ -51,7 +57,7 @@ export function useAdvice(tag, rankedRows) {
           fetch(`/api/player?tag=%23${tag.replace("#", "")}`).then(r => r.json()),
           supabase.from("brawler_intelligence")
             .select("brawler,true_win_rate,pick_rate")
-            .eq("patch", CURRENT_PATCH).eq("rank_bracket", "masters_legendary"),
+            .eq("patch", CURRENT_PATCH).eq("rank_bracket", BRACKET),
           supabase.from("ranked_map_pool").select("map_name").eq("in_rotation", true),
           supabase.from("brawlers").select("id,name"),
         ]);
@@ -71,32 +77,58 @@ export function useAdvice(tag, rankedRows) {
         // the per-mode lists need it, and because the share each ROLE takes in
         // each mode is what stops the advisor demanding a Heist Thrower.
         const maps = (poolRes.data || []).map(m => m.map_name);
-        const rotationStats = {}, modeStats = {}, cellPicks = {}, modeTotal = {};
-        let grand = 0;
+        // ALL-OR-NOTHING, and loudly. This paged read used to swallow its
+        // error: `const { data }` discarded it, a failure left `data` null, the
+        // loop broke, and the per-mode and per-role sections silently rendered
+        // as nothing while the overall list carried on working off the global
+        // win rates from a different query. That is exactly what it looked like
+        // on a second account — top five present, everything else missing, no
+        // error anywhere.
+        //
+        // Partial data is worse than none: pages 1-2 of 4 would produce mode
+        // shares computed from half the rotation and show them as fact. So it
+        // accumulates into scratch objects, retries once, and only commits if
+        // every page arrived.
+        let rotationStats = {}, modeStats = {}, cellPicks = {}, modeTotal = {};
+        let grand = 0, statsError = null;
         if (maps.length) {
-          // BrawlStats is one row per brawler-map, so this is ~2.7k rows and
-          // PostgREST caps a response at 1,000. Page it.
-          let from = 0;
-          for (;;) {
-            const { data: bs } = await supabase.from("BrawlerStats")
-              .select("brawler,mode,picks,wins")
-              .eq("patch", CURRENT_PATCH).eq("rank_bracket", "masters_legendary")
-              .in("map", maps).range(from, from + 999);
-            if (!bs || !bs.length) break;
-            for (const r of bs) {
-              const k = (r.brawler || "").toUpperCase(); if (!k) continue;
-              const m = r.mode || "?";
-              const picks = Number(r.picks) || 0, wins = Number(r.wins) || 0;
-              rotationStats[k] = rotationStats[k] || { picks: 0, wins: 0 };
-              rotationStats[k].picks += picks; rotationStats[k].wins += wins;
-              ((modeStats[k] = modeStats[k] || {})[m] = modeStats[k][m] || { picks: 0, wins: 0 });
-              modeStats[k][m].picks += picks; modeStats[k][m].wins += wins;
-              const c = draftClassOf(r.brawler);
-              ((cellPicks[m] = cellPicks[m] || {})[c] = (cellPicks[m][c] || 0) + picks);
-              modeTotal[m] = (modeTotal[m] || 0) + picks; grand += picks;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const rot = {}, byMode = {}, cells = {}, totals = {};
+            let total = 0, failed = null, from = 0;
+            for (;;) {
+              const { data: bs, error } = await supabase.from("BrawlerStats")
+                .select("brawler,mode,picks,wins")
+                .eq("patch", CURRENT_PATCH).eq("rank_bracket", BRACKET)
+                .in("map", maps).range(from, from + 999);
+              if (error) { failed = error.message; break; }
+              if (!bs || !bs.length) break;
+              for (const r of bs) {
+                const k = (r.brawler || "").toUpperCase(); if (!k) continue;
+                const m = r.mode || "?";
+                const picks = Number(r.picks) || 0, wins = Number(r.wins) || 0;
+                rot[k] = rot[k] || { picks: 0, wins: 0 };
+                rot[k].picks += picks; rot[k].wins += wins;
+                ((byMode[k] = byMode[k] || {})[m] = byMode[k][m] || { picks: 0, wins: 0 });
+                byMode[k][m].picks += picks; byMode[k][m].wins += wins;
+                const c = draftClassOf(r.brawler);
+                ((cells[m] = cells[m] || {})[c] = (cells[m][c] || 0) + picks);
+                totals[m] = (totals[m] || 0) + picks; total += picks;
+              }
+              if (bs.length < 1000) break;
+              from += 1000;
             }
-            if (bs.length < 1000) break;
-            from += 1000;
+            if (!failed) {
+              rotationStats = rot; modeStats = byMode; cellPicks = cells;
+              modeTotal = totals; grand = total; statsError = null;
+              break;
+            }
+            statsError = failed;
+          }
+          if (statsError) {
+            // Leave every accumulator empty. metaStrength then falls back to the
+            // patch-wide win rate, which is a defined answer, and the UI is told
+            // the mode split is unavailable rather than showing a blank section.
+            console.error("BrawlerStats read failed, mode split unavailable:", statsError);
           }
         }
         const modeFreq = {}, modeUsage = {};
@@ -119,7 +151,8 @@ export function useAdvice(tag, rankedRows) {
         const { picks, classes, byMode, byClass, builtNames, strongNames, saveAdvice } =
           recommendUpgrades({ roster, intelligence, rotationStats, modeStats, modeUsage, modeFreq, playedCounts });
         setState({ loading: false, picks, classes, byMode, byClass, modeFreq,
-                   builtNames, strongNames, saveAdvice, roster, intel: intelligence, error: null });
+                   builtNames, strongNames, saveAdvice, roster, intel: intelligence,
+                   statsError, error: null });
       } catch (e) {
         if (!cancelled) setState(s => ({ ...s, loading: false, picks: [], error: e.message }));
       }

@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import PlayerInsights from "./PlayerInsights";
+import PlayerSearch from "./PlayerSearch";
 import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
@@ -1379,6 +1380,11 @@ export function TournamentProfilePage() {
           <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag} compact
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
+
+        <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 8 }}>◈ LOOK UP A PLAYER</span>
+        <div style={{ marginBottom: 24 }}>
+          <PlayerSearch />
+        </div>
 
         {/* The advisor moved to its own page. It outgrew a profile section once
             it answered per mode and per role as well as overall — six mode
