@@ -5,12 +5,11 @@
 //   we have never seen still resolves — and looking it up enrols them, so their
 //   history starts accumulating from that moment.
 //
-//   A NAME can only match players we already know, from three sources in
-//   descending order of recognisability: top_200_leaderboard (200 names),
-//   masters_players (1,318), then tracked_players. That last one carries a name
-//   on only 4 of its 1,434 rows today — the poller writes last_seen_name on
-//   every visit, so it fills in on its own — which is why it is last and why
-//   the empty state says what the search does and does not cover.
+//   A NAME can only match players we already know. player_directory is the
+//   broad source — every battlelog the scrapers read carries {tag, name} for
+//   all six players, so it grows on its own at no extra API cost — and the two
+//   leaderboard tables are queried alongside it because a top-200 player is
+//   almost always the one being searched for, so they are ranked above it.
 //
 // Tags are matched loosely on input (people paste "#2C20JJRG", "2c20jjrg", or
 // with stray spaces) but normalised to one canonical form before navigating.
@@ -61,11 +60,13 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
         // name TODAY, but the poller writes last_seen_name on every visit, so
         // this source fills in on its own as people get looked up. Ordering it
         // after the leaderboards keeps the ranked, recognisable names on top.
-        const [top, masters, tracked] = await Promise.all([
+        const [top, masters, directory] = await Promise.all([
           supabase.from("top_200_leaderboard").select("player_tag,name,trophies,rank").ilike("name", like).limit(8),
           supabase.from("masters_players").select("player_tag,name").ilike("name", like).limit(8),
-          supabase.from("tracked_players").select("player_tag,last_seen_name")
-            .ilike("last_seen_name", like).eq("opted_out", false).limit(8),
+          // The view, not the table: it excludes anyone who opted out of
+          // tracking, so one opt-out covers both polling and searchability.
+          supabase.from("player_directory_public").select("player_tag,name,last_seen_at")
+            .ilike("name", like).order("last_seen_at", { ascending: false }).limit(12),
         ]);
         if (off) return;
         const seen = new Set(), out = [];
@@ -77,9 +78,9 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
           const tag = r.player_tag; if (!tag || seen.has(tag)) continue;
           seen.add(tag); out.push({ tag, name: r.name, note: "Masters" });
         }
-        for (const r of tracked.data || []) {
-          const tag = r.player_tag; if (!tag || seen.has(tag) || !r.last_seen_name) continue;
-          seen.add(tag); out.push({ tag, name: r.last_seen_name, note: "Tracked" });
+        for (const r of directory.data || []) {
+          const tag = r.player_tag; if (!tag || seen.has(tag) || !r.name) continue;
+          seen.add(tag); out.push({ tag, name: r.name, note: "Seen in ranked" });
         }
         setRows(out.slice(0, 10));
       } finally {
@@ -160,8 +161,8 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
           ))}
           {!busy && !rows.length && !tagCandidate && (
             <div style={{ padding: "12px 13px", fontFamily: MONO, fontSize: 11, color: "#6f7180", lineHeight: 1.6 }}>
-              No player by that name. Name search covers the global top 200, known Masters players,
-              and anyone already looked up here — paste a tag to find anyone else.
+              No player by that name. Name search covers players we've seen in ranked matches —
+              it grows as we collect — so paste a tag to look up anyone else.
             </div>
           )}
           {busy && !rows.length && (

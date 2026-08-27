@@ -455,8 +455,55 @@ STATS = RunStats()
 # ==========================================
 # BATTLELOG SPIDER
 # ==========================================
+# ─── Player name directory ────────────────────────────────────────────────────
+# Supercell exposes no player-search endpoint, so looking a player up BY NAME can
+# only ever search an index we build ourselves. Every battlelog entry already
+# hands us {tag, name} for all six players and we were reading the tag and
+# throwing the name away — so this costs zero extra API calls and rides along
+# with work the scrapers already do.
+#
+# Measured 2026-08-26: a 4,000-row sample of player_matches held 236 tags we had
+# polled and 4,972 distinct tags visible inside those same rows, 21x more.
+SEEN_PLAYERS = {}
+
+
+def push_players(players=None):
+    """Upsert observed {tag: name} pairs into player_directory.
+
+    The name is OVERWRITTEN on every sighting, deliberately: a rename has to
+    follow the tag, which is the stable identity. `first_seen_at` is left out of
+    the payload so the conflict path cannot reset it — PostgREST only updates the
+    columns you send.
+    """
+    rows = dict(SEEN_PLAYERS if players is None else players)
+    if not rows:
+        return 0
+    now = datetime.now(timezone.utc).isoformat()
+    payload = [{"player_tag": t, "name": n, "last_seen_at": now}
+               for t, n in rows.items() if t and n]
+    headers = {**SUPABASE_HEADERS, "Prefer": "resolution=merge-duplicates"}
+    url = f"{SUPABASE_URL}/rest/v1/player_directory?on_conflict=player_tag"
+    written = 0
+    # Same batching rule as the match insert: a giant single statement hits the
+    # timeout and rolls the whole thing back.
+    for i in range(0, len(payload), 1000):
+        chunk = payload[i:i + 1000]
+        try:
+            r = requests.post(url, headers=headers, json=chunk, timeout=60)
+            if r.status_code in (200, 201, 204):
+                written += len(chunk)
+            else:
+                print(f"  player_directory upsert failed ({r.status_code}): {r.text[:200]}")
+        except Exception as e:
+            print(f"  player_directory upsert error: {e}")
+        time.sleep(0.2)
+    if players is None:
+        SEEN_PLAYERS.clear()
+    return written
+
+
 def parse_battle(match, player_tag, bracket):
-    """Parse ONE battlelog entry. Returns (frontier_tags, record).
+    """Parse ONE battlelog entry. Returns (frontier_tags, record, players).
 
     Single source of truth for what counts as a collectable competitive Ranked
     match, shared by the spider (which projects the record down to brawler names)
@@ -474,6 +521,13 @@ def parse_battle(match, player_tag, bracket):
     the absolute view (winners/losers, for the composition hash) and the view
     relative to `player_tag` (team/enemy, result), because a player history is
     written from the player's side while ranked_matches is not.
+
+    `players` is [{"tag", "name"}] for everyone in the battle, and follows the
+    same rule as frontier_tags: it is returned even when the battle is rejected,
+    because a real player was still observed. Supercell exposes no player-search
+    endpoint, so name lookup can only search an index we build ourselves — and
+    the battlelog hands us {tag, name} for all six players at no extra cost. We
+    were reading the tag and dropping the name.
     """
     battle_data = match.get("battle", {}) or {}
     event_data = match.get("event", {}) or {}
@@ -492,10 +546,10 @@ def parse_battle(match, player_tag, bracket):
     # Belt-and-suspenders: trophy/casual battles carry a trophyChange field;
     # competitive Ranked never does. Catches any mislabeled type string.
     if "trophyChange" in battle_data:
-        return [], None
+        return [], None, []
 
     if not (is_competitive_ranked and mode_name in RANKED_MODES):
-        return [], None
+        return [], None, []
 
     teams = battle_data.get("teams", [])
     result = battle_data.get("result", "").lower()
@@ -503,14 +557,18 @@ def parse_battle(match, player_tag, bracket):
     # Ranked is strictly 3v3 — the team-size check guards against any
     # 5v5 event that reports a mode name colliding with RANKED_MODES.
     if not (len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]):
-        return [], None
+        return [], None, []
 
     battle_tags = []
+    battle_players = []
     for team in teams:
         for p in team:
             tag = p.get("tag")
             if tag:
                 battle_tags.append(tag)
+                name = p.get("name")
+                if name:
+                    battle_players.append({"tag": tag, "name": name})
 
     player_team_idx = 0
     for idx, team in enumerate(teams):
@@ -529,20 +587,20 @@ def parse_battle(match, player_tag, bracket):
     losers = [p['brawler']['name'] for p in losing_team if p.get('brawler') and p['brawler'].get('name')]
 
     if not winners or not losers:
-        return battle_tags, None
+        return battle_tags, None, battle_players
 
     map_name = event_data.get("map") or "Unknown Map"
     mode_name = battle_data.get("mode") or "Unknown Mode"
     battle_time = match.get("battleTime")
     match_patch = determine_patch(battle_time)
     if match_patch in CLOSED_PATCHES:
-        return battle_tags, None
+        return battle_tags, None, battle_players
 
     allowed_maps = RANKED_MAPS.get(match_patch)
     # EXTRA_RANKED_MAPS is the live rotation observed by scrapers/map_pool.py.
     # It widens the allowlist and never narrows it — see the note on that set.
     if allowed_maps is not None and map_name not in allowed_maps and map_name not in EXTRA_RANKED_MAPS:
-        return battle_tags, None
+        return battle_tags, None, battle_players
 
     record = {
         "map": map_name,
@@ -569,7 +627,7 @@ def parse_battle(match, player_tag, bracket):
         ),
     }
     record["match_hash"] = make_hash(record)
-    return battle_tags, record
+    return battle_tags, record, battle_players
 
 def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_hashes, lock=None):
     # lock guards all shared-state mutations (seen_tags/extracted_data/seen_hashes)
@@ -598,9 +656,11 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
 
     candidate_tags = []
     candidate_entries = []
+    candidate_players = []
     battles = log_res.json().get("items", [])
     for match in battles:
-        battle_tags, record = parse_battle(match, player_tag, bracket)
+        battle_tags, record, battle_players = parse_battle(match, player_tag, bracket)
+        candidate_players.extend(battle_players)
         # Frontier tags are taken even when the battle is later rejected (closed
         # patch, unlisted map, unreadable brawler). That is the pre-existing
         # behaviour and it matters: those players are still Masters-adjacent and
@@ -628,6 +688,10 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
     # dedupes within this run — cross-run dedupe happens in the database via
     # the match_hash primary key + ignore-duplicates on insert.
     def merge():
+        # Written here rather than in the parse loop because this is the one
+        # place already holding the lock; the spider runs threaded.
+        for pl in candidate_players:
+            SEEN_PLAYERS[pl["tag"]] = pl["name"]
         new_player_tags = [t for t in candidate_tags if t not in seen_tags]
         for entry in candidate_entries:
             if entry["match_hash"] not in seen_hashes:

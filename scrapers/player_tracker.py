@@ -36,6 +36,7 @@ import requests
 
 from scrapers.common import (
     require_credentials, LookupCache, refresh_dynamic_map_pool, parse_battle,
+    SEEN_PLAYERS, push_players,
     BASE_URL, HEADERS, PROXIES, SUPABASE_URL, SUPABASE_HEADERS,
     REQUEST_DELAY, CONCURRENCY, INSERT_BATCH_SIZE, DB_BATCH_DELAY, STATS,
 )
@@ -153,7 +154,12 @@ def poll_player(row, lookups, out_rows, out_snapshots, out_updates, lock):
 
     rows, newest = [], last_seen
     for match in res.json().get("items", []):
-        _, record = parse_battle(match, tag, row.get("seed_bracket"))
+        _, record, battle_players = parse_battle(match, tag, row.get("seed_bracket"))
+        # Names come off EVERY battle, including ones we do not store — the
+        # player was still observed, and the directory is what makes name
+        # search possible at all.
+        for pl in battle_players:
+            SEEN_PLAYERS[pl["tag"]] = pl["name"]
         if record is None:
             continue
         when = parse_battle_time(record["battle_time"])
@@ -434,6 +440,11 @@ def main():
     save_player_matches(rows)
     save_player_snapshots(snapshots)
     save_schedules(updates)
+    # Names observed along the way. Free — they rode in on battlelogs we already
+    # fetched — and they are what makes searching for a player by name possible.
+    named = push_players()
+    if named:
+        print(f"player_directory: {named} name(s) recorded.")
     prune()
     STATS.report("player_tracker")
 

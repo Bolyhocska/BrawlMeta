@@ -30,7 +30,7 @@ except ImportError:
 
 from scrapers.common import (
     require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
-    harvest_bracket, push_matches, reaggregate, prune_bracket,
+    harvest_bracket, push_matches, push_players, reaggregate, prune_bracket,
     SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
     MASTERS_BASELINE, MASTERS_STEADY, MASTERS_RUN_CAP, SPIDER_DEPTH,
     MASTERS_WINDOW_CAP,
@@ -229,6 +229,13 @@ def main():
                     depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds)
 
     persist_spider_players(depth1_tags)
+
+    # Every battlelog the spider read handed us {tag, name} for six players.
+    # Recorded before the match push so a failure there still leaves the
+    # directory richer than it was.
+    named = push_players()
+    if named:
+        print(f"player_directory: {named} name(s) recorded.")
 
     inserted, touched = push_matches(extracted, lookups)
     if inserted:

@@ -12,7 +12,7 @@ import requests
 
 from scrapers.common import (
     require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
-    harvest_bracket, push_matches, reaggregate,
+    harvest_bracket, push_matches, push_players, reaggregate,
     SUPABASE_URL, SUPABASE_HEADERS,
     MASTERS_BASELINE, DIAMOND_RUN_CAP, SPIDER_DEPTH,
 )
@@ -63,6 +63,13 @@ def main():
     extracted, seen_tags, seen_hashes = [], set(), set()
     harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
                     target_matches=DIAMOND_RUN_CAP, max_depth=SPIDER_DEPTH)
+
+    # Every battlelog the spider read handed us {tag, name} for six players.
+    # Recorded before the match push so a failure there still leaves the
+    # directory richer than it was.
+    named = push_players()
+    if named:
+        print(f"player_directory: {named} name(s) recorded.")
 
     inserted, touched = push_matches(extracted, lookups)
     if inserted:
