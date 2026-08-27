@@ -62,6 +62,18 @@ const READY_META = (READY_WIN_RATE - WR_FLOOR) / WR_SPAN;
 // Three fieldable brawlers in a role is enough to never be stuck in a draft.
 const READY_TARGET = 3;
 
+// A (mode x role) cell only counts as a hole if the meta actually drafts that
+// role there. Measured 2026-08-26: 15 of 42 cells were empty on a real roster,
+// but only 5 were genuine — the rest are roles nobody fields in that mode
+// (Throwers are 0.7% of Gem Grab picks, Snipers 3.5% of Brawl Ball). Demanding
+// those would be pure noise. 12% is the elbow: below it usage falls away
+// sharply, above it the role is a normal part of the comp.
+const MODE_USAGE_MIN = 12;
+
+// Below this a per-mode win rate is too thin to trust, and the brawler is
+// judged on its rotation-wide number instead.
+const MODE_PICK_MIN = 200;
+
 const STEP = {
   toEleven: 1.00,       // unplayable in ranked below 11 — nothing beats this
   firstSp: 0.50,
@@ -116,6 +128,27 @@ function rawWinRate(name, intelligence, rotationStats) {
   return mapWR;
 }
 
+/**
+ * Win rate in ONE mode, falling back to the rotation-wide figure when the mode
+ * sample is too thin. The fallback matters: without it a brawler with 150 picks
+ * in Heist would be scored on noise, and with it it is simply scored as an
+ * average brawler there until the sample arrives.
+ */
+function metaStrengthInMode(name, mode, intelligence, rotationStats, modeStats) {
+  const key = (name || "").toUpperCase();
+  const v = modeStats?.[key]?.[mode];
+  if (v && num(v.picks) >= MODE_PICK_MIN) {
+    const wr = (num(v.wins) / num(v.picks)) * 100;
+    return Math.max(0, Math.min(1, (wr - WR_FLOOR) / WR_SPAN));
+  }
+  return metaStrength(name, intelligence, rotationStats);
+}
+
+function winRateInMode(name, mode, modeStats) {
+  const v = modeStats?.[(name || "").toUpperCase()]?.[mode];
+  return v && num(v.picks) >= MODE_PICK_MIN ? (num(v.wins) / num(v.picks)) * 100 : null;
+}
+
 function sunkFraction(b) {
   const power = (num(b.power, 1) - 1) / (MAX_POWER - 1);
   const sp = Math.min(1, (b.starPowers || []).length / 2);
@@ -144,10 +177,13 @@ function wastedInvestment(b) {
   return attached * ((MAX_POWER - power) / (MAX_POWER - 1));
 }
 
-export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {}, playedCounts = {} }) {
+export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {},
+                                    modeStats = {}, modeUsage = {}, modeFreq = {},
+                                    playedCounts = {} }) {
   const owned = (roster || []).filter(b => num(b.power) >= 1);
   if (!owned.length) {
-    return { picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null };
+    return { picks: [], classes: [], builtNames: new Set(), strongNames: new Set(),
+             byMode: {}, byClass: {}, saveAdvice: null };
   }
 
   // TWO SEPARATE QUESTIONS, deliberately not merged.
@@ -231,11 +267,12 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
     const rescued = meta >= 0.6 && need >= 0.33;
     const hyperMult = (ownsHyper || rescued || buyingHyper) ? 1 : W.noHyperPenalty;
 
-    const gain = meta * stepImpact(b) * hyperMult;
+    const impact = stepImpact(b);
+    const gain = meta * impact * hyperMult;
     const ease = 0.6 + 0.4 * sunk;
 
     scored.push({
-      gain, ease,
+      gain, ease, impact,
       name: b.name, cls, label: classLabel(cls), power: num(b.power, 1),
       meta, winRate: rawWinRate(b.name, intelligence, rotationStats),
       sunk, waste, affinity, ownsHyper, rescued,
@@ -262,37 +299,107 @@ export function recommendUpgrades({ roster, intelligence = {}, rotationStats = {
   // AS IT WOULD BE after the picks above it are done, so the list stops
   // recommending the same hole five times. The class term is a nudge, not a
   // quota — a genuinely outstanding second Thrower still beats a mediocre Tank.
-  const banked = {};
-  const picks = [];
-  const pool = scored.slice();
-  while (pool.length) {
-    let bestI = 0, bestScore = -Infinity, bestNeed = 0;
-    for (let i = 0; i < pool.length; i++) {
-      const p = pool[i];
-      const need = classNeed(p.cls, banked[p.cls] || 0);
-      const sc = p.gain * p.ease
-        * (1 + W.classGap * need + W.strengthGap * strengthGap(p.cls, p.meta) + W.affinity * p.affinity)
-        + W.waste * p.waste;
-      if (sc > bestScore) { bestScore = sc; bestI = i; bestNeed = need; }
+  //
+  // Extracted so the overall list and every per-mode list run the SAME
+  // selection. They differ only in what they consider strong and what they
+  // consider a hole; if they differed in mechanism too, a brawler could be
+  // first overall and absent from every mode it plays.
+  const rank = ({ gainOf, needOf, gapOf, metaOf, wrOf, ctx }) => {
+    const bankedIn = {};
+    const out = [];
+    const pool = scored.slice();
+    while (pool.length) {
+      let bestI = 0, bestScore = -Infinity, bestNeed = 0;
+      for (let i = 0; i < pool.length; i++) {
+        const c = pool[i];
+        const need = needOf(c.cls, bankedIn[c.cls] || 0);
+        const sc = gainOf(c) * c.ease
+          * (1 + W.classGap * need + W.strengthGap * gapOf(c) + W.affinity * c.affinity)
+          + W.waste * c.waste;
+        if (sc > bestScore) { bestScore = sc; bestI = i; bestNeed = need; }
+      }
+      const [c] = pool.splice(bestI, 1);
+      const p = { ...c, ...(ctx || {}) };
+      p.score = bestScore;
+      p.meta = metaOf ? metaOf(c) : c.meta;
+      if (wrOf) { const w = wrOf(c); if (w != null) p.winRate = w; }
+      p.classNeed = bestNeed;
+      p.classBuilt = builtByClass[p.cls] || 0;
+      p.classStrong = strongByClass[p.cls] || 0;
+      p.classMaxed = maxedByClass[p.cls] || 0;
+      p.classOwned = ownedByClass[p.cls] || 0;
+      p.classBanked = bankedIn[p.cls] || 0;
+      // Value per 1,000 coins of the immediate step — the only way a 20-coin
+      // level-up and a 5,000-coin hypercharge are comparable at all.
+      p.perK = p.step.coins > 0 ? bestScore / (p.step.coins / 1000) : bestScore;
+      bankedIn[p.cls] = (bankedIn[p.cls] || 0) + 1;
+      out.push(p);
     }
-    const [p] = pool.splice(bestI, 1);
-    p.score = bestScore;
-    p.classNeed = bestNeed;
-    p.classBuilt = builtByClass[p.cls] || 0;
-    p.classStrong = strongByClass[p.cls] || 0;
-    p.classMaxed = maxedByClass[p.cls] || 0;
-    p.classOwned = ownedByClass[p.cls] || 0;
-    p.classBanked = banked[p.cls] || 0;
-    // Value per 1,000 coins of the immediate step — the only way a 20-coin
-    // level-up and a 5,000-coin hypercharge are comparable at all.
-    p.perK = p.step.coins > 0 ? bestScore / (p.step.coins / 1000) : bestScore;
-    banked[p.cls] = (banked[p.cls] || 0) + 1;
-    picks.push(p);
+    for (const x of out) x.reasons = buildReasons(x);
+    return out;
+  };
+
+  const picks = rank({
+    gainOf: c => c.gain,
+    needOf: classNeed,
+    gapOf: c => strengthGap(c.cls, c.meta),
+  });
+
+  // ── the same question, asked one mode at a time ────────────────────────────
+  // You know the map — and therefore the mode — BEFORE you draft, so "what
+  // should I upgrade" has a different answer per mode, and the rotation-wide
+  // average hides it. Nori is 63.8% in Heist and ~48% everywhere else; flat, he
+  // reads as an ordinary 53.5% brawler.
+  const modes = Object.keys(modeFreq || {});
+  const byMode = {};
+  for (const mode of modes) {
+    const metaIn = (c) => metaStrengthInMode(c.name, mode, intelligence, rotationStats, modeStats);
+
+    // Coverage, counted in this mode only: brawlers you can field AND that are
+    // actually good here. Eight built Space Makers is not coverage in Knockout
+    // if none of them clears 50% there.
+    const builtHere = {}, strongHere = {};
+    for (const b of owned) {
+      if (!builtNames.has(String(b.name || "").toUpperCase())) continue;
+      const cls = draftClassOf(b.name);
+      builtHere[cls] = (builtHere[cls] || 0) + 1;
+      const m = metaStrengthInMode(b.name, mode, intelligence, rotationStats, modeStats);
+      if (num(m) >= READY_META) strongHere[cls] = (strongHere[cls] || 0) + 1;
+    }
+    // A role is only a hole here if the meta actually drafts it here. Without
+    // this the advisor would demand a Heist Thrower, a slot worth 1.6% of picks.
+    const used = (cls) => num(modeUsage?.[mode]?.[cls]) >= MODE_USAGE_MIN;
+    const needHere = (cls, banked = 0) => (used(cls)
+      ? Math.max(0, 1 - ((strongHere[cls] || 0) + banked) / READY_TARGET)
+      : 0);
+    const gapHere = (c) => (used(c.cls) && (strongHere[c.cls] || 0) === 0
+      && num(metaIn(c)) >= READY_META ? 1 : 0);
+
+    byMode[mode] = rank({
+      // Same shape as the overall gain: what the step buys, scaled by how good
+      // the brawler is HERE. `impact` is a property of the upgrade, not of the
+      // mode, so it is computed once and reused.
+      gainOf: (c) => {
+        const m = metaIn(c);
+        const hyperOk = c.ownsHyper || /Hypercharge/i.test(c.step.label) || num(m) >= 0.6;
+        return num(m) * c.impact * (hyperOk ? 1 : W.noHyperPenalty);
+      },
+      needOf: needHere,
+      gapOf: gapHere,
+      metaOf: metaIn,
+      wrOf: c => winRateInMode(c.name, mode, modeStats),
+      ctx: { mode, modeShare: num(modeFreq?.[mode]) },
+    });
   }
 
-  for (const p of picks) p.reasons = buildReasons(p);
+  // ── and one role at a time ────────────────────────────────────────────────
+  // Just the overall ranking filtered, deliberately: within a single class the
+  // class terms are constant, so re-ranking would change nothing except to make
+  // a brawler's position differ between two views for no reason.
+  const byClass = {};
+  for (const p of picks) (byClass[p.cls] = byClass[p.cls] || []).push(p);
 
-  return { picks, classes, builtNames, strongNames,
+  return { picks, classes, builtNames, strongNames, byMode, byClass,
            saveAdvice: saveOrSpend(picks, owned, classes, roster) };
 }
 
@@ -477,4 +584,4 @@ function buildReasons(p) {
   return out;
 }
 
-export { levelCost, costToComplete, READY_WIN_RATE };
+export { levelCost, costToComplete, READY_WIN_RATE, MODE_USAGE_MIN };

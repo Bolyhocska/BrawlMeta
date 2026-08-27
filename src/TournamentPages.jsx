@@ -10,7 +10,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import PlayerInsights from "./PlayerInsights";
-import UpgradeAdvisor from "./UpgradeAdvisor";
 import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
@@ -1381,14 +1380,31 @@ export function TournamentProfilePage() {
             onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
         )}
 
+        {/* The advisor moved to its own page. It outgrew a profile section once
+            it answered per mode and per role as well as overall — six mode
+            lists, seven role lists and the full roster grid is a page, not a
+            panel. This is the doorway. */}
         {myTag && (
           <>
             <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 4 }}>◈ WHAT TO UPGRADE NEXT</span>
-            <div style={{ fontSize: 13, color: "#8b8b9c", lineHeight: 1.6, marginBottom: 12, maxWidth: 620 }}>
-              Your own brawlers, ranked by how much the next upgrade would actually buy you on the
-              maps in rotation right now.
-            </div>
-            <UpgradeAdvisor tag={myTag} rankedRows={ranked} />
+            <button type="button" onClick={() => navigate("/upgrade")} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14,
+              width: "100%", maxWidth: 620, textAlign: "left", cursor: "pointer",
+              padding: "15px 17px", borderRadius: 13, marginBottom: 22,
+              background: "rgba(179,107,255,.07)", border: "1px solid rgba(179,107,255,.26)",
+            }}>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: "'Baloo 2', sans-serif", fontSize: 17,
+                               fontWeight: 800, color: "#f4f4fa", marginBottom: 3 }}>
+                  What should I upgrade next?
+                </span>
+                <span style={{ display: "block", fontSize: 13, color: "#9a9aab", lineHeight: 1.55 }}>
+                  Your own brawlers, ranked by what the next upgrade actually buys you —
+                  overall, per mode, and per role.
+                </span>
+              </span>
+              <ChevronRight size={18} style={{ color: "#c9a6ff", flexShrink: 0 }} />
+            </button>
           </>
         )}
 

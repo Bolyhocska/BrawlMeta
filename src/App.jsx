@@ -10,6 +10,7 @@ import ScrimsPage from "./ScrimsPage";
 import SiteFooter from "./SiteFooter";
 import { PrivacyPolicyPage, AboutPage } from "./LegalPages";
 import PlayerPage from "./PlayerPage";
+import UpgradePage from "./UpgradePage";
 import DraftAssistant from "./DraftAssistant";
 import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
@@ -786,6 +787,7 @@ export default function AppRoutes() {
       <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
       <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
       <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
+      <Route path="/upgrade" element={<UpgradePage />} />
       <Route path="/player/:tag" element={<PlayerPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/about" element={<AboutPage />} />

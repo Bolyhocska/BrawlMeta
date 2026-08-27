@@ -22,8 +22,8 @@ import { draftClassOf } from "./data/draftEngine";
 import { BUFFIE_PACKS, BUFFIE_COST } from "./data/upgradeCosts";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
-const MONO = "'JetBrains Mono', monospace";
-const DISPLAY = "'Baloo 2', sans-serif";
+export const MONO = "'JetBrains Mono', monospace";
+export const DISPLAY = "'Baloo 2', sans-serif";
 
 const art = (name) => BRAWLER_META[String(name || "").toUpperCase()]?.imageUrl || null;
 
@@ -34,8 +34,12 @@ const TONE = {
   muted: "#6f7180",
 };
 
-function useAdvice(tag, rankedRows) {
-  const [state, setState] = useState({ loading: true, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, roster: [], intel: {}, error: null });
+export function useAdvice(tag, rankedRows) {
+  const [state, setState] = useState({
+    loading: true, picks: [], classes: [], byMode: {}, byClass: {}, modeFreq: {},
+    builtNames: new Set(), strongNames: new Set(), saveAdvice: null,
+    roster: [], intel: {}, error: null,
+  });
 
   useEffect(() => {
     if (!tag) return;
@@ -54,7 +58,7 @@ function useAdvice(tag, rankedRows) {
         if (cancelled) return;
         const roster = profileRes?.roster;
         if (!Array.isArray(roster) || !roster.length) {
-          setState({ loading: false, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, error: "no_roster" });
+          setState(s => ({ ...s, loading: false, picks: [], error: "no_roster" }));
           return;
         }
 
@@ -63,20 +67,44 @@ function useAdvice(tag, rankedRows) {
 
         // Only the maps actually in rotation — an upgrade should be judged on
         // what the player will meet this week, not on a patch-wide average that
-        // includes maps nobody is playing right now.
+        // includes maps nobody is playing right now. `mode` comes along because
+        // the per-mode lists need it, and because the share each ROLE takes in
+        // each mode is what stops the advisor demanding a Heist Thrower.
         const maps = (poolRes.data || []).map(m => m.map_name);
-        const rotationStats = {};
+        const rotationStats = {}, modeStats = {}, cellPicks = {}, modeTotal = {};
+        let grand = 0;
         if (maps.length) {
-          const { data: bs } = await supabase.from("BrawlerStats")
-            .select("brawler,picks,wins")
-            .eq("patch", CURRENT_PATCH).eq("rank_bracket", "masters_legendary")
-            .in("map", maps);
-          for (const r of bs || []) {
-            const k = (r.brawler || "").toUpperCase();
-            if (!k) continue;
-            rotationStats[k] = rotationStats[k] || { picks: 0, wins: 0 };
-            rotationStats[k].picks += Number(r.picks) || 0;
-            rotationStats[k].wins += Number(r.wins) || 0;
+          // BrawlStats is one row per brawler-map, so this is ~2.7k rows and
+          // PostgREST caps a response at 1,000. Page it.
+          let from = 0;
+          for (;;) {
+            const { data: bs } = await supabase.from("BrawlerStats")
+              .select("brawler,mode,picks,wins")
+              .eq("patch", CURRENT_PATCH).eq("rank_bracket", "masters_legendary")
+              .in("map", maps).range(from, from + 999);
+            if (!bs || !bs.length) break;
+            for (const r of bs) {
+              const k = (r.brawler || "").toUpperCase(); if (!k) continue;
+              const m = r.mode || "?";
+              const picks = Number(r.picks) || 0, wins = Number(r.wins) || 0;
+              rotationStats[k] = rotationStats[k] || { picks: 0, wins: 0 };
+              rotationStats[k].picks += picks; rotationStats[k].wins += wins;
+              ((modeStats[k] = modeStats[k] || {})[m] = modeStats[k][m] || { picks: 0, wins: 0 });
+              modeStats[k][m].picks += picks; modeStats[k][m].wins += wins;
+              const c = draftClassOf(r.brawler);
+              ((cellPicks[m] = cellPicks[m] || {})[c] = (cellPicks[m][c] || 0) + picks);
+              modeTotal[m] = (modeTotal[m] || 0) + picks; grand += picks;
+            }
+            if (bs.length < 1000) break;
+            from += 1000;
+          }
+        }
+        const modeFreq = {}, modeUsage = {};
+        for (const m of Object.keys(modeTotal)) {
+          modeFreq[m] = modeTotal[m] / (grand || 1);
+          modeUsage[m] = {};
+          for (const c of Object.keys(cellPicks[m] || {})) {
+            modeUsage[m][c] = 100 * cellPicks[m][c] / modeTotal[m];
           }
         }
 
@@ -88,12 +116,12 @@ function useAdvice(tag, rankedRows) {
         }
 
         if (cancelled) return;
-        const { picks, classes, builtNames, strongNames, saveAdvice } =
-          recommendUpgrades({ roster, intelligence, rotationStats, playedCounts });
-        setState({ loading: false, picks, classes, builtNames, strongNames, saveAdvice,
-                   roster, intel: intelligence, error: null });
+        const { picks, classes, byMode, byClass, builtNames, strongNames, saveAdvice } =
+          recommendUpgrades({ roster, intelligence, rotationStats, modeStats, modeUsage, modeFreq, playedCounts });
+        setState({ loading: false, picks, classes, byMode, byClass, modeFreq,
+                   builtNames, strongNames, saveAdvice, roster, intel: intelligence, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, picks: [], classes: [], builtNames: new Set(), strongNames: new Set(), saveAdvice: null, error: e.message });
+        if (!cancelled) setState(s => ({ ...s, loading: false, picks: [], error: e.message }));
       }
     })();
     return () => { cancelled = true; };
@@ -102,11 +130,6 @@ function useAdvice(tag, rankedRows) {
   return state;
 }
 
-
-// What the player already owns on this brawler, stated as fact rather than left
-// to the prose. The reasoning below mentions only what drives the score, which
-// meant a brawler with both gadgets could be described purely in terms of its
-// buffies — true, but it read as though the gadgets weren't noticed.
 function Loadout({ owned }) {
   const items = [
     { label: "GADGETS", have: owned.gadgets, of: 2 },
@@ -137,7 +160,7 @@ function Loadout({ owned }) {
   );
 }
 
-function Card({ p, rank }) {
+export function Card({ p, rank, note }) {
   const image = art(p.name);
   return (
     <div style={{
@@ -168,6 +191,14 @@ function Card({ p, rank }) {
           </span>
           <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#8a7fa6" }}>{p.label.toUpperCase()}</span>
           <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>POWER {p.power}</span>
+          {note && (
+            <span style={{
+              fontFamily: MONO, fontSize: 9, letterSpacing: .6, padding: "2px 7px", borderRadius: 999,
+              background: note.tone === "new" ? "rgba(142,230,176,.12)" : "rgba(255,255,255,.05)",
+              border: `1px solid ${note.tone === "new" ? "rgba(142,230,176,.32)" : "rgba(255,255,255,.10)"}`,
+              color: note.tone === "new" ? "#8ee6b0" : "#8a8a9c",
+            }}>{note.text}</span>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
@@ -211,7 +242,7 @@ function Card({ p, rank }) {
 // from the three brawlers in a pack, skipping what you already hold. So the
 // only question a player can actually act on is "which pack still has room",
 // and a full pack is money that cannot be spent there at all.
-function BuffiePacks({ roster }) {
+export function BuffiePacks({ roster }) {
   if (!roster || !roster.length) return null;
   const byName = Object.fromEntries(roster.map(b => [String(b.name || "").toUpperCase(), b]));
   const rows = BUFFIE_PACKS.map(pack => {
@@ -415,7 +446,7 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
   );
 }
 
-function RoleCoverage({ classes, roster, picks, intel, builtNames, strongNames }) {
+export function RoleCoverage({ classes, roster, picks, intel, builtNames, strongNames }) {
   const [open, setOpen] = useState(null);
   if (!classes.length) return null;
   const built = builtNames || new Set();
