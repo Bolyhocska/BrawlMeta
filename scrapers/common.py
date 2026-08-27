@@ -291,13 +291,34 @@ def get_stored_match_count(lookups, bracket_name, patch_name=CURRENT_PATCH):
 # ==========================================
 # MATCH HASH — dedupe key (identical to the historical formula)
 # ==========================================
+# Patches whose stored rows were hashed WITHOUT a patch component.
+#
+# The original formula omitted the patch, which is a silent data-loss bug at
+# every rollover: while an old patch is still open, a NEW-patch game whose comp
+# already exists from the OLD patch hashes identically and is dropped by
+# ignore-duplicates. The surviving row keeps its old patch_id, so the game does
+# not count toward the new patch's aggregates either — it is simply gone. On the
+# run measured 2026-08-27, 10,755 of 48,620 collected rows (22%) already existed;
+# at a rollover that same share of new-patch games would vanish, biased toward
+# the MOST COMMON comps, which is exactly the population the tier list cares
+# about.
+#
+# Adding the patch changes every hash, so the fix is scoped rather than global:
+# patches already in the table keep the old formula (their stored rows stay
+# addressable and dedupe continuity holds), and every patch from the next one
+# onward is hashed with its patch included. Nothing is re-collected.
+LEGACY_HASH_PATCHES = {"67.306", "68.250"}
+
+
 def make_hash(entry):
-    """md5 over map+mode+bracket+sorted teams — the same formula every stored
-    match was hashed with, so dedupe continuity is preserved. The 128-bit
-    digest is stored as ranked_matches' uuid primary key."""
+    """md5 over map+mode+bracket+sorted teams, plus the patch for any patch not
+    in LEGACY_HASH_PATCHES. The 128-bit digest is ranked_matches' uuid PK."""
     winners = sorted([w for w in entry['winners'] if w])
     losers = sorted([l for l in entry['losers'] if l])
     raw = f"{entry['map']}{entry['mode']}{entry['rank_bracket']}{''.join(winners)}{''.join(losers)}"
+    patch = entry.get('patch')
+    if patch and patch not in LEGACY_HASH_PATCHES:
+        raw = f"{raw}|{patch}"
     return hashlib.md5(raw.encode()).hexdigest()
 
 def _battletime_delta_seconds(a, b):
@@ -465,6 +486,20 @@ STATS = RunStats()
 # Measured 2026-08-26: a 4,000-row sample of player_matches held 236 tags we had
 # polled and 4,972 distinct tags visible inside those same rows, 21x more.
 SEEN_PLAYERS = {}
+
+# How many distinct ROUNDS collapsed into each composition hash this run, and
+# the battle identities already counted.
+#
+# A Ranked series is one draft on one map, up to 3 rounds (measured: 16,349
+# series, 100% same map). Every round of a 2-0 hashes identically, so the extra
+# rounds were being discarded — 45.5% of all rounds played. Counting them means
+# a 2-1 stops reading as a flat 50/50.
+#
+# Identity dedupe has to come FIRST. One round sits in up to six players'
+# battlelogs, so counting per sighting would inflate every count roughly 6x.
+# Identity is battleTime + all six tags, the same key player_matches uses.
+HASH_COUNTS = {}
+SEEN_IDENTITIES = set()
 
 
 def push_players(players=None):
@@ -678,6 +713,8 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
             "losers": record["losers"],
             "patch": record["patch"],
             "match_hash": record["match_hash"],
+            # Consumed by merge() and removed there — never reaches push_matches.
+            "identity": f"{record['battle_time']}|{','.join(sorted(battle_tags))}",
         })
         # Measurement only — never stored, never deduped on; it exists so
         # RunStats can see how many distinct real games a composition key absorbs.
@@ -694,9 +731,17 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
             SEEN_PLAYERS[pl["tag"]] = pl["name"]
         new_player_tags = [t for t in candidate_tags if t not in seen_tags]
         for entry in candidate_entries:
-            if entry["match_hash"] not in seen_hashes:
+            identity = entry.pop("identity", None)
+            # Same round, another player's battlelog — already counted.
+            if identity is not None:
+                if identity in SEEN_IDENTITIES:
+                    continue
+                SEEN_IDENTITIES.add(identity)
+            h = entry["match_hash"]
+            HASH_COUNTS[h] = HASH_COUNTS.get(h, 0) + 1
+            if h not in seen_hashes:
                 extracted_data.append(entry)
-                seen_hashes.add(entry["match_hash"])
+                seen_hashes.add(h)
         return new_player_tags
 
     if lock:
@@ -783,23 +828,33 @@ def push_matches(extracted_data, lookups):
             "patch_id": patch_id,
             "w1": w[0], "w2": w[1] if len(w) > 1 else None, "w3": w[2] if len(w) > 2 else None,
             "l1": l[0], "l2": l[1] if len(l) > 1 else None, "l3": l[2] if len(l) > 2 else None,
+            # Rounds this composition actually won, this run. Accumulates across
+            # runs DB-side, so a comp re-seen next week adds rather than resets.
+            "times_seen": min(32767, HASH_COUNTS.get(e["match_hash"], 1)),
         })
 
     # Insert in batches — a single request with tens of thousands of rows can
     # exceed Supabase's statement timeout (57014) and roll back with zero rows
     # written, even though the whole run otherwise succeeded.
-    print(f"Connecting to Supabase... pushing {len(rows)} matches in batches of {INSERT_BATCH_SIZE}")
-    url = f"{SUPABASE_URL}/rest/v1/ranked_matches?on_conflict=match_hash"
-    headers = {**SUPABASE_HEADERS, "Prefer": "resolution=ignore-duplicates,return=representation"}
+    total_rounds = sum(r["times_seen"] for r in rows)
+    print(f"Connecting to Supabase... pushing {len(rows)} compositions "
+          f"({total_rounds} rounds) in batches of {INSERT_BATCH_SIZE}")
+    # An RPC, not a plain upsert: PostgREST can only ignore or overwrite on
+    # conflict, and times_seen has to ADD — a composition re-seen on a later run
+    # was genuinely played again.
+    url = f"{SUPABASE_URL}/rest/v1/rpc/upsert_ranked_matches"
+    headers = SUPABASE_HEADERS
     inserted = 0
     attempted = 0
     for i in range(0, len(rows), INSERT_BATCH_SIZE):
         if i > 0:
             time.sleep(DB_BATCH_DELAY)  # breathe between batches — don't overload Supabase
         batch = rows[i:i + INSERT_BATCH_SIZE]
-        res = requests.post(url, json=batch, headers=headers)
+        res = requests.post(url, json={"rows": batch}, headers=headers)
         if res.status_code in (200, 201):
-            new_rows = len(res.json())  # representation returns only rows actually inserted
+            # The RPC returns how many rows were genuinely NEW; the rest were
+            # existing compositions whose counts it incremented.
+            new_rows = int(res.json())
             inserted += new_rows
             attempted += len(batch)
             print(f"  Batch {i // INSERT_BATCH_SIZE + 1}: {new_rows}/{len(batch)} new ({attempted}/{len(rows)} processed)")
@@ -809,7 +864,9 @@ def push_matches(extracted_data, lookups):
             break
 
     touched_patches = {e["patch"] for e in extracted_data} - CLOSED_PATCHES
-    print(f"✅ Done. {inserted} new matches stored ({len(rows) - inserted if attempted == len(rows) else '?'} were already known).")
+    merged = len(rows) - inserted if attempted == len(rows) else '?'
+    print(f"✅ Done. {inserted} new compositions stored; {merged} already known "
+          f"(their round counts were incremented). {total_rounds} rounds represented.")
     return inserted, touched_patches
 
 def prune_bracket(bracket_name, cap=MASTERS_WINDOW_CAP):
