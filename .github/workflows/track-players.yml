@@ -22,14 +22,19 @@ on:
     - cron: '20 2,10,14,20 * * *'
   workflow_dispatch:
 
+
 # One run at a time. Every scraper shares a single IP-allowlisted Supercell
-# key, so an overrunning run and its successor do not merely duplicate work —
-# they compete for the same rate budget. Queue rather than cancel: a run that
-# is nearly finished should be allowed to push what it collected.
+# key, so an overrunning run and its successor do not merely duplicate work -
+# they compete for the same rate budget. Queue rather than cancel, so a run
+# that is nearly finished is allowed to push what it collected.
 concurrency:
   group: track-players
   cancel-in-progress: false
-  track-players:    # closest gap between slots is 10:20->14:20, four hours
+
+jobs:
+  track-players:
+    runs-on: ubuntu-latest
+    # closest gap between slots is 10:20->14:20, four hours
     timeout-minutes: 200
     steps:
       - name: Checkout repository

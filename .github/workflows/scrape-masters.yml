@@ -17,14 +17,19 @@ on:
     - cron: '0 0,6,12,18 * * *'
   workflow_dispatch:
 
+
 # One run at a time. Every scraper shares a single IP-allowlisted Supercell
-# key, so an overrunning run and its successor do not merely duplicate work —
-# they compete for the same rate budget. Queue rather than cancel: a run that
-# is nearly finished should be allowed to push what it collected.
+# key, so an overrunning run and its successor do not merely duplicate work -
+# they compete for the same rate budget. Queue rather than cancel, so a run
+# that is nearly finished is allowed to push what it collected.
 concurrency:
   group: scrape-masters
   cancel-in-progress: false
-  masters:    # 6h schedule; 350 leaves 10 min before the next start and lands just under GitHub's silent 360-minute default kill
+
+jobs:
+  masters:
+    runs-on: ubuntu-latest
+    # 6h schedule; 350 leaves 10 min before the next start and sits under GitHub's silent 360-minute default
     timeout-minutes: 350
     steps:
       - name: Checkout repository

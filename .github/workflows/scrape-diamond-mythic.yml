@@ -8,14 +8,19 @@ on:
     - cron: '30 7 * * *'
   workflow_dispatch:
 
+
 # One run at a time. Every scraper shares a single IP-allowlisted Supercell
-# key, so an overrunning run and its successor do not merely duplicate work —
-# they compete for the same rate budget. Queue rather than cancel: a run that
-# is nearly finished should be allowed to push what it collected.
+# key, so an overrunning run and its successor do not merely duplicate work -
+# they compete for the same rate budget. Queue rather than cancel, so a run
+# that is nearly finished is allowed to push what it collected.
 concurrency:
   group: scrape-diamond-mythic
   cancel-in-progress: false
-  diamond-mythic:    # daily
+
+jobs:
+  diamond-mythic:
+    runs-on: ubuntu-latest
+    # daily
     timeout-minutes: 300
     steps:
       - name: Checkout repository
