@@ -1207,3 +1207,90 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     rawEdge: blue.score - red.score,
   };
 }
+
+// ── Lane matchups ────────────────────────────────────────────────────────────
+// Which of your brawlers ends up opposite which of theirs, and who wins that
+// pairing.
+//
+// A 3v3 draft resolves into a mid and two sides. The API exposes no positional
+// data whatsoever, so a lane is INFERRED from how a brawler wants to hold
+// ground: range first — a Long brawler owns the middle sightline, a Short one
+// has to work the flanks — then draft class, which separates brawlers that
+// share a range band. This is a model of the most likely formation, not an
+// observation, and the UI is required to say so.
+//
+// The pairing is deliberately NOT optimised. Sorting both teams by the same
+// affinity and pairing rank-for-rank is the one assignment that cannot flatter
+// either side; choosing pairs to maximise or minimise your edge would invent a
+// result the draft does not contain.
+
+const MID_PULL_BY_RANGE = { Long: 2.0, Mid: 1.0, Short: 0 };
+const MID_PULL_BY_CLASS = {
+  SNIPER: 1.0,      // holds the long sightline the middle lane is built around
+  THROWER: 0.8,     // sits behind mid cover and denies the choke
+  CONTROL: 0.6,
+  SUPPORT: 0.2,
+  ANTI_TANK: 0.0,
+  SPACE_MAKER: -0.8, // wants a flank to jump from
+  TANK: -1.0,        // walks a side lane into the enemy back line
+};
+
+const midAffinity = (key) => {
+  const attrs = CONFIG.brawlerAttributes?.[norm(key)] || {};
+  return (MID_PULL_BY_RANGE[attrs.range] ?? 1) + (MID_PULL_BY_CLASS[draftClassOf(key)] ?? 0);
+};
+
+// Mid first, then the two flanks. Ties break on the key so one draft always
+// renders the same lanes rather than shuffling between renders.
+const laneOrder = (team) =>
+  [...team].sort((a, b) => midAffinity(b) - midAffinity(a) || norm(a).localeCompare(norm(b)));
+
+export function getLaneMatchups({ myTeam = [], enemyTeam = [], intelligence = {} }) {
+  const mine = laneOrder(myTeam.filter(Boolean).map(norm));
+  const theirs = laneOrder(enemyTeam.filter(Boolean).map(norm));
+  if (mine.length !== 3 || theirs.length !== 3) return [];
+
+  const prior = CONFIG.mapPairs?.shrinkPriorGames ?? 135;
+  const minPicks = CONFIG.statisticalCoefficients?.pairMinPicks ?? 20;
+
+  const lanes = mine.map((me, i) => {
+    const foe = theirs[i];
+    const v = intelligence[me]?.vs_brawler?.[foe];
+    const n = Number(v?.picks) || 0;
+    const raw = parseFloat(v?.winRate);
+
+    if (n > 0 && Number.isFinite(raw)) {
+      // Shrunk toward even by sample, the same way every other pair term in
+      // this engine is. A 12-game edge must not read like a 600-game one.
+      return {
+        lane: i === 0 ? "Mid" : "Side",
+        mine: me, enemy: foe,
+        winRate: 50 + (raw - 50) * (n / (n + prior)),
+        rawWinRate: raw, games: n,
+        basis: "head-to-head",
+        state: n >= minPicks ? "measured" : "thin",
+      };
+    }
+
+    // No head-to-head sample. Fall back to the gap between the two brawlers'
+    // overall rates, HALVED: a solo win rate is already measured against the
+    // whole field, so carrying the full gap into a single pairing overstates
+    // it. Labelled as a different basis so the UI never presents this as a
+    // measured matchup.
+    const a = recencyTWR(intelligence[me]), b = recencyTWR(intelligence[foe]);
+    if (a == null || b == null) {
+      return { lane: i === 0 ? "Mid" : "Side", mine: me, enemy: foe,
+               winRate: null, rawWinRate: null, games: 0, basis: "none", state: "none" };
+    }
+    return {
+      lane: i === 0 ? "Mid" : "Side",
+      mine: me, enemy: foe,
+      winRate: 50 + (a - b) / 2,
+      rawWinRate: null, games: 0,
+      basis: "overall", state: "inferred",
+    };
+  });
+
+  // Display order puts the mid in the middle, as the lane actually sits.
+  return [lanes[1], lanes[0], lanes[2]];
+}

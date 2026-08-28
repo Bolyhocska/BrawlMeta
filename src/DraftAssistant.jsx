@@ -3,7 +3,8 @@ import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
 import { getDraftProfile } from "./data/draftMeta";
-import { getDraftAdvice, computeWinSplit, getBanAdvice, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
+import { getDraftAdvice, computeWinSplit, getBanAdvice, getLaneMatchups, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
+import { getLanePlaystyle } from "./data/lanePlaystyle";
 import { useAuth } from "./auth";
 import { tileStyles } from "./data/brawlerTile";
 
@@ -96,6 +97,160 @@ function BrawlerTile({ brawler, size = 44, dim, banned, onClick, title }) {
       {banned && (
         <div style={{ position: "absolute", inset: 0, borderRadius: t.outer.borderRadius, background: "rgba(20,6,10,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff8f8f", fontWeight: 900, fontSize: size * 0.5 }}>✕</div>
       )}
+    </div>
+  );
+}
+
+// ─── Lane matchups ───────────────────────────────────────────────────────────
+// Who stands opposite whom once the draft is locked, how that pairing actually
+// goes, and what to run in it.
+//
+// Defined at module scope, not inside the main component: a component declared
+// during another component's render is a new type on every render, so React
+// unmounts and remounts its whole subtree — the bug that cost this codebase the
+// create-tournament form's focus.
+
+const laneTone = (wr) =>
+  wr == null ? "#8b8b9c" : wr >= 52 ? "#8ee6b0" : wr <= 48 ? "#ff8f8f" : "#ffce7a";
+
+function BuildChips({ build }) {
+  if (!build) return null;
+  const items = [
+    build.starPower && { label: "SP", value: build.starPower },
+    build.gadget && { label: "GADGET", value: build.gadget },
+    build.gears?.length && { label: "GEARS", value: build.gears.join(" + ") },
+  ].filter(Boolean);
+  if (!items.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      {items.map(it => (
+        <div key={it.label} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+          <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#6f7180", minWidth: 42 }}>{it.label}</span>
+          <span style={{ fontSize: 11, color: "#e9e9f2", fontWeight: 600, lineHeight: 1.35 }}>{it.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
+  const me = brawlerOf(lane.mine), foe = brawlerOf(lane.enemy);
+  const tone = laneTone(lane.winRate);
+  const isMid = lane.lane === "Mid";
+
+  return (
+    <div style={{
+      flex: "1 1 220px", minWidth: 210, display: "flex", flexDirection: "column", gap: 9,
+      padding: "12px 13px 13px", borderRadius: 13,
+      background: isMid ? "rgba(124,196,255,.05)" : "rgba(255,255,255,.02)",
+      border: `1px solid ${isMid ? "rgba(124,196,255,.22)" : "rgba(255,255,255,.08)"}`,
+    }}>
+      <span style={{
+        alignSelf: "flex-start", fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4,
+        color: isMid ? "#7cc4ff" : "#8b8b9c", border: `1px solid ${isMid ? "rgba(124,196,255,.35)" : "rgba(255,255,255,.14)"}`,
+        borderRadius: 5, padding: "2px 7px",
+      }}>{lane.lane.toUpperCase()}</span>
+
+      {/* enemy above, you below — the lane read top-down, as it faces you */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+          {foe && <BrawlerTile brawler={foe} size={40} title={foe.name} />}
+          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ff8f8f" }}>THEM</span>
+        </div>
+        <div style={{ textAlign: "center", minWidth: 62 }}>
+          <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 800, color: tone, lineHeight: 1.1 }}>
+            {lane.winRate == null ? "—" : `${Math.round(lane.winRate)}%`}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 7.5, letterSpacing: 0.8, color: "#6f7180" }}>
+            {lane.basis === "head-to-head"
+              ? `${lane.games.toLocaleString("en-US")} H2H`
+              : lane.basis === "overall" ? "FROM SOLO WR" : "NO DATA"}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+          {me && <BrawlerTile brawler={me} size={40} title={me.name} />}
+          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#7cc4ff" }}>YOU</span>
+        </div>
+      </div>
+
+      {/* Confidence, stated rather than implied by a bare number. */}
+      {lane.state !== "measured" && (
+        <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ffce7a", lineHeight: 1.4 }}>
+          {lane.state === "thin"
+            ? `⚠ only ${lane.games} games of this pairing — treat as a lean, not a read`
+            : lane.state === "inferred"
+            ? "⚠ these two have no recorded head-to-head — estimated from their overall win rates"
+            : "⚠ no data for either brawler"}
+        </span>
+      )}
+
+      <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
+        {playstyle.build ? (
+          <>
+            <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1.2, color: "#6f7180" }}>
+              {me?.name?.toUpperCase()} · {playstyle.build.forMode ? `${modeLabel} BUILD`.toUpperCase() : "ALL-PURPOSE BUILD"}
+            </span>
+            <BuildChips build={playstyle.build} />
+            {playstyle.build.note && (
+              <span style={{ fontSize: 10.5, color: "#8b8b9c", lineHeight: 1.5 }}>{playstyle.build.note}</span>
+            )}
+          </>
+        ) : (
+          <span style={{ fontSize: 10.5, color: "#6f7180", lineHeight: 1.5 }}>
+            No written build for {me?.name} yet{playstyle.classOf ? ` — play it as a ${playstyle.classOf.toLowerCase()}` : ""}.
+          </span>
+        )}
+
+        {playstyle.vsPlan.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 1 }}>
+            <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1.2, color: "#6f7180" }}>
+              PLAYING AGAINST {foe?.name?.toUpperCase()}
+            </span>
+            {playstyle.vsPlan.map((t, i) => (
+              <span key={i} style={{ fontSize: 10.5, color: "#c9c9d6", lineHeight: 1.5 }}>
+                <strong style={{ color: "#e9e9f2" }}>{t.lead}</strong>{t.rest ? ` ${t.rest}` : ""}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.4 }}>
+            No counter guide written for {foe?.name} yet.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function LaneMatchups({ lanes, playstyles, brawlerOf, side, onFlip, modeLabel }) {
+  if (!lanes.length) return null;
+  return (
+    <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: "#6f7180" }}>
+          {side === "blue" ? "BLUE" : "RED"} LANE MATCHUPS
+        </span>
+        <button onClick={onFlip} style={{
+          fontFamily: MONO, fontSize: 9, letterSpacing: 1, cursor: "pointer",
+          color: "#8b8b9c", background: "rgba(255,255,255,.04)",
+          border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, padding: "4px 9px",
+        }}>SHOW {side === "blue" ? "RED" : "BLUE"}'S VIEW</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {lanes.map((lane, i) => (
+          <LaneCard key={`${lane.mine}-${lane.enemy}`} lane={lane} playstyle={playstyles[i]}
+                    brawlerOf={brawlerOf} modeLabel={modeLabel} />
+        ))}
+      </div>
+
+      <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.5 }}>
+        Lanes are <em>inferred</em> from each brawler's range and draft class — the game exposes no positional
+        data, so this is the most likely formation, not an observed one. Both teams are ordered the same way and
+        paired rank-for-rank, which is the one assignment that can't flatter either side. Percentages are your
+        brawler's win rate in games where that exact enemy was on the other team, shrunk toward even by sample
+        size.
+      </span>
     </div>
   );
 }
@@ -305,6 +460,28 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       intelligence,
     });
   }, [draftDone, blueTeam, redTeam, selectedMap, mapStatsByKey, intelligence]);
+
+  // Lane matchups, from whichever seat the user is looking from. Which side is
+  // "yours" is a choice, not something the draft knows — so it is a toggle
+  // rather than a guess.
+  const [laneSide, setLaneSide] = useState("blue");
+  const laneView = useMemo(() => {
+    if (!draftDone) return null;
+    const mineTeam = laneSide === "blue" ? blueTeam : redTeam;
+    const foeTeam = laneSide === "blue" ? redTeam : blueTeam;
+    const lanes = getLaneMatchups({
+      myTeam: mineTeam.filter(Boolean).map(b => b.key),
+      enemyTeam: foeTeam.filter(Boolean).map(b => b.key),
+      intelligence,
+    });
+    return {
+      lanes,
+      playstyles: lanes.map(l =>
+        getLanePlaystyle({ mine: l.mine, enemy: l.enemy, mode: selectedMap?.mode })),
+    };
+  }, [draftDone, blueTeam, redTeam, laneSide, selectedMap, intelligence]);
+
+  const brawlerOf = (key) => BRAWLERS.find(b => b.key === key) || null;
 
   // Filter by Bobby's DRAFT class (same taxonomy as the suggestion chips), not
   // the official Supercell class — otherwise new brawlers with no official class
@@ -859,6 +1036,18 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   Each side's average brawler win rate on this map on its own — not the matchup. The {winSplit.blue}–{winSplit.red} above is who wins once counters, synergy and comp gaps are applied.
                 </span>
               </div>
+
+              {/* Third lens: the draft broken into the three fights it becomes. */}
+              {laneView && (
+                <LaneMatchups
+                  lanes={laneView.lanes}
+                  playstyles={laneView.playstyles}
+                  brawlerOf={brawlerOf}
+                  side={laneSide}
+                  onFlip={() => setLaneSide(s => (s === "blue" ? "red" : "blue"))}
+                  modeLabel={formatMode(selectedMap?.mode)}
+                />
+              )}
             </div>
           )}
         </div>
