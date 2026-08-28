@@ -236,6 +236,52 @@ export function draftBuckets(graded) {
 export const bucketOf = (p) =>
   p == null ? null : p >= FAVOURED_AT ? "favoured" : p <= UNDERDOG_AT ? "underdog" : "even";
 
+// The gap between the favoured and underdog buckets that counts as "your
+// results follow your picks".
+export const TRACKS_DRAFT_AT = 0.25;
+
+// Does the favoured-minus-underdog gap support a verdict yet?
+//
+// The panel makes one of two OPPOSITE claims — a large gap means results track
+// the draft, a small one means they don't — so a point estimate cannot choose
+// between them: a measured gap of 0.24 is equally consistent with both. Only an
+// interval that sits entirely on one side of the boundary settles it.
+//
+// This replaces a raw `favoured.n >= 12 && underdog.n >= 12` count gate that was
+// wrong twice over. Drafts cluster near even (the engine's differential is
+// narrow by design), so 12 in EACH tail needs roughly 60 graded series — one
+// player in 1,126 had that on 2026-08-28, meaning the sentence had essentially
+// never rendered. And when it did fire, the standard error of the difference at
+// 12-and-12 is ~20 points against a 25-point threshold, barely 1.2 SE — so the
+// counts that unlocked the claim did not support it.
+//
+// Same 2-SE standard aboveDraft uses for bandExcludesZero, so the two panels
+// cannot disagree about what counts as evidence. SE uses the conservative
+// p = 0.5 variance, matching sePoints.
+// The two branches are asymmetric on purpose, because they are different kinds
+// of claim and so have different nulls:
+//
+//   "tracks" asserts an effect EXISTS — the draft predicts your results. Its
+//   null is a zero gap, so the interval has to clear zero. This is exactly
+//   aboveDraft's bandExcludesZero test, applied to a difference of two rates.
+//
+//   "loose" asserts an effect is SMALL, and you can never establish that by
+//   failing to find one. It needs the interval to sit entirely BELOW the
+//   boundary, which is what `boundary` is for.
+//
+// Testing "tracks" against the boundary too would need a gap above 0.25 + 2SE —
+// over 51 points at 30 drafts a side — so a plainly real 47-point gap would
+// still say nothing. Testing "loose" against zero is not possible at all.
+export function draftTracking(buckets, boundary = TRACKS_DRAFT_AT) {
+  const a = buckets?.favoured, b = buckets?.underdog;
+  if (!a?.n || !b?.n) return { verdict: null, delta: null, se: null };
+  const delta = a.rate - b.rate;
+  const se = Math.sqrt(0.25 / a.n + 0.25 / b.n);
+  if (delta - 2 * se > 0) return { verdict: "tracks", delta, se };
+  if (delta + 2 * se < boundary) return { verdict: "loose", delta, se };
+  return { verdict: null, delta, se };   // honest silence — cannot tell yet
+}
+
 // ── OV-2 event facts ─────────────────────────────────────────────────────────
 // Events, not rates. "You won a draft the engine gave you 31%" is checkable,
 // singular, and needs no statistics — so it works from the very first series,

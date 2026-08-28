@@ -16,7 +16,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   toSeries, gradeSeries, aboveDraft, draftBuckets, eventFacts,
   squadAndRivals, ladderState, LADDER, classFingerprint, nemesisTable,
-  loadIntelligence, DEFAULT_BRACKET,
+  loadIntelligence, DEFAULT_BRACKET, draftTracking,
 } from "./data/playerStats";
 import { classLabel } from "./data/draftEngine";
 import { supabase } from "./appCore";
@@ -124,7 +124,7 @@ function BucketsPanel({ buckets }) {
   ];
   const total = order.reduce((a, [k]) => a + buckets[k].n, 0);
   if (!total) return null;
-  const qualified = order.filter(([k]) => buckets[k].n >= 12);
+  const tracking = draftTracking(buckets);
 
   return (
     <div style={CARD}>
@@ -151,13 +151,11 @@ function BucketsPanel({ buckets }) {
           );
         })}
       </div>
-      {qualified.length >= 2 && (
+      {tracking.verdict && (
         <div style={{ marginTop: 12, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
-          {buckets.favoured.n >= 12 && buckets.underdog.n >= 12 && (
-            buckets.favoured.rate - buckets.underdog.rate > 0.25
-              ? "You convert the drafts you should win and rarely steal the others — your results follow your picks closely."
-              : "You win a lot of drafts you shouldn't. Your results are less tied to the picks than most."
-          )}
+          {tracking.verdict === "tracks"
+            ? "You convert the drafts you should win and rarely steal the others — your results follow your picks closely."
+            : "You win a lot of drafts you shouldn't. Your results are less tied to the picks than most."}
         </div>
       )}
       <div style={NOTE}>
