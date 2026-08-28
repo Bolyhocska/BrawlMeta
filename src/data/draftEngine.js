@@ -1117,10 +1117,15 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
       for (const foe of enemyKeys) { pairPts += pairEdgeVs(mine, foe, intelligence).edge; pairN++; }
     if (pairN) s += (pairPts / pairN) * pw;
 
-    // Synergy + structure
-    for (let i = 0; i < classes.length; i++)
-      for (let j = i + 1; j < classes.length; j++)
-        s += synergyScore(classes[i], classes[j]);
+    // Synergy is deliberately NOT scored here. Measured 2026-08-27: removing it
+    // changed the verdict's ranking power by exactly 0.0000 AUC over 35,257
+    // games. It cannot move anything as authored — only 8 of 28 class pairs
+    // carry a value, every value is positive so both teams collect some, and
+    // the differential is exactly zero in 27.5% of real drafts (median 0, mean
+    // |diff| 0.75). Even a 95th-percentile gap of 1.5 moves the split ~2.7 points.
+    // It is still scored in getDraftAdvice, at 2x, where it shapes copy. Give
+    // the table anti-synergies and the missing 20 pairs and it could earn a
+    // place back here.
 
     const sanity = finalSanityCheck(teamKeys, mode);
     s -= sanity.missing.length * 3;
