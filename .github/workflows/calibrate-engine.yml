@@ -28,7 +28,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # 22+, not 20: supabase-js builds a realtime client on import, which
+          # needs a native WebSocket. Node 20 has none, so createClient threw
+          # before the script reached a single query — this workflow had never
+          # once succeeded. Actions is deprecating Node 20 regardless.
+          node-version: "24"
           cache: npm
 
       - name: Install dependencies
