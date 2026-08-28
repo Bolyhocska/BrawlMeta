@@ -82,7 +82,18 @@ const recencyTWR = (intel) => {
   const recentPicks = Number(intel.recent_picks) || 0;
   if (rec && recentPicks >= (rec.minRecentPicks ?? 300)) {
     const w = rec.recentWeight ?? 0.6;
-    g = trueWR(Number(intel.recent_wins) || 0, recentPicks) * w + g * (1 - w);
+    // recent_win_rate is weighted by ROUNDS (times_seen), while recent_picks /
+    // recent_wins stay SERIES counts. That split is deliberate — see the note
+    // in refresh_brawler_intelligence — so the recent rate has to come from the
+    // column and be shrunk by the series count. Recomputing it as
+    // recent_wins/recent_picks would silently hand back the series rate and
+    // undo the round weighting on exactly the window meant to catch a live
+    // shadow nerf. Falls back to the old form when the column is absent, so a
+    // stale row still resolves.
+    const rate = parseFloat(intel.recent_win_rate);
+    g = (Number.isFinite(rate)
+          ? ((rate / 100) * recentPicks + PRIOR * 0.5) / (recentPicks + PRIOR) * 100
+          : trueWR(Number(intel.recent_wins) || 0, recentPicks)) * w + g * (1 - w);
   }
   return g;
 };
