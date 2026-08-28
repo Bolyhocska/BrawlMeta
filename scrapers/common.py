@@ -385,12 +385,53 @@ class RunStats:
         self.status_counts = {}        # HTTP status -> count, for the API budget question
         self.rate_limit_headers = {}   # any rate-limit header the API actually returns
 
+        # -- round-capture diagnosis (added 2026-08-28) ------------------------
+        # The spider collapses only 6.6% of its rounds into existing comps,
+        # where the player tracker — same endpoint, same parse_battle, same
+        # filters — collapses 44.5%. A Ranked series is 2-3 rounds with the same
+        # six players and the same brawlers, so those rounds MUST share a comp
+        # key. The spider is therefore not seeing them, and the loss is upstream
+        # of dedupe (comp_index is built at parse time and already shows it).
+        #
+        # These counters answer the two open questions directly: which filter is
+        # dropping battles, and whether a SINGLE battlelog even contains more
+        # than one round of the same series.
+        self.reject_reasons = {}
+        self.logs_read = 0
+        self.log_items = 0             # raw battlelog entries across all logs
+        self.log_collectable = 0       # entries that produced a record
+        self.log_parties = 0           # distinct (six players, map) groups within logs
+        self.log_multi_round = 0       # of those, groups holding >1 battleTime IN ONE log
+        self.log_rounds_in_parties = 0 # total rounds inside those groups
+
     # -- collision measurement -------------------------------------------------
     def record_battle(self, comp_hash, battle_time, tags):
         with self._lock:
             self.battles_parsed += 1
             party = tuple(sorted(t for t in tags if t))
             self.comp_index.setdefault(comp_hash, {}).setdefault(party, set()).add(battle_time)
+
+    # -- round-capture diagnosis -----------------------------------------------
+    def note_reject(self, reason):
+        """Why a battlelog entry produced no record. Every early return in
+        parse_battle reports here, so 'the spider reads fewer ranked battles per
+        log than the tracker' becomes a named filter instead of a guess."""
+        with self._lock:
+            self.reject_reasons[reason] = self.reject_reasons.get(reason, 0) + 1
+
+    def record_log(self, items, collectable, parties, multi_round, rounds_in_parties):
+        """One battlelog's shape. `parties` groups the collectable entries of
+        THIS log by (six players, map); `multi_round` counts how many of those
+        groups hold more than one battleTime. If a single log rarely contains
+        two rounds of one series, the rounds never reach the spider at all and
+        no amount of counting downstream can recover them."""
+        with self._lock:
+            self.logs_read += 1
+            self.log_items += items
+            self.log_collectable += collectable
+            self.log_parties += parties
+            self.log_multi_round += multi_round
+            self.log_rounds_in_parties += rounds_in_parties
 
     # -- API budget measurement ------------------------------------------------
     def record_response(self, res):
@@ -483,7 +524,31 @@ class RunStats:
                     print(f"    ⚠️ HTTP {code}: {statuses[code]}")
             if 429 in statuses:
                 print("    ⚠️ 429s present — the shared Supercell key IS rate-limited at this volume.")
-        print(f"  Rate-limit headers seen: {headers if headers else 'none returned by the API'}\n")
+        print(f"  Rate-limit headers seen: {headers if headers else 'none returned by the API'}")
+
+        # -- round-capture diagnosis ------------------------------------------
+        with self._lock:
+            logs, items = self.logs_read, self.log_items
+            keep, parties = self.log_collectable, self.log_parties
+            multi, in_multi = self.log_multi_round, self.log_rounds_in_parties
+            reasons = dict(self.reject_reasons)
+        if logs:
+            print(f"  BATTLELOG SHAPE ({logs:,} logs read)")
+            print(f"    {items:,} entries → {keep:,} collectable "
+                  f"({items / logs:.1f} → {keep / logs:.1f} per log)")
+            if parties:
+                print(f"    {parties:,} (six players, map) groups within logs; "
+                      f"{multi:,} hold >1 round ({100 * multi / parties:.1f}%)")
+                print(f"    rounds inside multi-round groups: {in_multi:,}")
+                print("    → a Ranked series is 2-3 rounds on ONE map with the SAME six")
+                print("      players, so a log holding complete series should show a high %.")
+                print("      A low % means the rounds are not in the battlelog we read, and")
+                print("      no downstream counting can recover them.")
+        if reasons:
+            print("  REJECTED, by reason:")
+            for reason, n in sorted(reasons.items(), key=lambda kv: -kv[1])[:12]:
+                print(f"    {n:>8,}  {reason}")
+        print()
 
 STATS = RunStats()
 
@@ -609,9 +674,14 @@ def parse_battle(match, player_tag, bracket):
     # Belt-and-suspenders: trophy/casual battles carry a trophyChange field;
     # competitive Ranked never does. Catches any mislabeled type string.
     if "trophyChange" in battle_data:
+        STATS.note_reject("trophyChange present (trophy/casual)")
         return [], None, []
 
-    if not (is_competitive_ranked and mode_name in RANKED_MODES):
+    if not is_competitive_ranked:
+        STATS.note_reject(f"type not competitive Ranked ({match_type or 'none'})")
+        return [], None, []
+    if mode_name not in RANKED_MODES:
+        STATS.note_reject(f"mode not in RANKED_MODES ({mode_name or 'none'})")
         return [], None, []
 
     teams = battle_data.get("teams", [])
@@ -620,6 +690,7 @@ def parse_battle(match, player_tag, bracket):
     # Ranked is strictly 3v3 — the team-size check guards against any
     # 5v5 event that reports a mode name colliding with RANKED_MODES.
     if not (len(teams) == 2 and all(len(t) == 3 for t in teams) and result in ["victory", "defeat"]):
+        STATS.note_reject(f"not 2x3 or no win/loss (teams={len(teams)}, result={result or 'none'})")
         return [], None, []
 
     battle_tags = []
@@ -650,6 +721,7 @@ def parse_battle(match, player_tag, bracket):
     losers = [p['brawler']['name'] for p in losing_team if p.get('brawler') and p['brawler'].get('name')]
 
     if not winners or not losers:
+        STATS.note_reject("brawler names unreadable")
         return battle_tags, None, battle_players
 
     map_name = event_data.get("map") or "Unknown Map"
@@ -657,12 +729,14 @@ def parse_battle(match, player_tag, bracket):
     battle_time = match.get("battleTime")
     match_patch = determine_patch(battle_time)
     if match_patch in CLOSED_PATCHES:
+        STATS.note_reject(f"closed patch ({match_patch})")
         return battle_tags, None, battle_players
 
     allowed_maps = RANKED_MAPS.get(match_patch)
     # EXTRA_RANKED_MAPS is the live rotation observed by scrapers/map_pool.py.
     # It widens the allowlist and never narrows it — see the note on that set.
     if allowed_maps is not None and map_name not in allowed_maps and map_name not in EXTRA_RANKED_MAPS:
+        STATS.note_reject(f"map not in allowlist ({map_name})")
         return battle_tags, None, battle_players
 
     record = {
@@ -720,6 +794,10 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
     candidate_tags = []
     candidate_entries = []
     candidate_players = []
+    # (six players, map) -> set of battleTimes, for THIS log only. Rounds of one
+    # Ranked series share both, so a series present in full shows up here as one
+    # key holding 2-3 timestamps.
+    log_parties = {}
     battles = log_res.json().get("items", [])
     for match in battles:
         battle_tags, record, battle_players = parse_battle(match, player_tag, bracket)
@@ -731,6 +809,9 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
         candidate_tags.extend(battle_tags)
         if record is None:
             continue
+        log_parties.setdefault(
+            (tuple(sorted(t for t in battle_tags if t)), record["map"]), set()
+        ).add(record["battle_time"])
         # Project the rich record down to the brawler-only shape this pipeline
         # has always stored. push_matches reads exactly these keys.
         candidate_entries.append({
@@ -747,6 +828,12 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
         # Measurement only — never stored, never deduped on; it exists so
         # RunStats can see how many distinct real games a composition key absorbs.
         STATS.record_battle(record["match_hash"], record["battle_time"], battle_tags)
+
+    STATS.record_log(
+        len(battles), len(candidate_entries), len(log_parties),
+        sum(1 for v in log_parties.values() if len(v) > 1),
+        sum(len(v) for v in log_parties.values() if len(v) > 1),
+    )
 
     # All shared-state reads/writes happen here under lock, in one short critical
     # section, rather than scattered through the parsing above. seen_hashes only
@@ -910,6 +997,14 @@ def push_matches(extracted_data, lookups):
     # exceed Supabase's statement timeout (57014) and roll back with zero rows
     # written, even though the whole run otherwise succeeded.
     total_rounds = sum(r["times_seen"] for r in rows)
+    # How the rounds actually distribute. A healthy capture puts most rows at 2
+    # (a 2-0 sweep, or the winning side of a 2-1); a run that is only ever
+    # seeing one round per series sits almost entirely at 1.
+    hist = {}
+    for r in rows:
+        hist[r["times_seen"]] = hist.get(r["times_seen"], 0) + 1
+    print("  times_seen distribution: " + " · ".join(
+        f"{k}→{v:,} ({100 * v / len(rows):.1f}%)" for k, v in sorted(hist.items())[:6]))
     print(f"Connecting to Supabase... pushing {len(rows)} compositions "
           f"({total_rounds} rounds) in batches of {INSERT_BATCH_SIZE}")
     # An RPC, not a plain upsert: PostgREST can only ignore or overwrite on
