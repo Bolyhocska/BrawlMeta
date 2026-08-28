@@ -1,0 +1,41 @@
+name: Calibrate draft engine
+
+# Scores computeWinSplit against real outcomes on a rolling train/test split and
+# records the result in engine_calibration. It exists because the shipped
+# coefficients were hand-authored, never checked, and turned out to be worse
+# than always saying 50/50 — a regression like that should never again go
+# unnoticed for months.
+#
+# Weekly rather than daily: the test window is 7 days of played games, so a
+# faster cadence would re-score largely the same matches.
+
+on:
+  schedule:
+    - cron: "40 4 * * 1"     # Mondays 04:40 UTC, clear of every scraper slot
+  workflow_dispatch:
+    inputs:
+      cutoff_days:
+        description: "Days of played games to hold out as the test set"
+        required: false
+        default: "7"
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Score the engine
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/calibrate.mjs ${{ github.event.inputs.cutoff_days || '7' }}
