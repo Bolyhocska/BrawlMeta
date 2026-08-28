@@ -1,19 +1,30 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { Routes, Route, Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, Star, TrendingUp, Check, Crown, LineChart, ArrowUpRight } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
 import SiteHeader from "./SiteHeader";
-import { MapsLandingPage, MapDetailPage } from "./MapsPages";
+const MapsLandingPage = lazy(() => import("./MapsPages").then(m => ({ default: m.MapsLandingPage })));
+const MapDetailPage   = lazy(() => import("./MapsPages").then(m => ({ default: m.MapDetailPage })));
 import ComingSoonPage from "./ComingSoonPage";
-import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, SafeZoneGuidePage, BrawlerGuidesPage } from "./GuidesPages";
-import ScrimsPage from "./ScrimsPage";
+const GuidesLandingPage = lazy(() => import("./GuidesPages").then(m => ({ default: m.GuidesLandingPage })));
+const SkillsGuidePage   = lazy(() => import("./GuidesPages").then(m => ({ default: m.SkillsGuidePage })));
+const ModesGuidesPage   = lazy(() => import("./GuidesPages").then(m => ({ default: m.ModesGuidesPage })));
+const ModeGuidePage     = lazy(() => import("./GuidesPages").then(m => ({ default: m.ModeGuidePage })));
+const SafeZoneGuidePage = lazy(() => import("./GuidesPages").then(m => ({ default: m.SafeZoneGuidePage })));
+const BrawlerGuidesPage = lazy(() => import("./GuidesPages").then(m => ({ default: m.BrawlerGuidesPage })));
+const ScrimsPage = lazy(() => import("./ScrimsPage"));
 import SiteFooter from "./SiteFooter";
-import { PrivacyPolicyPage, AboutPage } from "./LegalPages";
-import PlayerPage from "./PlayerPage";
-import UpgradePage from "./UpgradePage";
+const PrivacyPolicyPage = lazy(() => import("./LegalPages").then(m => ({ default: m.PrivacyPolicyPage })));
+const AboutPage         = lazy(() => import("./LegalPages").then(m => ({ default: m.AboutPage })));
+const PlayerPage = lazy(() => import("./PlayerPage"));
+const UpgradePage = lazy(() => import("./UpgradePage"));
 import DraftAssistant from "./DraftAssistant";
-import { TournamentLandingPage, TournamentDetailPage, TournamentProfilePage, CreateTournamentPage, ManageTournamentPage } from "./TournamentPages";
+const TournamentLandingPage = lazy(() => import("./TournamentPages").then(m => ({ default: m.TournamentLandingPage })));
+const TournamentDetailPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.TournamentDetailPage })));
+const TournamentProfilePage = lazy(() => import("./TournamentPages").then(m => ({ default: m.TournamentProfilePage })));
+const CreateTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.CreateTournamentPage })));
+const ManageTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.ManageTournamentPage })));
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { supabase, CURRENT_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
 import { tileStyles } from "./data/brawlerTile";
@@ -763,9 +774,22 @@ export default function AppRoutes() {
   // Content Policy requires the disclaimer wherever fan content is shown, and
   // per-page footers meant every new route silently shipped without one — the
   // tier list, draft assistant and brawler guides had all been missing it.
+// Shown while a lazily-loaded route chunk is fetched. Deliberately plain and
+// on-theme: a spinner that flashes for 80ms on a fast connection is worse
+// than a quiet block of the right colour.
+function RouteFallback() {
+  return (
+    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#6f7180", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1 }}>
+      LOADING…
+    </div>
+  );
+}
+
   // Mounting it outside <Routes> means a route cannot be added without it.
   return (
     <>
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/app" element={<BrawlApex />} />
@@ -796,6 +820,7 @@ export default function AppRoutes() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<BrawlApex />} />
     </Routes>
+    </Suspense>
     <SiteFooter />
     </>
   );

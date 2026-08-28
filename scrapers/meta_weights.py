@@ -26,6 +26,7 @@ import requests
 from scrapers.common import (
     require_credentials, SUPABASE_URL, SUPABASE_HEADERS,
     CURRENT_PATCH, CLOSED_PATCHES, PATCH_START_TIMES,
+    capture_meta_history,
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -149,6 +150,13 @@ def main():
     require_credentials()
     print("🧠 Meta weights: refreshing brawler intelligence...")
     refresh_intelligence([CURRENT_PATCH])
+    # Also snapshot the meta here, not only from reaggregate(). This job is the
+    # daily safety net, so on a day when every scraper failed it is the last
+    # chance to record what the meta looked like — and a missing day of history
+    # can never be filled in afterwards, because the matches behind it are
+    # already outside the retention window. Idempotent, so overlapping with a
+    # scraper's own capture just refreshes the same rows.
+    capture_meta_history(CURRENT_PATCH)
 
 if __name__ == "__main__":
     main()
