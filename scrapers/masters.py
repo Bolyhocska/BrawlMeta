@@ -224,9 +224,13 @@ def main():
     print(f"Masters seeds this run: {', '.join(seeds)} (verified: {', '.join(sorted(verified_seeds)) or 'none'})")
 
     extracted, seen_tags, seen_hashes, depth1_tags = [], set(), set(), set()
+    # Write periodically instead of only at the end. A run takes ~75 minutes and
+    # a killed runner used to discard all of it; push_matches sends round-count
+    # deltas, so flushing early cannot double-count anything.
     harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
                     target_matches=target, max_depth=SPIDER_DEPTH,
-                    depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds)
+                    depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds,
+                    flush=lambda: (push_players(), push_matches(extracted, lookups)))
 
     persist_spider_players(depth1_tags)
 

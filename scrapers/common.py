@@ -203,6 +203,20 @@ MASTERS_BASELINE = MASTERS_WINDOW_CAP  # Masters fills all the way to the 1.5M w
 MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met (== steady-state that the FIFO window trims back to 1.5M)
 MASTERS_RUN_CAP = 150000               # max matches one Masters run may collect while filling the baseline
 DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
+# Sliding window for Diamond/Mythic, the same FIFO mechanism Masters uses.
+# Until 2026-08-28 this bracket had no cap at all — prune_bracket was only ever
+# called by the masters scraper — so it grew without a ceiling.
+#
+# The number is set by the recency window, not by taste. draft_logic_config's
+# recency.windowDays is 14 and minRecentPicks is 300, and appCore.js defaults
+# every player under 2250 trophies to this bracket, so it drives what most
+# users actually see. A cap under ~700k would delete rows the recent_* stats
+# still need and quietly drop brawlers below the 300-pick threshold, costing
+# them their trending signal. 750k is 15 days at the full 50k/day run cap —
+# not the ~42k/day average, since a busy week must not truncate the window —
+# plus headroom for the prune running after the push. It also stays near
+# refresh_brawler_pairs' 600k recent_limit, keeping that RPC cheap.
+DIAMOND_WINDOW_CAP = 750000
 SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity
 MAX_PLAYERS_PER_BRACKET = 50000        # safety cap so a run can't spider forever if the target is unreachable
 CONCURRENCY = 8                        # parallel battlelog requests
@@ -501,6 +515,20 @@ SEEN_PLAYERS = {}
 HASH_COUNTS = {}
 SEEN_IDENTITIES = set()
 
+# How many rounds of each composition have already been SENT to the database
+# this run. push_matches sends the difference against HASH_COUNTS, never the
+# absolute count, because it can now be called repeatedly mid-run (see the
+# incremental-flush note on harvest_bracket). Without deltas, a comp flushed at
+# 20k matches and seen twice more afterwards would be pushed again at its full
+# new count and the database — whose RPC ADDS times_seen — would double-count
+# the rounds it already had.
+PUSHED_COUNTS = {}
+# Cumulative new compositions stored across every flush this run. push_matches
+# returns this rather than its own call's count, because masters.py gates the
+# prune + re-aggregation on a truthy return: a final flush that happens to add
+# no new compositions must not make a run that stored 40k of them look empty.
+RUN_INSERTED = 0
+
 
 def push_players(players=None):
     """Upsert observed {tag: name} pairs into player_directory.
@@ -749,9 +777,17 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
             return merge()
     return merge()
 
+# How many newly-collected matches to accumulate before writing what we have.
+# A masters run takes ~75 minutes and used to hold everything in memory until
+# the very end, so a runner eviction, a network death or a timeout threw away
+# the entire run. At 10k the worst case loses a few minutes of collection
+# instead of an hour, for roughly five extra pushes per run.
+FLUSH_EVERY_MATCHES = 10000
+
 def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
                     target_matches, max_players=MAX_PLAYERS_PER_BRACKET, max_depth=None,
-                    depth1_tags=None, depth1_source_whitelist=None):
+                    depth1_tags=None, depth1_source_whitelist=None,
+                    flush=None, flush_every=FLUSH_EVERY_MATCHES):
     # Every entry fetch_player_battles appends during this call carries this
     # bracket, so tracking the growth of extracted_data's length is equivalent
     # to (and much cheaper than) recounting matches for this bracket each time.
@@ -776,6 +812,7 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
     queue = [(tag, 0) for tag in seed_tags]
     processed = 0
     collected_start = len(extracted_data)
+    last_flush_at = 0
 
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
         while queue and processed < max_players and (len(extracted_data) - collected_start) < target_matches:
@@ -790,8 +827,27 @@ def harvest_bracket(bracket, seed_tags, extracted_data, seen_tags, seen_hashes,
                 if max_depth is None or depth < max_depth:
                     queue.extend((t, depth + 1) for t in new_tags)
             processed += len(batch)
+            collected_now = len(extracted_data) - collected_start
             if processed % 200 < CONCURRENCY:
-                print(f"  {bracket}: {processed} players processed, {len(extracted_data) - collected_start} matches collected...")
+                print(f"  {bracket}: {processed} players processed, {collected_now} matches collected...")
+
+            # Write what we have. Every future in this batch has been resolved
+            # by f.result() above, so no worker is mutating shared state; the
+            # lock is belt-and-braces rather than load-bearing.
+            #
+            # extracted_data is deliberately NOT cleared: it is the registry
+            # push_matches rebuilds rows from, the target accounting above
+            # measures its length, and push_matches sends round-count deltas so
+            # re-visiting an already-pushed entry costs one dict lookup and
+            # sends nothing. This buys durability, not memory.
+            if flush and collected_now - last_flush_at >= flush_every:
+                last_flush_at = collected_now
+                print(f"  {bracket}: flushing at {collected_now} matches collected...")
+                try:
+                    with lock:
+                        flush()
+                except Exception as exc:      # never let a bad flush end a good harvest
+                    print(f"  ⚠️ flush failed ({exc}); collection continues, will retry at the next flush.")
 
     collected = len(extracted_data) - collected_start
     reason = "reached target" if collected >= target_matches else ("ran out of players" if not queue else "hit player safety cap")
@@ -807,10 +863,17 @@ def push_matches(extracted_data, lookups):
     """Convert collected name-based entries into normalized smallint rows and
     upsert them into ranked_matches. Duplicates (already stored on any prior
     run) are silently ignored by the database. Returns (inserted_count,
-    touched_patches) — inserted_count reflects rows actually NEW to the DB."""
+    touched_patches) — inserted_count is the RUN's cumulative count of rows
+    actually NEW to the DB, not this call's.
+
+    Safe to call repeatedly on a growing extracted_data: it sends each
+    composition's round count as a DELTA against what earlier calls already
+    pushed, so nothing is counted twice.
+    """
+    global RUN_INSERTED
     if not extracted_data:
         print("⚠️ No new matches found to save.")
-        return 0, set()
+        return RUN_INSERTED, set()
 
     rows = []
     for e in extracted_data:
@@ -821,6 +884,12 @@ def push_matches(extracted_data, lookups):
         patch_id = lookups.patch_id(e["patch"])
         if None in (map_id, bracket_id, patch_id) or not w or w[0] is None or not l or l[0] is None:
             continue  # lookup resolution failed — skip rather than store a broken row
+        # Rounds not yet sent for this composition. Zero means an earlier flush
+        # already pushed everything we know about it — skip it entirely rather
+        # than send a no-op row.
+        delta = HASH_COUNTS.get(e["match_hash"], 1) - PUSHED_COUNTS.get(e["match_hash"], 0)
+        if delta <= 0:
+            continue
         rows.append({
             "match_hash": e["match_hash"],  # 32-hex md5 → valid uuid input
             "map_id": map_id,
@@ -830,8 +899,12 @@ def push_matches(extracted_data, lookups):
             "l1": l[0], "l2": l[1] if len(l) > 1 else None, "l3": l[2] if len(l) > 2 else None,
             # Rounds this composition actually won, this run. Accumulates across
             # runs DB-side, so a comp re-seen next week adds rather than resets.
-            "times_seen": min(32767, HASH_COUNTS.get(e["match_hash"], 1)),
+            "times_seen": min(32767, delta),
         })
+
+    if not rows:
+        print("Nothing new to push since the last flush.")
+        return RUN_INSERTED, {e["patch"] for e in extracted_data} - CLOSED_PATCHES
 
     # Insert in batches — a single request with tens of thousands of rows can
     # exceed Supabase's statement timeout (57014) and roll back with zero rows
@@ -871,6 +944,12 @@ def push_matches(extracted_data, lookups):
                 new_rows = 0
             inserted += new_rows
             attempted += len(batch)
+            # Only now, after the database has confirmed the write, is it true
+            # that these rounds have been sent. Updating before the request
+            # would strand them: a failed batch would leave the counts marked
+            # as pushed and the next flush would compute a delta of zero.
+            for r in batch:
+                PUSHED_COUNTS[r["match_hash"]] = PUSHED_COUNTS.get(r["match_hash"], 0) + r["times_seen"]
             print(f"  Batch {i // INSERT_BATCH_SIZE + 1}: {new_rows}/{len(batch)} new ({attempted}/{len(rows)} processed)")
         else:
             print(f"❌ Failed to save batch starting at {i}: {res.status_code} {res.text}")
@@ -879,9 +958,11 @@ def push_matches(extracted_data, lookups):
 
     touched_patches = {e["patch"] for e in extracted_data} - CLOSED_PATCHES
     merged = len(rows) - inserted if attempted == len(rows) else '?'
+    RUN_INSERTED += inserted
     print(f"✅ Done. {inserted} new compositions stored; {merged} already known "
-          f"(their round counts were incremented). {total_rounds} rounds represented.")
-    return inserted, touched_patches
+          f"(their round counts were incremented). {total_rounds} rounds represented. "
+          f"[run total: {RUN_INSERTED} new]")
+    return RUN_INSERTED, touched_patches
 
 def prune_bracket(bracket_name, cap=MASTERS_WINDOW_CAP):
     """Sliding-window retention: FIFO-drop the oldest rows beyond `cap` for

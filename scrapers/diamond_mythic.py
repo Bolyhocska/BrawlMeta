@@ -12,9 +12,9 @@ import requests
 
 from scrapers.common import (
     require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
-    harvest_bracket, push_matches, push_players, reaggregate,
+    harvest_bracket, push_matches, push_players, reaggregate, prune_bracket,
     SUPABASE_URL, SUPABASE_HEADERS,
-    MASTERS_BASELINE, DIAMOND_RUN_CAP, SPIDER_DEPTH,
+    MASTERS_BASELINE, DIAMOND_RUN_CAP, DIAMOND_WINDOW_CAP, SPIDER_DEPTH,
 )
 
 BRACKET = "diamond_mythic"
@@ -62,7 +62,8 @@ def main():
 
     extracted, seen_tags, seen_hashes = [], set(), set()
     harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
-                    target_matches=DIAMOND_RUN_CAP, max_depth=SPIDER_DEPTH)
+                    target_matches=DIAMOND_RUN_CAP, max_depth=SPIDER_DEPTH,
+                    flush=lambda: (push_players(), push_matches(extracted, lookups)))
 
     # Every battlelog the spider read handed us {tag, name} for six players.
     # Recorded before the match push so a failure there still leaves the
@@ -73,6 +74,9 @@ def main():
 
     inserted, touched = push_matches(extracted, lookups)
     if inserted:
+        # Sliding window BEFORE re-aggregation, so the fresh aggregates are
+        # computed over exactly the retained window — same ordering as masters.
+        prune_bracket(BRACKET, DIAMOND_WINDOW_CAP)
         reaggregate(touched)
         # Keep the Intelligence Engine's statistical layer in step with the data
         from scrapers.meta_weights import refresh_intelligence
