@@ -4,6 +4,7 @@ import { ChevronDown, Star, TrendingUp, Check, Crown, LineChart, ArrowUpRight } 
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
 import SiteHeader from "./SiteHeader";
+import { MapsLandingPage, MapDetailPage } from "./MapsPages";
 import ComingSoonPage from "./ComingSoonPage";
 import { GuidesLandingPage, SkillsGuidePage, ModesGuidesPage, ModeGuidePage, SafeZoneGuidePage, BrawlerGuidesPage } from "./GuidesPages";
 import ScrimsPage from "./ScrimsPage";
@@ -787,6 +788,8 @@ export default function AppRoutes() {
       <Route path="/guides/modes/heist/safe-zone" element={<SafeZoneGuidePage />} />
       <Route path="/guides/modes/:modeId" element={<ModeGuidePage />} />
       <Route path="/guides/brawlers" element={<BrawlerGuidesPage />} />
+      <Route path="/maps" element={<MapsLandingPage />} />
+      <Route path="/maps/:mapSlug" element={<MapDetailPage />} />
       <Route path="/upgrade" element={<UpgradePage />} />
       <Route path="/player/:tag" element={<PlayerPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />

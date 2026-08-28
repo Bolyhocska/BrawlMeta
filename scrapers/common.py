@@ -1083,5 +1083,36 @@ def reaggregate(touched_patches):
         rpc_res = requests.post(rpc_url, json={"target_patch": patch}, headers=SUPABASE_HEADERS)
         if rpc_res.status_code in (200, 204):
             print(f"✅ BrawlerStats aggregation complete for {patch}.")
+            capture_meta_history(patch)
         else:
             print(f"⚠️ Aggregation failed for {patch}: {rpc_res.status_code} {rpc_res.text}")
+
+
+def capture_meta_history(patch):
+    """Snapshot the freshly-rebuilt BrawlerStats into meta_daily.
+
+    ranked_matches is a FIFO window: at the collection rate measured on
+    2026-08-28 (~125k masters rows/day) 1.5M rows is about TWELVE days, and
+    everything pruned past that is gone permanently. Nothing preserved what the
+    meta looked like beyond that horizon, so no trend longer than the window
+    could ever be shown — not today and not in a year.
+
+    ~6.5k rows a day, three orders of magnitude cheaper than keeping the
+    matches. Runs right after aggregation because that is the moment
+    BrawlerStats is current; several calls in one day simply refresh that day's
+    snapshot, so the last one — taken over the most data — wins.
+
+    Deliberately non-fatal: losing a day of history must never fail a scrape
+    that already stored its matches.
+    """
+    try:
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/capture_meta_daily",
+            json={"target_patch": patch}, headers=SUPABASE_HEADERS, timeout=120,
+        )
+        if res.status_code in (200, 204):
+            print(f"📸 meta_daily: snapshot captured for {patch} ({res.text.strip()} rows).")
+        else:
+            print(f"⚠️ meta_daily snapshot failed for {patch}: {res.status_code} {res.text[:200]}")
+    except Exception as exc:
+        print(f"⚠️ meta_daily snapshot error for {patch}: {exc}")
