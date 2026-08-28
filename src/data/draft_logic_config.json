@@ -1810,6 +1810,7 @@
     "_comment": "MEASURED teammate synergy, replacing the hand-authored synergyPairs table. Hold-out validated 2026-08-27: weight fitted on half of 35,257 post-cutoff games and scored on the other half, AUC 0.5662 -> 0.5764 (+0.0102) — the largest single gain of the whole calibration pass. The signal is the EXCESS over what the two brawlers' solo rates already predict, not the raw duo win rate: raw conflates synergy with individual strength, so two strong brawlers look synergistic with no interaction at all. Raw scored +0.0088 held out, excess +0.0102. Real measured duos: Colt+Nori +12.0pp, Emz+Damian +5.7pp over 3,483 games, while Gene+Max is +0.1pp over 11,951 — a pairing that feels synergistic and measurably is not.",
     "weight": 2.4,
     "shrinkPriorGames": 135,
-    "adviceWeight": 2.0
+    "adviceWeight": 1.0,
+    "_adviceWeightNote": "Chosen to PRESERVE the influence the recommender's pre-existing duo block already had (0.5 x raw-vs-50), not to amplify it — only the measure changed, from raw to excess-over-solo. Unlike winProbability, this weight is not validated against outcomes: scoring the recommender needs a counterfactual we cannot observe, and the best available proxy moves ~0.007 AUC on a 0.52 base."
   }
 }

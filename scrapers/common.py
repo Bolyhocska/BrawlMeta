@@ -854,7 +854,21 @@ def push_matches(extracted_data, lookups):
         if res.status_code in (200, 201):
             # The RPC returns how many rows were genuinely NEW; the rest were
             # existing compositions whose counts it incremented.
-            new_rows = int(res.json())
+            #
+            # Parsed defensively. PostgREST returns a scalar function's value
+            # bare, but this is the single path every collected match travels
+            # through — a shape surprise here must degrade the COUNT, never kill
+            # a run that has already written its rows.
+            try:
+                payload = res.json()
+                if isinstance(payload, list):
+                    payload = (payload[0] or {}).get("upsert_ranked_matches", 0) if payload else 0
+                elif isinstance(payload, dict):
+                    payload = payload.get("upsert_ranked_matches", 0)
+                new_rows = int(payload)
+            except Exception as e:
+                print(f"  (could not read the RPC's new-row count: {e}; rows were still written)")
+                new_rows = 0
             inserted += new_rows
             attempted += len(batch)
             print(f"  Batch {i // INSERT_BATCH_SIZE + 1}: {new_rows}/{len(batch)} new ({attempted}/{len(rows)} processed)")

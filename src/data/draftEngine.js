@@ -583,15 +583,33 @@ export function getDraftAdvice({
       chips.push({ label: abilityRules.sniperWithWallBreakSynergy.label, tone: "good" });
     }
 
-    // ── Teammate synergy · empirical duo win rate with already-locked mates ──
-    if (myTeam.length > 0 && intel?.with_brawler) {
+    // ── Teammate synergy · measured duo edge with already-locked mates ──
+    // The EXCESS over what the pair's own solo rates predict, not the raw duo
+    // win rate this used to score. Raw conflates synergy with individual
+    // strength — two strong brawlers post a high duo rate with no interaction
+    // at all — so scoring it double-counts strength already in the solo term.
+    // Measured 2026-08-27 in the win split: excess held out at +0.0102 AUC,
+    // raw at +0.0088. Same helper as computeWinSplit, so the ranker and the
+    // verdict cannot disagree about which duos are good.
+    //
+    // The weight is set to preserve this block's previous influence rather than
+    // amplify it: 0.5 x raw-vs-50 and 1.0 x shrunk-excess are comparable in
+    // magnitude for a typical strong duo. Unlike the win-split weight, this one
+    // is NOT independently validated — the recommender resists outcome testing.
+    if (myTeam.length > 0) {
+      const duoW = CONFIG.duoSynergy?.adviceWeight ?? 1.0;
       for (const mk of myTeam) {
-        const v = intel.with_brawler[norm(mk)];
-        if (!v || v.picks < 50) continue;
-        const duoEdge = parseFloat(v.winRate) - 50;
-        score += duoEdge * 0.5;
-        if (duoEdge >= 3) chips.push({ label: `Duos with ${fmtName(mk)}`, tone: "good" });
-        else if (duoEdge <= -3) chips.push({ label: `Weak duo with ${fmtName(mk)}`, tone: "bad" });
+        const m = pairEdgeWith(key, mk, intelligence);
+        if (m.excess == null) {
+          score += synergyScore(cls, draftClassOf(mk)) * duoW;   // no sample: fall back to the class table
+          continue;
+        }
+        score += m.edge * duoW;
+        if (m.excess >= 3) chips.push({ label: `Duos with ${fmtName(mk)}`, tone: "good" });
+        else if (m.excess <= -3) chips.push({ label: `Weak duo with ${fmtName(mk)}`, tone: "bad" });
+        if (m.games >= 300 && Math.abs(m.excess) >= 3) {
+          why.push(`${m.winRate.toFixed(1)}% together with ${fmtName(mk)} over ${m.games.toLocaleString("en-US")} games`);
+        }
       }
     }
 
@@ -867,19 +885,6 @@ export function getDraftAdvice({
       score -= 8;
       chips.push({ label: `No ${after.missing[0]}`, tone: "bad" });
     }
-    // Measured synergy with the teammates already picked, replacing the class
-    // table. Same excess-over-solo measure as the win split, so the ranker and
-    // the verdict cannot disagree about which duos are good.
-    const duoW = CONFIG.duoSynergy?.adviceWeight ?? 2.0;
-    for (const mate of myTeam) {
-      const m = pairEdgeWith(key, mate, intelligence);
-      score += (m.excess == null ? synergyScore(cls, draftClassOf(mate)) : m.edge) * duoW;
-      if (m.games >= 300 && m.excess != null && m.excess >= 2) {
-        chips.push({ label: `Strong with ${fmtName(mate)}`, tone: "good" });
-        why.push(`${m.winRate.toFixed(1)}% together with ${fmtName(mate)} over ${m.games.toLocaleString("en-US")} games`);
-      }
-    }
-
     // Headline win rate: trust the map only when the sample is real; otherwise
     // fall back to the (large-sample) overall rate so a 25-game map WR never headlines.
     // mapGames/overallGames are reported SEPARATELY and always, so the card can
