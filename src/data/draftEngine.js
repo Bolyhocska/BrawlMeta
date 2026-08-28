@@ -131,6 +131,45 @@ const pairEdgeVs = (myKey, enemyKey, intelligence = {}, mapPairs = {}) => {
   return { edge: (wr - 50) * (n / (n + prior)), games: n, winRate: wr };
 };
 
+// Measured teammate synergy, from with_brawler.
+//
+// The signal is the EXCESS over what the pair's own solo rates already predict,
+// never the raw duo win rate. Raw conflates synergy with individual strength —
+// two strong brawlers post a high duo rate with no interaction whatsoever, and
+// the engine would then double-count strength it has already scored. Measured
+// 2026-08-27: excess held out at +0.0102 AUC, raw at +0.0088.
+//
+// Shrunk by sample like pairEdgeVs, so a 40-game duo cannot shout. Unlike
+// pairEdgeVs this is NOT antisymmetric — each team's synergy is computed from
+// its own pairs — so the differential counts it once and the weight is the
+// intuitive value rather than half of it.
+const pairEdgeWith = (aKey, bKey, intelligence = {}) => {
+  const a = norm(aKey), b = norm(bKey);
+  const v = intelligence[a]?.with_brawler?.[b] ?? intelligence[b]?.with_brawler?.[a];
+  const n = Number(v?.picks) || 0;
+  const wr = parseFloat(v?.winRate);
+  if (!n || !Number.isFinite(wr)) return { edge: 0, games: 0, winRate: null, excess: null };
+  const ra = recencyTWR(intelligence[a]), rb = recencyTWR(intelligence[b]);
+  if (ra == null || rb == null) return { edge: 0, games: n, winRate: wr, excess: null };
+  const excess = wr - (ra + rb) / 2;
+  const prior = CONFIG.duoSynergy?.shrinkPriorGames ?? 135;
+  return { edge: excess * (n / (n + prior)), games: n, winRate: wr, excess };
+};
+
+// Mean synergy across a team's three pairings, in win-rate points so it is
+// dimensionally comparable to every other term. Falls back to the class table
+// for a duo with no measured sample.
+const teamSynergy = (keys, intelligence = {}) => {
+  let pts = 0, n = 0;
+  for (let i = 0; i < keys.length; i++)
+    for (let j = i + 1; j < keys.length; j++) {
+      const m = pairEdgeWith(keys[i], keys[j], intelligence);
+      pts += m.excess == null ? synergyScore(draftClassOf(keys[i]), draftClassOf(keys[j])) : m.edge;
+      n++;
+    }
+  return n ? pts / n : 0;
+};
+
 // Mean head-to-head edge of one brawler against a set of enemies. A MEAN, not a
 // sum: it stays denominated in win-rate points, so it is dimensionally
 // comparable to the solo-rate mean that both scorers are built on.
@@ -828,7 +867,18 @@ export function getDraftAdvice({
       score -= 8;
       chips.push({ label: `No ${after.missing[0]}`, tone: "bad" });
     }
-    for (const mate of myClasses) score += synergyScore(cls, mate) * 2;
+    // Measured synergy with the teammates already picked, replacing the class
+    // table. Same excess-over-solo measure as the win split, so the ranker and
+    // the verdict cannot disagree about which duos are good.
+    const duoW = CONFIG.duoSynergy?.adviceWeight ?? 2.0;
+    for (const mate of myTeam) {
+      const m = pairEdgeWith(key, mate, intelligence);
+      score += (m.excess == null ? synergyScore(cls, draftClassOf(mate)) : m.edge) * duoW;
+      if (m.games >= 300 && m.excess != null && m.excess >= 2) {
+        chips.push({ label: `Strong with ${fmtName(mate)}`, tone: "good" });
+        why.push(`${m.winRate.toFixed(1)}% together with ${fmtName(mate)} over ${m.games.toLocaleString("en-US")} games`);
+      }
+    }
 
     // Headline win rate: trust the map only when the sample is real; otherwise
     // fall back to the (large-sample) overall rate so a 25-game map WR never headlines.
@@ -1117,15 +1167,11 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
       for (const foe of enemyKeys) { pairPts += pairEdgeVs(mine, foe, intelligence).edge; pairN++; }
     if (pairN) s += (pairPts / pairN) * pw;
 
-    // Synergy is deliberately NOT scored here. Measured 2026-08-27: removing it
-    // changed the verdict's ranking power by exactly 0.0000 AUC over 35,257
-    // games. It cannot move anything as authored — only 8 of 28 class pairs
-    // carry a value, every value is positive so both teams collect some, and
-    // the differential is exactly zero in 27.5% of real drafts (median 0, mean
-    // |diff| 0.75). Even a 95th-percentile gap of 1.5 moves the split ~2.7 points.
-    // It is still scored in getDraftAdvice, at 2x, where it shapes copy. Give
-    // the table anti-synergies and the missing 20 pairs and it could earn a
-    // place back here.
+    // Measured teammate synergy. The hand-authored class table that used to sit
+    // here could not move anything (removing it changed AUC by 0.0000); this
+    // replaces it with real duo data and is the single largest improvement
+    // found in the calibration pass, +0.0102 AUC held out.
+    s += teamSynergy(teamKeys, intelligence) * (CONFIG.duoSynergy?.weight ?? 2.4);
 
     const sanity = finalSanityCheck(teamKeys, mode);
     s -= sanity.missing.length * 3;

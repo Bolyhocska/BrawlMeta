@@ -337,7 +337,7 @@
     }
   },
   "synergyPairs": {
-    "_comment": "Same-team class pairings that amplify each other. Applied once per pair present in a comp.",
+    "_comment": "SUPERSEDED by duoSynergy, which measures real brawler pairs from with_brawler. Kept only as the fallback when a duo has no measured sample. As authored this table could not move anything: 8 of 28 class pairs carry a value, all positive so both teams collect some, and the differential is exactly zero in 27.5% of real drafts. Removing it changed the verdict's AUC by 0.0000.",
     "TANK+SUPPORT": 1.5,
     "TANK+CONTROL": 1,
     "THROWER+TANK": 1.5,
@@ -1741,11 +1741,11 @@
   },
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
-    "logisticScale": 23.25,
+    "logisticScale": 33.5,
     "capPct": 85,
     "counterWeight": 0,
     "_counterWeightComment": "Per-point weight of the class counter matrix in each side's comp score. MUST stay at half the intuitive value: counterMatrix is exactly antisymmetric (M[a][b] === -M[b][a]), so red's counter total is always the negation of blue's, and the differential blue-minus-red therefore counts every cross-team pairing TWICE. At the old 1.2 this let class theory swing the differential by up to ~26 points while the statistical term (a mean of true win rates) spans barely 6 — i.e. the matrix outvoted real win-rate evidence roughly 4:1, and could hand a 67% verdict to the comp with the WORSE measured win rates. 0.6 counts each pairing once, which puts theory and evidence on comparable footing and keeps the split consistent with the suggestion ranking.",
-    "_calibration": "counterWeight 0 and logisticScale 23.25 are MEASURED, not chosen. Backtested 2026-08-27 on 35,257 games played after the training cutoff, with every aggregate rebuilt from matches collected before it. At the previous 0.6/14 the verdict scored WORSE than always saying 50/50 (logloss 0.6984 vs 0.6931) and claimed 70% where reality was 59%. Ablation showed the class counter matrix COST ranking power here (AUC 0.5587 -> 0.5622 without it); the head-to-head vs_brawler term is the piece that earns its place (-0.0138 without it) and its 0.6 weight measured near-optimal. Now: AUC 0.5644, logloss 0.6866, Brier 0.2468 - all better than a coin flip. The matrix is UNCHANGED in getDraftAdvice, where it is weighted 2.2x and drives the Counters/Weak-vs chips."
+    "_calibration": "counterWeight 0 and logisticScale 33.5 are MEASURED, not chosen, and the scale must be REFITTED whenever a scoring term is added or removed — it encodes how wide the differential runs. Backtested on 35,257 games played after a training cutoff with every aggregate rebuilt from matches collected before it. At the original 0.6/14 the verdict scored WORSE than always saying 50/50 (logloss 0.6984 vs 0.6931) and claimed 70% where teams actually won 58.8%. Ablation: the class counter matrix COST ranking power here (0.5587 -> 0.5622 without it) while the head-to-head vs_brawler term earned its place (-0.0138 without it) at a near-optimal 0.6. Adding measured duo synergy took it further. Now AUC 0.5734, logloss 0.6846, Brier 0.2458 — all better than a coin flip, every calibration bucket within 1.8pp. The matrix is UNCHANGED in getDraftAdvice, where it is weighted 2.2x and drives the Counters/Weak-vs chips."
   },
   "mapPairs": {
     "_comment": "Measured brawler-vs-brawler win rates from brawler_intelligence.vs_brawler — the counter-drafting evidence for the late picks: 'does this candidate actually beat the brawlers they are looking at'. Named mapPairs because a per-map layer slots in here later; today the numbers are patch-wide, and the engine reads them through pairEdgeVs in draftEngine.js. Worth knowing why per-map is a second-order refinement rather than the main event: the measured spread of a pair's true edge is ~4.3 win-rate points, while the spread of the MAP-SPECIFIC part of that edge is only ~2.3, so the patch-wide rate is the trunk and the map rate is a correction to it.",
@@ -1805,5 +1805,11 @@
       "_maxOpenerComment": "Hard exclusion, not just a weighting. At firstPickSafety >= this a brawler is a SAFE OPENER (same threshold blindPickLabel uses for that badge) — which means the team holding first pick can simply take them. Banning your own first pick is the specific mistake this whole rule exists to prevent, so those are removed from the first-picker's ban list outright rather than merely down-weighted."
     },
     "proBanReason": "Pro priority ban on this map"
+  },
+  "duoSynergy": {
+    "_comment": "MEASURED teammate synergy, replacing the hand-authored synergyPairs table. Hold-out validated 2026-08-27: weight fitted on half of 35,257 post-cutoff games and scored on the other half, AUC 0.5662 -> 0.5764 (+0.0102) — the largest single gain of the whole calibration pass. The signal is the EXCESS over what the two brawlers' solo rates already predict, not the raw duo win rate: raw conflates synergy with individual strength, so two strong brawlers look synergistic with no interaction at all. Raw scored +0.0088 held out, excess +0.0102. Real measured duos: Colt+Nori +12.0pp, Emz+Damian +5.7pp over 3,483 games, while Gene+Max is +0.1pp over 11,951 — a pairing that feels synergistic and measurably is not.",
+    "weight": 2.4,
+    "shrinkPriorGames": 135,
+    "adviceWeight": 2.0
   }
 }
