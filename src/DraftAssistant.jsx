@@ -151,11 +151,13 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
         borderRadius: 5, padding: "2px 7px",
       }}>{lane.lane.toUpperCase()}</span>
 
-      {/* enemy above, you below — the lane read top-down, as it faces you */}
+      {/* You on the LEFT, them on the right. The percentage between them is
+          YOUR win rate, so it has to read left-to-right as "you beat them N%"
+          — with the enemy on the left the number looked like theirs. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-          {foe && <BrawlerTile brawler={foe} size={40} title={foe.name} />}
-          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ff8f8f" }}>THEM</span>
+          {me && <BrawlerTile brawler={me} size={40} title={me.name} />}
+          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#7cc4ff" }}>YOU</span>
         </div>
         <div style={{ textAlign: "center", minWidth: 62 }}>
           <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 800, color: tone, lineHeight: 1.1 }}>
@@ -168,8 +170,8 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-          {me && <BrawlerTile brawler={me} size={40} title={me.name} />}
-          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#7cc4ff" }}>YOU</span>
+          {foe && <BrawlerTile brawler={foe} size={40} title={foe.name} />}
+          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ff8f8f" }}>THEM</span>
         </div>
       </div>
 
