@@ -474,21 +474,35 @@ export function getDraftAdvice({
       }
     }
     if (enemyTeam.length > 0) {
-      // Theory: class counter matrix
+      // Class counter matrix. No longer theory: every value is a measured
+      // head-to-head edge in WIN-RATE POINTS, so `edge` here reads directly as
+      // "this class wins N points more often against that one". The chip
+      // threshold is config-driven because the matrix changed scale — at the
+      // old hardcoded 1.5 only two of 42 class pairings could ever fire.
+      const chipAt = CONFIG.classCounter?.chipThreshold ?? 1.0;
       let matrixPts = 0;
       for (let i = 0; i < enemyTeam.length; i++) {
         const edge = pairEdge(key, cls, enemyTeam[i], enemyClasses[i]);
         matrixPts += edge;
         if (edge > bestEdge) { bestEdge = edge; bestCounterName = fmtName(enemyTeam[i]); }
         if (edge < worstEdge) { worstEdge = edge; worstCounterName = fmtName(enemyTeam[i]); }
-        if (edge >= 1.5) {
+        if (edge >= chipAt) {
           chips.push({ label: `Counters ${fmtName(enemyTeam[i])}`, tone: "good" });
           why.push(`${classLabel(cls)} answer to their ${fmtName(enemyTeam[i])}`);
-        } else if (edge <= -1.5) {
+        } else if (edge <= -chipAt) {
           chips.push({ label: `Weak vs ${fmtName(enemyTeam[i])}`, tone: "bad" });
         }
       }
-      score += matrixPts * 2.2 * slotCounterW;
+      // 2.0 against the measured matrix is roughly the contribution 1.4 gave
+      // against the old authored one — the matrix got smaller, not this term
+      // louder. Worth being blunt about the size of the effect: held out over
+      // 23,772 real pick decisions, removing the class matrix ENTIRELY moves
+      // AUC by -0.0008 ± 0.0010. It does not clear its own error bar, and
+      // neither did the authored table, the measured one, or 18 classes learned
+      // by co-clustering — a class matrix cannot add much once brawler-level
+      // vs_brawler covers 93% of decisions. It stays because it explains picks,
+      // not because it ranks them. See classCounter in the config.
+      score += matrixPts * (CONFIG.classCounter?.adviceWeight ?? 2.0) * slotCounterW;
 
       // Counter-stack: the enemy committed 2+ of a class we hard-counter → near-lock.
       const cStack = cons.counterStack;

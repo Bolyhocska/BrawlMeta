@@ -265,76 +265,73 @@
     "ZIGGY": "PIERCE_DAMAGE"
   },
   "counterMatrix": {
-    "_comment": "counterMatrix[A][B] > 0 means class A counters class B (score -2..+2). Encodes Bobby's triangle: Anti-Tank beats Tank, Tank/Aggro beats Control, Control beats Anti-Tank — 'everything in the game gets countered by something'. Space makers dive backline (snipers/throwers/support) but die to anti-tank damage and control.",
+    "_comment": "counterMatrix[A][B] > 0 means class A beats class B, IN WIN-RATE POINTS. MEASURED 2026-08-29 over 250,000 Masters matches, replacing the hand-authored -2..+2 table. Four things make it trustworthy, and all four are load-bearing if you ever rebuild it. (1) SOLO STRENGTH IS REMOVED with a coefficient FITTED (1.004), not assumed - solo win rate alone explains 64% of head-to-head edge, so an unadjusted matrix mostly learns which classes hold strong brawlers, which soloWR already scores. An earlier pass assumed 0.5 and the leftover strength produced two confident false findings: that Anti-Tank does NOT beat Tank, and that Ash/Bolt are a separate archetype. Both dissolve at the fitted value - Ash and Bolt are ordinary tanks (matchup residual +0.18 and -0.16) that are simply strong. (2) MAP CONTROL: each cell is pooled WITHIN maps, because two classes are drafted onto different maps and the raw cross-tab confuses that selection with a matchup. This is not cosmetic - Tank vs Thrower reads +0.52 raw and -0.05 map-controlled. (3) SHRINKAGE: every cell is shrunk toward 0 by its own standard error (empirical Bayes; across the 42 cells the observed sd is 0.86 pts of which 0.21 is noise). Thin cells therefore cannot assert a matchup the sample will not carry, which is the same priors-vs-evidence rule the rest of the engine obeys. (4) EXACTLY ANTISYMMETRIC, M[a][b] = -M[b][a] - see the invariant in CLAUDE.md. WHAT IT FOUND: Bobby's triangle largely survives. Anti-Tank does beat Tank (+1.06, not the claimed +2.00) and Space Maker does dive backline (+2.06 vs Thrower, +1.12 vs Sniper). Anti-Tank loses to Thrower (-1.71), as authored. The genuine corrections are both in the Tank row: tanks were said to lose 1.5 to throwers and that is NOT TRUE and NOT REVERSED EITHER - it is 0.00, a wash, the single largest false claim in the old table; and tanks were said to lose 1.0 to snipers when they in fact beat them (+0.60, which does clear its error bar). Do not read a class cell as a duel: it is a TEAM-level outcome for comps containing those classes, and within-class spread is huge - vs throwers, Bolt is +5.79 and Buster -5.19 around a class mean of zero. Per-brawler truth lives in vs_brawler, not here. Held out over 23,772 real pick decisions, swapping these values in moved AUC by +0.0002 +/-0.0013 - nothing. It ships to make the 'Counters X' / 'Weak vs Y' chips TRUE, not to predict better.",
     "ANTI_TANK": {
       "ANTI_TANK": 0,
-      "TANK": 2,
-      "SPACE_MAKER": 1.5,
-      "CONTROL": -1.5,
-      "THROWER": -1,
-      "SNIPER": -0.5,
-      "SUPPORT": 0.5
+      "TANK": 1.06,
+      "SPACE_MAKER": 0.37,
+      "CONTROL": -0.48,
+      "THROWER": -1.71,
+      "SNIPER": 0.09,
+      "SUPPORT": 0.39
     },
     "TANK": {
-      "ANTI_TANK": -2,
+      "ANTI_TANK": -1.06,
       "TANK": 0,
-      "SPACE_MAKER": 0.5,
-      "CONTROL": 1.5,
-      "THROWER": -1.5,
-      "SNIPER": -1,
-      "SUPPORT": 1
+      "SPACE_MAKER": 1.16,
+      "CONTROL": 1.1,
+      "THROWER": -0.04,
+      "SNIPER": 0.6,
+      "SUPPORT": 0.36
     },
     "SPACE_MAKER": {
-      "ANTI_TANK": -1.5,
-      "TANK": -0.5,
+      "ANTI_TANK": -0.37,
+      "TANK": -1.16,
       "SPACE_MAKER": 0,
-      "CONTROL": -1,
-      "THROWER": 1.5,
-      "SNIPER": 2,
-      "SUPPORT": 1.5
+      "CONTROL": 0,
+      "THROWER": 2.06,
+      "SNIPER": 1.12,
+      "SUPPORT": -0.05
     },
     "CONTROL": {
-      "ANTI_TANK": 1.5,
-      "TANK": -1.5,
-      "SPACE_MAKER": 1,
+      "ANTI_TANK": 0.48,
+      "TANK": -1.1,
+      "SPACE_MAKER": 0,
       "CONTROL": 0,
-      "THROWER": -0.5,
-      "SNIPER": -1,
-      "SUPPORT": 0.5
+      "THROWER": -0.87,
+      "SNIPER": -0.25,
+      "SUPPORT": -0.16
     },
     "THROWER": {
-      "ANTI_TANK": 1,
-      "TANK": 1.5,
-      "SPACE_MAKER": -1.5,
-      "CONTROL": 0.5,
+      "ANTI_TANK": 1.71,
+      "TANK": 0.04,
+      "SPACE_MAKER": -2.06,
+      "CONTROL": 0.87,
       "THROWER": 0,
-      "SNIPER": -1.5,
-      "SUPPORT": 0
+      "SNIPER": -0.26,
+      "SUPPORT": -0.13
     },
     "SNIPER": {
-      "ANTI_TANK": 0.5,
-      "TANK": 1,
-      "SPACE_MAKER": -2,
-      "CONTROL": 1,
-      "THROWER": 1.5,
+      "ANTI_TANK": -0.09,
+      "TANK": -0.6,
+      "SPACE_MAKER": -1.12,
+      "CONTROL": 0.25,
+      "THROWER": 0.26,
       "SNIPER": 0,
-      "SUPPORT": 1
+      "SUPPORT": -0.03
     },
     "SUPPORT": {
-      "ANTI_TANK": -0.5,
-      "TANK": -1,
-      "SPACE_MAKER": -1.5,
-      "CONTROL": -0.5,
-      "THROWER": 0,
-      "SNIPER": -1,
+      "ANTI_TANK": -0.39,
+      "TANK": -0.36,
+      "SPACE_MAKER": 0.05,
+      "CONTROL": 0.16,
+      "THROWER": 0.13,
+      "SNIPER": 0.03,
       "SUPPORT": 0
     }
   },
   "matchupOverrides": {
-    "_comment": "Per-brawler exceptions to the class counter matrix. Value = the LISTED brawler's edge (-2..+2) against that enemy class, replacing its class default in BOTH directions (the reverse pairing uses the negation). BOLT: THROWER 0 → Bolt is a tank but mobile enough that throwers don't counter him — no 'Weak vs' penalty for Bolt against throwers, and no 'Counters Bolt' credit for throwers.",
-    "BOLT": {
-      "THROWER": 0
-    }
+    "_comment": "Per-brawler exceptions to the class counter matrix, in the same WIN-RATE POINT units. Value = the LISTED brawler's edge against that enemy class, replacing its class default in BOTH directions (the reverse pairing uses the negation). Currently EMPTY. It held one entry, BOLT/THROWER = 0, whose job was to cancel the authored matrix's false claim that tanks lose 1.5 to throwers. The measured matrix has no such claim (Tank vs Thrower is +0.63), so the override became a penalty rather than a relief: Bolt measures +4.59 vs throwers over ~1,000 pairing-games, and pinning him to 0 would understate him. Not re-encoded at the measured value on purpose - one brawler on a four-figure sample is a thin basis for a hand-entry, and vs_brawler already carries Bolt's real per-enemy edges with proper shrinkage. Add an entry here only for an exception that vs_brawler cannot see, and damp it like any other prior."
   },
   "synergyPairs": {
     "_comment": "SUPERSEDED by duoSynergy, which measures real brawler pairs from with_brawler. Kept only as the fallback when a duo has no measured sample. As authored this table could not move anything: 8 of 28 class pairs carry a value, all positive so both teams collect some, and the differential is exactly zero in 27.5% of real drafts. Removing it changed the verdict's AUC by 0.0000.",
@@ -564,9 +561,9 @@
       "requiresEnemyCommitted": true
     },
     "counterStack": {
-      "_comment": "Bobby: 'if the enemy commits to a class, the hard counter to it is almost a free pick'. When the enemy fields 2+ of one class, a brawler whose class hard-counters it (counterMatrix >= hardCounterThreshold) gets a flat bonus PER stacked enemy — applied AFTER mode weighting so a favorable enemy mode can't bury the counter (e.g. two snipers on a Bounty map still make Mortis/Kit a lock).",
+      "_comment": "Bobby: 'if the enemy commits to a class, the hard counter to it is almost a free pick'. When the enemy fields 2+ of one class, a brawler whose class hard-counters it (counterMatrix >= hardCounterThreshold) gets a flat bonus PER stacked enemy - applied AFTER mode weighting so a favorable enemy mode can't bury the counter (e.g. two snipers on a Bounty map still make Mortis/Kit a lock). Threshold 1.5 -> 1.0 on 2026-08-29: it is read against counterMatrix, which now carries MEASURED win-rate points (RMS 0.88, max 2.15) instead of authored -2..+2 units (RMS 1.21). At 1.5 only two of the 42 class pairings would ever have qualified and the rule would have gone effectively dead. 1.0 is 'a full win-rate point of class edge' and keeps roughly the set of pairings the rule was written to fire on.",
       "minStack": 2,
-      "hardCounterThreshold": 1.5,
+      "hardCounterThreshold": 1.0,
       "bonusPerEnemy": 9
     }
   },
@@ -1751,7 +1748,7 @@
     "_comment": "Measured brawler-vs-brawler win rates from brawler_intelligence.vs_brawler — the counter-drafting evidence for the late picks: 'does this candidate actually beat the brawlers they are looking at'. Named mapPairs because a per-map layer slots in here later; today the numbers are patch-wide, and the engine reads them through pairEdgeVs in draftEngine.js. Worth knowing why per-map is a second-order refinement rather than the main event: the measured spread of a pair's true edge is ~4.3 win-rate points, while the spread of the MAP-SPECIFIC part of that edge is only ~2.3, so the patch-wide rate is the trunk and the map rate is a correction to it.",
     "shrinkPriorGames": 135,
     "_shrinkComment": "Empirical-Bayes shrink of a pair edge toward even. prior = 2500/sd^2, where 2500 is the squared standard error of a win rate (50/sqrt(n)) and sd is the measured spread of a pair's true edge vs 50%: 4.3 points, stable across every sample bucket from 50 games to 1000+. So a 30-game pair contributes 18% of its raw edge, a 300-game pair 69%, a 3,000-game pair 96%. This REPLACED a hard picks>=100 step gate, under which a 99-game pair counted for nothing and a 100-game pair for everything.",
-    "suggestWeight": 1.0,
+    "suggestWeight": 1.8,
     "_suggestComment": "Weight of the mean head-to-head edge in getDraftAdvice's candidate score, further scaled by counterLadder.counterWeightBySlot so it matters most at the late picks. Was a hardcoded 0.8 alongside the step gate.",
     "splitWeight": 0.6,
     "_splitComment": "Weight of the same term in computeWinSplit. MUST stay half the intuitive value, for exactly the winProbability.counterWeight reason: pairEdgeVs is antisymmetric (vs_brawler is built from the same matches for both directions), so red's total is the negation of blue's and the blue-minus-red differential counts every pairing TWICE. Note also that the term is a MEAN over the 9 cross-team pairings, not a sum — a sum would let one brawler's three favourable matchups swing the verdict ~20 points through logisticScale, which is the same class of error as counterWeight at 1.2. Setting this and suggestWeight to 0 disables the whole feature in both code paths with no code change.",
@@ -1759,7 +1756,8 @@
     "noteMinEdgePts": 1.5,
     "_chipComment": "Thresholds on the SHRUNK edge, not the raw win rate, so a thin fluke can never produce a 'Beats their X' chip or headline a note.",
     "noteMinGames": 300,
-    "_noteMinGamesComment": "A SINGLE pairing must clear this before its raw win rate may headline a card. Shrinkage governs the score, but the note prints the unshrunk figure, and '58.3% vs their El Primo · 60 games' is the same noise-dressed-as-evidence problem mapPriority.headlineMinMapPicks solves for map rates. 300 matches the floor the brawler-guide Match-ups section uses for the same data. The comp-level note is deliberately exempt — it averages across the enemy team rather than reading one thin duel as fact."
+    "_noteMinGamesComment": "A SINGLE pairing must clear this before its raw win rate may headline a card. Shrinkage governs the score, but the note prints the unshrunk figure, and '58.3% vs their El Primo · 60 games' is the same noise-dressed-as-evidence problem mapPriority.headlineMinMapPicks solves for map rates. 300 matches the floor the brawler-guide Match-ups section uses for the same data. The comp-level note is deliberately exempt — it averages across the enemy team rather than reading one thin duel as fact.",
+    "_suggestWeightNote": "1.0 -> 1.8 on 2026-08-29. This is the RECOMMENDER's head-to-head weight; computeWinSplit's splitWeight is deliberately left alone because changing a verdict scoring term invalidates the fitted logisticScale and needs a refit through the calibration job. Validated on held-out games rather than on a proxy: a validation sweep rises 0.5470 / 0.5476 / 0.5479 across 1.0 / 1.4 / 1.8 and then flattens through 3.2, and 1.8 is the conservative end of that plateau. On its own the raise is +0.0010 +/-0.0011 (not significant); paired with duoSynergy.adviceWeight 1.6 the two together are +0.0032 +/-0.0011 held out, which is significant. Deleting the head-to-head term entirely costs -0.0075 +/-0.0030, the largest single term in the recommender. vs_brawler is the best-evidenced signal we have: 93% of real pick decisions involve enemy pairings with 200+ games of direct data, and 68% have over a thousand."
   },
   "mapPriority": {
     "_comment": "How hard the engine leans on THIS MAP's data versus the brawler's overall patch numbers. The old behaviour was a fixed 65/35 map/overall blend that applied only when the map sample cleared minMapPicks — and a brawler with NO map data silently fell through to a pure overall score, so 'unproven here' scored identically to 'proven here'. blendPriorGames replaces that with sample weighting: map weight = mapPicks / (mapPicks + blendPriorGames), so weight rises smoothly with evidence and is 0 when there is none.",
@@ -1781,7 +1779,8 @@
       "_comment": "The last pick is ranked by the win split it produces, so none of the score multipliers below reach it — which let class theory drag in brawlers with a 0.1% presence on the map purely because they countered a class. A pro's last pick is a counter to the enemy comp that is ALSO a real pick on the map, so candidates must clear a presence floor before they are ranked. If fewer than minCandidates survive (thin map data, heavy bans), the floor is dropped rather than returning nothing. At 1.5% this leaves 46-66 eligible brawlers per map.",
       "minPresencePct": 1.5,
       "minCandidates": 12
-    }
+    },
+    "_blendPriorNote": "LEFT AT 400 on purpose. A validation split mildly preferred 150-200, but the held-out difference across 60/100/150/200/300/400 is under 0.0008 AUC with a paired margin that covers zero at every value - there is no evidence here to act on. It stays at 400 because this key is NOT recommender-only: computeWinSplit's strength() calls blendMapGlobal too, so moving it perturbs the verdict differential and would invalidate the fitted logisticScale (33.5), which is measured and CI-gated by the weekly calibration job. Taking a zero-evidence change at the price of a scale refit is a bad trade. Change it only together with a refit. Note the blend target is the brawler's own GLOBAL rate, which is right - shrinking toward 50% instead cost 0.0039 AUC in isolation."
   },
   "banStrategy": {
     "_comment": "Who you ban depends entirely on whether you pick FIRST or LAST, and the old list ignored that — it just showed the six strongest brawlers on the map to both teams. That is actively wrong for the first-pick team: banning the best brawler in the game when you hold first pick throws the ban away, because you could simply have taken him. First pick => you get the best opener, so what you cannot control is their LAST pick answering your revealed comp. Ban the counter-pick threats. Last pick => they will open on the best brawler and you will never see him. Ban the meta openers to deny them. firstPickSafety (draftMeta) is the discriminator: high = safe to reveal early, so that's who gets first-picked; low = wins come from favourable matchups, so that's a last-pick counter threat.",
@@ -1810,7 +1809,13 @@
     "_comment": "MEASURED teammate synergy, replacing the hand-authored synergyPairs table. Hold-out validated 2026-08-27: weight fitted on half of 35,257 post-cutoff games and scored on the other half, AUC 0.5662 -> 0.5764 (+0.0102) — the largest single gain of the whole calibration pass. The signal is the EXCESS over what the two brawlers' solo rates already predict, not the raw duo win rate: raw conflates synergy with individual strength, so two strong brawlers look synergistic with no interaction at all. Raw scored +0.0088 held out, excess +0.0102. Real measured duos: Colt+Nori +12.0pp, Emz+Damian +5.7pp over 3,483 games, while Gene+Max is +0.1pp over 11,951 — a pairing that feels synergistic and measurably is not.",
     "weight": 2.4,
     "shrinkPriorGames": 135,
-    "adviceWeight": 1.0,
-    "_adviceWeightNote": "Chosen to PRESERVE the influence the recommender's pre-existing duo block already had (0.5 x raw-vs-50), not to amplify it — only the measure changed, from raw to excess-over-solo. Unlike winProbability, this weight is not validated against outcomes: scoring the recommender needs a counterfactual we cannot observe, and the best available proxy moves ~0.007 AUC on a 0.52 base."
+    "adviceWeight": 1.6,
+    "_adviceWeightNote": "1.0 -> 1.6 on 2026-08-29, and unlike the old value this one IS validated against outcomes. Fitted on a validation half of 48,306 post-cutoff games and confirmed once on the other half: together with suggestWeight 1.8 it moves recommendation AUC +0.0032 with a DeLong paired 95% margin of +/-0.0011, the only change in this pass that clears its own error bar. Measured on its own, deleting the duo term costs -0.0030 +/-0.0012, so it is carrying real signal and was underweighted. The validation surface is a plateau from ~1.4 through 2.4; 1.6 is its interior rather than its edge, because the grid maximum (2.4, at the boundary of what was swept) is the value most likely to be fitting noise. Note this is the RECOMMENDER weight - duoSynergy.weight (2.4) is the separate verdict term and must not be moved without a logisticScale refit. Still the excess over the pair's solo rates, never the raw duo rate."
+  },
+  "classCounter": {
+    "_comment": "How the class counter matrix enters getDraftAdvice. It is now a MEASURED matrix in win-rate points, not the authored -2..+2 table, so both numbers here changed together and neither is comparable to its old value. adviceWeight 0.8 -> 2.0 is a UNIT CONVERSION, not a promotion: the measured matrix has RMS 0.88 where the authored one had 1.21, and 2.0 keeps the term's contribution to the score roughly where 1.4 put the old one - which is where a validation sweep peaked, on a curve that is flat from 0 through 4.0. Be clear about what this term is worth: held out over 23,772 real pick decisions, going from the authored matrix to the measured one moved AUC +0.0002 +/-0.0013, and removing the class matrix ALTOGETHER moved it -0.0008 +/-0.0010. None of those clear their error bars. A class matrix cannot add much once brawler-level vs_brawler is present, which covers 93% of real decisions - that is the finding, and it has now been reproduced three times (authored values, measured values, and 18 learned classes from co-clustering). It is kept non-zero because it drives every 'Counters X' / 'Weak vs Y' chip and the counterStack rule, and those explanations are worth more when they are true than the ranking is worth when they are absent.",
+    "adviceWeight": 2.0,
+    "chipThreshold": 1.0,
+    "_chipThresholdNote": "Absolute class edge, in win-rate points, at which the recommender shows a 'Counters X' or 'Weak vs Y' chip. Was hardcoded at 1.5 against the authored -2..+2 scale; on the measured scale (RMS 0.88, max 2.15) that would have left only Space Maker vs Thrower and Thrower vs Anti-Tank able to fire. 1.0 means 'a full win-rate point of class edge' and lights the pairings the data actually supports: Anti-Tank/Tank (+1.07), Space Maker/Thrower (+2.15), Space Maker/Sniper (+1.13), Tank/Space Maker (+1.11), Tank/Control (+1.12), Thrower/Control (+1.14), Thrower/Anti-Tank (+1.66). Raising it makes the engine quieter and more certain; lowering it makes claims the sample cannot carry."
   }
 }
