@@ -504,6 +504,10 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       if (activeSlot.team === "blue") { const next = [...blueTeam]; next[activeSlot.idx] = brawler; setBlueTeam(next); }
       else { const next = [...redTeam]; next[activeSlot.idx] = brawler; setRedTeam(next); }
     }
+    // Clear the filter once the pick lands — the next slot is a fresh search,
+    // and leaving the old term in place hides most of the grid behind a query
+    // the user has already finished with.
+    setSearch("");
   };
 
   const removePickSlot = (team, idx) => {
