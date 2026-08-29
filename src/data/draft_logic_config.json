@@ -674,6 +674,8 @@
     "throwerLastPick": {
       "minSlot": 5,
       "requiresEnemyNoWallBreak": true,
+        "counterEdgeThreshold": 1.0,
+        "_counterNote": "The last-pick window is about COUNTER-DRAFT risk being over, not a licence to throw into a comp that already answers throwers. It now requires that no REVEALED enemy class beats THROWER on the measured counterMatrix by at least this many win-rate points. Read from the matrix rather than a hand-listed class so it follows the data: today only SPACE_MAKER clears 1.0 (+2.06 vs THROWER, the largest cell in the matrix). That matches the measurement exactly - across 332,172 Masters games a thrower is +2.89 win-rate points against a comp with no space maker, -2.06 against one, -4.73 against two and -8.66 against three, a clean monotone dose-response. Before this gate the bonus and its 'Thrower window' chip fired regardless, so a card could read 'Thrower window' beside 'Loses to their Kenji' with three space makers on the board. NOTE the magnitude of the counter effect is already carried by the class matrix (-2.06 x classCounter.adviceWeight 2.0 per space maker, which lands within a point of the measured dose-response) - do NOT add a second explicit penalty here or it will be double counted. Verified: at last pick Barley ranks 4th into a comp with no space maker and 57th into three.",
       "bonus": 2,
       "label": "Thrower window"
     },

@@ -839,14 +839,32 @@ export function getDraftAdvice({
       }
     }
 
-    // Thrower last-pick window: the enemy comp is done and brought no wall
-    // break to strip its cover — the thrower is uncontested (Bobby's pick-6 out).
+    // Thrower last-pick window: the enemy comp is done and brought no answer,
+    // so the thrower is uncontested (Bobby's pick-6 out). The window is about
+    // COUNTER-DRAFT risk being over — it is not a licence to throw into a comp
+    // that already answers throwers, and it used to fire as though it were:
+    // with three enemy space makers the card showed "Thrower window" next to
+    // "Loses to their Kenji". Counters are read from the MEASURED matrix rather
+    // than a hand-listed class, so the rule follows the data — today only
+    // SPACE_MAKER clears the bar (+2.06 vs THROWER, the largest cell in the
+    // matrix), which is exactly what the dose-response says: a thrower is
+    // +2.89 win-rate points against a comp with no space maker, -2.06 against
+    // one, -4.73 against two and -8.66 against three, over 332k games.
+    // The MAGNITUDE of that is already priced by the class matrix itself
+    // (-2.06 x adviceWeight 2.0 per space maker); this gate only stops the
+    // BONUS and its chip from contradicting it.
     const tlp = ladder.throwerLastPick;
     if (cls === "THROWER" && tlp && pickSlot >= (tlp.minSlot ?? 5) &&
         (!tlp.requiresEnemyNoWallBreak || !enemyAbilities.has("WALL_BREAK"))) {
-      score += tlp.bonus;
-      chips.push({ label: tlp.label, tone: "good" });
-      why.push("no wall break on their side — your cover stays up");
+      const counterAt = tlp.counterEdgeThreshold ?? CONFIG.classCounter?.chipThreshold ?? 1;
+      const answered = enemyClasses.filter(ec => matrixScore(ec, "THROWER") >= counterAt);
+      if (!answered.length) {
+        score += tlp.bonus;
+        chips.push({ label: tlp.label, tone: "good" });
+        why.push("no wall break on their side — your cover stays up");
+      } else {
+        why.push(`no thrower window — their ${answered.map(classLabel).join(" / ")} already answers it`);
+      }
     }
 
     // Support rules (Bobby): supports are reactive conditional modifiers.
