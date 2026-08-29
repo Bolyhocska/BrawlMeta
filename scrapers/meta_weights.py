@@ -146,6 +146,19 @@ def refresh_intelligence(patches=None):
                 f"pair intelligence refreshed for {patch}/{bracket}",
             )
 
+        # Per-map class fit, which REPLACED the hand-authored modes[].classWeights
+        # in draft_logic_config.json. Those were written once and never checked;
+        # measured, they cost -0.0041 AUC over 23,772 held-out pick decisions,
+        # and some were plainly inverted (heist gave TANK the biggest bonus in
+        # the mode while tanks measure -3.08 there). The engine now reads this
+        # table instead, so the numbers follow the meta. Cheap next to the pair
+        # RPCs: one pass over the patch, no pair unrolling.
+        call_rpc(
+            "refresh_map_class_weights",
+            {"target_patch": patch},
+            f"map class fit refreshed for {patch}",
+        )
+
 def main():
     require_credentials()
     print("🧠 Meta weights: refreshing brawler intelligence...")

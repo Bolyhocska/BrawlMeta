@@ -10,6 +10,39 @@ import { tileStyles } from "./data/brawlerTile";
 
 // Daily statistical intelligence (true win rates, popularity-trap/broken/
 // inflation flags, per-class matchup WRs) — refreshed by scrapers/meta_weights.py.
+// Measured class fit for the selected map, in win-rate points, from
+// map_class_weights. Rebuilt daily by refresh_map_class_weights, so it tracks
+// the meta rather than the hand-authored modes[].classWeights it replaces —
+// those stay only as the fallback for a map with no rows yet.
+function useMapClassLift(selectedPatch, rankBracket, mapName) {
+  // The row is STAMPED with the map it came from and only handed back when it
+  // still matches the selected map. Storing the bare weights instead would
+  // apply the previous map's numbers for one render after the map changes —
+  // silently scoring a draft against the wrong map.
+  const [entry, setEntry] = useState(null);
+  useEffect(() => {
+    if (!selectedPatch || !rankBracket || !mapName) return;
+    let cancelled = false;
+    supabase
+      .from("map_class_weights")
+      .select("draft_class,lift_pts")
+      .eq("patch", selectedPatch)
+      .eq("rank_bracket", rankBracket)
+      .eq("map", mapName)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        // No rows is a legitimate answer for a map we have not measured yet —
+        // record it as such so the engine falls back to the authored weights.
+        if (error || !data?.length) { setEntry({ map: mapName, byClass: null }); return; }
+        const byClass = {};
+        for (const r of data) byClass[r.draft_class] = Number(r.lift_pts);
+        setEntry({ map: mapName, byClass });
+      });
+    return () => { cancelled = true; };
+  }, [selectedPatch, rankBracket, mapName]);
+  return entry && entry.map === mapName ? entry.byClass : null;
+}
+
 function useBrawlerIntelligence(selectedPatch, rankBracket) {
   const [intel, setIntel] = useState({});
   useEffect(() => {
@@ -263,6 +296,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const [selectedMap, setSelectedMap] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
   const intelligence = useBrawlerIntelligence(selectedPatch, rankBracket);
+  const mapClassLift = useMapClassLift(selectedPatch, rankBracket, selectedMap?.name);
 
   const [blueTeam, setBlueTeam] = useState([null, null, null]);
   const [redTeam, setRedTeam] = useState([null, null, null]);
@@ -429,13 +463,14 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       mapStats: stats,
       matchupStats,
       intelligence,
+      mapClassLift,
     });
 
     setSuggestions(advice);
     setMapNote(note);
     setBanAdvice(proBans);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, rankBracket, activeSlot, firstPick, intelligence]);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, rankBracket, activeSlot, firstPick, intelligence, mapClassLift]);
 
   // Live comp strength — average confidence-weighted map win rate of each
   // team's picks, from the real per-map stats (no mock values).

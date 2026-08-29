@@ -273,6 +273,7 @@ export function getDraftAdvice({
   intelligence = {},    // { KEY: brawler_intelligence row }
   topN = 3,
   minMapPicks = 30,
+  mapClassLift = null,  // { CLASS: liftPts } measured class fit for THIS map (map_class_weights)
   _noDenial = false,    // internal: guards the one-level enemy-perspective recursion
 }) {
   const modeCfg = CONFIG.modes[mode] || { tempo: "active", classWeights: {}, maxPerClass: {} };
@@ -355,7 +356,7 @@ export function getDraftAdvice({
     const enemyView = getDraftAdvice({
       mode, mapName, pickSlot, myTeam: enemyTeam, enemyTeam: myTeam,
       unavailable, mapStats, matchupStats: {}, intelligence,
-      topN: 1, minMapPicks, _noDenial: true,
+      topN: 1, minMapPicks, mapClassLift, _noDenial: true,
     });
     enemyTopKey = enemyView.suggestions[0]?.key ?? null;
   }
@@ -659,7 +660,22 @@ export function getDraftAdvice({
     }
 
     // ── PASS 4 · Strategic / map filter ──
-    score *= modeCfg.classWeights?.[cls] ?? 1;
+    // Class fit for THIS MAP, measured, in win-rate points — how much a class
+    // over- or under-performs here relative to its own brawlers' global rates,
+    // so brawler strength is removed and what is left is map fit. Rebuilt daily
+    // from map_class_weights, so it tracks the meta instead of rotting.
+    //
+    // ADDITIVE, not multiplicative, and that is the whole point. The authored
+    // weights multiplied a ~50-90 point score, so CONTROL x1.15 was worth ~+11
+    // points — an order of magnitude more than the effect it was describing.
+    // Measured, Control on Double Swoosh is -0.31. Held out over 23,772 real
+    // pick decisions the authored weights cost -0.0041 AUC at shipped strength
+    // and -0.0083 at 1.5x, a clean monotone slide; the measured term is neutral
+    // (-0.0000 +/- 0.0013). So the gain here is from REMOVING a harmful term,
+    // not from adding a predictive one — see mapClassFit in the config.
+    const measuredFit = mapClassLift?.[cls];
+    if (measuredFit != null) score += measuredFit * (CONFIG.mapClassFit?.weight ?? 1);
+    else score *= modeCfg.classWeights?.[cls] ?? 1;   // fallback: no data for this map yet
 
     // Map geometry + mechanical attributes (range / attack type / spawner /
     // bush kits). Geometry is a PRIOR: dampened when the brawler has a real
