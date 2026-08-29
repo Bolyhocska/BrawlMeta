@@ -480,12 +480,29 @@ export function getDraftAdvice({
       // threshold is config-driven because the matrix changed scale — at the
       // old hardcoded 1.5 only two of 42 class pairings could ever fire.
       const chipAt = CONFIG.classCounter?.chipThreshold ?? 1.0;
+      // A class cell describes CLASSES, never these two brawlers — within-class
+      // spread dwarfs the class mean (vs throwers, Bolt is +5.79 and Buster
+      // -5.19 around a class mean of ~0). So when vs_brawler has a real sample
+      // on this exact pairing, the class matrix must not also make a claim
+      // about it: that is how one card came to read "Weak vs Emz" (Tank vs
+      // Anti-Tank, -1.06) next to "Beats their Emz" (measured, and correct).
+      // The matrix is a FALLBACK, so it speaks only where the measurement is
+      // thin — the same rule its weighting already follows.
+      // Two ways the measurement can outrank the class: a big sample, or an
+      // edge strong enough that the pair chip below will speak for itself. The
+      // second is what a games-only gate misses — the pair chip fires off the
+      // SHRUNK edge, so a 150-game pairing can still chip and collide.
+      const deferAt = CONFIG.classCounter?.deferToPairGames ?? 200;
+      const pairChipPts = CONFIG.mapPairs?.chipEdgePts ?? 2.5;
       let matrixPts = 0;
       for (let i = 0; i < enemyTeam.length; i++) {
         const edge = pairEdge(key, cls, enemyTeam[i], enemyClasses[i]);
         matrixPts += edge;
         if (edge > bestEdge) { bestEdge = edge; bestCounterName = fmtName(enemyTeam[i]); }
         if (edge < worstEdge) { worstEdge = edge; worstCounterName = fmtName(enemyTeam[i]); }
+        // Measured head-to-head on this pairing outranks the class generalisation.
+        const pv = pairEdgeVs(key, enemyTeam[i], intelligence);
+        if (pv.games >= deferAt || Math.abs(pv.edge) >= pairChipPts) continue;
         if (edge >= chipAt) {
           chips.push({ label: `Counters ${fmtName(enemyTeam[i])}`, tone: "good" });
           why.push(`${classLabel(cls)} answer to their ${fmtName(enemyTeam[i])}`);
