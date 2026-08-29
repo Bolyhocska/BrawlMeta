@@ -858,12 +858,26 @@ export function getDraftAdvice({
         (!tlp.requiresEnemyNoWallBreak || !enemyAbilities.has("WALL_BREAK"))) {
       const counterAt = tlp.counterEdgeThreshold ?? CONFIG.classCounter?.chipThreshold ?? 1;
       const answered = enemyClasses.filter(ec => matrixScore(ec, "THROWER") >= counterAt);
-      if (!answered.length) {
+      // A CLASS gate alone is not enough, for the same reason the chips needed
+      // one: the class matrix describes classes, not brawlers. Bolt is the
+      // single best thrower counter in the game at +12.3 win-rate points, and
+      // he is a TANK, where the class cell is -0.04 — so the class check waves
+      // him straight through. Shelly (Anti-Tank, +5.7), Brock (Sniper, +5.5)
+      // and Ash (Tank, +5.0) are the same story. Check the MEASURED pairing
+      // too, at the threshold that already governs the "Loses to their X" chip,
+      // so the window can never contradict a chip on its own card.
+      const pairAt = tlp.counterPairPts ?? CONFIG.mapPairs?.chipEdgePts ?? 2.5;
+      const answeredBy = enemyTeam.filter(ek =>
+        -pairEdgeVs(key, ek, intelligence).edge >= pairAt);
+      if (!answered.length && !answeredBy.length) {
         score += tlp.bonus;
         chips.push({ label: tlp.label, tone: "good" });
         why.push("no wall break on their side — your cover stays up");
       } else {
-        why.push(`no thrower window — their ${answered.map(classLabel).join(" / ")} already answers it`);
+        const named = answeredBy.length
+          ? answeredBy.map(fmtName).join(" / ")
+          : answered.map(classLabel).join(" / ");
+        why.push(`no thrower window — their ${named} already answers it`);
       }
     }
 
