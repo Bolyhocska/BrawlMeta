@@ -1138,8 +1138,22 @@ export function getDraftAdvice({
       // (they won 51.6% below 1% presence), and a floor cannot separate Ash
       // (396 games, 58.1% on Dry Season) from Amber (144 games, 47.2%). Hence a
       // graded, fading penalty rather than a cut-off.
+      // Two different things were being conflated here. "They can still answer
+      // this" IS a counter-draft risk and correctly fades as the enemy runs out
+      // of picks. "We do not know whether this works on this map" is a fact
+      // about evidence quality and does NOT stop being true at pick 5 — but the
+      // original form faded both to a third, which is how Larry & Lawrie (79
+      // games, 40.5% on Center Stage) reached the top of a pick-5 list twelve
+      // points above Bolt (1,674 games, 54.7%) on a map whose measured class fit
+      // puts THROWER second-worst at -0.67 and TANK best at +1.08.
+      //
+      // So only thinMapFadeShare of it fades; the rest stands for the whole
+      // draft. The presence floor is untouched and still lifts entirely at
+      // pick 5, as specified.
       const deficit = 1 - mapPicks / thinAt;
-      score -= (CONFIG.scoring?.thinMapPenaltyPts ?? 8) * deficit * (enemyPicksRemaining / 3);
+      const fade = CONFIG.scoring?.thinMapFadeShare ?? 0.5;
+      const slotFactor = (1 - fade) + fade * (enemyPicksRemaining / 3);
+      score -= (CONFIG.scoring?.thinMapPenaltyPts ?? 8) * deficit * slotFactor;
       chips.push({ label: "Thin map read", tone: "bad" });
       why.push(`only ${mapPicks} games on this map — scored mostly on ${modeStats ? "mode" : "overall"} form`);
     }
