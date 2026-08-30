@@ -146,21 +146,43 @@ const fmtGames = (n) =>
 // That is the priors-vs-evidence rule pointed the other way: thin samples must
 // not shout, and no step gate is needed to stop them.
 //
-// `mapPairs` is accepted but unused today — it is where the per-map layer slots
-// in later (a shrunk delta on top of this patch-wide trunk). Keeping it in the
-// signature now means adding that layer touches this function only.
+// `mapPairs` is the PER-MAP layer, and it is live as of 2026-08-30: a pair's
+// record on THIS map, shrunk toward its patch-wide rate by its own sample. Same
+// trunk-and-correction shape as blendMapGlobal, one level down.
 //
-// INVARIANT: pairEdgeVs(a, b) === -pairEdgeVs(b, a). vs_brawler is built from
-// the same matches for both directions, so anything that scores BOTH sides and
-// takes the difference counts this term twice — exactly the counterMatrix trap.
-// That is why mapPairs.splitWeight is half the intuitive value.
-const pairEdgeVs = (myKey, enemyKey, intelligence = {}, mapPairs = {}) => {
+// This is the largest single gain the calibration pass has produced: +0.0043
+// +/-0.0029 AUC on 23,772 held-out pick decisions, beating the +0.0032 from
+// refitting every recommender weight. Validation preferred the smallest shrink
+// prior tried and the curve is monotone in that direction, i.e. the map layer
+// wants MORE weight, not less — which is why the prior is 50 against the
+// patch-wide 135.
+//
+// The long tail is deliberately not stored: of 169,191 per-map pairings only
+// 18.7% reach 30 games and 2.6% reach 200, so map_pair_edges keeps what clears
+// its floor and everything else simply falls through to the patch-wide rate.
+//
+// INVARIANT: pairEdgeVs(a, b) === -pairEdgeVs(b, a), and the map layer PRESERVES
+// it — both directions are stored, so mapWR(a,b) = 100 - mapWR(b,a) exactly and
+// the blend weight is the same either way. Anything that scores BOTH sides and
+// takes the difference counts this term twice, exactly the counterMatrix trap,
+// which is why mapPairs.splitWeight is half the intuitive value.
+const pairEdgeVs = (myKey, enemyKey, intelligence = {}, mapPairs = null) => {
   const v = intelligence[norm(myKey)]?.vs_brawler?.[norm(enemyKey)];
   const n = Number(v?.picks) || 0;
   const wr = parseFloat(v?.winRate);
-  if (!n || !Number.isFinite(wr)) return { edge: 0, games: 0, winRate: null };
   const prior = CONFIG.mapPairs?.shrinkPriorGames ?? 135;
-  return { edge: (wr - 50) * (n / (n + prior)), games: n, winRate: wr };
+  const patchEdge = (!n || !Number.isFinite(wr)) ? 0 : (wr - 50) * (n / (n + prior));
+
+  const mp = mapPairs?.[`${norm(myKey)}|${norm(enemyKey)}`];
+  const mn = Number(mp?.picks) || 0;
+  if (!mn) return { edge: patchEdge, games: n, winRate: Number.isFinite(wr) ? wr : null, mapGames: 0 };
+  const mapWR = (Number(mp.wins) / mn) * 100;
+  const w = mn / (mn + (CONFIG.mapPairs?.mapShrinkPriorGames ?? 50));
+  return {
+    edge: (mapWR - 50) * w + patchEdge * (1 - w),
+    games: n, winRate: Number.isFinite(wr) ? wr : null,
+    mapGames: mn, mapWinRate: Math.round(mapWR * 10) / 10,
+  };
 };
 
 // Measured teammate synergy, from with_brawler.
@@ -304,6 +326,7 @@ export function getDraftAdvice({
   minMapPicks = 30,
   mapClassLift = null,  // { CLASS: liftPts } measured class fit for THIS map (map_class_weights)
   modeStats = null,     // { KEY: {picks, wins} } across every map of this mode
+  mapPairs = null,      // { "A|B": {picks, wins} } head-to-head ON THIS MAP
   _noDenial = false,    // internal: guards the one-level enemy-perspective recursion
 }) {
   const modeCfg = CONFIG.modes[mode] || { tempo: "active", classWeights: {}, maxPerClass: {} };
@@ -386,7 +409,7 @@ export function getDraftAdvice({
     const enemyView = getDraftAdvice({
       mode, mapName, pickSlot, myTeam: enemyTeam, enemyTeam: myTeam,
       unavailable, mapStats, matchupStats: {}, intelligence,
-      topN: 1, minMapPicks, mapClassLift, modeStats, _noDenial: true,
+      topN: 1, minMapPicks, mapClassLift, modeStats, mapPairs, _noDenial: true,
     });
     enemyTopKey = enemyView.suggestions[0]?.key ?? null;
   }
@@ -542,7 +565,7 @@ export function getDraftAdvice({
       const brCfg = CONFIG.banRelief || {};
       let relief = 0; const freedFrom = [];
       for (const bk of bannedSet) {
-        const threat = -pairEdgeVs(key, bk, intelligence).edge;
+        const threat = -pairEdgeVs(key, bk, intelligence, mapPairs).edge;
         if (threat <= 0) continue;
         const bPicks = Number(mapStats[bk]?.picks) || 0;
         const pPick = Math.min(1, bPicks / mapTotalMatches);
@@ -614,7 +637,7 @@ export function getDraftAdvice({
         if (edge > bestEdge) { bestEdge = edge; bestCounterName = fmtName(enemyTeam[i]); }
         if (edge < worstEdge) { worstEdge = edge; worstCounterName = fmtName(enemyTeam[i]); }
         // Measured head-to-head on this pairing outranks the class generalisation.
-        const pv = pairEdgeVs(key, enemyTeam[i], intelligence);
+        const pv = pairEdgeVs(key, enemyTeam[i], intelligence, mapPairs);
         if (pv.games >= deferAt || Math.abs(pv.edge) >= pairChipPts) continue;
         if (edge >= chipAt) {
           chips.push({ label: `Counters ${fmtName(enemyTeam[i])}`, tone: "good" });
@@ -666,7 +689,7 @@ export function getDraftAdvice({
       // not how evidence works. Now it fades in continuously.
       if (enemyTeam.length) {
         const mp = CONFIG.mapPairs || {};
-        const pe = meanPairEdge(key, enemyTeam, intelligence);
+        const pe = meanPairEdge(key, enemyTeam, intelligence, mapPairs);
         if (pe.rows.length) {
           score += pe.mean * (mp.suggestWeight ?? 1.0) * slotCounterW;
           bestPair = { name: pe.best.name, winRate: pe.best.winRate, picks: pe.best.games, edge: pe.best.edge };
@@ -983,7 +1006,7 @@ export function getDraftAdvice({
       // so the window can never contradict a chip on its own card.
       const pairAt = tlp.counterPairPts ?? CONFIG.mapPairs?.chipEdgePts ?? 2.5;
       const answeredBy = enemyTeam.filter(ek =>
-        -pairEdgeVs(key, ek, intelligence).edge >= pairAt);
+        -pairEdgeVs(key, ek, intelligence, mapPairs).edge >= pairAt);
       if (!answered.length && !answeredBy.length) {
         score += tlp.bonus;
         chips.push({ label: tlp.label, tone: "good" });
@@ -1244,7 +1267,7 @@ export function getDraftAdvice({
       const split = computeWinSplit({
         blueTeam: [...myTeam, c.key],   // symmetric — "blue" is just the picker
         redTeam: enemyTeam,
-        mode, mapStats, intelligence, minMapPicks, modeStats,
+        mode, mapStats, intelligence, minMapPicks, modeStats, mapPairs,
       });
       c.projectedWin = split.blue;
       c._edge = split.rawEdge;
@@ -1461,7 +1484,7 @@ export function getBanAdvice({
   };
 }
 
-export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30, modeStats = null }) {
+export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30, modeStats = null, mapPairs = null }) {
   const strength = (teamKeys, enemyKeys) => {
     const classes = teamKeys.map(draftClassOf);
     const enemyCls = enemyKeys.map(draftClassOf);
@@ -1504,7 +1527,7 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     const pw = CONFIG.mapPairs?.splitWeight ?? 0.6;
     let pairPts = 0, pairN = 0;
     for (const mine of teamKeys)
-      for (const foe of enemyKeys) { pairPts += pairEdgeVs(mine, foe, intelligence).edge; pairN++; }
+      for (const foe of enemyKeys) { pairPts += pairEdgeVs(mine, foe, intelligence, mapPairs).edge; pairN++; }
     if (pairN) s += (pairPts / pairN) * pw;
 
     // Measured teammate synergy. The hand-authored class table that used to sit

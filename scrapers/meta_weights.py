@@ -146,6 +146,20 @@ def refresh_intelligence(patches=None):
                 f"pair intelligence refreshed for {patch}/{bracket}",
             )
 
+        # Per-map head-to-head. Same shape as refresh_brawler_pairs and bounded
+        # the same way, because it unrolls each match into 9 cross-team pair
+        # rows: cost has to stay flat as the retention window fills. Stores only
+        # pairs above its floor — of 169,191 per-map pairings just 18.7% reach 30
+        # games — and everything below falls through to the patch-wide rate in
+        # the engine, which is what shrinkage would have done to it anyway.
+        # Worth +0.0043 AUC held out, the largest single gain measured so far.
+        for bracket in ("masters_legendary", "diamond_mythic"):
+            call_rpc(
+                "refresh_map_pair_edges",
+                {"target_patch": patch, "target_bracket": bracket},
+                f"per-map pair edges refreshed for {patch}/{bracket}",
+            )
+
         # Per-map class fit, which REPLACED the hand-authored modes[].classWeights
         # in draft_logic_config.json. Those were written once and never checked;
         # measured, they cost -0.0041 AUC over 23,772 held-out pick decisions,
