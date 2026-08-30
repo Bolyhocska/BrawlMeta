@@ -580,27 +580,29 @@
     },
     "counterStack": {
       "_comment": "Bobby: 'if the enemy commits to a class, the hard counter to it is almost a free pick'. When the enemy fields 2+ of one class, a brawler whose class hard-counters it (counterMatrix >= hardCounterThreshold) gets a flat bonus PER stacked enemy - applied AFTER mode weighting so a favorable enemy mode can't bury the counter (e.g. two snipers on a Bounty map still make Mortis/Kit a lock). Threshold 1.5 -> 1.0 on 2026-08-29: it is read against counterMatrix, which now carries MEASURED win-rate points (RMS 0.88, max 2.15) instead of authored -2..+2 units (RMS 1.21). At 1.5 only two of the 42 class pairings would ever have qualified and the rule would have gone effectively dead. 1.0 is 'a full win-rate point of class edge' and keeps roughly the set of pairings the rule was written to fire on.",
+      "_measuredNote": "bonusPerEnemy 4 -> 1.75 on 2026-08-31. The rule is REAL - all six qualifying matrix pairings measure positive when the opponent has stacked 2+ of a class: SPACE_MAKER into 2 throwers +11.75 +/- 2.9, ANTI_TANK into 2 tanks +4.77 +/- 1.2, TANK into 2 controls +3.62 +/- 0.6, TANK into 2 space makers +3.53 +/- 0.5, SPACE_MAKER into 2 snipers +1.87 +/- 0.5, THROWER into 2 anti-tanks +1.22 +/- 0.4. But at 4 PER ENEMY the rule paid +8 at a stack of two against a mean measured lift near +3.5. The spread (1.2 to 11.8) is also far wider than one constant can carry - reading the per-pair value off counterMatrix would be the better fix.",
       "minStack": 2,
       "hardCounterThreshold": 1.0,
-      "bonusPerEnemy": 4
+      "bonusPerEnemy": 1.75
     }
   },
   "abilityRules": {
     "_comment": "Ability-tag synergy/counter rules (Bobby): wall break opens lanes for snipers, strips the cover throwers depend on, and forces anti-tanks into the open where snipers kite them. Applied on top of the class counter matrix; bonuses are on the same ~50-point score scale as the other constraints.",
+    "_dataDefectNote": "ALL FOUR RULES ARE ZEROED as of 2026-08-31 because the tag they key on is wrong, NOT because the mechanic is wrong. brawlerAbilities is not an ability list: 104 of 105 brawlers carry exactly ONE tag from five mutually exclusive buckets (SPECIAL 40, GOOD_HYPER 30, PIERCE_DAMAGE 13, KNOCKBACK_STUN 12, WALL_BREAK 10), so it is a primary-trait taxonomy that happens to have a bucket NAMED wall break. The set it produces is wrong in both directions - owner-confirmed that GALE, CORDELIUS and SPIKE do not break walls, and the same goes for GRAY, GRIFF, FRANK and STU, while SHELLY, DYNAMIKE and BULL genuinely do break walls and are tagged KNOCKBACK_STUN or GOOD_HYPER so they can never trigger these rules. Four of the ten tagged are among the most-played brawlers in the game (Griff 26.6%%, Stu 24.7%%, Brock 24.5%%, Colt), so the rules fired constantly on a false premise, and wallBreakVsThrower at +7 was the single largest constant in the config. A 2x2 interaction over 3.0M sides put that cohort at +0.25 for the thrower rule and +1.13 for the sniper rule, but those numbers describe an arbitrary group and MUST NOT be used to retune these constants. THE FIX IS THE DATA: give brawlerAbilities a real multi-tag ability list (Ruffs already shows the array form works), then re-measure and restore values. Until then these contribute nothing, which is the honest state. The same defect disables geometry.wallBreakShiftsOpen, attributeRules.wallBreakOwnThrower, mapRules[].wallBreakBonus and the requiresEnemyNoWallBreak gate on counterLadder.throwerLastPick - that gate now passes almost always, making the thrower window more permissive than intended.",
     "wallBreakSniperSynergy": {
-      "bonusPerSniper": 4,
+      "bonusPerSniper": 0,
       "label": "Opens sniper lanes"
     },
     "wallBreakVsThrower": {
-      "bonusPerThrower": 7,
+      "bonusPerThrower": 0,
       "label": "Breaks thrower cover"
     },
     "wallBreakSniperVsAntiTank": {
-      "bonus": 4,
+      "bonus": 0,
       "label": "Forces anti-tank open"
     },
     "sniperWithWallBreakSynergy": {
-      "bonus": 3,
+      "bonus": 0,
       "label": "Lanes already open"
     }
   },
