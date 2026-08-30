@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
@@ -149,11 +149,31 @@ function PhaseStepper({ phase, bansEnabled, done }) {
   );
 }
 
-function BrawlerTile({ brawler, size = 44, dim, banned, onClick, title }) {
+// `onBan` wires the two gestures that mean "ban this one" without costing a
+// slot in the layout: right-click on a mouse, long-press on a touch screen.
+// The long-press has to suppress the click that touchend delivers afterwards,
+// or a single press would ban AND pick. Android fires contextmenu on long-press
+// too, which is why the timer flag is checked rather than the event type.
+function BrawlerTile({ brawler, size = 44, dim, banned, onClick, onBan, title }) {
   const [imgErr, setImgErr] = useState(false);
+  const pressTimer = useRef(null);
+  const pressFired = useRef(false);
   const t = tileStyles({ key: brawler.key, rarity: brawler.rarity, rarityColor: brawler.color, size });
+  const startPress = () => {
+    if (!onBan) return;
+    pressFired.current = false;
+    pressTimer.current = setTimeout(() => { pressFired.current = true; onBan(); }, 450);
+  };
+  const endPress = () => clearTimeout(pressTimer.current);
+  useEffect(() => () => clearTimeout(pressTimer.current), []);
   return (
-    <div onClick={onClick} title={title} style={{ position: "relative", ...t.outer, cursor: onClick ? "pointer" : "default", opacity: dim ? 0.32 : 1 }}>
+    <div
+      onClick={(e) => { if (pressFired.current) { pressFired.current = false; return; } onClick?.(e); }}
+      onContextMenu={onBan ? (e) => { e.preventDefault(); onBan(); } : undefined}
+      onTouchStart={startPress} onTouchEnd={endPress} onTouchMove={endPress} onTouchCancel={endPress}
+      title={title}
+      style={{ position: "relative", ...t.outer, cursor: onClick ? "pointer" : "default", opacity: dim ? 0.32 : 1,
+               WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}>
       <div style={t.inner}>
         {!imgErr && brawler.imageUrl
           ? <img src={brawler.imageUrl} alt={brawler.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
@@ -435,6 +455,13 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const [blueBans, setBlueBans] = useState([null, null, null]);
   const [redBans, setRedBans] = useState([null, null, null]);
   const [bansEnabled, setBansEnabled] = useState(false);
+  // Bans taken DURING the draft, outside the formal 3+3 board. Real lobbies ban
+  // before picking, but the assistant is also used to explore a board that is
+  // already part-drafted, where "this one is gone" needs somewhere to live. They
+  // feed the engine's `banned` list exactly like the slotted ones, so ban relief
+  // and the suggestion pool both see them.
+  const [extraBans, setExtraBans] = useState([]);
+  const [banMode, setBanMode] = useState(false);
   const [phase, setPhase] = useState("setup"); // setup | ban | pick
   const [firstPick, setFirstPick] = useState(null); // blue | red
   const [search, setSearch] = useState("");
@@ -546,7 +573,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     if (phase === "ban" && bansEnabled && [...blueBans, ...redBans].every(b => b !== null)) setPhase("pick");
   }, [blueBans, redBans, phase, bansEnabled]);
 
-  const allBanned = [...blueBans, ...redBans].filter(Boolean).map(b => b.id);
+  const allBanned = [...blueBans, ...redBans, ...extraBans].filter(Boolean).map(b => b.id);
   const allPicked = [...blueTeam, ...redTeam].filter(Boolean).map(b => b.id);
   const allUsed = [...allBanned, ...allPicked];
   const draftDone = phase === "pick" && allPicked.length === 6;
@@ -562,6 +589,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       ...redTeam.filter(Boolean).map(b => b.name.toUpperCase()),
       ...blueBans.filter(Boolean).map(b => b.name.toUpperCase()),
       ...redBans.filter(Boolean).map(b => b.name.toUpperCase()),
+      ...extraBans.map(b => b.name.toUpperCase()),
     ];
 
     const stats = mapStatsByKey;
@@ -612,7 +640,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       myTeam,
       enemyTeam: enemyKeys,
       unavailable: allUsedNames,
-      banned: [...blueBans, ...redBans].filter(Boolean).map(b => b.name.toUpperCase()),
+      banned: [...blueBans, ...redBans, ...extraBans].filter(Boolean).map(b => b.name.toUpperCase()),
       mapStats: stats,
       matchupStats,
       intelligence,
@@ -625,7 +653,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     setMapNote(note);
     setBanAdvice(proBans);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, modeStatsByKey, rankBracket, activeSlot, firstPick, intelligence, mapClassLift, mapPairEdges]);
+  }, [blueTeam, redTeam, blueBans, redBans, extraBans, selectedMap, mapMatches, mapStatsByKey, modeStatsByKey, rankBracket, activeSlot, firstPick, intelligence, mapClassLift, mapPairEdges]);
 
   // Live comp strength — average confidence-weighted map win rate of each
   // team's picks, from the real per-map stats (no mock values).
@@ -706,6 +734,26 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     if (team === "blue") { const next = [...blueTeam]; next[idx] = null; setBlueTeam(next); }
     else { const next = [...redTeam]; next[idx] = null; setRedTeam(next); }
   };
+  // Ban from anywhere, at any point in the draft. If the formal board still has
+  // an empty slot it fills that first, so the 3+3 row keeps telling the truth
+  // about who banned what; only once the board is full (or bans are switched
+  // off entirely) does the brawler go to the loose pile.
+  const banBrawler = (brawler) => {
+    if (!brawler || allUsed.includes(brawler.id)) return;
+    if (bansEnabled) {
+      const slot = banSequence.find(sl => (sl.team === "blue" ? blueBans : redBans)[sl.idx] === null);
+      if (slot) {
+        if (slot.team === "blue") { const next = [...blueBans]; next[slot.idx] = brawler; setBlueBans(next); }
+        else { const next = [...redBans]; next[slot.idx] = brawler; setRedBans(next); }
+        setSearch("");
+        return;
+      }
+    }
+    setExtraBans(prev => [...prev, brawler]);
+    setSearch("");
+  };
+  const unbanExtra = (id) => setExtraBans(prev => prev.filter(b => b.id !== id));
+
   const removeBanSlot = (team, idx) => {
     if (team === "blue") { const next = [...blueBans]; next[idx] = null; setBlueBans(next); }
     else { const next = [...redBans]; next[idx] = null; setRedBans(next); }
@@ -714,6 +762,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   const resetDraft = () => {
     setBlueTeam([null, null, null]); setRedTeam([null, null, null]);
     setBlueBans([null, null, null]); setRedBans([null, null, null]);
+    setExtraBans([]); setBanMode(false);
     setPhase("setup"); setFirstPick(null); setSearch(""); setFilterRole("All");
   };
 
@@ -933,18 +982,50 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
               {!draftDone && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14, borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 20 }}>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: activeSlot?.phase === "ban" ? "#ff8f8f" : "#c98bff" }}>
-                      {activeSlot ? `${activeSlot.team.toUpperCase()} ${activeSlot.phase === "ban" ? "BANS" : "PICKS"} NOW` : "DRAFT BOARD"}
+                    <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: banMode ? "#ff8f8f" : activeSlot?.phase === "ban" ? "#ff8f8f" : "#c98bff" }}>
+                      {banMode
+                        ? "TAP TO BAN"
+                        : activeSlot ? `${activeSlot.team.toUpperCase()} ${activeSlot.phase === "ban" ? "BANS" : "PICKS"} NOW` : "DRAFT BOARD"}
                     </span>
+                    {/* Right-click is the fast path on a mouse, but a phone has no
+                        second button and long-press is easy to miss, so the same
+                        action gets an explicit, sticky toggle. */}
+                    <button onClick={() => setBanMode(v => !v)} style={{
+                      marginLeft: "auto", padding: "7px 15px", borderRadius: 999, cursor: "pointer",
+                      fontSize: 11.5, fontWeight: 700, fontFamily: "'Chakra Petch', sans-serif", letterSpacing: .6,
+                      background: banMode ? "rgba(255,122,122,.18)" : "rgba(255,255,255,.03)",
+                      border: `1px solid ${banMode ? "rgba(255,122,122,.6)" : "rgba(255,255,255,.08)"}`,
+                      color: banMode ? "#ff8f8f" : "#8b8b9c",
+                      boxShadow: banMode ? "0 0 18px rgba(255,122,122,.25)" : "none",
+                    }}>{banMode ? "✕ BANNING" : "BAN"}</button>
                     <input
                       value={search} onChange={e => setSearch(e.target.value)} placeholder="Search brawlers…"
                       style={{
-                        marginLeft: "auto", width: 200, padding: "9px 18px", borderRadius: 999,
+                        width: 200, padding: "9px 18px", borderRadius: 999,
                         background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)",
                         color: "#e9e9f2", fontSize: 13, fontFamily: "'Chakra Petch', sans-serif", outline: "none",
                       }}
                     />
                   </div>
+                  <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: .6, color: "#5f6070" }}>
+                    RIGHT-CLICK OR LONG-PRESS A BRAWLER TO BAN
+                  </div>
+                  {extraBans.length > 0 && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.2, color: "#ff8f8f" }}>BANNED</span>
+                      {extraBans.map(b => (
+                        <button key={b.id} onClick={() => unbanExtra(b.id)} title={`Un-ban ${b.name}`} style={{
+                          display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 5px", borderRadius: 999,
+                          background: "rgba(255,122,122,.08)", border: "1px solid rgba(255,122,122,.28)",
+                          cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif",
+                        }}>
+                          <BrawlerTile brawler={b} size={20} banned />
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#ff8f8f", textDecoration: "line-through" }}>{b.name}</span>
+                          <X size={10} color="#8b8b9c" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {roles.map(r => (
                       <button key={r} onClick={() => setFilterRole(r)} style={{
@@ -966,7 +1047,9 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                       return (
                         <div key={b.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                           <BrawlerTile brawler={b} size={52} dim={used && !isBanned} banned={isBanned}
-                            onClick={() => !used && handleBrawlerSelect(b)} title={b.name} />
+                            onClick={() => { if (used) return; banMode ? banBrawler(b) : handleBrawlerSelect(b); }}
+                            onBan={used ? undefined : () => banBrawler(b)}
+                            title={used ? b.name : `${b.name} — right-click or long-press to ban`} />
                           <span style={{ fontSize: 10, color: used ? "#4a4a58" : "#c9c9d6", fontWeight: 600, textAlign: "center", lineHeight: 1.1 }}>{b.name}</span>
                         </div>
                       );
