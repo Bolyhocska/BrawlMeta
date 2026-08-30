@@ -152,10 +152,14 @@
     "GOOD_HYPER": "Good Hyper",
     "KNOCKBACK_STUN": "Knockback/Stun",
     "WALL_BREAK": "Wall Break",
+    "WALL_BREAK_COND": "Wall Break (gadget)",
+    "WALL_CREATE": "Builds Cover",
+    "BUSH_CREATE": "Grows Bushes",
     "PIERCE_DAMAGE": "Pierce Damage",
     "SPECIAL": "Special"
   },
   "brawlerAbilities": {
+    "_comment": "Ability tags. A value is a single tag or an ARRAY when a brawler carries several; every rule reads the full array via abilitiesOf, while the card badge shows the FIRST entry, so the draft-relevant tag is listed first. REBUILT 2026-08-31 after the owner found Gale, Cordelius and Spike tagged WALL_BREAK when none of them break walls. The old table was a one-tag-per-brawler taxonomy - 104 of 105 carried exactly one tag from five mutually exclusive buckets - so a bucket NAMED wall break was standing in for an ability list, and it was wrong in both directions: seven tagged brawlers did not break walls, while twelve that do (Shelly, Dynamike, Bull, El Primo, Gene, Grom, Chester, Pearl, Piper and more) were locked out because their slot was already spent. WALL_BREAK now means the SUPER or attack breaks walls every cycle (12 brawlers). WALL_BREAK_COND means it is gated behind a gadget, star power or hyper (7), which depends on a build we cannot observe from the draft - abilityRules.conditionalWeight prices that gap. WALL_CREATE (Sprout) and BUSH_CREATE (Rosa) are the inverse mechanics and had no representation at all; they shift map geometry the other way. Owner-sourced, 2026-08-31.",
     "8-BIT": "PIERCE_DAMAGE",
     "ALLI": "SPECIAL",
     "AMBER": "GOOD_HYPER",
@@ -167,40 +171,62 @@
     "BERRY": "PIERCE_DAMAGE",
     "BIBI": "GOOD_HYPER",
     "BO": "GOOD_HYPER",
-    "BOLT": "KNOCKBACK_STUN",
+    "BOLT": [
+      "WALL_BREAK_COND",
+      "KNOCKBACK_STUN"
+    ],
     "BONNIE": "SPECIAL",
     "BROCK": "WALL_BREAK",
-    "BULL": "GOOD_HYPER",
+    "BULL": [
+      "WALL_BREAK",
+      "GOOD_HYPER"
+    ],
     "BUSTER": "SPECIAL",
     "BUZZ": "KNOCKBACK_STUN",
     "BYRON": "PIERCE_DAMAGE",
     "CARL": "SPECIAL",
     "CHARLIE": "KNOCKBACK_STUN",
-    "CHESTER": "GOOD_HYPER",
+    "CHESTER": [
+      "WALL_BREAK",
+      "GOOD_HYPER"
+    ],
     "CHUCK": "SPECIAL",
     "CLANCY": "SPECIAL",
     "COLETTE": "SPECIAL",
     "COLT": "WALL_BREAK",
-    "CORDELIUS": "WALL_BREAK",
+    "CORDELIUS": "SPECIAL",
     "CROW": "PIERCE_DAMAGE",
+    "DAMIAN": "SPECIAL",
     "DARRYL": "SPECIAL",
     "DOUG": "SPECIAL",
     "DRACO": "GOOD_HYPER",
-    "DYNAMIKE": "KNOCKBACK_STUN",
+    "DYNAMIKE": [
+      "WALL_BREAK",
+      "KNOCKBACK_STUN"
+    ],
     "EDGAR": "SPECIAL",
-    "EL PRIMO": "SPECIAL",
+    "EL PRIMO": [
+      "WALL_BREAK",
+      "SPECIAL"
+    ],
     "EMZ": "GOOD_HYPER",
     "EVE": "SPECIAL",
     "FANG": "SPECIAL",
     "FINX": "GOOD_HYPER",
     "FRANK": "WALL_BREAK",
-    "GALE": "WALL_BREAK",
-    "GENE": "KNOCKBACK_STUN",
+    "GALE": "KNOCKBACK_STUN",
+    "GENE": [
+      "WALL_BREAK",
+      "KNOCKBACK_STUN"
+    ],
     "GIGI": "SPECIAL",
     "GLOWY": "SPECIAL",
-    "GRAY": "WALL_BREAK",
-    "GRIFF": "WALL_BREAK",
-    "GROM": "PIERCE_DAMAGE",
+    "GRAY": "WALL_BREAK_COND",
+    "GRIFF": "WALL_BREAK_COND",
+    "GROM": [
+      "WALL_BREAK",
+      "PIERCE_DAMAGE"
+    ],
     "GUS": "KNOCKBACK_STUN",
     "HANK": "SPECIAL",
     "JACKY": "SPECIAL",
@@ -225,7 +251,10 @@
     "MELODIE": "SPECIAL",
     "MICO": "SPECIAL",
     "MINA": "KNOCKBACK_STUN",
-    "MOE": "GOOD_HYPER",
+    "MOE": [
+      "WALL_BREAK_COND",
+      "GOOD_HYPER"
+    ],
     "MORTIS": "GOOD_HYPER",
     "MR. P": "SPECIAL",
     "NAJIA": "SPECIAL",
@@ -235,30 +264,48 @@
     "OLLIE": "GOOD_HYPER",
     "OTIS": "GOOD_HYPER",
     "PAM": "GOOD_HYPER",
-    "PEARL": "KNOCKBACK_STUN",
+    "PEARL": [
+      "WALL_BREAK",
+      "KNOCKBACK_STUN"
+    ],
     "PENNY": "SPECIAL",
     "PIERCE": "SPECIAL",
-    "PIPER": "KNOCKBACK_STUN",
+    "PIPER": [
+      "WALL_BREAK",
+      "KNOCKBACK_STUN"
+    ],
     "POCO": "SPECIAL",
     "R-T": "GOOD_HYPER",
     "RICO": "GOOD_HYPER",
-    "ROSA": "SPECIAL",
+    "ROSA": [
+      "BUSH_CREATE",
+      "SPECIAL"
+    ],
     "RUFFS": [
-      "WALL_BREAK",
+      "WALL_BREAK_COND",
       "GOOD_HYPER"
     ],
     "SAM": "SPECIAL",
     "SANDY": "GOOD_HYPER",
     "SHADE": "GOOD_HYPER",
-    "SHELLY": "KNOCKBACK_STUN",
+    "SHELLY": [
+      "WALL_BREAK",
+      "KNOCKBACK_STUN"
+    ],
     "SIRIUS": "PIERCE_DAMAGE",
-    "SPIKE": "WALL_BREAK",
-    "SPROUT": "PIERCE_DAMAGE",
+    "SPIKE": "SPECIAL",
+    "SPROUT": [
+      "WALL_CREATE",
+      "PIERCE_DAMAGE"
+    ],
     "SQUEAK": "PIERCE_DAMAGE",
     "STARR NOVA": "SPECIAL",
-    "STU": "WALL_BREAK",
+    "STU": "WALL_BREAK_COND",
     "SURGE": "KNOCKBACK_STUN",
-    "TARA": "GOOD_HYPER",
+    "TARA": [
+      "WALL_BREAK_COND",
+      "GOOD_HYPER"
+    ],
     "TICK": "PIERCE_DAMAGE",
     "TRUNK": "GOOD_HYPER",
     "WILLOW": "PIERCE_DAMAGE",
@@ -587,7 +634,9 @@
     }
   },
   "abilityRules": {
-    "_comment": "Ability-tag synergy/counter rules (Bobby): wall break opens lanes for snipers, strips the cover throwers depend on, and forces anti-tanks into the open where snipers kite them. Applied on top of the class counter matrix; bonuses are on the same ~50-point score scale as the other constraints.",
+    "_comment": "Ability-tag synergy/counter rules (Bobby): wall break opens lanes for snipers, strips the cover throwers depend on, and forces anti-tanks into the open where snipers kite them. Bonuses are additive win-rate points on the ~50-point score base, per the scoring scale contract.",
+    "conditionalWeight": 0.5,
+    "_conditionalNote": "What a WALL_BREAK_COND tag is worth relative to a full WALL_BREAK. A super that breaks walls fires every cycle; a gadget, star power or hyper break depends on a build we cannot observe from the draft, and the opponent may simply not have it equipped. 0.5 is a PRIOR, not a fit - there is no way to measure equipped builds from ranked_matches. It scales every wall-break bonus and the thrower-window gate. Geometry deliberately ignores conditional breakers entirely: re-reading a whole map's openness is too large a consequence for an ability that may never appear.",
     "_dataDefectNote": "ALL FOUR RULES ARE ZEROED as of 2026-08-31 because the tag they key on is wrong, NOT because the mechanic is wrong. brawlerAbilities is not an ability list: 104 of 105 brawlers carry exactly ONE tag from five mutually exclusive buckets (SPECIAL 40, GOOD_HYPER 30, PIERCE_DAMAGE 13, KNOCKBACK_STUN 12, WALL_BREAK 10), so it is a primary-trait taxonomy that happens to have a bucket NAMED wall break. The set it produces is wrong in both directions - owner-confirmed that GALE, CORDELIUS and SPIKE do not break walls, and the same goes for GRAY, GRIFF, FRANK and STU, while SHELLY, DYNAMIKE and BULL genuinely do break walls and are tagged KNOCKBACK_STUN or GOOD_HYPER so they can never trigger these rules. Four of the ten tagged are among the most-played brawlers in the game (Griff 26.6%%, Stu 24.7%%, Brock 24.5%%, Colt), so the rules fired constantly on a false premise, and wallBreakVsThrower at +7 was the single largest constant in the config. A 2x2 interaction over 3.0M sides put that cohort at +0.25 for the thrower rule and +1.13 for the sniper rule, but those numbers describe an arbitrary group and MUST NOT be used to retune these constants. THE FIX IS THE DATA: give brawlerAbilities a real multi-tag ability list (Ruffs already shows the array form works), then re-measure and restore values. Until then these contribute nothing, which is the honest state. The same defect disables geometry.wallBreakShiftsOpen, attributeRules.wallBreakOwnThrower, mapRules[].wallBreakBonus and the requiresEnemyNoWallBreak gate on counterLadder.throwerLastPick - that gate now passes almost always, making the thrower window more permissive than intended.",
     "wallBreakSniperSynergy": {
       "bonusPerSniper": 0,
@@ -919,11 +968,12 @@
     },
     "8-BIT": {
       "range": "Long",
-      "attackType": "BURST"
+      "attackType": "BURST",
+      "spawner": true
     },
     "JESSIE": {
       "range": "Mid",
-      "attackType": "PIERCE",
+      "attackType": "BOUNCE",
       "spawner": true
     },
     "DYNAMIKE": {
@@ -1002,7 +1052,7 @@
       "attackType": "BURST"
     },
     "LARRY & LAWRIE": {
-      "range": "Long",
+      "range": "Mid",
       "attackType": "SPLASH",
       "spawner": true
     },
@@ -1083,7 +1133,7 @@
       "attackType": "SINGLE_SHOT"
     },
     "CHUCK": {
-      "range": "Long",
+      "range": "Mid",
       "attackType": "PIERCE"
     },
     "CHARLIE": {
@@ -1110,7 +1160,9 @@
     },
     "SPIKE": {
       "range": "Mid",
-      "attackType": "SPLASH"
+      "attackType": "SPLASH",
+      "spawner": true,
+      "spawnerSource": "GADGET"
     },
     "CROW": {
       "range": "Long",
@@ -1131,7 +1183,7 @@
       "attackType": "PIERCE"
     },
     "MEG": {
-      "range": "Long",
+      "range": "Short",
       "attackType": "BURST",
       "scaler": true
     },
@@ -1150,7 +1202,7 @@
     },
     "KIT": {
       "range": "Short",
-      "attackType": "SINGLE_SHOT"
+      "attackType": "SPREAD"
     },
     "DRACO": {
       "range": "Short",
@@ -1181,7 +1233,7 @@
     },
     "JANET": {
       "range": "Long",
-      "attackType": "SINGLE_SHOT"
+      "attackType": "SPREAD"
     },
     "BO": {
       "range": "Mid",
@@ -1234,12 +1286,13 @@
       "attackType": "SPREAD"
     },
     "MEEPLE": {
-      "range": "Long",
+      "range": "Mid",
       "attackType": "SINGLE_SHOT"
     },
     "JUJU": {
-      "range": "Mid",
-      "attackType": "SPLASH"
+      "range": "Long",
+      "attackType": "SPLASH",
+      "spawner": true
     },
     "ZIGGY": {
       "range": "Mid",
@@ -1269,7 +1322,7 @@
     },
     "MINA": {
       "range": "Mid",
-      "attackType": "PIERCE"
+      "attackType": "SINGLE_SHOT"
     },
     "TRUNK": {
       "range": "Short",
@@ -1280,8 +1333,8 @@
       "attackType": "SPLASH"
     },
     "GLOWY": {
-      "range": "Mid",
-      "attackType": "SPLASH"
+      "range": "Long",
+      "attackType": "SINGLE_SHOT"
     },
     "FINX": {
       "range": "Mid",
@@ -1289,12 +1342,11 @@
     },
     "JAE-YONG": {
       "range": "Long",
-      "attackType": "SINGLE_SHOT"
+      "attackType": "PIERCE"
     },
     "LUMI": {
       "range": "Mid",
-      "attackType": "SPREAD",
-      "spawner": true
+      "attackType": "SPREAD"
     },
     "OLLIE": {
       "range": "Short",
@@ -1305,23 +1357,28 @@
     "_comment": "Mechanical interaction rules from the draft doc, magnitudes retuned to this engine's ~50-point score scale (the doc's raw ±15-20% would swamp real win-rate edges, where 5% WR = 2.5 pts). Geometry modifiers are DAMPENED by dampWithMapData when the brawler has a solid map sample — the live map WR already encodes how the map treats them, so the static prior mainly fills in when data is thin.",
     "singleShotVsSpawner": {
       "_comment": "High-damage single instances get eaten by attackable summons. Waived when a teammate brings PIERCE/SPLASH wave-clear.",
-      "scoreMultiplier": 0.88,
+      "_measuredNote": "scoreMultiplier 0.88 (about -6 points on the ~50-point base) replaced by penaltyPts -0.3, the measured 2x2 interaction: SINGLE_SHOT against an enemy spawner is -0.31 +/- 0.31, i.e. real in direction but a twentieth of what was shipped. BOUNCE joins the waiver list because a bouncing shot clears summons the same way pierce and splash do.",
+      "penaltyPts": -0.3,
       "waivedByTeammateAttackTypes": [
         "PIERCE",
-        "SPLASH"
+        "SPLASH",
+        "BOUNCE"
       ],
       "label": "Summon fodder"
     },
     "clearsSummons": {
       "_comment": "Pierce/splash clears summons while still hitting the primary target.",
+      "_measuredNote": "PIERCE 5 -> 0.9 and SPLASH 3 -> 0.4, from the measured 2x2 interaction over 3.0M Masters sides: (win rate with this attack type AND an enemy spawner, minus without the type) minus the same difference when the enemy has no spawner, so the brawler's own strength cannot masquerade as a spawner interaction. PIERCE measured +0.93 +/- 0.31 and SPLASH +0.36 +/- 0.31 against shipped constants of +5 and +3. BOUNCE added 2026-08-31 for Jessie, whose shot bounces off a target rather than piercing - owner-confirmed that it clears summons, so it takes PIERCE's value; it is NOT separately measured, since it is one brawler.",
       "attackTypeBonus": {
-        "PIERCE": 5,
-        "SPLASH": 3
+        "PIERCE": 0.9,
+        "SPLASH": 0.4,
+        "BOUNCE": 0.9
       },
       "label": "Clears summons"
     },
     "geometry": {
       "_comment": "wallBreakShiftsOpen: a friendly wall breaker physically opens the map mid-game — CLOSED evaluates as MIXED, MIXED as OPEN (dynamic map mutation).",
+      "_pendingRescaleNote": "THESE MULTIPLIERS ARE MEASURED WRONG BY 4-9x AND ARE STILL SHIPPED. Long spans 11 points (OPEN x1.10 vs CLOSED x0.88 on a ~50-point base) and Short spans 12.5, while the measured spreads are 2.58 +/- 0.34 and 1.37 +/- 0.34. The direction is right and monotone across all three openness levels - long-range lift is +0.02 on OPEN maps, -1.16 on MIXED, -2.56 on CLOSED, and short range mirrors it at +0.60 / +1.57 / +1.97 - so the fix is a rescale to additive points (OPEN Long +1.3 / Short -0.7, CLOSED Long -1.3 / Short +0.7, MIXED neutral), not a retraction. It is held back from the 2026-08-31 schema commit deliberately: on 54 real draft states the rescale moves 8 of 54 top picks, because dropping the OPEN x0.85 hands every short-range brawler about +7 points on an open map. That is a correct correction but not a small one, so it wants its own commit and its own look. The CLOSED THROWER x1.08 should go to 0 at the same time - throwers measure -2.40 on closed maps against -0.11 on open, the opposite sign, but that reading is confounded by mode (the closed set skews to gemGrab and heist, throwers' two worst modes at -5.37 and -3.45), so there is no evidence for the bonus and not enough to invert it.",
       "OPEN": {
         "rangeMultipliers": {
           "Long": 1.1,
@@ -1350,7 +1407,8 @@
     },
     "wallBreakOwnThrower": {
       "_comment": "Anti-synergy: a friendly wall breaker destroys the cover the team's own thrower depends on. Applied in both directions (wall breaker joining a thrower comp, or thrower joining a wall-break comp). Exempt in Heist, where breaking the safe lane open is the whole point.",
-      "scoreMultiplier": 0.92,
+      "_measuredNote": "scoreMultiplier 0.92 replaced by penaltyPts 0 on 2026-08-31. The claim is that a friendly wall breaker strips your own thrower's cover. Measured on the OLD (wrong) tag set it came out +1.61, i.e. backwards - but that reading is confounded, because the tagged brawlers were mostly strong ones (Brock, Stu, Griff), so 'thrower plus a strong brawler' beat 'thrower alone' for reasons that have nothing to do with cover. Set to 0 rather than inverted: there is no evidence for the shipped penalty and not enough for its opposite. Re-measure on the corrected tag list before restoring a value.",
+      "penaltyPts": 0,
       "exemptModes": [
         "heist"
       ],

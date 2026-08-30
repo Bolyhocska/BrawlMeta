@@ -54,6 +54,16 @@ export const abilitiesOf = (key) => {
   return v == null ? [] : Array.isArray(v) ? v : [v];
 };
 export const abilityOf = (key) => abilitiesOf(key)[0] || null;
+// How reliably a set of abilities actually opens the map. WALL_BREAK is a super
+// or attack that breaks walls every cycle; WALL_BREAK_COND is gated behind a
+// gadget, star power or hyper, which depends on a build we cannot see from the
+// draft — so it counts fractionally, at abilityRules.conditionalWeight.
+export const wallBreakStrength = (abilities) => {
+  const a = Array.isArray(abilities) ? abilities : [...abilities];
+  if (a.includes("WALL_BREAK")) return 1;
+  if (a.includes("WALL_BREAK_COND")) return CONFIG.abilityRules?.conditionalWeight ?? 0.5;
+  return 0;
+};
 export const abilityLabel = (code) => CONFIG.abilityLabels?.[code] || code;
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
@@ -733,30 +743,31 @@ export function getDraftAdvice({
     }
 
     // ── Ability rules (Bobby) · wall break opens lanes / strips cover ──
-    if (candAbilities.includes("WALL_BREAK")) {
+    const candWB = wallBreakStrength(candAbilities);
+    if (candWB > 0) {
       const sniperMates = myClasses.filter(c => c === "SNIPER").length;
       // Synergy: our snipers dominate once the obstacles are gone
       if (sniperMates > 0 && abilityRules.wallBreakSniperSynergy) {
-        score += abilityRules.wallBreakSniperSynergy.bonusPerSniper * sniperMates;
+        score += abilityRules.wallBreakSniperSynergy.bonusPerSniper * sniperMates * candWB;
         chips.push({ label: abilityRules.wallBreakSniperSynergy.label, tone: "good" });
         why.push("wall break opens lanes for your snipers");
       }
       // Hard counter: throwers are defenseless without their cover
       const enemyThrowers = enemyClasses.filter(c => c === "THROWER").length;
       if (enemyThrowers > 0 && abilityRules.wallBreakVsThrower) {
-        score += abilityRules.wallBreakVsThrower.bonusPerThrower * enemyThrowers;
+        score += abilityRules.wallBreakVsThrower.bonusPerThrower * enemyThrowers * candWB;
         chips.unshift({ label: abilityRules.wallBreakVsThrower.label, tone: "good" });
         why.unshift("strips the cover their thrower depends on");
       }
       // Combined counter: no approach cover → their anti-tank gets kited by our snipers
       if (enemyClasses.includes("ANTI_TANK") && sniperMates > 0 && abilityRules.wallBreakSniperVsAntiTank) {
-        score += abilityRules.wallBreakSniperVsAntiTank.bonus;
+        score += abilityRules.wallBreakSniperVsAntiTank.bonus * candWB;
         chips.push({ label: abilityRules.wallBreakSniperVsAntiTank.label, tone: "good" });
       }
     }
     // Mirror: a sniper joining a team that already brought the wall break
-    if (cls === "SNIPER" && myAbilities.has("WALL_BREAK") && abilityRules.sniperWithWallBreakSynergy) {
-      score += abilityRules.sniperWithWallBreakSynergy.bonus;
+    if (cls === "SNIPER" && wallBreakStrength(myAbilities) > 0 && abilityRules.sniperWithWallBreakSynergy) {
+      score += abilityRules.sniperWithWallBreakSynergy.bonus * wallBreakStrength(myAbilities);
       chips.push({ label: abilityRules.sniperWithWallBreakSynergy.label, tone: "good" });
     }
 
@@ -829,10 +840,19 @@ export function getDraftAdvice({
       // Dynamic map mutation: a friendly wall breaker (already drafted, or this
       // candidate itself) physically opens the map — CLOSED plays like MIXED,
       // MIXED plays like OPEN, so range modifiers use the mutated state.
+      // A full wall breaker physically opens the map (CLOSED plays as MIXED,
+      // MIXED as OPEN). Sprout is the inverse and had no representation at all
+      // until 2026-08-31: he BUILDS cover, so the map plays one step tighter.
+      // A conditional breaker does not shift geometry — a gadget that may not
+      // be equipped is too weak a reason to re-read the whole map.
       let openness = mapProf.openness;
-      if (aRules.geometry.wallBreakShiftsOpen &&
-          (myAbilities.has("WALL_BREAK") || candAbilities.includes("WALL_BREAK"))) {
-        openness = openness === "CLOSED" ? "MIXED" : "OPEN";
+      const teamAbil = [...myAbilities, ...candAbilities];
+      const opensMap = teamAbil.includes("WALL_BREAK");
+      const closesMap = teamAbil.includes("WALL_CREATE");
+      if (aRules.geometry.wallBreakShiftsOpen && opensMap !== closesMap) {
+        openness = opensMap
+          ? (openness === "CLOSED" ? "MIXED" : "OPEN")
+          : (openness === "OPEN" ? "MIXED" : "CLOSED");
       }
       const g = aRules.geometry[openness] || {};
       let gm = (attrs && g.rangeMultipliers?.[attrs.range]) ?? 1;
@@ -841,10 +861,16 @@ export function getDraftAdvice({
       score *= gm;
     }
     if (mapProf && attrs?.bushSynergy && aRules.bushSynergy) {
-      const bushPts = aRules.bushSynergy[mapProf.bushDensity] || 0;
+      // Rosa grows bushes, so a map plays one density step bushier with her on
+      // the team — the mirror of Sprout's cover, and equally unrepresented before.
+      const BUSH_UP = { LOW: "MEDIUM", MEDIUM: "HIGH", HIGH: "HIGH" };
+      const density = [...myAbilities, ...candAbilities].includes("BUSH_CREATE")
+        ? (BUSH_UP[mapProf.bushDensity] ?? mapProf.bushDensity)
+        : mapProf.bushDensity;
+      const bushPts = aRules.bushSynergy[density] || 0;
       if (bushPts) {
         score += bushPts;
-        if (mapProf.bushDensity === "HIGH") chips.push({ label: aRules.bushSynergy.label, tone: "good" });
+        if (density === "HIGH") chips.push({ label: aRules.bushSynergy.label, tone: "good" });
       }
     }
     // Spawner interactions: attackable summons soak single shots unless a
@@ -856,7 +882,7 @@ export function getDraftAdvice({
         const waived = myTeam.some(mk =>
           ss.waivedByTeammateAttackTypes.includes(CONFIG.brawlerAttributes?.[norm(mk)]?.attackType));
         if (!waived) {
-          score *= ss.scoreMultiplier;
+          score += ss.penaltyPts ?? 0;
           chips.push({ label: ss.label, tone: "bad" });
         }
       }
@@ -872,9 +898,9 @@ export function getDraftAdvice({
     // opening the safe lane is the point.
     const wbot = aRules.wallBreakOwnThrower;
     if (wbot && !(wbot.exemptModes || []).includes(mode)) {
-      if ((candAbilities.includes("WALL_BREAK") && myClasses.includes("THROWER")) ||
-          (cls === "THROWER" && myAbilities.has("WALL_BREAK"))) {
-        score *= wbot.scoreMultiplier;
+      if ((candWB > 0 && myClasses.includes("THROWER")) ||
+          (cls === "THROWER" && wallBreakStrength(myAbilities) > 0)) {
+        score += wbot.penaltyPts ?? 0;
         chips.push({ label: wbot.label, tone: "bad" });
       }
     }
@@ -1013,7 +1039,7 @@ export function getDraftAdvice({
     // BONUS and its chip from contradicting it.
     const tlp = ladder.throwerLastPick;
     if (cls === "THROWER" && tlp && pickSlot >= (tlp.minSlot ?? 5) &&
-        (!tlp.requiresEnemyNoWallBreak || !enemyAbilities.has("WALL_BREAK"))) {
+        (!tlp.requiresEnemyNoWallBreak || wallBreakStrength(enemyAbilities) === 0)) {
       const counterAt = tlp.counterEdgeThreshold ?? CONFIG.classCounter?.chipThreshold ?? 1;
       const answered = enemyClasses.filter(ec => matrixScore(ec, "THROWER") >= counterAt);
       // A CLASS gate alone is not enough, for the same reason the chips needed
