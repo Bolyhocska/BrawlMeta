@@ -499,22 +499,23 @@
       "downLabel": "Trending down",
       "upLabel": "Trending up"
     },
+    "_flagNote": "All three scoreMultipliers were set to 1.0 on 2026-08-31 after being measured. They still SET THEIR CHIPS - the label is information the card should carry - but they no longer move the score, because two of them cannot fire at all and the third predicts nothing. popularityTrap needs >=20%% pick rate AND <=48%% win rate: of 105 brawlers, ZERO qualify, because the five above 20%% (Max 28.2/49.7, Griff 26.6/50.4, Stu 24.7/52.1, Brock 24.5/51.3, Rico 22.9/52.4) are all above 49.7%%. inflationBias needs <=3%% pick AND >=55%% WR: also ZERO, because the only two brawlers over 55%% are Ash (7.7%% picked) and Bolt (5.2%%), both far above the gate. brokenIndicator fires for three (Stu, Rico, Emz) and paid them +6 points on the claim that they are stronger than their win rate shows - splitting the collection window in half, their win rates moved +0.56, -0.27 and +0.01, i.e. flat. Retune the THRESHOLDS if you want these back; the multipliers were never the problem.",
     "popularityTrap": {
       "minPickRatePct": 20,
       "maxWinRatePct": 48,
-      "scoreMultiplier": 0.85,
+      "scoreMultiplier": 1.0,
       "label": "Popularity trap"
     },
     "brokenIndicator": {
       "minPickRatePct": 10,
       "minWinRatePct": 52,
-      "scoreMultiplier": 1.12,
+      "scoreMultiplier": 1.0,
       "label": "Meta breaker"
     },
     "inflationBias": {
       "maxPickRatePct": 3,
       "minWinRatePct": 55,
-      "scoreMultiplier": 0.9,
+      "scoreMultiplier": 1.0,
       "label": "Inflated WR"
     }
   },
@@ -613,20 +614,10 @@
       "SNIPER",
       "ANTI_TANK"
     ],
-    "noPartnerPenalty": -6,
+    "noPartnerPenalty": 0,
+    "_noPartnerNote": "Was -6 until 2026-08-31, when it was measured and found to have the WRONG SIGN. Across 604,012 sides holding a support, those WITH one of needsPartnerClasses won 50.06%% and those WITHOUT won 50.38%% - the penalty fired on the teams that did slightly better (+0.32 +/- 0.61, i.e. indistinguishable from zero either way). It also binds rarely: only 27,425 support sides, 4.5%%, lack a partner at all. Set to 0 rather than deleted so the chip and the structure survive if a real effect ever shows up.",
     "noPartnerLabel": "No lane to support",
     "combos": [
-      {
-        "brawler": "GRAY",
-        "teammateClasses": [
-          "TANK"
-        ],
-        "modes": [
-          "hotZone"
-        ],
-        "bonus": 6,
-        "label": "Gray + tank combo"
-      },
       {
         "brawler": "KIT",
         "teammateClasses": [
@@ -1699,42 +1690,14 @@
     "_defaults": {
       "dampWithRecentData": 0.5
     },
-    "GRIFF": {
-      "modes": {
-        "brawlBall": 1.08,
-        "hotZone": 1.08
-      },
-      "reason": "star power rework — game-breaking DPS"
-    },
-    "SURGE": {
-      "modes": {
-        "bounty": 1.08,
-        "gemGrab": 1.08
-      },
-      "reason": "wall-jump star power converts to guaranteed kills"
-    },
-    "BROCK": {
-      "modes": {
-        "bounty": 1.06,
-        "knockout": 1.06
-      },
-      "reason": "post-buff damage"
-    }
+    "_emptyNote": "EMPTY as of 2026-08-31, deliberately - the mechanism is kept, the three entries were removed after measurement. The block exists to price a balance change the aggregate has not caught up with yet, but all three entries were describing strength the aggregate had ALREADY priced, so they double counted the score base. The engine scores on blendMapGlobal, which is the brawler's own win rate on this map blended toward their MODE rate - so a mode-keyed multiplier adds a second copy of exactly that. Measured mode win rate vs the brawler's own global: BROCK bounty 54.59 vs 51.27 and knockout 56.37 vs 51.27 (both genuinely strong, both already in the base), SURGE gemGrab 51.01 vs 49.76 and bounty 50.82 vs 49.76, GRIFF hotZone 52.07 vs 50.39. GRIFF brawlBall was outright wrong at 50.20 against his own 50.39 global - the entry paid about +4 points to a brawler performing slightly BELOW his average there. If a real balance change lands mid-patch, the 14-day recency window in statisticalCoefficients is the mechanism built to catch it; use this block only for the lag before that window fills, and never for a brawler whose mode record already shows the strength."
   },
   "brawlerCounters": {
     "_comment": "Named brawler-vs-brawler multipliers from pro sources. Sits ABOVE the class counter matrix (which would only see Control vs Support) and BELOW empirical vs_brawler data — when a pair has 100+ real games, PASS 2 has already priced the matchup and this prior is damped the same way every other prior is.",
     "_defaults": {
       "dampWithMapData": 0.5
     },
-    "PEARL": {
-      "vs": [
-        "MAX",
-        "KIT",
-        "MORTIS"
-      ],
-      "multiplier": 1.25,
-      "label": "Counters their dive"
-    }
+    "_emptyNote": "EMPTY as of 2026-08-31, deliberately. The single entry - PEARL x1.25 vs MAX, KIT and MORTIS - was measured against vs_brawler and two thirds of it was false. Pearl's own global is 51.85%%; she is 51.27%% vs MAX over 22,922 games and 51.32%% vs MORTIS over 7,165, i.e. very slightly WORSE than her own average against both, while the rule paid about +12 points. Only KIT holds, at 56.29%% over 1,949 games (+4.44 relative) - and that pairing is already in the score at mapPairs.suggestWeight 1.8, so the multiplier was a second copy of a number the engine measures directly. That is the general rule for this block: it exists for pairings vs_brawler CANNOT see (too few games), so an entry that clears pairMinPicks does not belong here. Add future entries as points, damped by map data, never as a multiplier."
   },
   "firstPickCaution": {
     "_comment": "Named pro caveat for a brawler that is strong on a map but exploitable as an early reveal. EMPTY as of 2026-08-30, deliberately. It held one entry - BROCK, x0.85 on slots 1-2, waived if MAX was banned - and every part of it failed a check. The waiver encoded a counter that does not exist: Max vs Brock measures 49.81% over 37,243 games, one of the largest samples in vs_brawler, so banning Max was worth nothing to Brock while the rule handed him about +5 points. Brock's real answers, weighted by how likely the enemy is to pick them, are Stu, Meg and Ash. The penalty itself duplicated the counterability term, which now covers 'exploitable as an early reveal' for every brawler and scales with enemyPicksRemaining. And its multiplicative form broke the scale contract in `scoring`. If a genuine named caveat comes up, add it as penaltyPts (win-rate points, damped by map data) - never as a multiplier, and never with a hand-listed ban waiver, because banRelief answers that from measured pairings."
