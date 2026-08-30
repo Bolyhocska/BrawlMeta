@@ -1099,26 +1099,34 @@ export function getDraftAdvice({
       score *= lps.multiplier;
     }
 
-    // Class diversity: duplicates compound the 0.7x multiplier
+    // Class diversity, in win-rate points keyed by the RESULTING count. Values
+    // are MARGINAL — a pick decision compares the comp it produces against the
+    // alternative, not against a clean slate, so taking the third of a class
+    // costs the -2.27 total minus the -0.45 the second already paid.
+    const cd = cons.classDiversity;
     const dupes = myClasses.filter(c => c === cls).length;
-    if (dupes > 0) {
-      let dupMult = Math.pow(cons.classDiversity.duplicateMultiplier, dupes);
+    if (dupes > 0 && !(cd.exemptModes || []).includes(mode)) {
+      let dupPts = cd.duplicatePts?.[String(dupes + 1)] ?? 0;
       // The stacking penalty is about counter-DRAFT exposure — one enemy pick
       // that answers your whole stack. With no enemy picks left there is no
       // such pick coming, so the penalty is relieved. Being countered by their
       // already-revealed comp is priced by PASS 2, and a structurally broken
       // comp is still caught by finalSanityCheck below.
-      const relief = cons.classDiversity.noCounterDraftRelief ?? 0;
+      const relief = cd.noCounterDraftRelief ?? 0;
       const safeToStack = relief > 0 && enemyPicksRemaining === 0;
-      if (safeToStack) dupMult = 1 - (1 - dupMult) * (1 - relief);
-      score *= dupMult;
+      if (safeToStack) dupPts *= 1 - relief;
+      score += dupPts;
       chips.push(safeToStack
         ? { label: `${dupes + 1}× ${classLabel(cls)} · safe to stack`, tone: "good" }
         : { label: `${dupes + 1}× ${classLabel(cls)}`, tone: "bad" });
     }
-    // Mode hard caps (e.g. Brawl Ball: max 1 control)
+    // Mode hard caps, kept ONLY where the class costs more than a plain
+    // duplicate already does. Brawl Ball's control cap was dropped because a
+    // second control (-0.95) and a second anything (-0.97) are the same number,
+    // so the cap was charging twice for one effect; a second thrower (-9.35) is
+    // genuinely worse, and carries the excess over that general term.
     const cap = modeCfg.maxPerClass?.[cls];
-    if (cap != null && dupes >= cap) score *= 0.55;
+    if (cap != null && dupes >= cap) score += modeCfg.maxPerClassPts?.[cls] ?? 0;
 
     // Anti-tank foundation: best first pick in active/objective modes
     if (cls === "ANTI_TANK" && cons.antiTankFirstPick.appliesToPickSlots.includes(pickSlot) &&

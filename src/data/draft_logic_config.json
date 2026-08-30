@@ -463,9 +463,12 @@
         "SNIPER": 0.9,
         "THROWER": 0.75
       },
+      "_maxPerClassNote": "The flat x0.55 (about -22 points) is replaced by per-class points, and the CONTROL cap is dropped. Measured on brawlBall by discordant pairs: a second CONTROL costs -0.95 +/- 0.72, a second THROWER costs -9.35 +/- 3.2 over 947 discordant matches. One constant could not carry both. CONTROL goes because it measures NOTHING BEYOND the general duplicate penalty - two of any class in brawlBall is -0.97 and two controls is -0.95, the same number, so the cap was charging twice for one effect. THROWER keeps a cap at the EXCESS over that general term, -9.35 minus -0.97 = -8.4, for the same no-double-counting reason. maxPerClass stays alongside maxPerClassPts because it is what the code reads to know the cap is breached; the Pts entry is what breaching it costs.",
       "maxPerClass": {
-        "CONTROL": 1,
         "THROWER": 1
+      },
+      "maxPerClassPts": {
+        "THROWER": -8.4
       },
       "damageOverMatchup": false
     },
@@ -601,8 +604,15 @@
       "passiveTempoMultiplier": 0.5
     },
     "classDiversity": {
-      "_comment": "Bobby: 'if you pick three control brawlers, all of your brawlers are countered by one aggro'. Multiplier per duplicate class already on the team (compounds: 0.7, then 0.49).",
-      "duplicateMultiplier": 0.7,
+      "_comment": "Bobby: 'if you pick three control brawlers, all of your brawlers are countered by one aggro'. Additive win-rate points keyed by the RESULTING count of that class on the team, per the scoring scale contract.",
+      "_measuredNote": "Converted from a compounding x0.7 multiplier to additive points on 2026-08-31, and shrunk by roughly 20x - the single largest mispricing left in the engine. x0.7 is about -15 points on the ~50-point base and x0.49 about -25, against measured effects of -0.45 and -2.27. Discordant pairs over 1.5M Masters matches, counting only games where one side had a duplicate class and the other was all-different, which controls for map and opponent: a SECOND of a class is -0.45 +/- 0.11 (bounty -0.94, brawlBall -0.97, gemGrab -0.39, hotZone -0.70, knockout -0.80) and a THIRD is -2.27 +/- 0.38. Both real, both tiny. The rule fires on 63-83%% of all drafts, so at -15 points it was one of the loudest terms in the engine while being wrong by more than an order of magnitude. Values are MARGINAL: taking the second costs -0.45 and taking the third a further -1.82 (the -2.27 total minus the -0.45 already paid), because a pick decision compares the resulting comp against the alternative, not against a clean slate. HEIST IS EXEMPT: two of a class there measures +1.14, the only mode where duplication helps, and three is -0.31. Exempted rather than paid a bonus - one mode cell is not enough to buy points with.",
+      "duplicatePts": {
+        "2": -0.45,
+        "3": -1.82
+      },
+      "exemptModes": [
+        "heist"
+      ],
       "noCounterDraftRelief": 1,
       "_reliefComment": "The stacking penalty exists because a stacked comp invites ONE counter-pick that answers all of it — a counter-DRAFT risk. Once the enemy has no picks left that risk is gone, so the penalty is relieved by this fraction (1 = fully neutral) when enemyPicksRemaining is 0. This is not a free pass: being countered by the enemy's ALREADY-REVEALED picks is priced separately by the PASS 2 counter matrix, and a structurally broken comp (no mid / no lane anchor / no objective specialist) is still caught by finalSanityCheck. Owner-confirmed 2026-07-25: 'it is fine to stack if there are no more picks and they cant be countered.'"
     },
