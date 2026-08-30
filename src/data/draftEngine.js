@@ -300,8 +300,15 @@ export function finalSanityCheck(teamKeys, mode) {
   const classes = teamKeys.map(draftClassOf);
   const roles = CONFIG.roles;
   const specialists = roles.objectiveSpecialistByMode[mode] || [];
-  const hasMid = classes.some(c => roles.midClasses.includes(c));
-  const hasAnchor = classes.some(c => roles.laneAnchorClasses.includes(c));
+  // A per-mode override wins over the flat list, and an EMPTY list means the
+  // mode has no such requirement — the check passes and the role contributes
+  // nothing either way. Both overrides are measured: a lane anchor is worth
+  // +2.59 in five modes but -3.11 in HEIST, and a mid is worth +2.2/+2.5 in
+  // brawlBall/gemGrab but -0.56 in bounty and -0.08 in knockout.
+  const midList = roles.midClassesByMode?.[mode] ?? roles.midClasses;
+  const anchorList = roles.laneAnchorClassesByMode?.[mode] ?? roles.laneAnchorClasses;
+  const hasMid = midList.length === 0 || classes.some(c => midList.includes(c));
+  const hasAnchor = anchorList.length === 0 || classes.some(c => anchorList.includes(c));
   const hasObjective = specialists.length === 0 || classes.some(c => specialists.includes(c));
   const missing = [];
   if (!hasMid) missing.push("mid holder");

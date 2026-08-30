@@ -361,21 +361,28 @@
       "CONTROL",
       "ANTI_TANK"
     ],
+    "_perModeNote": "midClassesByMode / laneAnchorClassesByMode override the flat lists for one mode; an EMPTY list means the mode has no such requirement, so the check always passes and the role contributes no points either way (same convention objectiveSpecialistByMode already used for a mode with no entry). Both overrides are measured, discordant-pair, on 1.5M Masters matches - counting only games where exactly one side satisfied the rule, which controls for map and opponent because both sides played the same game. HAVING A LANE ANCHOR is worth +2.59 +/- 0.46 in five modes but -3.11 +/- 0.85 in HEIST, a clean reversal: heist wants a space maker on the safe, not a laner holding a side. HAVING A MID is worth +2.20 in brawlBall and +2.45 in gemGrab but -0.56 +/- 0.38 in bounty and -0.08 +/- 0.43 in knockout, so the requirement is real in the two objective modes and absent in the two elimination modes. Both rules bind rarely - the anchor check on 2-6%% of matches, the mid check on 6-32%% - which is why they were never noticed.",
+    "midClassesByMode": {
+      "bounty": [],
+      "knockout": []
+    },
+    "laneAnchorClassesByMode": {
+      "heist": []
+    },
+    "_objectiveNote": "Measured 2026-08-31, discordant pairs over 1.5M Masters matches: the win-rate lift of holding at least one of a class, counting only games where exactly one side did. Three memberships were wrong and are corrected here. brawlBall dropped SPACE_MAKER (-0.52) and keeps TANK (+3.04) - the ball carrier role in brawl ball is carried entirely by tanks, and space makers measure slightly negative there while the rule paid them +4. heist dropped TANK (-1.06) and keeps SPACE_MAKER (+6.02, the largest lift anywhere in the table) and ANTI_TANK (+1.44). gemGrab dropped SUPPORT (-0.27) and gained TANK (+2.01), which was the mode's best class and was missing. Unchanged and confirmed: hotZone CONTROL +0.79 / TANK +2.76, knockout SNIPER +1.61 / THROWER +0.60, bounty SNIPER +2.06 (the mode's best). NOTE the flat `fixed * 4` in getDraftAdvice is still a single constant standing in for lifts that range -1.1 to +6.0; membership is now right, magnitude is not.",
     "objectiveSpecialistByMode": {
       "gemGrab": [
         "CONTROL",
-        "SUPPORT"
+        "TANK"
       ],
       "brawlBall": [
-        "TANK",
-        "SPACE_MAKER"
+        "TANK"
       ],
       "hotZone": [
         "CONTROL",
         "TANK"
       ],
       "heist": [
-        "TANK",
         "SPACE_MAKER",
         "ANTI_TANK"
       ],
@@ -619,32 +626,32 @@
     "noPartnerLabel": "No lane to support",
     "combos": [
       {
+        "_note": "Mode gate removed 2026-08-31. The effect is real - Kit with a tank or space maker beats Kit without one by +3.37 +/- 1.78 in knockout - but it is just as strong in bounty at +3.46 +/- 2.05, so restricting it to knockout was hiding half of it. Bonus 6 -> 3.4, the measured value.",
         "brawler": "KIT",
         "teammateClasses": [
           "TANK",
           "SPACE_MAKER"
         ],
-        "modes": [
-          "knockout"
-        ],
-        "bonus": 6,
+        "bonus": 3.4,
         "label": "Kit ride-along"
       },
       {
+        "_note": "Tempo gate INVERTED 2026-08-31 - it was passive, and passive is exactly where the effect does not exist. Max's win rate with an enemy sniper on the board, minus without: knockout -0.39 +/- 0.77 and bounty -0.34 +/- 0.73, the two passive modes where the rule used to fire, both indistinguishable from zero. The four ACTIVE modes are where it lives: hotZone +7.32 +/- 1.04, heist +6.74 +/- 1.27, gemGrab +5.78 +/- 0.97, brawlBall +2.96. The reading is that running a sniper down is worth something when there is an objective forcing the fight, and worth nothing in an elimination mode where the sniper can simply hold range. Bonus kept at 5, which sits inside the active-mode range.",
         "brawler": "MAX",
         "enemyClasses": [
           "SNIPER"
         ],
-        "tempo": "passive",
+        "tempo": "active",
         "bonus": 5,
         "label": "Runs down snipers"
       },
       {
+        "_note": "Bonus 3 -> 0 on 2026-08-31, kept only as a record. Max in brawl ball measures 50.80%% against his own 49.68%% global, so the claim is directionally true - but that +1.12 is already the score base, which blends his map rate toward his MODE rate. A flat mode bonus on top is a second copy of the same fact, the same double count that emptied brawlerBias. A combo entry should encode an INTERACTION the base cannot see (Kit needing a frontline, Max needing an enemy sniper), never a brawler simply being good in a mode.",
         "brawler": "MAX",
         "modes": [
           "brawlBall"
         ],
-        "bonus": 3,
+        "bonus": 0,
         "label": "Tempo engine"
       }
     ]
