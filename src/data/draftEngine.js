@@ -1107,6 +1107,43 @@ export function getDraftAdvice({
       sampleGames = mapPicks; sampleScope = "map";
     }
 
+    // Thin map evidence is FLAGGED, never penalised. Every exclusion rule was
+    // measured and every one of them lost: a presence floor costs -0.0091 at 1%
+    // and -0.0230 at 15%, and a minimum-map-games floor costs -0.0077 at 50
+    // games — all significant on 23,772 held-out decisions. The reason is that
+    // rare picks are not bad picks: the picks real Masters players made below
+    // 1% presence won 51.6%, and below 50 map games 51.2%. A floor also cannot
+    // tell the two cases apart — on Dry Season a 15% floor deletes Ash (0.56%
+    // presence, 396 games, 58.1% on the map) along with Amber (0.20%, 144
+    // games, 47.2%), and replaces both with Piper at 49.9%. What separates them
+    // is how much we can believe the map reading, so say that instead of
+    // pretending to know they are bad.
+    const thinAt = mapPri.headlineMinMapPicks ?? 200;
+    if (mapPicks > 0 && mapPicks < thinAt) {
+      // Unproven HERE is a counter-draft risk, not a verdict: an Amber first
+      // pick can be answered by the three picks still to come, while the same
+      // Amber taken last — into a comp she already counters — cannot. So this
+      // scales with enemyPicksRemaining exactly like counterability, and
+      // disappears at the last pick.
+      //
+      // It is a PRIOR, not a fit, and cannot be otherwise: pick order is not
+      // stored in ranked_matches, so early-vs-late is unmeasurable. (An earlier
+      // attempt to measure it fabricated the order by withholding enemy picks
+      // from the scorer, which tests information, not timing.) Kept modest for
+      // that reason — at most thinMapPenaltyPts, against counterability's 14.
+      //
+      // What IS measured is that a flat floor is wrong in every form tried:
+      // presence floors 1-15% cost -0.0091 to -0.0230, map-game floors 50-800
+      // cost -0.0077 to -0.0158, all significant. Rare picks are not bad picks
+      // (they won 51.6% below 1% presence), and a floor cannot separate Ash
+      // (396 games, 58.1% on Dry Season) from Amber (144 games, 47.2%). Hence a
+      // graded, fading penalty rather than a cut-off.
+      const deficit = 1 - mapPicks / thinAt;
+      score -= (CONFIG.scoring?.thinMapPenaltyPts ?? 8) * deficit * (enemyPicksRemaining / 3);
+      chips.push({ label: "Thin map read", tone: "bad" });
+      why.push(`only ${mapPicks} games on this map — scored mostly on ${modeStats ? "mode" : "overall"} form`);
+    }
+
     // matchupNote: one plain line answering "how good is this into their comp?"
     let matchupNote = null;
     if (enemyTeam.length > 0) {
@@ -1496,6 +1533,20 @@ const midAffinity = (key) => {
 // renders the same lanes rather than shuffling between renders.
 const laneOrder = (team) =>
   [...team].sort((a, b) => midAffinity(b) - midAffinity(a) || norm(a).localeCompare(norm(b)));
+
+// Where each pick stands on the map, for a PARTIAL or a complete team. Uses the
+// same midAffinity ordering getLaneMatchups ranks with, so the board on the map
+// and the lane-matchup cards can never disagree about who is holding mid.
+//
+// Lanes are shared, not mirrored: the left lane is the left lane for both teams,
+// which is exactly the pairing getLaneMatchups assumes when it matches mine[i]
+// against theirs[i]. Placement is recomputed from the whole team on every pick,
+// so a brawler can move once a stronger mid presence arrives — that is honest,
+// because the lane a comp wants genuinely depends on the rest of the comp.
+export function assignLanes(team = []) {
+  const ordered = laneOrder(team.filter(Boolean).map(norm));
+  return { mid: ordered[0] ?? null, left: ordered[1] ?? null, right: ordered[2] ?? null };
+}
 
 export function getLaneMatchups({ myTeam = [], enemyTeam = [], intelligence = {} }) {
   const mine = laneOrder(myTeam.filter(Boolean).map(norm));

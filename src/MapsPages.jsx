@@ -19,6 +19,21 @@ import SiteHeader from "./SiteHeader";
 
 export const mapSlug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
+// Self-hosted map art from public/maps/, fetched by scripts/fetch_map_art.py.
+// Renders nothing at all when a map has no file yet (Quick Travel today), so a
+// missing image is invisible rather than a broken frame.
+function MapArt({ name, size = 62, radius = 10, style }) {
+  const [ok, setOk] = useState(true);
+  if (!name || !ok) return null;
+  return (
+    <img
+      src={`/maps/${mapSlug(name)}.png`} alt="" aria-hidden="true" onError={() => setOk(false)}
+      style={{ width: size, height: size, objectFit: "cover", borderRadius: radius,
+               border: "1px solid rgba(255,255,255,.10)", flexShrink: 0, ...style }}
+    />
+  );
+}
+
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 const BRACKETS = [
@@ -178,13 +193,16 @@ export function MapsLandingPage() {
                     <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>
                       {m.matches.toLocaleString("en-US")} MATCHES
                     </span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                      {m.top.length ? m.top.map((b, i) => (
-                        <div key={b.key} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
-                          <span style={{ color: "#c9c9d6" }}>{i + 1}. {b.name}</span>
-                          <span style={{ fontFamily: MONO, color: CHART_COLORS.green }}>{b.winRate.toFixed(1)}%</span>
-                        </div>
-                      )) : <span style={{ fontSize: 11, color: "#6f7180" }}>Not enough games yet.</span>}
+                    <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                      <MapArt name={m.name} size={62} />
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, minWidth: 0 }}>
+                        {m.top.length ? m.top.map((b, i) => (
+                          <div key={b.key} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, gap: 6 }}>
+                            <span style={{ color: "#c9c9d6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i + 1}. {b.name}</span>
+                            <span style={{ fontFamily: MONO, color: CHART_COLORS.green }}>{b.winRate.toFixed(1)}%</span>
+                          </div>
+                        )) : <span style={{ fontSize: 11, color: "#6f7180" }}>Not enough games yet.</span>}
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -270,6 +288,7 @@ export function MapDetailPage() {
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap" }}>
+          <MapArt name={mapName} size={78} radius={14} />
           {MODE_ICONS[mode] && <img src={MODE_ICONS[mode]} alt="" width={30} height={30} style={{ objectFit: "contain" }} />}
           <div>
             <div style={eyebrow}>

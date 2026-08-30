@@ -3,7 +3,7 @@ import { X, RotateCcw, ChevronDown } from "lucide-react";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 import { BRAWLERS, MODE_COLORS, formatMode, formatBrawlerName, resolveMatchBracket, useMapMatches, supabase } from "./appCore";
 import { getDraftProfile } from "./data/draftMeta";
-import { getDraftAdvice, computeWinSplit, getBanAdvice, getLaneMatchups, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
+import { getDraftAdvice, computeWinSplit, getBanAdvice, getLaneMatchups, assignLanes, draftClassOf, classLabel, abilityOf, abilityLabel } from "./data/draftEngine";
 import { getLanePlaystyle } from "./data/lanePlaystyle";
 import { useAuth } from "./auth";
 import { tileStyles } from "./data/brawlerTile";
@@ -296,6 +296,87 @@ export function LaneMatchups({ lanes, playstyles, brawlerOf, side, onFlip, modeL
 // chips and matchup note, the remaining four render as name + score so the next
 // options stay visible without four more paragraphs of reasoning.
 const DETAILED_SUGGESTIONS = 3;
+
+const LANES = [["left", "LEFT"], ["mid", "MID"], ["right", "RIGHT"]];
+const mapFileSlug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+// The draft laid out the way it is actually played: red defending the top half,
+// blue the bottom, three shared lanes between them. Placement comes from
+// assignLanes, the same midAffinity ordering the lane-matchup cards use, so the
+// board and those cards can never disagree about who is holding mid.
+//
+// Lanes are SHARED, not mirrored — the left column is the left lane for both
+// teams, which is what makes the vertical pairing meaningful: whoever sits above
+// you in a column is the brawler you are actually going to be looking at.
+//
+// The map art is optional. If public/maps/<slug>.png exists it sits behind the
+// board; otherwise the schematic renders on its own, so this works for every map
+// from day one and gains the art later without a code change.
+function LaneBoard({ mapName, blueTeam, redTeam }) {
+  const [art, setArt] = useState(true);
+  const keys = (t) => t.filter(Boolean).map(b => b.name.toUpperCase());
+  const blue = assignLanes(keys(blueTeam));
+  const red = assignLanes(keys(redTeam));
+  const src = `/maps/${mapFileSlug(mapName)}.png`;
+
+  const Slot = ({ side, k }) => {
+    const full = k ? BRAWLERS.find(x => x.key === k) : null;
+    const color = side === "blue" ? "#7cc4ff" : "#ff8f8f";
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+        padding: 6, borderRadius: 12, minHeight: 66,
+        border: `1.5px solid ${k ? color + "99" : "rgba(255,255,255,.07)"}`,
+        background: k ? `${color}14` : "rgba(255,255,255,.02)",
+        transition: "border-color .2s, background .2s",
+      }}>
+        {full
+          ? <><BrawlerTile brawler={full} size={38} />
+              <span style={{ fontSize: 9.5, color: "#c9c9d6", fontFamily: MONO, letterSpacing: .3,
+                             maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {full.name}
+              </span></>
+          : <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,.03)" }} />}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ position: "relative", borderRadius: 18, overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.02)" }}>
+      {art && (
+        <img src={src} alt="" onError={() => setArt(false)} aria-hidden="true"
+             style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
+                      objectFit: "cover", opacity: .18, pointerEvents: "none" }} />
+      )}
+      <div style={{ position: "relative", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.4, color: "#ff8f8f" }}>RED · TOP</span>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.2, color: "#6f7180" }}>
+            {mapName || "MAP"} · LANES
+          </span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          {LANES.map(([id]) => <Slot key={`r-${id}`} side="red" k={red[id]} />)}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          {LANES.map(([id, label]) => (
+            <div key={`l-${id}`} style={{ textAlign: "center", fontFamily: MONO, fontSize: 8.5,
+                                          letterSpacing: 1.4, color: "#5a5a68",
+                                          borderTop: "1px dashed rgba(255,255,255,.10)", paddingTop: 5 }}>
+              {label}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          {LANES.map(([id]) => <Slot key={`b-${id}`} side="blue" k={blue[id]} />)}
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.4, color: "#7cc4ff" }}>BLUE · BOTTOM</div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawlerStats }) {
   const [selectedMap, setSelectedMap] = useState(null);
@@ -746,6 +827,12 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   onRemoveBan={(i) => removeBanSlot("red", i)}
                 />
               </div>
+
+              {/* The same draft on the map it is played on. Additive — the
+                  pick/ban columns above are untouched. */}
+              {selectedMap && (blueTeam.some(Boolean) || redTeam.some(Boolean)) && (
+                <LaneBoard mapName={selectedMap.name} blueTeam={blueTeam} redTeam={redTeam} />
+              )}
 
               {/* Draft complete verdict — Intelligence Engine win split */}
               {draftDone && winSplit && (

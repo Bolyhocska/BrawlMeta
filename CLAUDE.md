@@ -110,6 +110,31 @@ The two terms that are actually *validated* are now the two largest. Before, 82%
 
 **A small use-rate nudge is shipped at `useRate.weight` 0.02, and the size is the point.** Eleven weights across three shapes were measured; the term never helped, and only stops *hurting* once it shrinks to a tie-breaker — linear 0.10 costs −0.0017 ± 0.0013 and 0.05 costs −0.0007 ± 0.0007 (both significant), while 0.02 costs −0.0002 ± 0.0003, indistinguishable from zero. It is worth about +0.9 points to a 45%-presence staple against +0.1 to a 5% niche pick. **Do not raise it past 0.03 without re-measuring** — harm grows monotonically. The reason it can add so little: presence already enters the score in the statistically correct way, as *confidence* rather than a bonus, because `mapWRk` shrinks toward the global rate by sample and on a fixed map games = presence × matches (on a 70k-match map a 40%-presence brawler keeps 98.6% of its map rate, a 3% one keeps 84%).
 
+## Settled: no presence or map-sample floor on suggestions
+
+**Tested four ways on 2026-08-30, every one of them lost. Do not re-litigate.**
+
+| gate | held-out cost |
+|---|---|
+| presence floor 1% | **−0.0091** * |
+| presence floor 3% | −0.0102 * |
+| presence floor 15% | **−0.0230** * — 7× every gain shipped that week |
+| min 50 map games | −0.0077 * |
+| min 200 map games | −0.0101 * |
+| graded 400 games early → 0 late | −0.0042 * |
+| graded 200 → 0 | −0.0040 * |
+| best of a 6×6 graded grid | −0.0028 (n.s.) |
+
+**Rare picks are not bad picks.** The picks real Masters players actually made below 1% presence won **51.6%**; below 50 map games, **51.2%**; below 15% presence, **50.2%**. A 15% floor would ban **44.5% of all real picks** and leave 12 eligible brawlers per map.
+
+**A floor also cannot tell the two cases apart.** On Dry Season it deletes Ash (0.56% presence, 396 games, **58.1%** on the map) alongside Amber (0.20%, 144 games, **47.2%**), and backfills with Piper 49.9% / Pierce 49.0% / Max 50.6% — strictly worse advice.
+
+**The "punishable early, safe last" question is UNTESTABLE here — do not claim otherwise.** I first reported it as measured-and-backwards; that was wrong and the error is instructive. The strata were built by *withholding* enemy picks from the scorer (`shown: foe.slice(0, nRev)`) while the outcome came from the same completed game, so they measure how much information the model was given, **not when the pick was made**. `ranked_matches` stores no draft order, so early-vs-late cannot be separated at all. Every number in the table above is still valid — those are real picks with real outcomes — but none of them speaks to pick timing.
+
+The mechanism itself is sound and standard: a niche pick revealed early can be answered, and the same pick made last cannot. **The engine already implements exactly that**, via `counterability × enemyPicksRemaining / 3` — the risk of being answered fades as the enemy runs out of picks. `thinMapPenaltyPts` extends the same shape to map-sample thinness. Both are **priors, not fits**: they cannot be validated without draft order, so keep them modest and never let one outgrow a measured term.
+
+A **"Thin map read" chip** below `headlineMinMapPicks` (200) states the thinness as well as pricing it — same principle as the counter matrix, make the claim true rather than suppress the evidence.
+
 ## Engine design rule: priors vs evidence
 
 Every hand-authored number in `draftEngine.js` (map geometry, SpenLC `mapRules`, `brawlerBias`, `brawlerCounters`, `firstPickCaution`) is a **prior standing in for evidence we don't have yet**, and runs through `dampPrior()` — it shrinks halfway to 1.0 once the brawler has a real sample on that map (`brawlerBias` damps on the *recent* sample instead, since it encodes balance changes the 14-day recency window is already built to detect). Thin data → theory leads; thick data → statistics lead. **When adding a new pro/theory rule, damp it the same way** — an undamped multiplier will out-shout genuine win-rate edges (on the ~50-point score scale, 0.70x = −15 pts, where a 5% WR edge is only 2.5 pts). Map-keyed config tables resolve case- and punctuation-insensitively via `lookupByMap`, so `Belles Rock` / `Belle's Rock` both hit.
