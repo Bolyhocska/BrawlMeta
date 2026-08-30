@@ -520,13 +520,23 @@
   },
   "constraints": {
     "throwerPenalty": {
-      "_comment": "Bobby: 'never pick a thrower unless it's last pick or you have protection for it'. Flat penalty on global pick slots 1-4, waived if the team already fields a protection class, halved in passive-tempo modes where throwers are structurally strong.",
+      "_comment": "Bobby: 'never pick a thrower unless it's last pick or you have protection for it'. Penalty in win-rate points, waived outright if the team already fields a protection class, halved in passive-tempo modes where throwers are structurally strong, and scaled by slot via slotMultipliers.",
       "appliesToPickSlots": [
         1,
         2,
         3,
-        4
+        4,
+        5
       ],
+      "slotMultipliers": {
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 0.35,
+        "6": 0
+      },
+      "_slotNote": "The penalty used to LIFT ENTIRELY at slot 5 (the slot list was 1-4), and that was too sharp a cliff: an unprotected thrower went from -14 to 0 in one pick, which is a large part of why throwers cluster at the top of pick-5 lists. Owner decision 2026-08-30: at pick 5 the penalty is REDUCED, not lifted. 0.35 is not a fit - it is the residual counter-draft share, because the rule bundles two risks that resolve at different times. PROTECTION is fully resolved by slot 5: in the 1-2-2-1 order blue holds slots 1/4/5, so slot 5 is blue's last pick and no frontline is coming that the waivedWithProtection check has not already seen. COUNTER-DRAFT is not: the enemy still holds slot 6, which is enemyPicksRemaining/3 = 1/3 of the risk the rule prices at slot 1 - the same shape counterability and the thin-map term already use. Slot 6 stays at 0 because there both risks are genuinely over, which is Bobby's pick-6 out and what throwerLastPick's bonus is for. At -14 x 0.35 = -4.9 the slot-5 term sits alongside counter-stack (+4) and anti-tank (+4) rather than dwarfing the measured head-to-head and duo terms, which is what the scale contract requires. NOTE this deliberately breaks the slot list's long-standing tie to mapPriority.presenceFloor - the floor still lifts entirely at 5 and 6.",
       "penalty": -14,
       "waivedWithProtection": true,
       "protectionClasses": [

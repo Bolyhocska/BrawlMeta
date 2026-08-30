@@ -964,14 +964,27 @@ export function getDraftAdvice({
       chips.unshift({ label: `Counters ${stackedCounter.count}× ${classLabel(stackedCounter.cls)}`, tone: "good" });
     }
 
-    // Thrower rule: never early without protection (Bobby), softer on passive maps
-    if (cls === "THROWER" && cons.throwerPenalty.appliesToPickSlots.includes(pickSlot)) {
-      const protectedComp = cons.throwerPenalty.waivedWithProtection &&
-        myClasses.some(c => cons.throwerPenalty.protectionClasses.includes(c));
+    // Thrower rule: never early without protection (Bobby), softer on passive
+    // maps, and REDUCED rather than lifted at slot 5 (owner, 2026-08-30).
+    // The rule bundles two risks that stop applying at different times. The
+    // PROTECTION half is fully resolved by slot 5 — in the 1-2-2-1 order blue
+    // holds slots 1/4/5, so slot 5 is blue's last pick and no frontline is
+    // coming that waivedWithProtection has not already seen. The COUNTER-DRAFT
+    // half is not: the enemy still holds slot 6. So slot 5 keeps the residual
+    // enemyPicksRemaining/3 share (slotMultipliers 0.35) instead of dropping
+    // straight to zero, which was a -14 cliff in one pick and a large part of
+    // why throwers clustered at the top of pick-5 lists. Slot 6 stays at 0:
+    // both risks are genuinely over there, which is what throwerLastPick pays.
+    const tp = cons.throwerPenalty;
+    const tpSlotMult = tp.slotMultipliers?.[String(pickSlot)] ??
+      (tp.appliesToPickSlots.includes(pickSlot) ? 1 : 0);
+    if (cls === "THROWER" && tpSlotMult > 0) {
+      const protectedComp = tp.waivedWithProtection &&
+        myClasses.some(c => tp.protectionClasses.includes(c));
       if (!protectedComp) {
-        const mult = modeCfg.tempo === "passive" ? cons.throwerPenalty.passiveTempoMultiplier : 1;
-        score += cons.throwerPenalty.penalty * mult;
-        chips.push({ label: "Thrower too early", tone: "bad" });
+        const mult = modeCfg.tempo === "passive" ? tp.passiveTempoMultiplier : 1;
+        score += tp.penalty * mult * tpSlotMult;
+        chips.push({ label: tpSlotMult < 1 ? "Thrower unprotected" : "Thrower too early", tone: "bad" });
       } else {
         why.push("thrower unlocked — your frontline protects it");
       }
