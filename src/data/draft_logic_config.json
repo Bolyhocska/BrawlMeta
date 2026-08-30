@@ -527,7 +527,7 @@
         3,
         4
       ],
-      "penalty": -50,
+      "penalty": -14,
       "waivedWithProtection": true,
       "protectionClasses": [
         "TANK",
@@ -543,7 +543,7 @@
     },
     "antiTankFirstPick": {
       "_comment": "Bobby: 'anti-tank is the foundation of every draft'; best anti-tank is almost always the correct first pick in objective (active) modes.",
-      "bonus": 12,
+      "bonus": 4,
       "appliesToPickSlots": [
         1,
         2
@@ -552,7 +552,7 @@
     },
     "spaceMakerLateBonus": {
       "_comment": "Space makers are the skill separator — strongest in slots 4-6 when the enemy comp is revealed and can't answer the dive.",
-      "bonus": 8,
+      "bonus": 3,
       "appliesToPickSlots": [
         4,
         5,
@@ -564,7 +564,7 @@
       "_comment": "Bobby: 'if the enemy commits to a class, the hard counter to it is almost a free pick'. When the enemy fields 2+ of one class, a brawler whose class hard-counters it (counterMatrix >= hardCounterThreshold) gets a flat bonus PER stacked enemy - applied AFTER mode weighting so a favorable enemy mode can't bury the counter (e.g. two snipers on a Bounty map still make Mortis/Kit a lock). Threshold 1.5 -> 1.0 on 2026-08-29: it is read against counterMatrix, which now carries MEASURED win-rate points (RMS 0.88, max 2.15) instead of authored -2..+2 units (RMS 1.21). At 1.5 only two of the 42 class pairings would ever have qualified and the rule would have gone effectively dead. 1.0 is 'a full win-rate point of class edge' and keeps roughly the set of pairings the rule was written to fire on.",
       "minStack": 2,
       "hardCounterThreshold": 1.0,
-      "bonusPerEnemy": 9
+      "bonusPerEnemy": 4
     }
   },
   "abilityRules": {
@@ -1727,22 +1727,12 @@
     }
   },
   "firstPickCaution": {
-    "_comment": "Brawlers strong on the map but exploitable as an early reveal — a named pro caveat, distinct from the data-driven blind-pick safety in draftMeta.js. waivedIfBanned lifts the penalty once the specific answer is off the board.",
-    "BROCK": {
-      "multiplier": 0.85,
-      "appliesToPickSlots": [
-        1,
-        2
-      ],
-      "waivedIfBanned": [
-        "MAX"
-      ],
-      "label": "Risky first pick"
-    }
+    "_comment": "Named pro caveat for a brawler that is strong on a map but exploitable as an early reveal. EMPTY as of 2026-08-30, deliberately. It held one entry - BROCK, x0.85 on slots 1-2, waived if MAX was banned - and every part of it failed a check. The waiver encoded a counter that does not exist: Max vs Brock measures 49.81% over 37,243 games, one of the largest samples in vs_brawler, so banning Max was worth nothing to Brock while the rule handed him about +5 points. Brock's real answers, weighted by how likely the enemy is to pick them, are Stu, Meg and Ash. The penalty itself duplicated the counterability term, which now covers 'exploitable as an early reveal' for every brawler and scales with enemyPicksRemaining. And its multiplicative form broke the scale contract in `scoring`. If a genuine named caveat comes up, add it as penaltyPts (win-rate points, damped by map data) - never as a multiplier, and never with a hand-listed ban waiver, because banRelief answers that from measured pairings."
   },
   "winProbability": {
     "_comment": "Draft-complete win split. Logistic squash of the comp-score differential; capped 85/15 because no draft is ever truly 90-10 — execution still exists.",
-    "logisticScale": 33.5,
+    "logisticScale": 35.0,
+    "_logisticScaleNote": "33.5 -> 35.0 on 2026-08-30, a PROPORTIONAL adjustment rather than a fit. The verdict's base changed that day - blendMapGlobal now shrinks a thin map reading toward the brawler's MODE rate instead of their global rate - which widened the comp-score differential by 4.45%% (sd 8.690 -> 9.076 over 720 random full drafts). logisticScale encodes how wide that differential runs, so leaving it at 33.5 would have made every verdict correspondingly overconfident. Scaling it by the same 1.0445 preserves the calibration the last real fit established. The win split moved by >=1pp in 415 of 720 drafts, largest change 5pp. THIS IS INTERIM: the weekly calibration job (Mondays 04:40 UTC, scripts/calibrate.mjs) refits the scale against real outcomes and should be treated as authoritative over this number. The job already guards the risk - it exits non-zero if the shipped scale drifts more than 50%% from the fitted one or if a calibration bucket is off by more than 5pp, and a 4.45%% move is far inside both.",
     "capPct": 85,
     "counterWeight": 0,
     "_counterWeightComment": "Per-point weight of the class counter matrix in each side's comp score. MUST stay at half the intuitive value: counterMatrix is exactly antisymmetric (M[a][b] === -M[b][a]), so red's counter total is always the negation of blue's, and the differential blue-minus-red therefore counts every cross-team pairing TWICE. At the old 1.2 this let class theory swing the differential by up to ~26 points while the statistical term (a mean of true win rates) spans barely 6 — i.e. the matrix outvoted real win-rate evidence roughly 4:1, and could hand a 67% verdict to the comp with the WORSE measured win rates. 0.6 counts each pairing once, which puts theory and evidence on comparable footing and keeps the split consistent with the suggestion ranking.",
@@ -1766,7 +1756,17 @@
   "mapPriority": {
     "_comment": "How hard the engine leans on THIS MAP's data versus the brawler's overall patch numbers. The old behaviour was a fixed 65/35 map/overall blend that applied only when the map sample cleared minMapPicks — and a brawler with NO map data silently fell through to a pure overall score, so 'unproven here' scored identically to 'proven here'. blendPriorGames replaces that with sample weighting: map weight = mapPicks / (mapPicks + blendPriorGames), so weight rises smoothly with evidence and is 0 when there is none.",
     "blendPriorGames": 400,
+    "modeFallbackMinPicks": 300,
     "firstPick": {
+      "orderByWinRate": {
+        "_comment": "First pick only. Takes the poolSize most-PLAYED brawlers on this map and orders exactly those by win rate \u2014 at 7 the list is literally 'the seven most-picked here, best win rate first', which is what the owner asked for after seeing it as a column (Gem Fort: Stu 52.8, Rico 51.7, Mortis 51.6, Surge 51.4, Griff 50.8, Max 50.1, Meg 49.2). Nothing outside that seven can appear however well it performs: on Gem Fort, Bolt is 59.6% over 5,852 games but only the 27th most-picked, so he is absent at poolSize 7 and 20 and leads the list at 30. That is the single knob for the trade-off. It is a PRESENTATION rule for slot 1, not an accuracy improvement, and the difference is deliberate: a use-rate term inside the SCORE was tested in three shapes (linear, log, sqrt) at six weights each and every combination lost on 23,772 held-out decisions (-0.0007 to -0.0021, all significant, monotone in weight), as did presence used as a floor (-0.0012). Popularity measures what players pick, not what wins \u2014 across six maps only 27 of 42 most-picked brawlers were above 50%, and the most-picked brawler measured (Colt, 49.1% of games on Hot Potato) sits at exactly 49.1%. So presence chooses the POOL and win rate does the ordering; presence adds no points anywhere in the engine. Ordering uses the same blended rate the card displays, so the list and the card can never disagree.",
+        "enabled": true,
+        "poolSize": 7,
+        "exceptionalWinRate": 57,
+        "exceptionalMinPresencePct": 5,
+        "_exceptionalNote": "A brawler outside the most-picked pool still gets in if it is winning this hard on a real sample. Nori is 62.1% over 8,671 games on Hot Potato and only the 17th most-picked there - 'nobody has caught on yet' is not a reason to hide her. Gated on the SHRUNK win rate (trueWR) plus a presence floor rather than a raw threshold, because a flat cut is brittle in both directions: it would admit a 200-game fluke at 62% and drop a 59.9% staple. Shrinkage barely touches a four-figure sample (Nori 62.1 raw vs 62.0 shrunk) and pulls a thin one hard toward even, so the guard costs nothing where the evidence is real. sampleScope must be 'map' - an overall rate standing in for a missing map read must never trigger this. Calibrated on six mode-representative maps: at 57 it admits four brawlers in total (Nori 62.1, Bolt 59.6 and 58.7 on two maps, Bibi 57.7); at 60 it would admit only Nori; at 55 it admits nine and starts to drown the most-picked character of the list.",
+        "minPresencePct": 3
+      },
       "_comment": "First pick is a map question before it is a matchup question: with no enemy revealed, the only real evidence is whether a brawler wins AND is actually played on this map. presencePct = share of this map's matches the brawler appears in (sums to ~600% across the pool, so an even split over ~105 brawlers is ~5.7%).",
       "staplePresencePct": 8,
       "stapleBonus": 1.06,
@@ -1784,7 +1784,7 @@
       "minPresencePct": 1.5,
       "minCandidates": 12
     },
-    "_blendPriorNote": "LEFT AT 400 on purpose. A validation split mildly preferred 150-200, but the held-out difference across 60/100/150/200/300/400 is under 0.0008 AUC with a paired margin that covers zero at every value - there is no evidence here to act on. It stays at 400 because this key is NOT recommender-only: computeWinSplit's strength() calls blendMapGlobal too, so moving it perturbs the verdict differential and would invalidate the fitted logisticScale (33.5), which is measured and CI-gated by the weekly calibration job. Taking a zero-evidence change at the price of a scale refit is a bad trade. Change it only together with a refit. Note the blend target is the brawler's own GLOBAL rate, which is right - shrinking toward 50% instead cost 0.0039 AUC in isolation."
+    "_blendPriorNote": "LEFT AT 400 on purpose. Validation mildly preferred 150-200, but the held-out difference across 60/100/150/200/300/400 is under 0.0008 AUC with a paired margin covering zero at every value. It also is NOT recommender-only: computeWinSplit's strength() calls blendMapGlobal too, so moving it perturbs the verdict differential and would invalidate the fitted logisticScale (33.5). WHAT THE BLEND SHRINKS TOWARD changed on 2026-08-30: the fallback is now the brawler's rate in this MODE (see modeFallbackMinPicks) and only their global rate when the mode sample is thin. A record in gem grab is a better prior for a gem grab map than one pooled across heist and bounty; Bolt is 59.6% on Gem Fort against 55.1% global, so shrinking toward global dragged a well-measured map reading toward modes he is barely played in. Measured +0.0009 +/-0.0008 AUC on 23,772 held-out decisions - small, only just clear of its bar, but the right sign and a fair like-for-like comparison. CORRECTION: an earlier version of this note claimed shrinking toward 50%% instead 'cost 0.0039 AUC'. That does not reproduce - on the same harness shrinking toward 50%% SCORES BETTER (+0.0012), and removing the win-rate base entirely scores better still (+0.0023), which is nonsense as advice. That harness scores one pick against its own team's result, so terms differentiating the two teams are priced correctly while a brawler's standalone strength largely cancels out of the outcome. It can compare variants of the base against each other; it cannot price the base against nothing. Do not use it to argue for weakening the win-rate term."
   },
   "banStrategy": {
     "_comment": "Who you ban depends entirely on whether you pick FIRST or LAST, and the old list ignored that — it just showed the six strongest brawlers on the map to both teams. That is actively wrong for the first-pick team: banning the best brawler in the game when you hold first pick throws the ban away, because you could simply have taken him. First pick => you get the best opener, so what you cannot control is their LAST pick answering your revealed comp. Ban the counter-pick threats. Last pick => they will open on the best brawler and you will never see him. Ban the meta openers to deny them. firstPickSafety (draftMeta) is the discriminator: high = safe to reveal early, so that's who gets first-picked; low = wins come from favourable matchups, so that's a last-pick counter threat.",
@@ -1827,5 +1827,19 @@
   "mapClassFit": {
     "_comment": "Weight on MEASURED per-map class fit, read from the map_class_weights table (rebuilt daily by refresh_map_class_weights from meta_weights.py, so it tracks the meta instead of rotting). The value is already in WIN-RATE POINTS - how much a class over/under-performs on that map relative to its own brawlers' global rates, brawler strength removed, then shrunk toward 0 by sample - so weight 1.0 means 'use it at face value' and is the honest default. It is ADDITIVE, replacing the multiplicative modes[].classWeights, and that change is the point: multiplying a 50-90 point score meant CONTROL x1.15 in gemGrab was worth about +11 points, where the effect it described measures at -0.31 on Double Swoosh. MEASURED 2026-08-29 over 23,772 held-out pick decisions: the authored weights cost -0.0041 AUC at shipped strength and -0.0083 at 1.5x - a clean monotone slide, more damage than every improvement made this week combined - while this measured term is NEUTRAL (-0.0000 +/-0.0013). So the gain is from removing a harmful term, not from adding a predictive one. It is largely (not entirely) subsumed by the brawler's own per-map win rate, which the score already carries: turning that off roughly doubles what class fit is worth. Per-map beat per-mode on validation (0.5505 vs 0.5501) but neither cleared its error bar on test. Kept because it is honest, self-refreshing, and drives map-fit explanation.",
     "weight": 1.0
+  },
+  "scoring": {
+    "_comment": "THE SCALE CONTRACT. Every scoring term in getDraftAdvice is expressed in WIN-RATE POINTS on a base that is itself a win rate (blendMapGlobal, ~45-60). A term worth N here means 'about N percentage points of win rate'. This exists because the engine used to mix three incompatible scales and the mixture, not any single value, was the bug: multipliers applied to a 50-90 point score (CONTROL x1.15 = about +11 points, blindPickFactor 0.35 = about -40) and flat constants (throwerPenalty -50) both dwarfed every MEASURED term, which run about +/-5-9 points. An influence audit over 60 real draft states found the hand-authored thrower penalty was 30% of all adjustment influence and 62% on early picks, while head-to-head - the term measured as the single largest earner - was 1% there. RULE FOR NEW TERMS: additive, in win-rate points, no multiplier on the running score, and no constant larger than the largest measured term. If a rule needs to be louder than head-to-head, it needs evidence first.",
+    "counterabilityPts": 14,
+    "_counterabilityNote": "Maximum points deducted for a fully counterable brawler with all three enemy picks still to come. Replaces `score *= blindPickFactor`, a 0.35-1.0 multiplier that reached about -40 points on an Edgar. Scales with enemyPicksRemaining/3 rather than firing only on an empty board: the risk that the enemy answers your pick lasts as long as they hold picks, which the old binary form ignored the instant they revealed one brawler. The SAFETY values it multiplies stay hand-authored in draftMeta.js - see the note on the counterability block in draftEngine.js for the two failed attempts to derive them and why the data cannot support it."
+  },
+  "banRelief": {
+    "_comment": "Credit for bans that removed an answer to the candidate. Gated on enemyPicksRemaining, since a ban is only worth something while the enemy could still have used it, and weighted by how likely they were to pick it (map presence): banning Ash removes a bigger per-game threat to Brock, +8.78 pts, than banning Stu at +4.66, but Stu is picked three times as often so the ban removes more real risk. DEDUCTIVE, NOT FITTED - ranked_matches carries no ban data, so there is no hold-out for this and it is entered at its arithmetic value (weight 1.0) rather than tuned. It replaces firstPickCaution.waivedIfBanned, which hard-coded 'Brock is safe once Max is banned'; Max vs Brock measures 49.81% over 37,243 games, so that ban was worth nothing to Brock. The real answers to Brock are Stu, Meg and Ash.",
+    "weight": 1.0,
+    "chipEdgePts": 2.5
+  },
+  "useRate": {
+    "_comment": "Small additive nudge toward brawlers this map actually plays, in win-rate points, applied as weight x presence%%. Owner-requested 2026-08-30 on the reasoning that there is a reason a brawler is highly picked. THE SIZE IS THE WHOLE POINT. A use-rate term was measured across three shapes (linear, log, sqrt) and eleven weights on 23,772 held-out decisions and it never once helped; it only stops HURTING when it shrinks to a tie-breaker. Linear 0.10 costs -0.0017 +/-0.0013, 0.05 costs -0.0007 +/-0.0007 (both significant), 0.03 costs -0.0004 +/-0.0004, and 0.02 costs -0.0002 +/-0.0003 - indistinguishable from zero. 0.02 is therefore the largest value that is provably free: about +0.9 points for a 45%%-presence staple against +0.1 for a 5%% niche pick, on a ~50-90 scale. DO NOT RAISE IT past 0.03 without re-measuring; the harm grows monotonically with weight. Why so little: presence already enters the score in the statistically correct way, as CONFIDENCE rather than as a bonus - mapWRk shrinks toward the brawler's global rate by sample size, and on a fixed map games = presence x matches, so on a 70k-match map a 40%%-presence brawler keeps 98.6%% of its map rate while a 3%% one keeps 84%%. The information in popularity is mostly already spent. Popularity is also not a winning signal on its own: across six mode-representative maps only 27 of 42 most-picked brawlers were above 50%%, and the most-picked brawler measured (Colt, in 49.1%% of games on Hot Potato) sits at exactly 49.1%%.",
+    "weight": 0.02
   }
 }

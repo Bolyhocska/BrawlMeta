@@ -27,7 +27,7 @@
 
 import CONFIG from "./draft_logic_config.json";
 import BRAWLER_META from "./brawlerMeta.json";
-import { blindPickFactor, blindPickLabel, getDraftProfile } from "./draftMeta";
+import { blindPickLabel, getDraftProfile } from "./draftMeta";
 
 const norm = (k) => (k || "").toUpperCase().trim();
 
@@ -91,12 +91,41 @@ const recencyTWR = (intel) => {
 };
 
 // Map rate weighted against the overall rate by how much map evidence exists.
-const blendMapGlobal = (mapPicks, mapTWR, globalTWR) => {
-  if (mapTWR == null) return globalTWR ?? 50;
-  if (globalTWR == null) return mapTWR;
+// The map rate is blended toward a FALLBACK rate in proportion to how much map
+// evidence exists. The fallback is the brawler's rate in this MODE where we have
+// one, and their global rate otherwise.
+//
+// Mode beats global because a brawler's record in gem grab is a better prior for
+// a gem grab map than a record pooled across heist and bounty as well. Bolt is
+// the clean example: 59.6% on Gem Fort against a 55.1% global rate, so shrinking
+// toward global drags a well-measured map reading down toward modes he is not
+// played in. Measured at +0.0009 +/- 0.0008 AUC on 23,772 held-out decisions —
+// small and only just clear of its error bar, but the right sign and a fair
+// comparison, since both variants keep the same base and differ only in target.
+//
+// Do NOT read the wider sweep around this as a licence to weaken the blend. On
+// that harness "shrink toward 50%" scores better still, and removing the
+// win-rate base entirely scores best of all (+0.0023) — which is nonsense as
+// advice. The harness scores ONE pick against ITS OWN team's result, so terms
+// that differentiate the two teams (head-to-head, duo) are priced correctly
+// while a brawler's standalone strength largely cancels out of the outcome and
+// looks like noise. It can compare variants of the base; it cannot price the
+// base against nothing.
+const blendMapGlobal = (mapPicks, mapTWR, fallbackTWR) => {
+  if (mapTWR == null) return fallbackTWR ?? 50;
+  if (fallbackTWR == null) return mapTWR;
   const prior = CONFIG.mapPriority?.blendPriorGames ?? 400;
   const w = mapPicks / (mapPicks + prior);
-  return mapTWR * w + globalTWR * (1 - w);
+  return mapTWR * w + fallbackTWR * (1 - w);
+};
+
+// The brawler's rate across every map of THIS mode, shrunk like any other rate.
+// Falls back to the global rate when the mode sample is too thin to add value.
+const modeOrGlobalTWR = (modeStats, key, globalTWR, minPicks) => {
+  const msd = modeStats?.[norm(key)];
+  const picks = Number(msd?.picks) || 0;
+  if (picks < (minPicks ?? 300)) return globalTWR;
+  return trueWR(msd.wins, picks);
 };
 
 // Compact game counts for note copy ("7.3K games"). DraftAssistant has its own
@@ -271,9 +300,10 @@ export function getDraftAdvice({
   mapStats = {},        // { KEY: {picks, wins} } for this map+bracket
   matchupStats = {},    // { KEY: {picks, wins} } empirical vs this exact enemy set
   intelligence = {},    // { KEY: brawler_intelligence row }
-  topN = 3,
+  topN = 7,             // 3 explained in full, the rest as name + score
   minMapPicks = 30,
   mapClassLift = null,  // { CLASS: liftPts } measured class fit for THIS map (map_class_weights)
+  modeStats = null,     // { KEY: {picks, wins} } across every map of this mode
   _noDenial = false,    // internal: guards the one-level enemy-perspective recursion
 }) {
   const modeCfg = CONFIG.modes[mode] || { tempo: "active", classWeights: {}, maxPerClass: {} };
@@ -356,7 +386,7 @@ export function getDraftAdvice({
     const enemyView = getDraftAdvice({
       mode, mapName, pickSlot, myTeam: enemyTeam, enemyTeam: myTeam,
       unavailable, mapStats, matchupStats: {}, intelligence,
-      topN: 1, minMapPicks, mapClassLift, _noDenial: true,
+      topN: 1, minMapPicks, mapClassLift, modeStats, _noDenial: true,
     });
     enemyTopKey = enemyView.suggestions[0]?.key ?? null;
   }
@@ -398,7 +428,8 @@ export function getDraftAdvice({
     // to a pure overall score, so "unproven on this map" ranked identically to
     // "proven on this map". Sample weighting fixes both: the weight rises
     // smoothly with evidence and is 0 when there is none.
-    let score = blendMapGlobal(mapPicks, mapTWR, globalTWR);
+    let score = blendMapGlobal(mapPicks, mapTWR,
+      modeOrGlobalTWR(modeStats, key, globalTWR, CONFIG.mapPriority?.modeFallbackMinPicks));
 
     // Pro tier correction: a named balance change (star-power rework, buff) the
     // patch aggregate hasn't caught up to yet. Damped once the RECENT window
@@ -446,8 +477,89 @@ export function getDraftAdvice({
     let bestEdge = 0, bestCounterName = null;   // strongest class edge we have
     let worstEdge = 0, worstCounterName = null; // worst class matchup we're in
     let stackedCounter = null;           // { cls, count } enemy class we hard-counter and they stacked
+    // ── Use rate ─────────────────────────────────────────────────────────────
+    // A small nudge toward brawlers this map actually plays. Deliberately tiny,
+    // and the size is the whole point: a use-rate term was measured across three
+    // shapes and eleven weights on 23,772 held-out decisions and it NEVER helped.
+    // It only stops hurting once it is small enough to be a tie-breaker —
+    // linear 0.05 costs -0.0007 +/-0.0007 (significant), 0.03 costs
+    // -0.0004 +/-0.0004, and 0.02 costs -0.0002 +/-0.0003, indistinguishable
+    // from zero. So 0.02 buys the "there is a reason these are picked" intuition
+    // at a price the data says is nil: about +0.9 points for a 45%-presence
+    // staple against +0.1 for a 5% niche pick, on a ~50-90 scale.
+    //
+    // Note presence ALREADY enters the score properly, as confidence rather than
+    // as a bonus: mapWRk shrinks toward the brawler's global rate by SAMPLE, and
+    // on a fixed map games = presence x matches. On a 70k-match map a 40%
+    // brawler keeps 98.6% of its map rate and a 3% brawler only 84%. That is the
+    // statistically correct use of popularity, and it is why an additive bonus
+    // adds so little — the information is largely already spent.
+    const useCfg = CONFIG.useRate || {};
+    if ((useCfg.weight ?? 0) > 0 && mapTotalMatches > 0) {
+      score += (useCfg.weight ?? 0) * ((mapPicks / mapTotalMatches) * 100);
+    }
+
+    // ── Counterability ───────────────────────────────────────────────────────
+    // The risk that the enemy simply answers this pick. It is NOT a property of
+    // "no enemy revealed yet" — it lasts as long as they still hold picks, so
+    // it scales with enemyPicksRemaining instead of firing once on an empty
+    // board and then vanishing the moment they reveal one brawler.
+    //
+    // ADDITIVE, in win-rate points. It used to be `score *= blindPickFactor`,
+    // a 0.35-1.0 multiplier on a 50-90 point score — up to -40 points for an
+    // Edgar, an order of magnitude larger than any measured term in the engine.
+    //
+    // The SAFETY VALUES behind it stay hand-authored on purpose. Two independent
+    // attempts to derive them failed against the owner's own ground truth
+    // (matchup spread put Rico 2nd-safest of 95; meta-weighted counter risk put
+    // Rico 2nd-safest of 92 and Mortis safer than Brock — both backwards). The
+    // cause is structural: vs_brawler only covers drafts that actually happened,
+    // and nobody first-picks Mortis, so the punishment he would take is never
+    // observed. Without draft order in ranked_matches this is unrecoverable.
+    const counterability = 1 - (getDraftProfile(key).firstPickSafety ?? 0.65);
+    if (enemyPicksRemaining > 0) {
+      score -= (CONFIG.scoring?.counterabilityPts ?? 14) * counterability
+               * (enemyPicksRemaining / 3);
+    }
+
+    // ── Ban relief ───────────────────────────────────────────────────────────
+    // Bans that removed an answer to THIS candidate. Same machinery as
+    // counterability, opposite sign: one asks what threats remain available,
+    // the other what threats were taken off the board. Gated on
+    // enemyPicksRemaining, because a ban is only worth something while the
+    // enemy could still have used it.
+    //
+    // Weighted by how likely the enemy was to pick it: banning Ash removes a
+    // bigger per-game threat to Brock (8.78 pts) than banning Stu (4.66), but
+    // Stu is picked three times as often, so the ban removes more real risk.
+    //
+    // Deductive rather than fitted — ranked_matches has no ban data, so there is
+    // no hold-out for this. It is entered at its arithmetic value for that
+    // reason. It replaces firstPickCaution.waivedIfBanned, which hard-coded
+    // "Brock is safe if Max is banned" — Max vs Brock measures 49.81% over
+    // 37,243 games, i.e. no counter at all.
+    if (enemyPicksRemaining > 0 && bannedSet.size && mapTotalMatches > 0) {
+      const brCfg = CONFIG.banRelief || {};
+      let relief = 0; const freedFrom = [];
+      for (const bk of bannedSet) {
+        const threat = -pairEdgeVs(key, bk, intelligence).edge;
+        if (threat <= 0) continue;
+        const bPicks = Number(mapStats[bk]?.picks) || 0;
+        const pPick = Math.min(1, bPicks / mapTotalMatches);
+        if (!pPick) continue;
+        relief += threat * pPick;
+        if (threat >= (brCfg.chipEdgePts ?? 2.5)) freedFrom.push(fmtName(bk));
+      }
+      if (relief > 0) {
+        score += relief * (brCfg.weight ?? 1) * (enemyPicksRemaining / 3);
+        if (freedFrom.length) {
+          chips.push({ label: `${freedFrom[0]} banned`, tone: "good" });
+          why.push(`their answer is gone — ${freedFrom.join(" / ")} banned with ${enemyPicksRemaining} pick${enemyPicksRemaining > 1 ? "s" : ""} left`);
+        }
+      }
+    }
+
     if (enemyTeam.length === 0) {
-      score *= blindPickFactor(key);
       const bl = blindPickLabel(key);
       if (bl) chips.push(bl);
       if (bl?.tone === "bad") why.push("risky reveal — wins come from favorable matchups");
@@ -804,13 +916,16 @@ export function getDraftAdvice({
       }
     }
 
-    // Named first-pick caution: strong on the map but exploitable as an early
-    // reveal, unless the specific answer is already banned off the board.
+    // Named first-pick caution: a pro caveat for a brawler that is strong on the
+    // map but exploitable as an early reveal. The TABLE IS EMPTY — see the config
+    // note. Kept as a mechanism, but now expressed in win-rate points like every
+    // other term rather than as a multiplier on the running score, and without
+    // the old waivedIfBanned escape hatch: ban relief above answers that question
+    // from measured pairings instead of a hand-listed name.
     const fpc = CONFIG.firstPickCaution?.[key];
-    if (fpc && fpc.appliesToPickSlots.includes(pickSlot) &&
-        !(fpc.waivedIfBanned || []).some(b => bannedSet.has(norm(b)))) {
-      score *= dampPrior(fpc.multiplier, mapTWR != null, mapDamp);
-      chips.push({ label: fpc.label, tone: "bad" });
+    if (fpc && fpc.appliesToPickSlots?.includes(pickSlot)) {
+      score -= dampPrior(fpc.penaltyPts ?? 0, mapTWR != null, mapDamp);
+      if (fpc.label) chips.push({ label: fpc.label, tone: "bad" });
     }
 
     // Interception: this is the enemy's dream next pick and it works for us too.
@@ -1078,7 +1193,7 @@ export function getDraftAdvice({
       const split = computeWinSplit({
         blueTeam: [...myTeam, c.key],   // symmetric — "blue" is just the picker
         redTeam: enemyTeam,
-        mode, mapStats, intelligence, minMapPicks,
+        mode, mapStats, intelligence, minMapPicks, modeStats,
       });
       c.projectedWin = split.blue;
       c._edge = split.rawEdge;
@@ -1088,6 +1203,60 @@ export function getDraftAdvice({
     candidates = ranked;
   } else {
     candidates.sort((a, b) => b.score - a.score);
+  }
+
+  // ── First pick: rank the MOST-PLAYED brawlers on this map by win rate ─────
+  // With nothing revealed there is no matchup to solve, so the honest question
+  // is "of the brawlers that actually get played here, which ones win". Take
+  // the top `poolSize` by presence on this map, then order that pool by the
+  // same blended win rate the score is built on.
+  //
+  // This is a PRESENTATION choice for slot 1, not an accuracy claim, and the
+  // distinction matters: a use-rate term added to the SCORE was tested every
+  // way and lost every time — linear, log and sqrt shapes at six weights each
+  // all came out negative on 23,772 held-out decisions (-0.0007 to -0.0021,
+  // every one significant), and so did presence used as a floor (-0.0012).
+  // Popularity tracks what players pick, not what wins: on these maps only 27
+  // of 42 most-picked brawlers are above 50%. So presence selects the POOL
+  // here and win rate does the ranking; presence never adds points anywhere.
+  const fpo = CONFIG.mapPriority?.firstPick?.orderByWinRate;
+  if (fpo?.enabled && pickSlot === 1 && enemyTeam.length === 0 && myTeam.length === 0) {
+    const presenceOf = (c) => {
+      const ms = mapStats[norm(c.key)];
+      return mapTotalMatches > 0 ? (Number(ms?.picks) || 0) / mapTotalMatches : 0;
+    };
+    // poolSize is the WHOLE rule: take exactly this many most-played brawlers
+    // and re-order them by win rate. At 7 the list IS "the seven most-picked on
+    // this map, best win rate first" — nothing outside that seven can appear,
+    // however well it performs, because a brawler nobody picks here is not a
+    // first pick. Raising it lets a rarer but stronger brawler in: on Gem Fort
+    // Bolt (59.6%, 5,852 games) is the 27th most-picked, so he is absent at 7
+    // or 20 and leads the list at 30.
+    const pool = [...candidates]
+      .sort((a, b) => presenceOf(b) - presenceOf(a))
+      .slice(0, fpo.poolSize ?? 7)
+      .filter(c => presenceOf(c) >= (fpo.minPresencePct ?? 3) / 100);
+    // Exceptional performers are admitted even when they are not among the most
+    // picked, because "nobody has caught on yet" is not a reason to hide a
+    // brawler winning 62% of 8,671 games. Gated on the SHRUNK rate and a
+    // presence floor, not a raw threshold: a flat cut lets a 200-game fluke in
+    // and drops a 59.9% staple, while the shrunk rate barely moves a
+    // four-figure sample and pulls a thin one hard toward even.
+    const exWR = fpo.exceptionalWinRate, exPres = fpo.exceptionalMinPresencePct ?? 5;
+    if (exWR) {
+      const inPool = new Set(pool.map(c => c.key));
+      for (const c of candidates) {
+        if (inPool.has(c.key)) continue;
+        if (presenceOf(c) * 100 < exPres) continue;
+        if (c.sampleScope !== "map") continue;          // must be a real map read
+        if ((c.displayWinRate ?? 0) >= exWR) pool.push(c);
+      }
+    }
+    if (pool.length >= 2) {
+      pool.sort((a, b) => (b.displayWinRate ?? b.winRate ?? 0) - (a.displayWinRate ?? a.winRate ?? 0));
+      const seen = new Set(pool.map(c => c.key));
+      candidates = [...pool, ...candidates.filter(c => !seen.has(c.key))];
+    }
   }
   return {
     suggestions: candidates.slice(0, topN),
@@ -1209,7 +1378,7 @@ export function getBanAdvice({
   };
 }
 
-export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30 }) {
+export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intelligence = {}, minMapPicks = 30, modeStats = null }) {
   const strength = (teamKeys, enemyKeys) => {
     const classes = teamKeys.map(draftClassOf);
     const enemyCls = enemyKeys.map(draftClassOf);
@@ -1220,7 +1389,8 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
       const ms = mapStats[norm(k)];
       const mapPicks = Number(ms?.picks) || 0;
       const mapTWR = mapPicks >= minMapPicks ? trueWR(ms.wins, mapPicks) : null;
-      return blendMapGlobal(mapPicks, mapTWR, recencyTWR(intelligence[norm(k)]));
+      return blendMapGlobal(mapPicks, mapTWR, modeOrGlobalTWR(
+        modeStats, k, recencyTWR(intelligence[norm(k)]), CONFIG.mapPriority?.modeFallbackMinPicks));
     });
     let s = rates.reduce((a, v) => a + v, 0) / Math.max(1, rates.length);
 

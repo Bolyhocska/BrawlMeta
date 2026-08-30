@@ -292,6 +292,11 @@ export function LaneMatchups({ lanes, playstyles, brawlerOf, side, onFlip, modeL
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
+// The engine returns seven suggestions; the first three get the full card with
+// chips and matchup note, the remaining four render as name + score so the next
+// options stay visible without four more paragraphs of reasoning.
+const DETAILED_SUGGESTIONS = 3;
+
 export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawlerStats }) {
   const [selectedMap, setSelectedMap] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
@@ -331,6 +336,27 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     if (!selectedMap) return out;
     for (const r of brawlerStats || []) {
       if (r.map !== selectedMap.name) continue;
+      if (r.rank_bracket !== rankBracket) continue;
+      if (r.patch && selectedPatch && r.patch !== selectedPatch) continue;
+      const key = (r.brawler || "").toUpperCase();
+      if (!key) continue;
+      if (!out[key]) out[key] = { picks: 0, wins: 0 };
+      out[key].picks += Number(r.picks) || 0;
+      out[key].wins += Number(r.wins) || 0;
+    }
+    return out;
+  }, [brawlerStats, selectedMap, rankBracket, selectedPatch]);
+
+  // Same aggregation one level up: every map of THIS mode. It is the fallback the
+  // engine shrinks a thin map reading toward, in place of the brawler's global
+  // rate — a record in gem grab is a better prior for a gem grab map than one
+  // pooled across heist and bounty too. Built from the same BrawlerStats rows,
+  // so it costs no extra request.
+  const modeStatsByKey = useMemo(() => {
+    const out = {};
+    if (!selectedMap?.mode) return out;
+    for (const r of brawlerStats || []) {
+      if (r.mode !== selectedMap.mode) continue;
       if (r.rank_bracket !== rankBracket) continue;
       if (r.patch && selectedPatch && r.patch !== selectedPatch) continue;
       const key = (r.brawler || "").toUpperCase();
@@ -426,7 +452,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       mapStats: stats,
       intelligence,
       unavailable: allUsedNames,
-      topN: 6,
+      topN: 7,
     }));
 
     const matchupStats = {};
@@ -464,13 +490,14 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       matchupStats,
       intelligence,
       mapClassLift,
+      modeStats: modeStatsByKey,
     });
 
     setSuggestions(advice);
     setMapNote(note);
     setBanAdvice(proBans);
     setAnimKey(k => k + 1);
-  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, rankBracket, activeSlot, firstPick, intelligence, mapClassLift]);
+  }, [blueTeam, redTeam, blueBans, redBans, selectedMap, mapMatches, mapStatsByKey, modeStatsByKey, rankBracket, activeSlot, firstPick, intelligence, mapClassLift]);
 
   // Live comp strength — average confidence-weighted map win rate of each
   // team's picks, from the real per-map stats (no mock values).
@@ -495,8 +522,9 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
       mode: selectedMap?.mode,
       mapStats: mapStatsByKey,
       intelligence,
+      modeStats: modeStatsByKey,
     });
-  }, [draftDone, blueTeam, redTeam, selectedMap, mapStatsByKey, intelligence]);
+  }, [draftDone, blueTeam, redTeam, selectedMap, mapStatsByKey, modeStatsByKey, intelligence]);
 
   // Lane matchups, from whichever seat the user is looking from. Which side is
   // "yours" is a choice, not something the draft knows — so it is a toggle
@@ -941,28 +969,35 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 {suggestions.map((s, i) => {
                   const full = BRAWLERS.find(x => x.key === s.key);
                   const color = s.winRate >= 55 ? "#8ee6b0" : s.winRate >= 50 ? "#ffce7a" : "#ff8f8f";
+                  // The top three carry the full reasoning; the rest are there so
+                  // you can see the next options at a glance without the panel
+                  // turning into seven paragraphs. Same ranking, less ink.
+                  const compact = i >= DETAILED_SUGGESTIONS;
                   return (
                     <div key={s.key} className="da-sugg" style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 20,
-                      background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)",
+                      display: "flex", alignItems: "center", gap: compact ? 10 : 12,
+                      padding: compact ? "8px 14px" : 14, borderRadius: compact ? 14 : 20,
+                      background: compact ? "rgba(255,255,255,.025)" : "rgba(255,255,255,.04)",
+                      border: `1px solid rgba(255,255,255,${compact ? ".05" : ".08"})`,
+                      marginTop: i === DETAILED_SUGGESTIONS ? 4 : 0,
                       cursor: "pointer", animationDelay: `${i * 0.06}s`,
                     }} onClick={() => full && handleBrawlerSelect(full)}>
-                      {full && <BrawlerTile brawler={full} size={46} />}
+                      {full && <BrawlerTile brawler={full} size={compact ? 30 : 46} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY }}>{s.name}</span>
+                          <span style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: compact ? "#d8d8e4" : "#f4f4fa", fontFamily: DISPLAY }}>{s.name}</span>
                           {s.classLabel && (
                             <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>
                               {s.classLabel.toUpperCase()}
                             </span>
                           )}
-                          {s.ability && (
+                          {!compact && s.ability && (
                             <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>
                               {s.ability.toUpperCase()}
                             </span>
                           )}
                         </div>
-                        {s.reasons?.length > 0 && (
+                        {!compact && s.reasons?.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
                             {s.reasons.map((r, ri) => (
                               <span key={ri} style={{
@@ -974,7 +1009,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             ))}
                           </div>
                         )}
-                        {s.matchupNote && (
+                        {!compact && s.matchupNote && (
                           <div style={{ fontSize: 11.5, color: "#c9c9d6", marginTop: 5, fontFamily: "'Chakra Petch', sans-serif" }}>
                             {s.matchupNote}
                           </div>
@@ -983,7 +1018,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             verdict this pick produces. It's also the number the
                             list is now sorted by, so the ranking and the
                             draft-complete split can't contradict each other. */}
-                        {s.projectedWin != null && (
+                        {!compact && s.projectedWin != null && (
                           <div style={{ fontSize: 11.5, marginTop: 4, fontFamily: MONO, letterSpacing: .3,
                                         color: s.projectedWin >= 50 ? "#8ee6b0" : "#ff8f8f" }}>
                             LOCKS THE DRAFT {s.projectedWin}–{100 - s.projectedWin}
@@ -999,9 +1034,9 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                           explicitly — that state used to silently render as an
                           overall number, which is how a brawler nobody plays
                           here could headline a first pick. */}
-                      <div style={{ textAlign: "right", flexShrink: 0, minWidth: 74 }}>
-                        <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color }}>{s.winRate}%</div>
-                        {s.mapGames > 0 ? (
+                      <div style={{ textAlign: "right", flexShrink: 0, minWidth: compact ? 52 : 74 }}>
+                        <div style={{ fontFamily: MONO, fontSize: compact ? 13 : 16, fontWeight: 700, color }}>{s.winRate}%</div>
+                        {compact ? null : s.mapGames > 0 ? (
                           <>
                             <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: s.sampleScope === "map" ? "#8ee6b0" : "#6f7180" }}>
                               {fmtGames(s.mapGames)} MAP
