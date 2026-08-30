@@ -149,31 +149,57 @@ function PhaseStepper({ phase, bansEnabled, done }) {
   );
 }
 
-// `onBan` wires the two gestures that mean "ban this one" without costing a
-// slot in the layout: right-click on a mouse, long-press on a touch screen.
+// The two gestures that mean "ban this one" without costing a slot in the
+// layout: right-click on a mouse, long-press on a touch screen. Returns props
+// to spread onto ANY clickable surface that represents a brawler — a grid tile,
+// a suggestion card, a ban-advice row — so the gesture works wherever the
+// brawler is shown rather than only in the search grid.
+//
 // The long-press has to suppress the click that touchend delivers afterwards,
 // or a single press would ban AND pick. Android fires contextmenu on long-press
-// too, which is why the timer flag is checked rather than the event type.
-function BrawlerTile({ brawler, size = 44, dim, banned, onClick, onBan, title }) {
-  const [imgErr, setImgErr] = useState(false);
+// too, which is why the timer flag is checked rather than the event type; the
+// returned onClick wrapper is what consumes it.
+function useBanGesture(onBan, onClick) {
   const pressTimer = useRef(null);
   const pressFired = useRef(false);
-  const t = tileStyles({ key: brawler.key, rarity: brawler.rarity, rarityColor: brawler.color, size });
+  useEffect(() => () => clearTimeout(pressTimer.current), []);
   const startPress = () => {
     if (!onBan) return;
     pressFired.current = false;
     pressTimer.current = setTimeout(() => { pressFired.current = true; onBan(); }, 450);
   };
   const endPress = () => clearTimeout(pressTimer.current);
-  useEffect(() => () => clearTimeout(pressTimer.current), []);
+  return {
+    onClick: (e) => { if (pressFired.current) { pressFired.current = false; return; } onClick?.(e); },
+    onContextMenu: onBan ? (e) => { e.preventDefault(); onBan(); } : undefined,
+    onTouchStart: startPress, onTouchEnd: endPress, onTouchMove: endPress, onTouchCancel: endPress,
+  };
+}
+
+const NO_TOUCH_CALLOUT = { WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" };
+
+// Any row that stands for one brawler and should answer the ban gesture. Kept
+// at module scope on purpose: a component declared during another component's
+// render is a new type every render, which remounts its subtree.
+function BanTarget({ onBan, onClick, style, className, title, children }) {
+  const ban = useBanGesture(onBan, onClick);
+  return (
+    <div {...ban} className={className} title={title} style={{ ...style, ...NO_TOUCH_CALLOUT }}>
+      {children}
+    </div>
+  );
+}
+
+function BrawlerTile({ brawler, size = 44, dim, banned, onClick, onBan, title }) {
+  const [imgErr, setImgErr] = useState(false);
+  const t = tileStyles({ key: brawler.key, rarity: brawler.rarity, rarityColor: brawler.color, size });
+  const ban = useBanGesture(onBan, onClick);
   return (
     <div
-      onClick={(e) => { if (pressFired.current) { pressFired.current = false; return; } onClick?.(e); }}
-      onContextMenu={onBan ? (e) => { e.preventDefault(); onBan(); } : undefined}
-      onTouchStart={startPress} onTouchEnd={endPress} onTouchMove={endPress} onTouchCancel={endPress}
+      {...ban}
       title={title}
       style={{ position: "relative", ...t.outer, cursor: onClick ? "pointer" : "default", opacity: dim ? 0.32 : 1,
-               WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}>
+               ...NO_TOUCH_CALLOUT }}>
       <div style={t.inner}>
         {!imgErr && brawler.imageUrl
           ? <img src={brawler.imageUrl} alt={brawler.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
@@ -1132,7 +1158,10 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   // entry sitting there looking still-available.
                   const done = b.used;
                   return (
-                    <div key={b.key} onClick={() => !done && full && handleBrawlerSelect(full)} style={{
+                    <BanTarget key={b.key}
+                      onClick={() => !done && full && handleBrawlerSelect(full)}
+                      onBan={!done && full ? () => banBrawler(full) : undefined}
+                      style={{
                       display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 16,
                       background: done ? "rgba(255,255,255,.02)" : "rgba(255,122,122,.06)",
                       border: `1px solid ${done ? "rgba(255,255,255,.06)" : "rgba(255,122,122,.2)"}`,
@@ -1163,7 +1192,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                           {b.presencePct}% PICKED
                         </div>
                       </span>
-                    </div>
+                    </BanTarget>
                   );
                 })}
                 {banIntel.bans.length === 0 && <p style={{ fontSize: 12, color: "#6f7180" }}>Not enough map data yet for ban intel.</p>}
@@ -1192,14 +1221,17 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   // turning into seven paragraphs. Same ranking, less ink.
                   const compact = i >= DETAILED_SUGGESTIONS;
                   return (
-                    <div key={s.key} className="da-sugg" style={{
+                    <BanTarget key={s.key} className="da-sugg" style={{
                       display: "flex", alignItems: "center", gap: compact ? 10 : 12,
                       padding: compact ? "8px 14px" : 14, borderRadius: compact ? 14 : 20,
                       background: compact ? "rgba(255,255,255,.025)" : "rgba(255,255,255,.04)",
                       border: `1px solid rgba(255,255,255,${compact ? ".05" : ".08"})`,
                       marginTop: i === DETAILED_SUGGESTIONS ? 4 : 0,
                       cursor: "pointer", animationDelay: `${i * 0.06}s`,
-                    }} onClick={() => full && handleBrawlerSelect(full)}>
+                    }}
+                      title={`${s.name} — right-click or long-press to ban`}
+                      onClick={() => { if (!full) return; banMode ? banBrawler(full) : handleBrawlerSelect(full); }}
+                      onBan={full ? () => banBrawler(full) : undefined}>
                       {full && <BrawlerTile brawler={full} size={compact ? 30 : 46} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
@@ -1277,7 +1309,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                           </>
                         )}
                       </div>
-                    </div>
+                    </BanTarget>
                   );
                 })}
                 {suggestions.length === 0 && (
