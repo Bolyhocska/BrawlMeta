@@ -1242,6 +1242,38 @@ export function getDraftAdvice({
     candidates.sort((a, b) => b.score - a.score);
   }
 
+  // ── Presence floor (owner decision, 2026-08-30) ──────────────────────────
+  // Brawlers played in less than minPresencePct of this map's games are pushed
+  // behind everything that clears the bar, on the EARLY picks only. It lifts for
+  // slots 5 and 6, where a niche answer is the point: by then the enemy comp is
+  // essentially set and a specialist counter can no longer be counter-drafted.
+  // Owner's reasoning: "just because they picked Brock there shouldn't be an
+  // automatic Ash pick in bounty" — that risk is a first-half-of-the-draft
+  // problem, which is why the slot list matches throwerPenalty's.
+  //
+  // THIS IS A PREFERENCE, NOT A MEASURED IMPROVEMENT, and the price is known.
+  // Floors were tested four ways over 23,772 held-out decisions and every one
+  // lost: presence 1% -0.0091, presence 15% -0.0230, min-50-games -0.0077,
+  // graded 400->0 -0.0042, all significant. A 5% floor sits around -0.0126.
+  // Rare picks are not bad picks — real picks below 1% presence won 51.6% —
+  // and the floor cannot separate Ash on Dry Season (0.56% presence, 396 games,
+  // 58.1%) from Amber (0.20%, 144 games, 47.2%); it removes both. Kept because
+  // the owner asked for it twice with a clear rationale, after being shown the
+  // cost. Set minPresencePct to 0 to turn it off.
+  //
+  // Never returns a short list: if the floor would leave fewer than topN, the
+  // filtered-out brawlers are appended behind those that cleared it.
+  const pf = CONFIG.mapPriority?.presenceFloor;
+  const floorSlots = pf?.appliesToPickSlots ?? [1, 2, 3, 4];
+  if (pf?.minPresencePct > 0 && mapTotalMatches > 0 && floorSlots.includes(pickSlot)) {
+    const clears = (c) => {
+      const ms2 = mapStats[norm(c.key)];
+      return ((Number(ms2?.picks) || 0) / mapTotalMatches) * 100 >= pf.minPresencePct;
+    };
+    const keep = candidates.filter(clears);
+    if (keep.length) candidates = [...keep, ...candidates.filter(c => !clears(c))];
+  }
+
   // ── First pick: rank the MOST-PLAYED brawlers on this map by win rate ─────
   // With nothing revealed there is no matchup to solve, so the honest question
   // is "of the brawlers that actually get played here, which ones win". Take
