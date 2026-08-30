@@ -317,61 +317,74 @@ function LaneBoard({ mapName, blueTeam, redTeam }) {
   const keys = (t) => t.filter(Boolean).map(b => b.name.toUpperCase());
   const blue = assignLanes(keys(blueTeam));
   const red = assignLanes(keys(redTeam));
-  const src = `/maps/${mapFileSlug(mapName)}.png`;
 
+  // Every map image is 690x1050, so the board takes that exact ratio and the
+  // whole map is visible — cropping it to a wide strip hid the lanes the board
+  // exists to show.
   const Slot = ({ side, k }) => {
     const full = k ? BRAWLERS.find(x => x.key === k) : null;
     const color = side === "blue" ? "#7cc4ff" : "#ff8f8f";
     return (
       <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-        padding: 6, borderRadius: 12, minHeight: 66,
-        border: `1.5px solid ${k ? color + "99" : "rgba(255,255,255,.07)"}`,
-        background: k ? `${color}14` : "rgba(255,255,255,.02)",
-        transition: "border-color .2s, background .2s",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+        padding: "5px 4px", borderRadius: 11, minHeight: 54,
+        border: `1.5px solid ${full ? color : "rgba(255,255,255,.13)"}`,
+        // The map underneath is busy, so slots carry their own dark ground
+        // rather than relying on the art staying quiet behind them.
+        background: full ? `rgba(10,10,16,.82)` : "rgba(10,10,16,.42)",
+        boxShadow: full ? `0 0 0 3px ${color}22` : "none",
+        backdropFilter: "blur(2px)",
       }}>
         {full
-          ? <><BrawlerTile brawler={full} size={38} />
-              <span style={{ fontSize: 9.5, color: "#c9c9d6", fontFamily: MONO, letterSpacing: .3,
-                             maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          ? <><BrawlerTile brawler={full} size={34} />
+              <span style={{ fontSize: 9, color: "#e8e8f0", fontFamily: MONO, letterSpacing: .2,
+                             maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {full.name}
               </span></>
-          : <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,.03)" }} />}
+          : <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,.05)" }} />}
       </div>
     );
   };
+  const row = (side, lanes) => (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+      {LANES.map(([id]) => <Slot key={`${side}-${id}`} side={side} k={lanes[id]} />)}
+    </div>
+  );
 
   return (
-    <div style={{ position: "relative", borderRadius: 18, overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.02)" }}>
-      {art && (
-        <img src={src} alt="" onError={() => setArt(false)} aria-hidden="true"
-             style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
-                      objectFit: "cover", opacity: .18, pointerEvents: "none" }} />
-      )}
-      <div style={{ position: "relative", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.4, color: "#ff8f8f" }}>RED · TOP</span>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.2, color: "#6f7180" }}>
-            {mapName || "MAP"} · LANES
-          </span>
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{
+        position: "relative", width: "100%", maxWidth: 430, aspectRatio: "690 / 1050",
+        borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,.10)",
+        background: "rgba(255,255,255,.02)",
+      }}>
+        {art && (
+          <img src={`/maps/${mapFileSlug(mapName)}.png`} alt="" aria-hidden="true"
+               onError={() => setArt(false)}
+               style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
+                        objectFit: "cover", opacity: .62 }} />
+        )}
+        <div style={{ position: "absolute", inset: 0,
+                      background: "linear-gradient(180deg, rgba(8,8,14,.72) 0%, rgba(8,8,14,.18) 32%, rgba(8,8,14,.18) 68%, rgba(8,8,14,.72) 100%)" }} />
+        <div style={{ position: "relative", height: "100%", padding: "12px 12px 10px",
+                      display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4, color: "#ff8f8f" }}>RED · TOP</span>
+            {row("red", red)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {LANES.map(([id, label]) => (
+              <div key={`lab-${id}`} style={{ textAlign: "center", fontFamily: MONO, fontSize: 8,
+                                              letterSpacing: 1.6, color: "rgba(255,255,255,.42)" }}>
+                {label}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {row("blue", blue)}
+            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4, color: "#7cc4ff" }}>BLUE · BOTTOM</span>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {LANES.map(([id]) => <Slot key={`r-${id}`} side="red" k={red[id]} />)}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {LANES.map(([id, label]) => (
-            <div key={`l-${id}`} style={{ textAlign: "center", fontFamily: MONO, fontSize: 8.5,
-                                          letterSpacing: 1.4, color: "#5a5a68",
-                                          borderTop: "1px dashed rgba(255,255,255,.10)", paddingTop: 5 }}>
-              {label}
-            </div>
-          ))}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {LANES.map(([id]) => <Slot key={`b-${id}`} side="blue" k={blue[id]} />)}
-        </div>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.4, color: "#7cc4ff" }}>BLUE · BOTTOM</div>
       </div>
     </div>
   );
