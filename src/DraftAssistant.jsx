@@ -195,7 +195,7 @@ function BrawlerTile({ brawler, size = 44, dim, banned, onClick, onBan, title })
   const t = tileStyles({ key: brawler.key, rarity: brawler.rarity, rarityColor: brawler.color, size });
   const ban = useBanGesture(onBan, onClick);
   return (
-    <div
+    <div className="bm-tap"
       {...ban}
       title={title}
       style={{ position: "relative", ...t.outer, cursor: onClick ? "pointer" : "default", opacity: dim ? 0.32 : 1,
@@ -1446,7 +1446,7 @@ function TeamColumn({ label, color, team, bans, bansEnabled, phase, activeSlot, 
       {team.map((brawler, idx) => {
         const active = phase === "pick" && activeSlot?.team === side && activeSlot?.idx === idx;
         return (
-          <div key={idx} onClick={() => onSlotClick(brawler)} style={{
+          <div className="bm-tap" key={idx} onClick={() => onSlotClick(brawler)} style={{
             display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", borderRadius: 999,
             minHeight: 62, cursor: brawler ? "pointer" : "default",
             background: active ? `${color}10` : brawler ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.02)",
@@ -1535,8 +1535,8 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
   const abilityCode = abilityOf(brawlerKey);
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(5,4,10,.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 400, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)", borderRadius: 28, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="bm-tap" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(5,4,10,.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div className="bm-tap" onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 400, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)", borderRadius: 28, padding: 26, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           {full && <BrawlerTile brawler={full} size={60} />}
           <div style={{ flex: 1 }}>

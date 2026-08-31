@@ -501,7 +501,7 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
       : { scrollMarginTop: 110 }}>
       {/* A div rather than a <button> so an interactive `right` slot can nest
           legally; keyboard semantics are restored explicitly. */}
-      <div
+      <div className="bm-tap"
         role="button" tabIndex={0} aria-expanded={open} aria-controls={`${id}-content`}
         onClick={toggle} onKeyDown={onKeyDown}
         style={{
@@ -791,7 +791,7 @@ export default function BrawlerGuidePage({
             }
           };
           return (
-            <a key={s.id} href={`#${s.id}`} onClick={go} style={{
+            <a  className="bm-lift"key={s.id} href={`#${s.id}`} onClick={go} style={{
               display: "flex", alignItems: "center", textDecoration: "none", fontFamily: BODY,
               fontWeight: 600, fontSize: 15, padding: "11px 0 11px 16px", marginLeft: -20,
               borderLeft: `2px solid ${on ? "#ffb43d" : "transparent"}`,

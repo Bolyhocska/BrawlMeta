@@ -294,7 +294,7 @@ function SeriesCard({ s }) {
       border: `1px solid ${won ? "rgba(142,230,176,.20)" : "rgba(255,143,143,.16)"}`,
       borderLeft: `3px solid ${won ? "#8ee6b0" : "#ff8f8f"}`,
     }}>
-    <div
+    <div className="bm-tap"
       role="button" tabIndex={0}
       onClick={() => setOpen(o => !o)}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } }}

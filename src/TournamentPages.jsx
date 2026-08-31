@@ -152,7 +152,7 @@ export function TournamentLandingPage() {
               const st = STATUS_STYLE[t.status] || STATUS_STYLE.registration;
               const players = counts[t.id] || 0;
               return (
-                <Link key={t.id} to={`/tournaments/${t.id}`}
+                <Link className="bm-lift" key={t.id} to={`/tournaments/${t.id}`}
                   style={{ ...page.card, overflow: "hidden", textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", transition: "border-color .18s, transform .18s, box-shadow .18s" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(179,107,255,.45)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 14px 40px rgba(0,0,0,.45)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.08)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
@@ -226,7 +226,7 @@ function ChampionCelebration({ name, tournamentId, prize }) {
   };
 
   return (
-    <div onClick={dismiss} style={{
+    <div className="bm-tap" onClick={dismiss} style={{
       position: "fixed", inset: 0, zIndex: 1200, cursor: "pointer", overflow: "hidden",
       background: "radial-gradient(ellipse 80% 60% at 50% 42%, rgba(30,20,6,.97), rgba(8,8,12,.985))",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -1046,7 +1046,7 @@ export function TournamentDetailPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <Link to="/tournaments" style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6", textDecoration: "none" }}>← ALL TOURNAMENTS</Link>
           {isCreator && (
-            <Link to={`/tournaments/${tournamentId}/manage`} style={{ ...page.btnGhost, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 11 }}>
+            <Link className="bm-lift" to={`/tournaments/${tournamentId}/manage`} style={{ ...page.btnGhost, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 11 }}>
               ⚙ Manage tournament
             </Link>
           )}
@@ -1228,6 +1228,24 @@ export function TournamentProfilePage() {
   const [ranked, setRanked] = useState([]);
   const [trackedRow, setTrackedRow] = useState(null);
   const rankedSeries = useMemo(() => toSeries(ranked), [ranked]);
+  const [activeChapter, setActiveChapter] = useState(CHAPTERS[0].id);
+
+  // Scroll spy for the chapter pills. An IntersectionObserver rather than a
+  // scroll listener so it costs nothing while idle. The rootMargin pins the
+  // trigger line just under the sticky nav and ignores the bottom 60% of the
+  // viewport, so the highlighted chapter is the one you are READING, not
+  // whichever happens to be partly visible at the foot of the screen.
+  useEffect(() => {
+    const els = CHAPTERS.map(c => document.getElementById(c.id)).filter(Boolean);
+    if (!els.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      const seen = entries.filter(e => e.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (seen[0]) setActiveChapter(seen[0].target.id);
+    }, { rootMargin: "-72px 0px -60% 0px" });
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, [myTag, ranked.length, history.length, trackedRow]);
 
   const myTag = profile?.player_tag || null;
 
@@ -1339,91 +1357,87 @@ export function TournamentProfilePage() {
         <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,4vw,48px)", fontWeight: 700, color: "#f4f4fa", margin: "10px 0 6px" }}>
           {profile?.display_name || "Your"} <span style={{ color: VIOLET }}>profile</span>
         </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, fontFamily: MONO, fontSize: 11, color: "#8a7fa6", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, fontFamily: MONO, fontSize: 11, color: "#8a7fa6", flexWrap: "wrap" }}>
           {myTag && <span style={{ color: "#c9c9d6" }}>{myTag}</span>}
           {user?.email}
           {profile?.is_premium && <span style={{ color: GOLD, fontWeight: 700 }}>👑 PREMIUM</span>}
         </div>
 
-        {/* Last ten drafts as pips. Borrowed from Faceit: it is the most-glanced
-            element on sites that have it, costs nothing, and has no sample-size
-            problem — ten results are ten results. */}
-        <FormPips series={rankedSeries} />
+        <ChapterNav active={activeChapter} />
 
-        {/* The match history and its per-match draft verdicts were reachable
-            only by searching a tag on the Leaderboards tab — nobody would ever
-            have found them. If this account has a tag, link it directly. */}
-        {myTag && (
-          <Link to={`/player/${myTag.replace("#", "")}`} style={{
-            ...page.card, display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",
-            marginBottom: 22, textDecoration: "none",
-            borderColor: "rgba(179,107,255,.35)", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(13,13,20,.5))",
-          }}>
-            <LineChart size={22} color={VIOLET} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 700, color: "#f4f4fa" }}>
-                Your public profile
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6", marginTop: 2 }}>
-                Full analysis, every tracked game, and a draft verdict on each one
-              </div>
-            </div>
-            <span style={{ fontFamily: MONO, fontSize: 16, color: VIOLET }}>→</span>
-          </Link>
-        )}
+        {/* 1 · HOW YOU'RE PLAYING */}
+        <Chapter {...CHAPTERS[0]}>
+          {/* Last ten drafts as pips. Borrowed from Faceit: it is the most-glanced
+              element on sites that have it, costs nothing, and has no sample-size
+              problem — ten results are ten results. */}
+          <FormPips series={rankedSeries} />
 
-        {/* Hub mode: the headline number only. The full analysis — draft
-            buckets, fingerprint, nemesis table, people — lives on the public
-            profile, which this links to. Same component either way, so the two
-            views cannot drift apart. */}
-        {myTag && ranked.length > 0 && (
-          <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag} compact
-            onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
-        )}
+          {/* Hub mode: the headline number only. The full analysis — draft
+              buckets, fingerprint, nemesis table, people — lives on the public
+              profile, which the card below links to. Same component either way,
+              so the two views cannot drift apart. */}
+          {myTag && ranked.length > 0 && (
+            <PlayerInsights rows={ranked} tracked={trackedRow} selfTag={myTag} compact
+              onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
+          )}
 
-        <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 8 }}>◈ LOOK UP A PLAYER</span>
-        <div style={{ marginBottom: 24 }}>
-          <PlayerSearch />
-        </div>
-
-        {/* The advisor moved to its own page. It outgrew a profile section once
-            it answered per mode and per role as well as overall — six mode
-            lists, seven role lists and the full roster grid is a page, not a
-            panel. This is the doorway. */}
-        {myTag && (
-          <>
-            <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 4 }}>◈ WHAT TO UPGRADE NEXT</span>
-            <button type="button" onClick={() => navigate("/upgrade")} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14,
-              width: "100%", maxWidth: 620, textAlign: "left", cursor: "pointer",
-              padding: "15px 17px", borderRadius: 13, marginBottom: 22,
-              background: "rgba(179,107,255,.07)", border: "1px solid rgba(179,107,255,.26)",
+          {myTag ? (
+            <Link to={`/player/${myTag.replace("#", "")}`} className="bm-lift" style={{
+              ...page.card, display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",
+              marginTop: 14, textDecoration: "none",
+              borderColor: "rgba(179,107,255,.35)", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(13,13,20,.5))",
             }}>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: "block", fontFamily: "'Baloo 2', sans-serif", fontSize: 17,
-                               fontWeight: 800, color: "#f4f4fa", marginBottom: 3 }}>
-                  What should I upgrade next?
-                </span>
-                <span style={{ display: "block", fontSize: 13, color: "#9a9aab", lineHeight: 1.55 }}>
-                  Your own brawlers, ranked by what the next upgrade actually buys you —
-                  overall, per mode, and per role.
-                </span>
-              </span>
-              <ChevronRight size={18} style={{ color: "#c9a6ff", flexShrink: 0 }} />
-            </button>
-          </>
-        )}
+              <LineChart size={22} color={VIOLET} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 700, color: "#f4f4fa" }}>
+                  See every game in detail
+                </div>
+                <div style={{ fontSize: 12.5, color: "#8b8b9c", marginTop: 2, lineHeight: 1.5 }}>
+                  Your full public profile — every tracked match, with a verdict on each draft.
+                </div>
+              </div>
+              <span style={{ fontFamily: MONO, fontSize: 16, color: VIOLET }}>→</span>
+            </Link>
+          ) : (
+            <div style={{ ...page.card, padding: "18px 20px", fontSize: 13.5, color: "#8b8b9c", lineHeight: 1.65 }}>
+              Add your player tag in <a href="#account" style={{ color: "#c98bff" }}>Account</a> and your
+              games will show up here automatically.
+            </div>
+          )}
+        </Chapter>
 
-        {/* PROGRESSION. Trophy history is free for everyone — a curve is not
-            something to withhold, and gating it behind signup would be the same
-            shape as the paywall our own analysis criticises Brawlify for. The
-            curve renders in the insight panels above once there are two days of
-            it. Boost buys per-brawler detail daily instead of weekly, which is
-            a genuine cost difference rather than an artificial lock. */}
-        {myTag && !trackedRow?.boosted && (
-          <>
-            <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 12 }}>◈ PROGRESSION</span>
-            <div style={{ ...page.card, padding: "18px 20px", marginBottom: 28 }}>
+        {/* 2 · GET BETTER */}
+        <Chapter {...CHAPTERS[1]} delay={0.04}>
+          {/* The advisor moved to its own page. It outgrew a profile section once
+              it answered per mode and per role as well as overall — six mode
+              lists, seven role lists and the full roster grid is a page, not a
+              panel. This is the doorway. */}
+          <button type="button" onClick={() => navigate("/upgrade")} className="bm-lift" style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14,
+            width: "100%", textAlign: "left", cursor: "pointer",
+            padding: "17px 19px", borderRadius: 16, marginBottom: 14,
+            background: "rgba(179,107,255,.07)", border: "1px solid rgba(179,107,255,.26)",
+          }}>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 17,
+                             fontWeight: 800, color: "#f4f4fa", marginBottom: 3 }}>
+                What should I upgrade next?
+              </span>
+              <span style={{ display: "block", fontSize: 13, color: "#9a9aab", lineHeight: 1.55 }}>
+                Your own brawlers, ranked by what the next upgrade actually buys you —
+                overall, per mode, and per role.
+              </span>
+            </span>
+            <ChevronRight size={18} style={{ color: "#c9a6ff", flexShrink: 0 }} />
+          </button>
+
+          {/* PROGRESSION. Trophy history is free for everyone — a curve is not
+              something to withhold, and gating it behind signup would be the same
+              shape as the paywall our own analysis criticises Brawlify for. Boost
+              buys per-brawler detail daily instead of weekly, a genuine cost
+              difference rather than an artificial lock. */}
+          {myTag && !trackedRow?.boosted && (
+            <div style={{ ...page.card, padding: "18px 20px" }}>
               <div style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 700, color: "#f4f4fa", marginBottom: 5 }}>
                 Want to see which brawler the push came from?
               </div>
@@ -1432,81 +1446,168 @@ export function TournamentProfilePage() {
                 trophies every day instead of once a week — that column is bulky, so we only keep
                 it at full resolution where someone actually wants it.
               </div>
-              <Link to={`/player/${myTag.replace("#", "")}`} style={{
+              <Link to={`/player/${myTag.replace("#", "")}`} className="bm-lift" style={{
                 ...page.btn, display: "inline-flex", alignItems: "center", gap: 8,
                 textDecoration: "none", padding: "10px 18px", fontSize: 12,
               }}>⚡ Boost this profile</Link>
             </div>
-          </>
-        )}
+          )}
+        </Chapter>
 
-        <span style={{ ...page.eyebrow, display: "block", marginTop: 6, marginBottom: 12 }}>◈ TOURNAMENTS</span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
-          {[
-            { label: "WALLET BALANCE", value: `$${Number(wallet?.balance || 0).toLocaleString()}`, icon: <Wallet size={15} color={GOLD} />, note: "withdrawals coming soon" },
-            { label: "LIFETIME EARNINGS", value: `$${Number(wallet?.total_earned || 0).toLocaleString()}`, icon: <Trophy size={15} color={GOLD} /> },
-            { label: "TOURNAMENTS ENTERED", value: history.length, icon: <Swords size={15} color={VIOLET} /> },
-            { label: "MATCHES WON", value: wins, icon: <CheckCircle2 size={15} color="#8ee6b0" /> },
-          ].map(s => (
-            <div key={s.label} style={{ ...page.card, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>{s.icon}{s.label}</div>
-              <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700, color: "#f4f4fa", marginTop: 8 }}>{s.value}</div>
-              {s.note && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{s.note.toUpperCase()}</div>}
-            </div>
-          ))}
-        </div>
-
-        <span style={page.eyebrow}>◈ TOURNAMENT HISTORY</span>
-        {!myTag ? (
-          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>Set your player tag in the Account section below to load your history.</p>
-        ) : history.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#6f7180", marginTop: 10 }}>
-            No tournaments yet — <Link to="/tournaments" style={{ color: "#c98bff" }}>join one free</Link>.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
-            {history.map(h => (
-              <Link key={h.id} to={`/tournaments/${h.tournament_id}`} style={{ ...page.card, padding: "16px 22px", display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}>
-                <Trophy size={15} color={GOLD} />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}>{h.Tournaments?.name || "Tournament"}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>TEAM {h.team_name?.toUpperCase()} · JOINED {new Date(h.joined_at).toLocaleDateString()}</div>
-                </div>
-                <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, letterSpacing: 1, fontWeight: 700, color: (STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).color }}>
-                  {(STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).label}
-                </span>
-              </Link>
+        {/* 3 · TOURNAMENTS */}
+        <Chapter {...CHAPTERS[2]} delay={0.08}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 22 }}>
+            {[
+              { label: "WALLET BALANCE", value: `$${Number(wallet?.balance || 0).toLocaleString()}`, icon: <Wallet size={15} color={GOLD} />, note: "withdrawals coming soon" },
+              { label: "LIFETIME EARNINGS", value: `$${Number(wallet?.total_earned || 0).toLocaleString()}`, icon: <Trophy size={15} color={GOLD} /> },
+              { label: "TOURNAMENTS ENTERED", value: history.length, icon: <Swords size={15} color={VIOLET} /> },
+              { label: "MATCHES WON", value: wins, icon: <CheckCircle2 size={15} color="#8ee6b0" /> },
+            ].map((st, i) => (
+              <div key={st.label} className="bm-rise" style={{ ...page.card, padding: 20, animationDelay: `${0.10 + i * 0.05}s` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>{st.icon}{st.label}</div>
+                <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700, color: "#f4f4fa", marginTop: 8 }}>{st.value}</div>
+                {st.note && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{st.note.toUpperCase()}</div>}
+              </div>
             ))}
           </div>
-        )}
 
-        {/* Account settings sit LAST on purpose. They used to greet you, which
-            told every visitor this page was about admin — it is what you came
-            for once, not what you come back for. */}
-        <span style={{ ...page.eyebrow, display: "block", marginTop: 34, marginBottom: 12 }}>◈ ACCOUNT</span>
-        <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#6f7180" }}>· 🔒 PERMANENT</span>}</span>
-            <input
-              style={{ ...page.input, maxWidth: 200, ...(nameLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
-              placeholder="Choose a unique name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30}
-              readOnly={nameLocked} title={nameLocked ? "Your display name is set for good." : undefined} />
-            <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG {tagLocked && <span style={{ color: "#6f7180" }}>· 🔒 LOCKED</span>}</span>
-            <input
-              style={{ ...page.input, maxWidth: 200, ...(tagLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
-              placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)}
-              readOnly={tagLocked} title={tagLocked ? "Locked once you've entered a tournament." : undefined} />
-            <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
-          </div>
-          <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12, alignSelf: "flex-end" }}>Save</button>
-          {saved && <span style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", alignSelf: "flex-end", paddingBottom: 12 }}>SAVED ✔</span>}
-          {saveErr && <span style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", alignSelf: "flex-end", paddingBottom: 12 }}>{saveErr}</span>}
-        </form>
+          <h3 style={{ fontFamily: DISPLAY, fontSize: 16.5, fontWeight: 700, color: "#d8d8e4", margin: "0 0 10px" }}>
+            Tournaments you have entered
+          </h3>
+          {!myTag ? (
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0, lineHeight: 1.6 }}>
+              Add your player tag in <a href="#account" style={{ color: "#c98bff" }}>Account</a> to load your history.
+            </p>
+          ) : history.length === 0 ? (
+            <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: 0, lineHeight: 1.6 }}>
+              No tournaments yet — <Link to="/tournaments" style={{ color: "#c98bff" }}>join one free</Link>.
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {history.map(h => (
+                <Link key={h.id} to={`/tournaments/${h.tournament_id}`} className="bm-lift" style={{ ...page.card, padding: "16px 22px", display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}>
+                  <Trophy size={15} color={GOLD} />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{h.Tournaments?.name || "Tournament"}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a7fa6" }}>TEAM {h.team_name?.toUpperCase()} · JOINED {new Date(h.joined_at).toLocaleDateString()}</div>
+                  </div>
+                  <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, letterSpacing: 1, fontWeight: 700, color: (STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).color }}>
+                    {(STATUS_STYLE[h.Tournaments?.status] || STATUS_STYLE.registration).label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Chapter>
+
+        {/* 4 · ACCOUNT. Settings sit LATE on purpose. They used to greet you,
+            which told every visitor this page was about admin — it is what you
+            came for once, not what you come back for. */}
+        <Chapter {...CHAPTERS[3]} delay={0.12}>
+          <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#6f7180" }}>· 🔒 PERMANENT</span>}</span>
+              <input
+                style={{ ...page.input, maxWidth: 200, ...(nameLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
+                placeholder="Choose a unique name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30}
+                readOnly={nameLocked} title={nameLocked ? "Your display name is set for good." : undefined} />
+              <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG {tagLocked && <span style={{ color: "#6f7180" }}>· 🔒 LOCKED</span>}</span>
+              <input
+                style={{ ...page.input, maxWidth: 200, ...(tagLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
+                placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)}
+                readOnly={tagLocked} title={tagLocked ? "Locked once you've entered a tournament." : undefined} />
+              <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
+            </div>
+            <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Save</button>
+            {saved && <span className="bm-pop" style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", paddingBottom: 12 }}>SAVED ✔</span>}
+            {saveErr && <span style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", paddingBottom: 12 }}>{saveErr}</span>}
+          </form>
+        </Chapter>
+
+        {/* 5 · LOOK UP A PLAYER. Last, and separated. This box searches for
+            SOMEONE ELSE, and it used to sit between two blocks about you —
+            which is exactly the ordering complaint that prompted the rewrite.
+            Still useful, so it stays; it just stops interrupting your own stats. */}
+        <Chapter {...CHAPTERS[4]} delay={0.16}>
+          <PlayerSearch />
+        </Chapter>
       </div>
     </div>
+  );
+}
+
+// ─── Profile chapters ────────────────────────────────────────────────────────
+// The profile used to run: form pips, a public-profile link, insights, "look up
+// a player", upgrade advisor, boost pitch, wallet, history, account. Nine
+// blocks in no order, with a stranger-lookup box wedged between two things
+// about YOU. These give the page numbered chapters instead, each stating in one
+// plain line what it is for, so someone can find what they came for without
+// reading every block to work out whether it is theirs.
+//
+// Module scope, not declared inside the page: a component created during
+// another component's render is a new type every render and remounts its whole
+// subtree — the bug that cost the create-tournament form its input focus.
+
+const CHAPTERS = [
+  { id: "form", n: 1, title: "How you're playing", blurb: "Your recent games and what they say." },
+  { id: "improve", n: 2, title: "Get better", blurb: "What to upgrade, and your trophy progress." },
+  { id: "tournaments", n: 3, title: "Tournaments", blurb: "Your winnings, entries and match history." },
+  { id: "account", n: 4, title: "Account", blurb: "Your name and player tag." },
+  { id: "lookup", n: 5, title: "Look up a player", blurb: "Check anyone else's stats." },
+];
+
+function ChapterNav({ active }) {
+  return (
+    <nav
+      aria-label="Profile sections"
+      style={{
+        position: "sticky", top: 0, zIndex: 20, display: "flex", gap: 8,
+        overflowX: "auto", padding: "12px 0", marginBottom: 8,
+        background: "linear-gradient(180deg, #08080c 62%, rgba(8,8,12,0))",
+        scrollbarWidth: "none",
+      }}
+    >
+      {CHAPTERS.map(c => {
+        const on = active === c.id;
+        return (
+          <a key={c.id} href={`#${c.id}`} className="bm-tap" style={{
+            flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "8px 15px", borderRadius: 999, textDecoration: "none",
+            fontFamily: "'Chakra Petch', sans-serif", fontSize: 12.5, fontWeight: 700,
+            background: on ? "rgba(179,107,255,.16)" : "rgba(255,255,255,.03)",
+            border: `1px solid ${on ? "rgba(179,107,255,.55)" : "rgba(255,255,255,.08)"}`,
+            color: on ? "#e9d5ff" : "#8b8b9c",
+            boxShadow: on ? "0 0 16px rgba(179,107,255,.18)" : "none",
+          }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, opacity: .75 }}>{c.n}</span>
+            {c.title}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+function Chapter({ id, n, title, blurb, children, delay = 0 }) {
+  return (
+    <section id={id} className="bm-rise" style={{ scrollMarginTop: 72, marginBottom: 38, animationDelay: `${delay}s` }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 11, marginBottom: 4 }}>
+        <span aria-hidden style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 26, height: 26, borderRadius: 9, flexShrink: 0,
+          background: "rgba(179,107,255,.14)", border: "1px solid rgba(179,107,255,.4)",
+          fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#c98bff",
+        }}>{n}</span>
+        <h2 style={{ fontFamily: DISPLAY, fontSize: "clamp(19px,2.4vw,25px)", fontWeight: 700, color: "#f4f4fa", margin: 0 }}>
+          {title}
+        </h2>
+      </div>
+      <p style={{ fontSize: 13.5, color: "#8b8b9c", margin: "0 0 16px 37px", lineHeight: 1.6 }}>{blurb}</p>
+      <div style={{ marginLeft: 0 }}>{children}</div>
+    </section>
   );
 }
 
@@ -1881,7 +1982,7 @@ export function ManageTournamentPage() {
                     </div>
                   </div>
                   {m.dodge_report_url && (
-                    <a href={m.dodge_report_url} target="_blank" rel="noreferrer" style={{
+                    <a  className="bm-lift"href={m.dodge_report_url} target="_blank" rel="noreferrer" style={{
                       display: "block", marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "rgba(255,206,122,.1)",
                       border: "1px solid rgba(255,206,122,.2)", color: "#ffce7a", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center",
                     }}>

@@ -83,11 +83,11 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
   };
 
   return (
-    <div
+    <div className="bm-tap"
       onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(4,4,8,.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
     >
-      <div
+      <div className="bm-tap"
         onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 400, borderRadius: 22, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 30px 90px rgba(0,0,0,.6)", padding: 26, position: "relative" }}
       >

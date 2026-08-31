@@ -117,7 +117,7 @@ function Contents() {
         CONTENTS
       </div>
       {SECTIONS.map(s => (
-        <a key={s.id} href={`#${s.id}`} style={{
+        <a  className="bm-lift"key={s.id} href={`#${s.id}`} style={{
           display: "flex", gap: 9, padding: "5px 0", textDecoration: "none",
           fontFamily: MONO, fontSize: 11.5, color: "#9a9aab", lineHeight: 1.5,
         }}>

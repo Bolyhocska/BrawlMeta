@@ -99,7 +99,7 @@ export function VideoClip({ videoId, title, note }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa" }}>{title}</div>
           {note && <div style={{ fontSize: 11.5, color: "#8b8b9c", marginTop: 2 }}>{note}</div>}
         </div>
-        <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" style={{
+        <a  className="bm-lift"href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" style={{
           fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#c98bff", textDecoration: "none",
           padding: "7px 14px", borderRadius: 999, border: "1px solid rgba(179,107,255,.3)", background: "rgba(179,107,255,.08)", whiteSpace: "nowrap",
         }}>WATCH ON YOUTUBE ↗</a>
@@ -405,7 +405,7 @@ export function GuidesLandingPage() {
 
       <div style={{ position: "relative", zIndex: 10, padding: "0 5vw 100px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 26, maxWidth: 1280, margin: "0 auto" }}>
         {LANDING_CARDS.map(c => (
-          <Link key={c.to} to={c.to} style={{
+          <Link className="bm-lift" key={c.to} to={c.to} style={{
             borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
             padding: 26, display: "flex", flexDirection: "column", gap: 16, textDecoration: "none",
           }}>
@@ -488,7 +488,7 @@ export function SkillsGuidePage() {
           <Panel tinted gold style={{ alignItems: "center", textAlign: "center" }}>
             <h2 style={h2Style}>Put it into practice</h2>
             <p style={{ ...bodyStyle, maxWidth: 520 }}>Mechanics stick through reps. Run the draft assistant before your next ranked session so the only thing you're thinking about in-game is execution.</p>
-            <Link to="/app?tab=meta" style={{
+            <Link className="bm-lift" to="/app?tab=meta" style={{
               display: "inline-flex", alignItems: "center", gap: 10, padding: "15px 30px", borderRadius: 999,
               background: "#ffb43d", color: "#1a1206", fontWeight: 700, fontSize: 15, letterSpacing: .5,
               textDecoration: "none", boxShadow: "0 0 30px rgba(255,180,61,.35)",
@@ -519,7 +519,7 @@ export function ModesGuidesPage() {
         {MODE_ORDER.map(id => {
           const m = MODE_GUIDES[id];
           return (
-            <Link key={id} to={`/guides/modes/${id}`} style={{
+            <Link className="bm-lift" key={id} to={`/guides/modes/${id}`} style={{
               borderRadius: 24, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
               padding: 26, display: "flex", flexDirection: "column", gap: 14, textDecoration: "none",
             }}>
@@ -664,7 +664,7 @@ export function ModeGuidePage() {
         {/* Map guide callout */}
         {m.mapGuide && (
           <section id="map-guide" style={{ scrollMarginTop: 110, paddingBottom: 60 }}>
-            <Link to={m.mapGuide.href} style={{
+            <Link className="bm-lift" to={m.mapGuide.href} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap",
               borderRadius: 28, padding: "32px 36px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", textDecoration: "none",
             }}>
@@ -701,7 +701,7 @@ export function ModeGuidePage() {
         <section id="quiz" style={{ scrollMarginTop: 110, maxWidth: 860, margin: "0 auto" }}>
           <Panel tinted gold style={{ alignItems: "center", textAlign: "center", gap: 16, padding: 40 }}>
             <h2 style={h2Style}>Ready to test yourself?</h2>
-            <a href="#" style={{
+            <a  className="bm-lift"href="#" style={{
               display: "inline-flex", alignItems: "center", gap: 10, padding: "15px 30px", borderRadius: 999,
               background: "#ffb43d", color: "#1a1206", fontWeight: 700, fontSize: 15, letterSpacing: .5,
               textDecoration: "none", boxShadow: "0 0 30px rgba(255,180,61,.35)",
@@ -813,7 +813,7 @@ export function SafeZoneGuidePage() {
             <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>HOW TO DRAFT FOR THIS MAP</span>
             <p style={{ fontSize: 14.5, color: "#9a9aab", marginTop: 8, maxWidth: 520 }}>Run a live draft for Safe Zone with map-aware pick and ban suggestions.</p>
           </div>
-          <Link to="/app?tab=meta" style={{
+          <Link className="bm-lift" to="/app?tab=meta" style={{
             flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999,
             background: "#b36bff", color: "#0a0a0f", fontWeight: 700, fontSize: 14, letterSpacing: .5,
             textDecoration: "none", boxShadow: "0 0 26px rgba(179,107,255,.4)",
@@ -864,7 +864,7 @@ export function BrawlerGuidesPage() {
         display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14,
       }}>
         {brawlers.map(b => (
-          <Link key={b.key} to={`/brawlers/${slugifyBrawlerKey(b.key)}`} style={{
+          <Link className="bm-lift" key={b.key} to={`/brawlers/${slugifyBrawlerKey(b.key)}`} style={{
             borderRadius: 20, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
             padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textDecoration: "none",
           }}>

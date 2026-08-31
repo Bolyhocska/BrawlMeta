@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { Routes, Route, Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, Link, useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ChevronDown, Star, TrendingUp, Check, Crown, LineChart, ArrowUpRight } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
@@ -368,7 +368,7 @@ function PlayerCardSearch() {
             </div>
           )}
           <div style={{ padding: "0 20px 18px" }}>
-            <Link to={`/player/${(player.tag || "").replace("#", "")}`} style={{
+            <Link className="bm-lift" to={`/player/${(player.tag || "").replace("#", "")}`} style={{
               display: "inline-block", fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 1.3,
               padding: "9px 16px", borderRadius: 999, textDecoration: "none", color: "#0d0d14",
               fontWeight: 700, background: "linear-gradient(135deg,#c9a6ff,#b36bff)",
@@ -769,14 +769,14 @@ function BrawlerGuideRoute() {
   );
 }
 
-export default function AppRoutes() {
-  // SiteFooter is mounted here, once, rather than per page. The Supercell Fan
-  // Content Policy requires the disclaimer wherever fan content is shown, and
-  // per-page footers meant every new route silently shipped without one — the
-  // tier list, draft assistant and brawler guides had all been missing it.
 // Shown while a lazily-loaded route chunk is fetched. Deliberately plain and
 // on-theme: a spinner that flashes for 80ms on a fast connection is worse
 // than a quiet block of the right colour.
+//
+// Module scope, not inside AppRoutes: a component declared during another
+// component's render is a new type on every render, so React tears down and
+// rebuilds its subtree each time. Harmless for a fallback, but it is the exact
+// pattern that cost this codebase the create-tournament form's input focus.
 function RouteFallback() {
   return (
     <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center",
@@ -786,10 +786,21 @@ function RouteFallback() {
   );
 }
 
+export default function AppRoutes() {
+  const location = useLocation();
+  // SiteFooter is mounted here, once, rather than per page. The Supercell Fan
+  // Content Policy requires the disclaimer wherever fan content is shown, and
+  // per-page footers meant every new route silently shipped without one — the
+  // tier list, draft assistant and brawler guides had all been missing it.
   // Mounting it outside <Routes> means a route cannot be added without it.
   return (
     <>
     <Suspense fallback={<RouteFallback />}>
+    {/* Keyed on the path so React remounts the subtree on every navigation,
+        which is what restarts the entrance animation — without the key the
+        element persists and the animation only ever plays once, on first load.
+        Purely visual: it changes nothing about routing or data. */}
+    <div key={location.pathname} className="bm-page-in">
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/app" element={<BrawlApex />} />
@@ -820,6 +831,7 @@ function RouteFallback() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<BrawlApex />} />
     </Routes>
+    </div>
     </Suspense>
     <SiteFooter />
     </>

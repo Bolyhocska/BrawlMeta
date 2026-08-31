@@ -100,13 +100,93 @@ summary {
     transform .12s ease;
 }
 
+/* HOVER has to work through inline styles, and it cannot: an inline `background`
+   beats any stylesheet rule, so the usual `:hover { background: ... }` is dead
+   on arrival across most of this app. `filter` and `transform` are the two
+   properties almost nothing here sets inline, so they are what the hover states
+   are built from. Brightness alone reads as a real highlight on a dark UI. */
+button:not(:disabled):hover,
+a:hover,
+[role="button"]:hover,
+summary:hover,
+.bm-tap:hover {
+  filter: brightness(1.14) saturate(1.05);
+}
+
+/* Anything card-shaped that is also clickable lifts a little. Opt-in by class
+   because a stylesheet cannot tell a clickable <div> from a layout one. */
+.bm-lift {
+  transition:
+    transform .18s cubic-bezier(.2,.7,.3,1),
+    box-shadow .18s ease,
+    filter .18s ease;
+  will-change: transform;
+}
+.bm-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .75);
+  filter: brightness(1.1);
+}
+.bm-lift:active { transform: translateY(0) scale(.99); }
+
+/* Clickable <div>s — the app has many — get the same feel as a real button.
+   Also restores the pointer and keyboard affordances they lack by default. */
+.bm-tap {
+  cursor: pointer;
+  transition:
+    background-color .18s ease, border-color .18s ease, color .18s ease,
+    box-shadow .18s ease, opacity .18s ease, filter .18s ease, transform .12s ease;
+}
+
 /* A small give on press, so a tap reads as a tap. Skipped for elements that
    already carry their own transform (the collapse chevrons rotate). */
 button:active:not([aria-expanded]),
 a:active,
-[role="button"]:active:not([aria-expanded]) {
+[role="button"]:active:not([aria-expanded]),
+.bm-tap:active {
   transform: scale(.975);
 }
+
+/* Inputs say they are focused without shifting anything around them. */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(179, 107, 255, .55) !important;
+  box-shadow: 0 0 0 3px rgba(179, 107, 255, .14);
+}
+
+/* A disabled control should look unavailable before it is clicked, not after. */
+button:disabled,
+[aria-disabled="true"] {
+  opacity: .5;
+  cursor: not-allowed;
+  filter: none !important;
+  transform: none !important;
+}
+
+/* Route changes fade up instead of snapping. Short enough that it never gets
+   in the way of someone who knows where they are going. */
+@keyframes bmPageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.bm-page-in { animation: bmPageIn .26s cubic-bezier(.2,.7,.3,1) both; }
+
+/* Staggered entrance for lists and grids. The delay is set inline per item. */
+@keyframes bmRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.bm-rise { animation: bmRise .32s cubic-bezier(.2,.7,.3,1) both; }
+
+/* Numbers that have just changed get a brief tick, so a value updating in
+   place is noticed rather than silently replaced. */
+@keyframes bmPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.bm-pop { animation: bmPop .34s ease both; }
 
 /* Keyboard focus stays obvious without adding a ring to every mouse click. */
 :focus-visible {

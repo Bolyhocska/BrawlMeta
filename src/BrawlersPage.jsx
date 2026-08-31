@@ -215,7 +215,7 @@ function BrawlerPortrait({ brawler, size = 56, onClick }) {
   const [imgErr, setImgErr] = useState(false);
   const { outer, inner } = tileStyles({ key: brawler.key || brawler.name, rarity: brawler.rarity, rarityColor: brawler.rarityColor, size });
   return (
-    <div onClick={onClick} style={{ ...outer, cursor: onClick ? "pointer" : "default" }}>
+    <div className="bm-tap" onClick={onClick} style={{ ...outer, cursor: onClick ? "pointer" : "default" }}>
       <div style={inner}>
         {!imgErr && brawler.imageUrl ? (
           <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -293,13 +293,13 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
   const sections = ["overview", "maps", "synergies", "abilities", "guide"];
 
   return (
-    <div style={{
+    <div className="bm-tap" style={{
       position: "fixed", inset: 0, zIndex: 1000,
       background: "rgba(5,11,20,0.92)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 20,
     }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div className="bm-tap" onClick={e => e.stopPropagation()} style={{
         width: "100%", maxWidth: 760, maxHeight: "90vh",
         background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)",
         borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column",
@@ -710,7 +710,7 @@ function GuideSection({ guide }) {
       )}
 
       {lightbox && (
-        <div
+        <div className="bm-tap"
           onClick={() => setLightbox(null)}
           style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, cursor: "zoom-out" }}
         >
@@ -911,7 +911,7 @@ function TierChip({ brawler, onClick }) {
 function BrawlerCard({ brawler, onClick }) {
   const starColor = brawler.stars >= 6 ? "#ffb43d" : brawler.stars >= 4 ? "#60a5fa" : brawler.stars >= 2 ? "#94a3b8" : "#ef4444";
   return (
-    <div onClick={onClick} style={{
+    <div className="bm-tap" onClick={onClick} style={{
       background: "#12121b", border: `1px solid ${brawler.rarityColor}30`,
       borderRadius: 12, overflow: "hidden", cursor: "pointer",
       transition: "transform 0.15s, box-shadow 0.15s",

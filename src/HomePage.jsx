@@ -99,7 +99,7 @@ export default function HomePage() {
             <ImageSlot placeholder="Drop Surge Hypercharge splash art" />
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(to top, rgba(8,8,12,.94), transparent 42%)" }} />
           </div>
-          <Link
+          <Link className="bm-lift"
             to="/app"
             style={{
               position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between",

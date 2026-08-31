@@ -88,7 +88,7 @@ function NavDropdown({ item }) {
           display: "flex", flexDirection: "column", gap: 2,
         }}>
           {item.dropdown.map(d => (
-            <Link key={d.to} to={d.to} onClick={() => setOpen(false)} style={{
+            <Link className="bm-tap" key={d.to} to={d.to} onClick={() => setOpen(false)} style={{
               display: "flex", flexDirection: "column", gap: 2, padding: "12px 16px", borderRadius: 14, textDecoration: "none",
             }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.14)"; }}
@@ -152,7 +152,7 @@ function AccountMenu() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#8a7fa6" }}>{profile?.player_tag || "no tag set"}</div>
           </div>
-          <Link to="/tournaments/profile" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#d9d9e6", fontSize: 13, fontWeight: 600 }}
+          <Link className="bm-tap" to="/tournaments/profile" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#d9d9e6", fontSize: 13, fontWeight: 600 }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.14)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
             My profile
@@ -210,7 +210,7 @@ function MobileNav() {
       </button>
 
       {/* Backdrop + sheet. Rendered together so one tap outside closes it. */}
-      <div
+      <div className="bm-tap"
         onClick={() => setOpen(false)}
         style={{
           position: "fixed", inset: 0, zIndex: 190, background: "rgba(6,6,10,.6)",
