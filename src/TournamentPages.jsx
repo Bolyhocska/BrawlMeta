@@ -1228,6 +1228,8 @@ export function TournamentProfilePage() {
   const [ranked, setRanked] = useState([]);
   const [trackedRow, setTrackedRow] = useState(null);
   const rankedSeries = useMemo(() => toSeries(ranked), [ranked]);
+  const myTag = profile?.player_tag || null;
+
   const [activeChapter, setActiveChapter] = useState(CHAPTERS[0].id);
 
   // Scroll spy for the chapter pills. An IntersectionObserver rather than a
@@ -1235,6 +1237,12 @@ export function TournamentProfilePage() {
   // trigger line just under the sticky nav and ignores the bottom 60% of the
   // viewport, so the highlighted chapter is the one you are READING, not
   // whichever happens to be partly visible at the foot of the screen.
+  //
+  // MUST sit below `myTag`. A dependency array is evaluated during render, and
+  // this effect originally sat ABOVE the declaration it depends on — reading a
+  // `const` before its initialiser has run is a temporal dead zone
+  // ReferenceError, which took the whole profile page to a white screen. The
+  // build does not catch it: it is a runtime fault, not a syntax one.
   useEffect(() => {
     const els = CHAPTERS.map(c => document.getElementById(c.id)).filter(Boolean);
     if (!els.length) return;
@@ -1246,8 +1254,6 @@ export function TournamentProfilePage() {
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, [myTag, ranked.length, history.length, trackedRow]);
-
-  const myTag = profile?.player_tag || null;
 
   useEffect(() => {
     if (profile) { setTagInput(profile.player_tag || ""); setNameInput(profile.display_name || ""); }
