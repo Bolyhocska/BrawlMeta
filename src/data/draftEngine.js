@@ -855,10 +855,10 @@ export function getDraftAdvice({
           : (openness === "OPEN" ? "MIXED" : "CLOSED");
       }
       const g = aRules.geometry[openness] || {};
-      let gm = (attrs && g.rangeMultipliers?.[attrs.range]) ?? 1;
-      gm *= g.classMultipliers?.[cls] ?? 1;
-      if (gm !== 1 && mapTWR != null) gm = 1 + (gm - 1) * (aRules.geometry.dampWithMapData ?? 0.5);
-      score *= gm;
+      let gp = (attrs && g.rangePts?.[attrs.range]) ?? 0;
+      gp += g.classPts?.[cls] ?? 0;
+      if (gp !== 0 && mapTWR != null) gp *= (aRules.geometry.dampWithMapData ?? 0.5);
+      score += gp;
     }
     if (mapProf && attrs?.bushSynergy && aRules.bushSynergy) {
       // Rosa grows bushes, so a map plays one density step bushier with her on

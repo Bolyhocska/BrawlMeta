@@ -381,15 +381,28 @@
     "_comment": "Per-brawler exceptions to the class counter matrix, in the same WIN-RATE POINT units. Value = the LISTED brawler's edge against that enemy class, replacing its class default in BOTH directions (the reverse pairing uses the negation). Currently EMPTY. It held one entry, BOLT/THROWER = 0, whose job was to cancel the authored matrix's false claim that tanks lose 1.5 to throwers. The measured matrix has no such claim (Tank vs Thrower is +0.63), so the override became a penalty rather than a relief: Bolt measures +4.59 vs throwers over ~1,000 pairing-games, and pinning him to 0 would understate him. Not re-encoded at the measured value on purpose - one brawler on a four-figure sample is a thin basis for a hand-entry, and vs_brawler already carries Bolt's real per-enemy edges with proper shrinkage. Add an entry here only for an exception that vs_brawler cannot see, and damp it like any other prior."
   },
   "synergyPairs": {
-    "_comment": "SUPERSEDED by duoSynergy, which measures real brawler pairs from with_brawler. Kept only as the fallback when a duo has no measured sample. As authored this table could not move anything: 8 of 28 class pairs carry a value, all positive so both teams collect some, and the differential is exactly zero in 27.5% of real drafts. Removing it changed the verdict's AUC by 0.0000.",
-    "TANK+SUPPORT": 1.5,
-    "TANK+CONTROL": 1,
-    "THROWER+TANK": 1.5,
-    "THROWER+CONTROL": 1,
-    "SPACE_MAKER+SNIPER": 1,
-    "SPACE_MAKER+SUPPORT": 0.5,
-    "ANTI_TANK+CONTROL": 0.5,
-    "ANTI_TANK+SUPPORT": 0.5
+    "_measuredNote": "MEASURED 2026-08-31, replacing eight hand-authored 0.5-1.5 scores with all 21 cross-class pairs in win-rate points. Discordant pairs over 1.5M Masters matches: a pair's lift is the win rate of sides holding BOTH classes when the opponent does not, which controls for map and opponent because both sides played the same game. THE STRENGTH COMPONENT IS REMOVED WITH A FITTED COEFFICIENT, NOT AN ASSUMED ONE - the same trap the counter matrix fell into. Regressing pair lift on the sum of the two classes' solo lifts gives a slope of 0.508 (r = 0.631), not the 1.0 that a plain 'excess over parts' subtraction assumes, because class lifts do not add linearly on a bounded scale. The difference is not cosmetic: at 1.0, SNIPER+THROWER ranks FIRST at +2.30 and SPACE_MAKER+TANK ranks LAST at -1.45; at the fitted 0.508 they are 4th (+0.89) and 13th (-0.27), while ANTI_TANK+TANK goes from 9th to 2nd and ANTI_TANK+SNIPER from 15th to last. If you re-derive this table, fit the coefficient first. THE AUTHORED TABLE DID NOT SURVIVE: r = 0.10 with the measured values, i.e. no relationship. Of its eight entries only two hold (TANK+CONTROL 1.0 -> +0.78, THROWER+CONTROL 1.0 -> +0.59), three are inverted (THROWER+TANK was the joint-highest at 1.5 and measures -0.68; TANK+SUPPORT also 1.5 and measures -0.17; SPACE_MAKER+SUPPORT 0.5 and measures -1.04) and three are nothing. The three strongest real pairings - SUPPORT+THROWER, ANTI_TANK+TANK, SNIPER+SUPPORT - were absent from the table entirely. This is the FALLBACK path only: it fires when a duo has no with_brawler sample, and measured duo synergy is used whenever there is one. Standard errors run 0.07-0.25 points.",
+    "SUPPORT+THROWER": 1.39,
+    "ANTI_TANK+TANK": 1.31,
+    "SNIPER+SUPPORT": 1.12,
+    "SNIPER+THROWER": 0.89,
+    "CONTROL+TANK": 0.78,
+    "ANTI_TANK+SPACE_MAKER": 0.66,
+    "CONTROL+THROWER": 0.59,
+    "SNIPER+TANK": 0.55,
+    "CONTROL+SNIPER": 0.27,
+    "SNIPER+SPACE_MAKER": 0.02,
+    "ANTI_TANK+SUPPORT": 0.01,
+    "SUPPORT+TANK": -0.17,
+    "SPACE_MAKER+TANK": -0.27,
+    "ANTI_TANK+CONTROL": -0.28,
+    "CONTROL+SPACE_MAKER": -0.39,
+    "CONTROL+SUPPORT": -0.53,
+    "TANK+THROWER": -0.68,
+    "SPACE_MAKER+SUPPORT": -1.04,
+    "SPACE_MAKER+THROWER": -1.36,
+    "ANTI_TANK+THROWER": -1.4,
+    "ANTI_TANK+SNIPER": -1.48
   },
   "roles": {
     "_comment": "Standard ranked structure: one mid (objective player) + two laners. Lane anchors can hold a lane 1v1; objective specialists carry the mode's win condition.",
@@ -1390,24 +1403,21 @@
     },
     "geometry": {
       "_comment": "wallBreakShiftsOpen: a friendly wall breaker physically opens the map mid-game — CLOSED evaluates as MIXED, MIXED as OPEN (dynamic map mutation).",
-      "_pendingRescaleNote": "THESE MULTIPLIERS ARE MEASURED WRONG BY 4-9x AND ARE STILL SHIPPED. Long spans 11 points (OPEN x1.10 vs CLOSED x0.88 on a ~50-point base) and Short spans 12.5, while the measured spreads are 2.58 +/- 0.34 and 1.37 +/- 0.34. The direction is right and monotone across all three openness levels - long-range lift is +0.02 on OPEN maps, -1.16 on MIXED, -2.56 on CLOSED, and short range mirrors it at +0.60 / +1.57 / +1.97 - so the fix is a rescale to additive points (OPEN Long +1.3 / Short -0.7, CLOSED Long -1.3 / Short +0.7, MIXED neutral), not a retraction. It is held back from the 2026-08-31 schema commit deliberately: on 54 real draft states the rescale moves 8 of 54 top picks, because dropping the OPEN x0.85 hands every short-range brawler about +7 points on an open map. That is a correct correction but not a small one, so it wants its own commit and its own look. The CLOSED THROWER x1.08 should go to 0 at the same time - throwers measure -2.40 on closed maps against -0.11 on open, the opposite sign, but that reading is confounded by mode (the closed set skews to gemGrab and heist, throwers' two worst modes at -5.37 and -3.45), so there is no evidence for the bonus and not enough to invert it.",
+"_measuredNote": "Converted from multipliers to additive win-rate points on 2026-08-31, and rescaled 4-9x in the process. The multipliers spanned 11 points for Long (OPEN x1.10 vs CLOSED x0.88 on a ~50-point base) and 12.5 for Short; measured, the spreads are 2.58 +/- 0.34 and 1.37 +/- 0.34. The DIRECTION is right and monotone across all three openness levels - long range lifts +0.02 on OPEN maps, -1.16 on MIXED and -2.56 on CLOSED, short range the mirror at +0.60 / +1.57 / +1.97 - so this is a rescale, not a retraction. Values sit relative to MIXED as the neutral middle. The CLOSED THROWER x1.08 bonus is REMOVED rather than rescaled: throwers measure -2.40 on closed maps against -0.11 on open, the opposite sign, but that reading is confounded by mode (the closed map set skews to gemGrab and heist, throwers' two worst modes at -5.37 and -3.45), so there is no evidence for the bonus and not enough to invert it. Still damped by half once the brawler has a real map sample, since map win rate already encodes how the map treats them. This moves 8 of 54 top picks on the draft-state harness - almost entirely by handing short-range brawlers back the ~7 points OPEN x0.85 was taking from them.",
       "OPEN": {
-        "rangeMultipliers": {
-          "Long": 1.1,
-          "Short": 0.85
+        "rangePts": {
+          "Long": 1.3,
+          "Short": -0.7
         }
       },
       "CLOSED": {
-        "rangeMultipliers": {
-          "Short": 1.1,
-          "Long": 0.88
-        },
-        "classMultipliers": {
-          "THROWER": 1.08
+        "rangePts": {
+          "Short": 0.7,
+          "Long": -1.3
         }
       },
       "MIXED": {
-        "rangeMultipliers": {}
+        "rangePts": {}
       },
       "dampWithMapData": 0.5,
       "wallBreakShiftsOpen": true
