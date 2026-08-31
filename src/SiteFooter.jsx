@@ -9,7 +9,7 @@ export default function SiteFooter() {
     <footer style={{
       position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,.07)",
       padding: "26px 5vw 34px", marginTop: 40, textAlign: "center",
-      fontFamily: "'JetBrains Mono', monospace", fontSize: 11, lineHeight: 1.7, color: "#6f7180",
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 11, lineHeight: 1.7, color: "#8b8b9c",
     }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         This material is unofficial and is not endorsed by Supercell. For more information see
@@ -17,12 +17,12 @@ export default function SiteFooter() {
         <a href="https://supercell.com/en/fan-content-policy/" target="_blank" rel="noreferrer" style={{ color: "#9a8fc0" }}>
           Supercell's Fan Content Policy
         </a>.
-        <div style={{ marginTop: 8, color: "#4a4a58" }}>
+        <div style={{ marginTop: 8, color: "#6f7180" }}>
           BrawlApex is a fan-made stats & tournament platform. Brawl Stars and its assets are trademarks of Supercell.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link to="/about" style={{ color: "#6f7180", textDecoration: "none" }}>About</Link>
-          <Link to="/privacy" style={{ color: "#6f7180", textDecoration: "none" }}>Privacy &amp; Cookies</Link>
+          <Link to="/about" style={{ color: "#8b8b9c", textDecoration: "none" }}>About</Link>
+          <Link to="/privacy" style={{ color: "#8b8b9c", textDecoration: "none" }}>Privacy &amp; Cookies</Link>
         </div>
       </div>
     </footer>

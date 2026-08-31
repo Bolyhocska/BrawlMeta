@@ -159,7 +159,7 @@ function computeSynergies(matches, brawlerKey) {
 
 // ─── Star display ─────────────────────────────────────────────────────────────
 function StarRating({ stars, size = "md" }) {
-  if (stars === null || stars === undefined) return <span style={{ fontSize: 10, color: "#475569" }}>—</span>;
+  if (stars === null || stars === undefined) return <span style={{ fontSize: 10, color: "#7c8aa3" }}>—</span>;
   const sz = size === "sm" ? 10 : size === "lg" ? 18 : 13;
   return (
     <div style={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -344,22 +344,22 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
                 );
               })()}
             </div>
-            <p style={{ fontSize: 12, color: "#64748b", marginTop: 6, lineHeight: 1.5, maxWidth: 480 }}>
+            <p style={{ fontSize: 12, color: "#8b98ad", marginTop: 6, lineHeight: 1.5, maxWidth: 480 }}>
               {brawler.description?.slice(0, 180)}{brawler.description?.length > 180 ? "…" : ""}
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, textAlign: "center", flexShrink: 0 }}>
             <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>{brawler.winRate}%</div>
-              <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
+              <div style={{ fontSize: 10.5, color: "#7c8aa3", letterSpacing: "0.06em" }}>WIN RATE</div>
             </div>
             <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
-              <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
+              <div style={{ fontSize: 10.5, color: "#7c8aa3", letterSpacing: "0.06em" }}>PICK RATE</div>
             </div>
             <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "8px 16px", border: "1px solid rgba(255,255,255,.1)", gridColumn: "1/-1" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#ffb43d" }}>{brawler.picks}</div>
-              <div style={{ fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>TOTAL PICKS</div>
+              <div style={{ fontSize: 10.5, color: "#7c8aa3", letterSpacing: "0.06em" }}>TOTAL PICKS</div>
             </div>
           </div>
           <button onClick={onClose} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", borderRadius: 8, padding: 6, cursor: "pointer", alignSelf: "flex-start" }}>
@@ -373,7 +373,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
             <button key={s} onClick={() => setActiveSection(s)} style={{
               padding: "10px 16px", background: "none", border: "none",
               borderBottom: activeSection === s ? "2px solid #ffb43d" : "2px solid transparent",
-              color: activeSection === s ? "#ffb43d" : "#64748b",
+              color: activeSection === s ? "#ffb43d" : "#8b98ad",
               fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "capitalize",
               letterSpacing: "0.04em",
             }}>{s}</button>
@@ -404,7 +404,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
                       }}>
                         {x.img && <img src={x.img} alt="" style={{ width: 26, height: 26, objectFit: "contain", flexShrink: 0 }} />}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 8.5, letterSpacing: "0.1em", color: x.color, fontFamily: "'JetBrains Mono', monospace" }}>{x.kind}</div>
+                          <div style={{ fontSize: 10.5, letterSpacing: "0.1em", color: x.color, fontFamily: "'JetBrains Mono', monospace" }}>{x.kind}</div>
                           <div style={{ fontSize: 12.5, fontWeight: 700, color: "#e2e8f0" }}>{x.name}</div>
                         </div>
                       </div>
@@ -426,7 +426,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
                       <div style={{ fontSize: 18, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444" }}>
                         {m.winRate}%
                       </div>
-                      <div style={{ fontSize: 10, color: "#475569" }}>{m.picks} picks</div>
+                      <div style={{ fontSize: 10, color: "#7c8aa3" }}>{m.picks} picks</div>
                     </div>
                   ))}
                 </div>
@@ -438,13 +438,13 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
                   {mapStats.slice(0, 8).map(m => (
                     <div key={m.map} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "8px 12px" }}>
-                      <Map size={12} color="#475569" />
+                      <Map size={12} color="#7c8aa3" />
                       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{m.map}</span>
-                      <span style={{ fontSize: 10, color: "#64748b" }}>{FORMAT_MODE(m.mode)}</span>
+                      <span style={{ fontSize: 10, color: "#8b98ad" }}>{FORMAT_MODE(m.mode)}</span>
                       <span style={{ fontSize: 13, fontWeight: 800, color: m.winRate >= 52 ? "#10b981" : m.winRate >= 48 ? "#ffb43d" : "#ef4444", minWidth: 44, textAlign: "right" }}>
                         {m.winRate}%
                       </span>
-                      <span style={{ fontSize: 10, color: "#475569", minWidth: 52, textAlign: "right" }}>{m.picks} picks</span>
+                      <span style={{ fontSize: 10, color: "#7c8aa3", minWidth: 52, textAlign: "right" }}>{m.picks} picks</span>
                     </div>
                   ))}
                 </div>
@@ -463,7 +463,7 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
                     <div key={m.map} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "10px 14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{m.map}</span>
-                        <span style={{ fontSize: 10, color: "#475569" }}>{FORMAT_MODE(m.mode)} · {m.picks} picks</span>
+                        <span style={{ fontSize: 10, color: "#7c8aa3" }}>{FORMAT_MODE(m.mode)} · {m.picks} picks</span>
                         <span style={{ fontSize: 14, fontWeight: 800, color: m.winRate >= 55 ? "#10b981" : m.winRate >= 50 ? "#ffb43d" : "#ef4444" }}>
                           {m.winRate}%
                         </span>
@@ -480,14 +480,14 @@ function BrawlerDetail({ brawler, byMode, byMap, onClose, onOpenFullGuide, rankB
 
           {activeSection === "synergies" && (
             pairs.loading ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#7c8aa3" }}>
                 <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>Loading match-up data…</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#8b98ad" }}>Loading match-up data…</p>
               </div>
             ) : (pairs.with.length === 0 && pairs.vs.length === 0) ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#7c8aa3" }}>
                 <Users size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Not enough pair data yet</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#8b98ad", marginBottom: 6 }}>Not enough pair data yet</p>
                 <p style={{ fontSize: 12 }}>{brawler.name} has no teammate or opponent pairing with 300+ games in this bracket.</p>
               </div>
             ) : (
@@ -565,12 +565,12 @@ function SynergyRow({ brawler, color }) {
       <div style={{ width: 32, height: 32, borderRadius: 6, overflow: "hidden", background: `${brawler.rarityColor}20`, border: `1.5px solid ${brawler.rarityColor}50`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {!imgErr && brawler.imageUrl
           ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgErr(true)} />
-          : <span style={{ fontSize: 9, fontWeight: 800, color: brawler.rarityColor }}>{brawler.name.slice(0, 2).toUpperCase()}</span>
+          : <span style={{ fontSize: 10.5, fontWeight: 800, color: brawler.rarityColor }}>{brawler.name.slice(0, 2).toUpperCase()}</span>
         }
       </div>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{brawler.name}</span>
       <span style={{ fontSize: 13, fontWeight: 800, color }}>{brawler.winRate}%</span>
-      <span style={{ fontSize: 10, color: "#475569" }}>{brawler.picks}g</span>
+      <span style={{ fontSize: 10, color: "#7c8aa3" }}>{brawler.picks}g</span>
     </div>
   );
 }
@@ -587,7 +587,7 @@ function PairRow({ entry, color }) {
       </div>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{name}</span>
       <span style={{ fontSize: 13, fontWeight: 800, color }}>{entry.winRate}%</span>
-      <span style={{ fontSize: 10, color: "#475569", minWidth: 46, textAlign: "right" }}>{entry.picks.toLocaleString("en-US")}g</span>
+      <span style={{ fontSize: 10, color: "#7c8aa3", minWidth: 46, textAlign: "right" }}>{entry.picks.toLocaleString("en-US")}g</span>
     </div>
   );
 }
@@ -642,14 +642,14 @@ function AbilityCard({ name, desc, img, color }) {
       )}
       <div>
         <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 4 }}>{name}</div>
-        <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>{desc?.replace(/<[^>]*>/g, "") || "—"}</div>
+        <div style={{ fontSize: 12, color: "#8b98ad", lineHeight: 1.5 }}>{desc?.replace(/<[^>]*>/g, "") || "—"}</div>
       </div>
     </div>
   );
 }
 
 const sectionTitle = { fontSize: 13, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 };
-const emptyText = { fontSize: 12, color: "#475569" };
+const emptyText = { fontSize: 12, color: "#7c8aa3" };
 
 function GuideSection({ guide }) {
   const [lightbox, setLightbox] = useState(null);
@@ -659,8 +659,8 @@ function GuideSection({ guide }) {
 
   if (!hasTips && !hasScreenshots && !videoUrl) {
     return (
-      <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569" }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Guide coming soon</p>
+      <div style={{ textAlign: "center", padding: "40px 20px", color: "#7c8aa3" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#8b98ad", marginBottom: 6 }}>Guide coming soon</p>
         <p style={{ fontSize: 12 }}>An in-depth write-up with screenshots and video is on the way for this brawler.</p>
       </div>
     );
@@ -797,7 +797,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
   const totalRanked = TIERS.reduce((sum, t) => sum + tierRows[t.id].length, 0);
 
   if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300, color: "#475569", fontSize: 13 }}>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300, color: "#7c8aa3", fontSize: 13 }}>
       Computing brawler ratings…
     </div>
   );
@@ -812,7 +812,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
         <h2 style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", color: "#f8fafc", marginBottom: 4 }}>
           Draft power rankings
         </h2>
-        <p style={{ fontSize: 12, color: "#64748b" }}>
+        <p style={{ fontSize: 12, color: "#8b98ad" }}>
           {tierMode === "general"
             ? "Hand-curated general meta ranking across all ranked modes."
             : <>Ranked by win rate on <span style={{ color: "#c98bff" }}>{FORMAT_MODE(tierMode)}</span> · {rankBracket === "masters_legendary" ? "Masters & Legendary" : "Diamond & Mythic"} · min {MIN_PICKS_TIER} games</>}
@@ -839,7 +839,7 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
 
       {/* Tier rows */}
       {tierMode !== "general" && totalRanked === 0 ? (
-        <div style={{ textAlign: "center", color: "#475569", fontSize: 13, padding: 40 }}>
+        <div style={{ textAlign: "center", color: "#7c8aa3", fontSize: 13, padding: 40 }}>
           Not enough data for this mode yet (min {MIN_PICKS_TIER} games per brawler).
         </div>
       ) : (
@@ -900,7 +900,7 @@ function TierChip({ brawler, onClick }) {
           {brawler.name}
           {hasBrawlerGuide(brawler.key || brawler.name) && <GuideBadge compact />}
         </span>
-        <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#ffc663" : "#f87171") : "#64748b" }}>
+        <span style={{ fontSize: 10, color: brawler.winRate != null ? (brawler.winRate >= 52 ? "#34d399" : brawler.winRate >= 48 ? "#ffc663" : "#f87171") : "#8b98ad" }}>
           {brawler.winRate != null ? `${brawler.winRate}%` : "—"}
         </span>
       </div>
@@ -947,11 +947,11 @@ function BrawlerCard({ brawler, onClick }) {
             <div style={{ fontSize: 13, fontWeight: 800, color: brawler.winRate >= 52 ? "#10b981" : brawler.winRate >= 48 ? "#ffb43d" : "#ef4444" }}>
               {brawler.winRate}%
             </div>
-            <div style={{ fontSize: 8, color: "#475569", letterSpacing: "0.06em" }}>WIN RATE</div>
+            <div style={{ fontSize: 10, color: "#7c8aa3", letterSpacing: "0.06em" }}>WIN RATE</div>
           </div>
           <div style={{ background: "#08080c", borderRadius: 6, padding: "5px 8px", textAlign: "center" }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#3b82f6" }}>{brawler.pickRate}%</div>
-            <div style={{ fontSize: 8, color: "#475569", letterSpacing: "0.06em" }}>PICK RATE</div>
+            <div style={{ fontSize: 10, color: "#7c8aa3", letterSpacing: "0.06em" }}>PICK RATE</div>
           </div>
         </div>
       </div>

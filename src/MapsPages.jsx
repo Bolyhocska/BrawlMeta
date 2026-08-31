@@ -50,7 +50,7 @@ const card = {
   background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.08)",
   borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12,
 };
-const eyebrow = { fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: "#6f7180" };
+const eyebrow = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8b8b9c" };
 
 // ── data ─────────────────────────────────────────────────────────────────────
 
@@ -178,7 +178,7 @@ export function MapsLandingPage() {
               <span style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 700, color: MODE_COLORS[mode] || "#e9e9f2" }}>
                 {formatMode(mode)}
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>{maps.length} MAPS</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>{maps.length} MAPS</span>
             </div>
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill,minmax(268px,1fr))" }}>
               {maps.map(m => (
@@ -187,10 +187,10 @@ export function MapsLandingPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                       <span style={{ fontFamily: DISPLAY, fontSize: 15.5, fontWeight: 700 }}>{m.name}</span>
                       {!m.inRotation && (
-                        <span style={{ fontFamily: MONO, fontSize: 8, color: "#6f7180", border: "1px solid rgba(255,255,255,.14)", borderRadius: 4, padding: "1px 5px" }}>OUT</span>
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: "#8b8b9c", border: "1px solid rgba(255,255,255,.14)", borderRadius: 4, padding: "1px 5px" }}>OUT</span>
                       )}
                     </div>
-                    <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>
                       {m.matches.toLocaleString("en-US")} MATCHES
                     </span>
                     <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
@@ -201,7 +201,7 @@ export function MapsLandingPage() {
                             <span style={{ color: "#c9c9d6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i + 1}. {b.name}</span>
                             <span style={{ fontFamily: MONO, color: CHART_COLORS.green }}>{b.winRate.toFixed(1)}%</span>
                           </div>
-                        )) : <span style={{ fontSize: 11, color: "#6f7180" }}>Not enough games yet.</span>}
+                        )) : <span style={{ fontSize: 11, color: "#8b8b9c" }}>Not enough games yet.</span>}
                       </div>
                     </div>
                   </div>

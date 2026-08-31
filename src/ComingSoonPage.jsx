@@ -35,7 +35,7 @@ export default function ComingSoonPage({ eyebrow, title, description }) {
       <footer style={{
         position: "relative", zIndex: 10, borderTop: "1px solid rgba(255,255,255,.06)", padding: "32px 5vw",
         display: "flex", justifyContent: "space-between", fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11, color: "#5a5a6a",
+        fontSize: 11, color: "#7c7e8f",
       }}>
         <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
         <span>v2026.1 · META SNAPSHOT</span>

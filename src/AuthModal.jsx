@@ -91,7 +91,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
         onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 400, borderRadius: 22, background: "#0d0d14", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 30px 90px rgba(0,0,0,.6)", padding: 26, position: "relative" }}
       >
-        <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "#6f7180", cursor: "pointer" }}>
+        <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "#8b8b9c", cursor: "pointer" }}>
           <X size={18} />
         </button>
 
@@ -107,7 +107,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.1)" }} />
-          <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a" }}>OR EMAIL</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>OR EMAIL</span>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.1)" }} />
         </div>
 
@@ -115,7 +115,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
           {mode === "signup" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <input style={input} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={30} required />
-              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#6f7180", paddingLeft: 4 }}>Unique & permanent — you can't change it later.</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", paddingLeft: 4 }}>Unique & permanent — you can't change it later.</span>
             </div>
           )}
           <input style={input} type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />

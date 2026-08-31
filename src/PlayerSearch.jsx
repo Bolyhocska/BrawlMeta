@@ -107,7 +107,7 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
   return (
     <div ref={box} style={{ position: "relative", maxWidth: compact ? 420 : 620, width: "100%" }}>
       <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-        <Search size={15} style={{ color: "#6f7180", position: "absolute", left: 13, pointerEvents: "none" }} />
+        <Search size={15} style={{ color: "#8b8b9c", position: "absolute", left: 13, pointerEvents: "none" }} />
         <input
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
@@ -122,7 +122,7 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
         {q && (
           <button type="button" onClick={() => { setQ(""); setRows([]); }} aria-label="Clear" style={{
             position: "absolute", right: 10, background: "none", border: "none",
-            cursor: "pointer", color: "#6f7180", padding: 4, lineHeight: 1,
+            cursor: "pointer", color: "#8b8b9c", padding: 4, lineHeight: 1,
           }}><X size={14} /></button>
         )}
       </form>
@@ -154,19 +154,19 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
               <span style={{ minWidth: 0 }}>
                 <span style={{ display: "block", fontSize: 13.5, color: "#e9e9f2",
                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-                <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{r.tag}</span>
+                <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: "#8b8b9c" }}>{r.tag}</span>
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#8a7fa6", flexShrink: 0 }}>{r.note}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6", flexShrink: 0 }}>{r.note}</span>
             </button>
           ))}
           {!busy && !rows.length && !tagCandidate && (
-            <div style={{ padding: "12px 13px", fontFamily: MONO, fontSize: 11, color: "#6f7180", lineHeight: 1.6 }}>
+            <div style={{ padding: "12px 13px", fontFamily: MONO, fontSize: 11, color: "#8b8b9c", lineHeight: 1.6 }}>
               No player by that name. Name search covers players we've seen in ranked matches —
               it grows as we collect — so paste a tag to look up anyone else.
             </div>
           )}
           {busy && !rows.length && (
-            <div style={{ padding: "12px 13px", fontFamily: MONO, fontSize: 11, color: "#6f7180" }}>Searching…</div>
+            <div style={{ padding: "12px 13px", fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>Searching…</div>
           )}
         </div>
       )}

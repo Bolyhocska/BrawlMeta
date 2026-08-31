@@ -33,7 +33,7 @@ function ImageSlot({ placeholder, style }) {
     <div style={{
       width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
       background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))",
-      color: "#5a5a6a", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1,
+      color: "#7c7e8f", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1,
       textAlign: "center", padding: 12, ...style,
     }}>
       {placeholder}
@@ -48,7 +48,7 @@ function StatChip({ value, label, color }) {
       border: "1px solid rgba(255,255,255,.08)", fontFamily: "'JetBrains Mono', monospace",
     }}>
       <div style={{ fontSize: 30, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 11, letterSpacing: 2, color: "#6f7180", marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, letterSpacing: 2, color: "#8b8b9c", marginTop: 4 }}>{label}</div>
     </div>
   );
 }
@@ -148,7 +148,7 @@ export default function HomePage() {
               </div>
               <div style={{ fontSize: 24, fontWeight: 700, color: "#f4f4fa", letterSpacing: "-.3px" }}>{sec.heading}</div>
               <div style={{ color: "#9a9aab", fontSize: 14.5, lineHeight: 1.5 }}>{sec.desc}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: .5, color: "#6f7180" }}>{sec.bullets}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: .5, color: "#8b8b9c" }}>{sec.bullets}</div>
               <LinkTag
                 {...linkProps}
                 style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 8, color: sec.accent, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
@@ -166,7 +166,7 @@ export default function HomePage() {
       <footer style={{
         position: "relative", zIndex: 10, borderTop: "1px solid rgba(255,255,255,.06)", padding: "32px 5vw",
         display: "flex", flexDirection: "column", gap: 14, fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11, color: "#5a5a6a",
+        fontSize: 11, color: "#7c7e8f",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>

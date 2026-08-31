@@ -263,7 +263,7 @@ function VideoSlot({ base, src, label, tone = "#8ee6b0", kind }) {
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           />
         )}
-        <div style={{ position: "absolute", top: 8, right: 8, fontFamily: MONO, fontSize: 8.5, letterSpacing: 1, color: "#e9e9f2", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ position: "absolute", top: 8, right: 8, fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#e9e9f2", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: tone }} />LOOP · MUTED
         </div>
       </div>
@@ -350,7 +350,7 @@ const VERDICTS = {
 function VerdictBadge({ v }) {
   return (
     <span style={{
-      fontFamily: MONO, fontSize: 9, letterSpacing: 1.2, fontWeight: 700, whiteSpace: "nowrap",
+      fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, fontWeight: 700, whiteSpace: "nowrap",
       padding: "3px 9px", borderRadius: 999, color: v.fg, background: v.bg, border: `1px solid ${v.border}`,
     }}>{v.label}</span>
   );
@@ -822,7 +822,7 @@ export default function BrawlerGuidePage({
             }}>
               {brawler.imageUrl
                 ? <img src={brawler.imageUrl} alt={brawler.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontFamily: MONO, fontSize: 10, color: "#5a5a6a" }}>NO ART</div>}
+                : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>NO ART</div>}
             </div>
             {/* margin:0 on the h1 — the app resets html/body margins but not
                 headings, and the default ~29px was pushing the chips clear of
@@ -897,7 +897,7 @@ export default function BrawlerGuidePage({
               <div style={{ fontSize: 24, fontWeight: 700, marginTop: 6, color: tierBand.color, fontFamily: DISPLAY }}>
                 {tier}-Tier
               </div>
-              {provisional && <div style={{ fontSize: 10.5, color: "#6f7180", marginTop: 2 }}>Provisional</div>}
+              {provisional && <div style={{ fontSize: 10.5, color: "#8b8b9c", marginTop: 2 }}>Provisional</div>}
             </div>
           </div>
         </div>
@@ -967,7 +967,7 @@ export default function BrawlerGuidePage({
                               style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
                           <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
                         </div>
                       </div>
@@ -1042,7 +1042,7 @@ export default function BrawlerGuidePage({
                       {item.img && <img src={item.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
                       <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
                     </div>
                   </div>
@@ -1069,7 +1069,7 @@ export default function BrawlerGuidePage({
                           <GearIcon name={item.gear} size={20} />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: item.accent }}>{item.kind}</div>
                           <div style={{ fontSize: 14.5, fontWeight: 700, color: "#f4f4fa" }}>{item.name}</div>
                         </div>
                       </div>
@@ -1221,7 +1221,7 @@ export default function BrawlerGuidePage({
                     }}>
                       {mp.map}
                       <span style={{
-                        marginLeft: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: .5,
+                        marginLeft: 8, fontFamily: MONO, fontSize: 11, letterSpacing: .5,
                         padding: "2px 8px", borderRadius: 999,
                         background: strong ? "rgba(142,230,176,.16)" : "rgba(255,255,255,.08)",
                         color: strong ? "#8ee6b0" : "#9a9aab",
@@ -1393,7 +1393,7 @@ function MatchupPanel({ eyebrow, accent, rows, bothSides, bothNote }) {
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700, fontSize: 15, color: "#f4f4fa" }}>{fmtName(s.key)}</span>
                   <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: accent }}>{s.winRate}%</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{s.games.toLocaleString("en-US")} games</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: "#8b8b9c" }}>{s.games.toLocaleString("en-US")} games</span>
                 </div>
                 {bothSides?.has(s.key) && bothNote && (
                   <div style={{ fontSize: 12, lineHeight: 1.45, color: "#8b8b9c", marginTop: 4, fontStyle: "italic" }}>
@@ -1437,7 +1437,7 @@ function StatCard({ label, value, sub, color = "#f4f4fa" }) {
     <div style={{ padding: "20px 22px", borderRadius: 20, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)" }}>
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#9a9aab" }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 700, marginTop: 6, color }}>{value}</div>
-      {sub && <div style={{ fontSize: 10.5, color: "#6f7180", marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 10.5, color: "#8b8b9c", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }

@@ -94,7 +94,7 @@ function Callout({ tone = "amber", children }) {
 function Sec({ id, n, tag, title, children }) {
   return (
     <section id={id} style={{ scrollMarginTop: 90, marginBottom: 34 }}>
-      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", marginBottom: 6 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8b8b9c", marginBottom: 6 }}>
         [ {n} / {tag} ]
       </div>
       <h2 style={{
@@ -113,7 +113,7 @@ function Contents() {
       padding: "18px 18px 20px", borderRadius: 14,
       background: "rgba(13,13,20,.6)", border: "1px solid rgba(255,255,255,.08)",
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 2.4, color: "#6f7180", marginBottom: 12 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 2.4, color: "#8b8b9c", marginBottom: 12 }}>
         CONTENTS
       </div>
       {SECTIONS.map(s => (
@@ -121,7 +121,7 @@ function Contents() {
           display: "flex", gap: 9, padding: "5px 0", textDecoration: "none",
           fontFamily: MONO, fontSize: 11.5, color: "#9a9aab", lineHeight: 1.5,
         }}>
-          <span style={{ color: "#5a5a6a" }}>{s.n}</span>
+          <span style={{ color: "#7c7e8f" }}>{s.n}</span>
           <span>{s.title.replace(/\.$/, "")}</span>
         </a>
       ))}
@@ -156,7 +156,7 @@ function LegalHeader({ eyebrow, title, lead }) {
 function MetaStrip() {
   const cell = (label, value) => (
     <div style={{ display: "flex", gap: 7, alignItems: "baseline" }}>
-      <span style={{ color: "#5a5a6a" }}>{label}</span>
+      <span style={{ color: "#7c7e8f" }}>{label}</span>
       <span style={{ color: "#c9c9d6" }}>{value}</span>
     </div>
   );

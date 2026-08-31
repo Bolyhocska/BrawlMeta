@@ -37,7 +37,7 @@ const TONE = {
   good: "#8ee6b0",
   warn: "#ffce7a",
   info: "#9a8fc0",
-  muted: "#6f7180",
+  muted: "#8b8b9c",
 };
 
 export function useAdvice(tag, rankedRows) {
@@ -176,15 +176,15 @@ function Loadout({ owned }) {
         const full = it.have >= it.of;
         return (
           <span key={it.label} style={{
-            fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+            fontFamily: MONO, fontSize: 11, padding: "3px 8px", borderRadius: 999,
             background: full ? "rgba(142,230,176,.10)" : it.have > 0 ? "rgba(255,255,255,.05)" : "transparent",
             border: `1px solid ${full ? "rgba(142,230,176,.28)" : "rgba(255,255,255,.10)"}`,
-            color: full ? "#8ee6b0" : it.have > 0 ? "#c9c9d6" : "#5a5a6a",
+            color: full ? "#8ee6b0" : it.have > 0 ? "#c9c9d6" : "#7c7e8f",
           }}>{it.label} {it.have}/{it.of}</span>
         );
       })}
       <span style={{
-        fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+        fontFamily: MONO, fontSize: 11, padding: "3px 8px", borderRadius: 999,
         background: owned.hyper ? "rgba(142,230,176,.10)" : "transparent",
         border: `1px solid ${owned.hyper ? "rgba(142,230,176,.28)" : "rgba(255,143,143,.24)"}`,
         color: owned.hyper ? "#8ee6b0" : "#ff8f8f",
@@ -203,7 +203,7 @@ export function Card({ p, rank, note }) {
       border: `1px solid ${rank === 1 ? "rgba(255,180,61,.28)" : "rgba(255,255,255,.08)"}`,
     }}>
       <span style={{
-        fontFamily: MONO, fontSize: 11, color: rank === 1 ? "#ffce7a" : "#5a5a6a",
+        fontFamily: MONO, fontSize: 11, color: rank === 1 ? "#ffce7a" : "#7c7e8f",
         width: 14, textAlign: "right", paddingTop: 12,
       }}>{rank}</span>
 
@@ -222,11 +222,11 @@ export function Card({ p, rank, note }) {
           <span style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 700, color: "#f4f4fa" }}>
             {formatBrawlerName(p.name)}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#8a7fa6" }}>{p.label.toUpperCase()}</span>
-          <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>POWER {p.power}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "#8a7fa6" }}>{p.label.toUpperCase()}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>POWER {p.power}</span>
           {note && (
             <span style={{
-              fontFamily: MONO, fontSize: 9, letterSpacing: .6, padding: "2px 7px", borderRadius: 999,
+              fontFamily: MONO, fontSize: 10.5, letterSpacing: .6, padding: "2px 7px", borderRadius: 999,
               background: note.tone === "new" ? "rgba(142,230,176,.12)" : "rgba(255,255,255,.05)",
               border: `1px solid ${note.tone === "new" ? "rgba(142,230,176,.32)" : "rgba(255,255,255,.10)"}`,
               color: note.tone === "new" ? "#8ee6b0" : "#8a8a9c",
@@ -248,7 +248,7 @@ export function Card({ p, rank, note }) {
             </span>
           )}
           {p.cost.totalCoins > p.step.coins && (
-            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>
               · {p.cost.totalCoins.toLocaleString("en-US")} coins to finish entirely
             </span>
           )}
@@ -293,7 +293,7 @@ export function BuffiePacks({ roster }) {
       marginTop: 12, padding: "13px 15px", borderRadius: 12,
       background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)",
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#6f7180", marginBottom: 9 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.6, color: "#8b8b9c", marginBottom: 9 }}>
         BUFFIE PACKS — {BUFFIE_COST.pp.toLocaleString("en-US")} POWER POINTS + {BUFFIE_COST.coins.toLocaleString("en-US")} GOLD PER DRAW
       </div>
       <div style={{ display: "grid", gap: 5 }}>
@@ -301,19 +301,19 @@ export function BuffiePacks({ roster }) {
           <div key={r.name} style={{
             display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto", gap: 10, alignItems: "center",
             fontFamily: MONO, fontSize: 10.5,
-            color: r.missing === 0 ? "#5a5a6a" : "#c9c9d6",
+            color: r.missing === 0 ? "#7c7e8f" : "#c9c9d6",
           }}>
             <span>{r.name}
-              <span style={{ color: "#5a5a6a" }}> · {r.brawlers.map(n => n[0] + n.slice(1).toLowerCase()).join(", ")}</span>
+              <span style={{ color: "#7c7e8f" }}> · {r.brawlers.map(n => n[0] + n.slice(1).toLowerCase()).join(", ")}</span>
             </span>
-            <span style={{ color: r.missing === 0 ? "#5a5a6a" : "#ffce7a" }}>{r.held}/9</span>
-            <span style={{ color: "#5a5a6a", minWidth: 54, textAlign: "right" }}>
+            <span style={{ color: r.missing === 0 ? "#7c7e8f" : "#ffce7a" }}>{r.held}/9</span>
+            <span style={{ color: "#7c7e8f", minWidth: 54, textAlign: "right" }}>
               {r.missing === 0 ? "full" : `${r.missing} open`}
             </span>
           </div>
         ))}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 9, lineHeight: 1.6 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 9, lineHeight: 1.6 }}>
         {open.length === 0
           ? "Every pack is full — buffie draws have nothing left to give you until the next wave."
           : `A draw returns one random buffie from the pack you buy, skipping ones you already hold, so a fuller pack is better odds on what's left. ${7 - open.length} of 7 packs are already complete.`}
@@ -356,7 +356,7 @@ function RosterFace({ b, built, strong, selected, onClick }) {
     }}>
       {src
         ? <img src={src} alt="" width={34} height={34} style={{ objectFit: "cover", display: "block" }} loading="lazy" />
-        : <span style={{ fontFamily: MONO, fontSize: 9, color: "#8a8a9c" }}>{String(b.name).slice(0, 2)}</span>}
+        : <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c" }}>{String(b.name).slice(0, 2)}</span>}
       {strong && (
         <span style={{
           position: "absolute", right: -1, bottom: -1, width: 9, height: 9, borderRadius: "50%",
@@ -419,7 +419,7 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
             <span style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 800, color: "#e9e9f2" }}>
               {formatBrawlerName(b.name)}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>POWER {b.power || 1}</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#8b8b9c" }}>POWER {b.power || 1}</span>
             {wr != null && (
               <span style={{ fontFamily: MONO, fontSize: 10, color: wr >= READY_WIN_RATE ? "#8ee6b0" : "#9a9aab" }}>
                 {wr.toFixed(1)}% WIN RATE
@@ -433,7 +433,7 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
         </div>
         <button type="button" onClick={onClose} aria-label="Close" style={{
           background: "none", border: "none", cursor: "pointer", padding: 4,
-          fontFamily: MONO, fontSize: 13, color: "#6f7180", lineHeight: 1,
+          fontFamily: MONO, fontSize: 13, color: "#8b8b9c", lineHeight: 1,
         }}>x</button>
       </div>
 
@@ -441,14 +441,14 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
         {[["GADGETS", o.gadgets, 2], ["STAR POWERS", o.starPowers, 2],
           ["GEARS", o.gears, 2], ["BUFFIES", o.buffies, 3]].map(([label, have, of]) => (
           <span key={label} style={{
-            fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+            fontFamily: MONO, fontSize: 11, padding: "3px 8px", borderRadius: 999,
             background: have >= of ? "rgba(142,230,176,.10)" : have > 0 ? "rgba(255,255,255,.05)" : "transparent",
             border: `1px solid ${have >= of ? "rgba(142,230,176,.28)" : "rgba(255,255,255,.10)"}`,
-            color: have >= of ? "#8ee6b0" : have > 0 ? "#c9c9d6" : "#5a5a6a",
+            color: have >= of ? "#8ee6b0" : have > 0 ? "#c9c9d6" : "#7c7e8f",
           }}>{label} {have}/{of}</span>
         ))}
         <span style={{
-          fontFamily: MONO, fontSize: 9.5, padding: "3px 8px", borderRadius: 999,
+          fontFamily: MONO, fontSize: 11, padding: "3px 8px", borderRadius: 999,
           background: o.hyper ? "rgba(142,230,176,.10)" : "transparent",
           border: `1px solid ${o.hyper ? "rgba(142,230,176,.28)" : "rgba(255,143,143,.24)"}`,
           color: o.hyper ? "#8ee6b0" : "#ff8f8f",
@@ -459,7 +459,7 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
         <>
           <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#c9c9d6", marginTop: 10 }}>
             NEXT: {pick.step.label}
-            <span style={{ color: "#6f7180" }}>
+            <span style={{ color: "#8b8b9c" }}>
               {pick.step.coins ? ` - ${pick.step.coins.toLocaleString("en-US")} coins` : ""}
               {pick.step.pp ? ` + ${pick.step.pp.toLocaleString("en-US")} pp` : ""}
             </span>
@@ -471,7 +471,7 @@ function FaceDetail({ b, pick, rank, intel, built, strong, onClose }) {
           ))}
         </>
       ) : (
-        <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#6f7180", marginTop: 9 }}>
+        <div style={{ fontSize: 12.5, lineHeight: 1.6, color: "#8b8b9c", marginTop: 9 }}>
           Nothing left to buy on this one.
         </div>
       )}
@@ -518,10 +518,10 @@ export function RoleCoverage({ classes, roster, picks, intel, builtNames, strong
         display: "flex", alignItems: "baseline", justifyContent: "space-between",
         gap: 12, flexWrap: "wrap", marginBottom: 11,
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#6f7180" }}>
+        <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.6, color: "#8b8b9c" }}>
           YOUR ROSTER BY ROLE
         </div>
-        <div style={{ display: "flex", gap: 11, flexWrap: "wrap", fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>
+        <div style={{ display: "flex", gap: 11, flexWrap: "wrap", fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>
           <span><Swatch ring="rgba(142,230,176,.75)" fill="rgba(142,230,176,.25)" dot />BUILT + WINNING</span>
           <span><Swatch ring="rgba(154,143,192,.75)" fill="rgba(154,143,192,.25)" />BUILT</span>
           <span><Swatch ring="rgba(255,255,255,.12)" fill="rgba(255,255,255,.22)" />NO HYPERCHARGE</span>
@@ -549,7 +549,7 @@ export function RoleCoverage({ classes, roster, picks, intel, builtNames, strong
                 fontFamily: MONO, fontSize: 10.5, letterSpacing: .6,
                 color: isThin ? "#ff8f8f" : "#c9c9d6",
               }}>{c.label}</span>
-              <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>
                 {c.built} built - {c.strong} winning - {c.maxed} maxed - {c.owned} owned
               </span>
             </div>
@@ -596,18 +596,18 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
 
   if (!tag) return null;
   if (loading) {
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "8px 2px 18px" }}>
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", padding: "8px 2px 18px" }}>
       Reading your roster…
     </div>;
   }
   if (error === "no_roster") {
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "8px 2px 18px" }}>
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", padding: "8px 2px 18px" }}>
       Couldn't read your roster from the Brawl Stars API just now — try again shortly.
     </div>;
   }
   if (error || !picks.length) {
     // Only when there is genuinely nothing left to buy on any brawler.
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "8px 2px 18px" }}>
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", padding: "8px 2px 18px" }}>
       Every brawler we can price is already finished — there is nothing left to buy.
     </div>;
   }
@@ -619,7 +619,7 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
           padding: "14px 16px", borderRadius: 12, marginBottom: 13,
           background: "rgba(255,180,61,.08)", border: "1px solid rgba(255,180,61,.28)",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.6, color: "#ffce7a", marginBottom: 6 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color: "#ffce7a", marginBottom: 6 }}>
             CONSIDER SAVING INSTEAD
           </div>
           <div style={{ fontSize: 13, lineHeight: 1.65, color: "#e2d2b0" }}>{saveAdvice.text}</div>
@@ -629,7 +629,7 @@ export default function UpgradeAdvisor({ tag, rankedRows }) {
       <RoleCoverage classes={classes} roster={roster} picks={picks} intel={intel}
         builtNames={builtNames} strongNames={strongNames} />
       <BuffiePacks roster={roster} />
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 11, lineHeight: 1.65 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 11, lineHeight: 1.65 }}>
         Ranked by what the next step buys per coin: how strong the brawler is on the maps in rotation
         now, how much you've already sunk into it, and whether your maxed roster is short of that
         role. Levelling always targets power 11, because ranked only allows power-11 brawlers from

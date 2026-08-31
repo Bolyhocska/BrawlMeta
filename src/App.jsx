@@ -214,7 +214,7 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
               }}
               onClick={() => onChange(bracket.id)}
             >
-              <Star size={12} color={active ? bracket.accent : "#475569"} fill={active ? bracket.accent : "none"} />
+              <Star size={12} color={active ? bracket.accent : "#7c8aa3"} fill={active ? bracket.accent : "none"} />
               {bracket.label}
             </button>
           );
@@ -226,7 +226,7 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
         <button onClick={() => setPatchOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 999, border: "1px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.04)", color: "#ffce7a", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", letterSpacing: ".5px" }}>
           <Star size={11} color="#ffb43d" fill="#ffb43d" />
           PATCH {selectedPatch}
-          <ChevronDown size={11} color="#64748b" style={{ transform: patchOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          <ChevronDown size={11} color="#8b98ad" style={{ transform: patchOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
         </button>
         {patchOpen && patches.length > 0 && (
           <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 6, background: "rgba(13,13,20,.95)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, zIndex: 200, minWidth: 160, overflow: "hidden", padding: 5, backdropFilter: "blur(12px)" }}>
@@ -319,7 +319,7 @@ function PlayerCardSearch() {
   const stat = (label, value, color = "#f4f4fa") => (
     <div key={label} style={{ padding: "14px 16px", borderRadius: 18, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", fontFamily: MONO_FONT }}>
       <div style={{ fontSize: 20, fontWeight: 700, color, fontFamily: DISPLAY_FONT }}>{value}</div>
-      <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#6f7180", marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 10.5, letterSpacing: 1.5, color: "#8b8b9c", marginTop: 3 }}>{label}</div>
     </div>
   );
 
@@ -348,7 +348,7 @@ function PlayerCardSearch() {
               <div style={{ fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: 700, color: scNameColor(player.nameColor) }}>{player.name}</div>
               <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: "#8a7fa6" }}>{player.tag}{player.club ? ` · ${player.club}` : ""}</div>
             </div>
-            <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: "#6f7180" }}>LVL {player.expLevel}</div>
+            <div style={{ fontFamily: MONO_FONT, fontSize: 11, color: "#8b8b9c" }}>LVL {player.expLevel}</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, padding: "16px 20px" }}>
             {stat("TROPHIES", `🏆 ${player.trophies.toLocaleString()}`, "#ffce7a")}
@@ -467,6 +467,13 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
         <h1 style={{ marginTop: 20, fontFamily: DISPLAY_FONT, fontSize: "clamp(40px,5.5vw,72px)", fontWeight: 700, lineHeight: .95, letterSpacing: "-1px", color: "#f4f4fa" }}>
           Top of the <span style={{ color: "#ffb43d", textShadow: "0 0 40px rgba(255,180,61,.5)" }}>ladder</span>
         </h1>
+        {/* The hero shouted a headline and then dropped you into three
+            unlabelled sections. One plain line saying what the page IS costs
+            nothing and is the difference between scanning and guessing. */}
+        <p style={{ marginTop: 12, maxWidth: 560, fontSize: 14.5, lineHeight: 1.65, color: "#8b98ad" }}>
+          The world&apos;s highest-ranked players right now, the brawlers winning most in
+          {" "}{bracketLabel}, and the maps currently in rotation.
+        </p>
       </div>
 
       {/* ── Player Card lookup ── */}
@@ -477,13 +484,13 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ ON ROTATION NOW</span>
           {rotationFeed?.fetched_at && (
-            <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#5a5a6a" }}>
+            <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#7c7e8f" }}>
               UPDATED {new Date(rotationFeed.fetched_at).toLocaleString()}
             </span>
           )}
         </div>
         {rotation.length === 0 ? (
-          <div style={{ borderRadius: 24, border: "1px dashed rgba(255,255,255,.14)", padding: "34px 24px", textAlign: "center", color: "#6f7180", fontSize: 13.5 }}>
+          <div style={{ borderRadius: 24, border: "1px dashed rgba(255,255,255,.14)", padding: "34px 24px", textAlign: "center", color: "#8b8b9c", fontSize: 13.5 }}>
             Rotation data lands here after the next scraper run — trigger the BrawlApex Auto-Scraper workflow to fill it now.
           </div>
         ) : (
@@ -491,7 +498,7 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
             {rotation.map((slot, i) => {
               const ev = slot.event || {};
               const info = mapsByName[(ev.map || "").toLowerCase()] || {};
-              const mc = MODE_COLORS[ev.mode?.replace(/\s/g, "")] ?? info.modeColor ?? "#64748b";
+              const mc = MODE_COLORS[ev.mode?.replace(/\s/g, "")] ?? info.modeColor ?? "#8b98ad";
               const ends = timeUntil(parseScTime(slot.endTime));
               return (
                 <div key={`${ev.map}-${i}`} style={{ borderRadius: 24, overflow: "hidden", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", display: "flex", flexDirection: "column" }}>
@@ -523,14 +530,14 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#ffce7a" }}>◈ GLOBAL TROPHY LEADERBOARD · TOP 200</span>
           {fetchedAt && (
-            <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#5a5a6a" }}>
+            <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#7c7e8f" }}>
               UPDATED {new Date(fetchedAt).toLocaleString()}
             </span>
           )}
         </div>
 
         {players.length === 0 ? (
-          <div style={{ borderRadius: 24, border: "1px dashed rgba(255,255,255,.14)", padding: "34px 24px", textAlign: "center", color: "#6f7180", fontSize: 13.5 }}>
+          <div style={{ borderRadius: 24, border: "1px dashed rgba(255,255,255,.14)", padding: "34px 24px", textAlign: "center", color: "#8b8b9c", fontSize: 13.5 }}>
             The global top 200 lands here after the next scraper run.
           </div>
         ) : (
@@ -563,14 +570,14 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
               <div style={{ maxHeight: 520, overflowY: "auto" }}>
                 {players.slice(3).map((p) => (
                   <div key={p.tag} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 20px", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
-                    <span style={{ fontFamily: MONO_FONT, fontSize: 12, color: "#6f7180", width: 34, flexShrink: 0 }}>{String(p.rank).padStart(2, "0")}</span>
+                    <span style={{ fontFamily: MONO_FONT, fontSize: 12, color: "#8b8b9c", width: 34, flexShrink: 0 }}>{String(p.rank).padStart(2, "0")}</span>
                     {p.icon?.id ? (
                       <img src={`https://cdn.brawlify.com/profile-icons/regular/${p.icon.id}.png`} alt="" loading="lazy"
                         style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0 }}
                         onError={e => { e.currentTarget.style.visibility = "hidden"; }} />
                     ) : <span style={{ width: 30 }} />}
                     <span style={{ fontSize: 14, fontWeight: 700, color: scNameColor(p.nameColor), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                    <span style={{ fontSize: 11.5, color: "#6f7180", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{p.club?.name || ""}</span>
+                    <span style={{ fontSize: 11.5, color: "#8b8b9c", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{p.club?.name || ""}</span>
                     <span style={{ fontFamily: MONO_FONT, fontSize: 13, fontWeight: 700, color: "#ffce7a", flexShrink: 0 }}>{p.trophies.toLocaleString()}</span>
                   </div>
                 ))}
@@ -583,12 +590,12 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
       {/* ── Meta leaders (our own ranked data) ── */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4, flexWrap: "wrap" }}>
         <span style={{ fontFamily: MONO_FONT, fontSize: 11, letterSpacing: 2, color: "#8ee6b0" }}>◈ META LEADERS · {bracketLabel.toUpperCase()}</span>
-        <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#5a5a6a" }}>{Math.round(totalPicks / 6).toLocaleString()} MATCHES TRACKED</span>
+        <span style={{ fontFamily: MONO_FONT, fontSize: 10, color: "#7c7e8f" }}>{Math.round(totalPicks / 6).toLocaleString()} MATCHES TRACKED</span>
       </div>
-      {loading && <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Loading stats…</p>}
+      {loading && <p style={{ fontSize: 12, color: "#7c8aa3", marginTop: 8 }}>Loading stats…</p>}
       {error && !loading && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 8 }}>{error}</p>}
       {!loading && trendingBrawlers.length === 0 && (
-        <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>
+        <p style={{ fontSize: 12, color: "#7c8aa3", marginTop: 8 }}>
           No stats found. Run the aggregation function in Supabase.
         </p>
       )}
@@ -615,8 +622,8 @@ function LeaderboardsView({ rankBracket, brawlerStats, loading, error }) {
                 </span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%", borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 10, fontFamily: "'JetBrains Mono', monospace" }}>
-                <div><div style={{ fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>WIN RATE</div><div style={{ fontSize: 15, fontWeight: 700, color: "#e9e9f2" }}>{b.winRate}%</div></div>
-                <div><div style={{ fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>PICK RATE</div><div style={{ fontSize: 15, fontWeight: 700, color: "#7cc4ff" }}>{b.pickRate}%</div></div>
+                <div><div style={{ fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c" }}>WIN RATE</div><div style={{ fontSize: 15, fontWeight: 700, color: "#e9e9f2" }}>{b.winRate}%</div></div>
+                <div><div style={{ fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c" }}>PICK RATE</div><div style={{ fontSize: 15, fontWeight: 700, color: "#7cc4ff" }}>{b.pickRate}%</div></div>
               </div>
             </div>
           );
@@ -633,7 +640,7 @@ function PremiumView() {
         <Crown size={24} color="#ffb43d" />
       </div>
       <h2 style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif" }}>Unlock BrawlApex Pro</h2>
-      <p style={{ color: "#64748b", fontSize: 13, marginTop: 6 }}>Gain deep access to the raw machine logs that global professional clubs utilize.</p>
+      <p style={{ color: "#8b98ad", fontSize: 13, marginTop: 6 }}>Gain deep access to the raw machine logs that global professional clubs utilize.</p>
       <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: 18, marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Real-time companion overlay linkage</span></div>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Hypercharge availability & matchup prediction maps</span></div>
@@ -748,7 +755,7 @@ function BrawlerGuideRoute() {
 
   if (loading || !brawler) {
     return (
-      <div style={{ minHeight: "100vh", background: "#08080c", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Chakra Petch', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "#08080c", display: "flex", alignItems: "center", justifyContent: "center", color: "#7c8aa3", fontFamily: "'Chakra Petch', sans-serif" }}>
         {brawlerKey ? "Loading brawler guide…" : "Brawler not found."}
       </div>
     );
@@ -783,7 +790,7 @@ function BrawlerGuideRoute() {
 function RouteFallback() {
   return (
     <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#6f7180", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1 }}>
+                  color: "#8b8b9c", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1 }}>
       LOADING…
     </div>
   );

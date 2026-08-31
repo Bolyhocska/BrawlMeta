@@ -143,9 +143,9 @@ export function TournamentLandingPage() {
         </div>
 
         {tournaments === null ? (
-          <p style={{ color: "#475569", fontSize: 13, textAlign: "center" }}>Loading tournaments…</p>
+          <p style={{ color: "#7c8aa3", fontSize: 13, textAlign: "center" }}>Loading tournaments…</p>
         ) : tournaments.length === 0 ? (
-          <div style={{ ...page.card, padding: "40px 24px", textAlign: "center", color: "#6f7180" }}>No tournaments yet — check back soon.</div>
+          <div style={{ ...page.card, padding: "40px 24px", textAlign: "center", color: "#8b8b9c" }}>No tournaments yet — check back soon.</div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
             {tournaments.map(t => {
@@ -473,7 +473,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
         <button onClick={() => openAuth("signup")} style={{ ...page.btn, display: "inline-flex", alignItems: "center", gap: 8 }}>
           <LogIn size={15} /> Sign in to register
         </button>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a" }}>NO ENTRY FEE · EVER</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>NO ENTRY FEE · EVER</span>
       </div>
     );
   }
@@ -550,7 +550,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
     <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#c98bff" }}>◈ ADD-FRIEND INFO</span>
-        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>OPTIONAL</span>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c" }}>OPTIONAL</span>
       </div>
       <p style={{ fontSize: 11.5, color: "#8b8b9c", margin: 0, lineHeight: 1.5 }}>
         So opponents can add you in-game — <strong style={{ color: "#c9c9d6" }}>crucial if you're joining solo</strong>. Alternatively, the lobby host can share a team invite link inside the match once the bracket is live.
@@ -558,7 +558,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
           <input style={page.input} placeholder="Captain's player ID" value={friendId} onChange={e => setFriendId(e.target.value)} maxLength={40} />
-          <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", marginTop: -4, lineHeight: 1.5 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c", marginTop: -4, lineHeight: 1.5 }}>
             Advised to upload in case a streamer wants to watch and cast your games!
           </span>
           {friendQrUrl ? (
@@ -574,7 +574,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>WHERE TO FIND THESE ↓</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c" }}>WHERE TO FIND THESE ↓</span>
           <ExampleShots />
         </div>
       </div>
@@ -599,7 +599,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
           </p>
           <input style={page.input} placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} required maxLength={30} />
           <input style={page.input} placeholder="Captain display name — the EXACT in-game name of your captain" value={teamDisplayName} onChange={e => setTeamDisplayName(e.target.value)} required maxLength={30} />
-          <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: -4 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f", marginTop: -4 }}>
             One per team. Must match your captain's Brawl Stars name EXACTLY — this is how we auto-verify your match screenshots.
           </span>
           {players.map((p, i) => (
@@ -623,7 +623,7 @@ function RegistrationForm({ tournament, onRegistered, showToast }) {
           </button>
         </form>
       )}
-      <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", textAlign: "center" }}>NO ENTRY FEE · EVER · BY REGISTERING YOU ACCEPT THE RULES</span>
+      <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", textAlign: "center" }}>NO ENTRY FEE · EVER · BY REGISTERING YOU ACCEPT THE RULES</span>
       {showRules && <RulesModal customRules={tournament.rules} onClose={() => setShowRules(false)} />}
     </div>
   );
@@ -748,20 +748,20 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
     display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 12,
     background: isWinner ? "rgba(142,230,176,.08)" : "rgba(255,255,255,.03)",
     border: `1px solid ${isWinner ? "rgba(142,230,176,.3)" : "rgba(255,255,255,.06)"}`,
-    color: filled ? "#f4f4fa" : "#5a5a6a", fontSize: 13, fontWeight: 700,
+    color: filled ? "#f4f4fa" : "#7c7e8f", fontSize: 13, fontWeight: 700,
   });
 
   // A small reported-marker next to each side once they've confirmed.
   const reportMark = (side) => {
     const rep = side === "A" ? match.team_a_reported : match.team_b_reported;
     if (!rep || match.status === "completed") return null;
-    return <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#8ee6b0" }}>reported ✓</span>;
+    return <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#8ee6b0" }}>reported ✓</span>;
   };
 
   return (
     <div style={{ ...page.card, padding: 16, display: "flex", flexDirection: "column", gap: 8, minWidth: 230, ...(match.disputed ? { border: "1px solid rgba(255,143,143,.45)" } : {}) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>M{match.match_number + 1}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#8b8b9c" }}>M{match.match_number + 1}</span>
         {match.status === "bye" && <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>BYE — AUTO-ADVANCE</span>}
         {["pending", "checkin"].includes(match.status) && match.checkin_deadline && <Countdown deadline={match.checkin_deadline} />}
         {match.status === "active" && !match.disputed && <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: GOLD }}>● LIVE</span>}
@@ -772,8 +772,8 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
         {match.team_a_name || "TBD"}
         {(match.team_a_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
           checkedIn(match.team_a_tags) >= 1
-            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
-            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>waiting…</span>
+            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
+            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>waiting…</span>
         )}
         {match.status === "active" && reportMark("A")}
       </div>
@@ -781,8 +781,8 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
         {match.team_b_name || (match.status === "bye" ? "—" : "TBD")}
         {(match.team_b_tags || []).length > 0 && ["pending", "checkin"].includes(match.status) && (
           checkedIn(match.team_b_tags) >= 1
-            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
-            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>waiting…</span>
+            ? <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: "#8ee6b0" }}>✓ READY</span>
+            : <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>waiting…</span>
         )}
         {match.status === "active" && reportMark("B")}
       </div>
@@ -790,7 +790,7 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
       {/* Add-your-opponent — surfaced while the match is being set up / played */}
       {mine && ["pending", "checkin", "active"].includes(match.status) && oppContact && (
         <div style={{ borderRadius: 12, background: "rgba(179,107,255,.08)", border: "1px solid rgba(179,107,255,.25)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#c98bff" }}>ADD YOUR OPPONENT IN-GAME</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#c98bff" }}>ADD YOUR OPPONENT IN-GAME</span>
           {oppContact.friendId && <span style={{ fontSize: 12.5, color: "#e9e9f2", fontWeight: 700 }}>ID: {oppContact.friendId}</span>}
           {oppContact.qr && <a href={oppContact.qr} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 10.5, color: "#c98bff", textDecoration: "none" }}>view Add Friend QR →</a>}
         </div>
@@ -799,11 +799,11 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
       {/* Lobby host + team-invite sharing — the top team (A) creates the lobby */}
       {mine && ["pending", "checkin", "active"].includes(match.status) && (
         <div style={{ borderRadius: 12, background: "rgba(255,180,61,.07)", border: "1px solid rgba(255,180,61,.22)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#ffce7a" }}>🎮 {(match.team_a_name || "TOP TEAM").toUpperCase()} CREATES THE LOBBY</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#ffce7a" }}>🎮 {(match.team_a_name || "TOP TEAM").toUpperCase()} CREATES THE LOBBY</span>
           {match.lobby_invite && (
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <a href={match.lobby_invite} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "#ffce7a", textDecoration: "none", wordBreak: "break-all" }}>▶ Open team invite</a>
-              {match.lobby_invite_by && <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>shared by {match.lobby_invite_by}</span>}
+              {match.lobby_invite_by && <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>shared by {match.lobby_invite_by}</span>}
             </div>
           )}
           {iAmHost ? (
@@ -813,9 +813,9 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
               <button type="button" onClick={shareInvite} disabled={busy || !inviteInput.trim()} style={{ ...page.btn, padding: "8px 14px", fontSize: 11, opacity: busy || !inviteInput.trim() ? .6 : 1 }}>Share</button>
             </div>
           ) : !match.lobby_invite && (
-            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#9a9aab", lineHeight: 1.5 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#9a9aab", lineHeight: 1.5 }}>
               Waiting for the opposing team to generate and upload the lobby invite link…
-              <br /><span style={{ color: "#6f7180" }}>If they share it late, you automatically get a 3-minute grace window to join.</span>
+              <br /><span style={{ color: "#8b8b9c" }}>If they share it late, you automatically get a 3-minute grace window to join.</span>
             </span>
           )}
         </div>
@@ -827,7 +827,7 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
           <button style={{ ...page.btn, padding: "10px 18px", fontSize: 12, opacity: busy ? .6 : 1 }} disabled={busy} onClick={checkin}>
             {busy ? "…" : "CHECK IN"}
           </button>
-          <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", textAlign: "center" }}>one check-in readies your whole team</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c", textAlign: "center" }}>one check-in readies your whole team</span>
           <button type="button" style={{ ...page.btnGhost, padding: "8px 12px", fontSize: 11 }} onClick={() => setShowDodgeModal(true)}>
             📹 Report a dodge
           </button>
@@ -907,7 +907,7 @@ function MatchCard({ match, myTag, onAction, showToast, contactByTag }) {
                   {uploading ? "Verifying…" : "📷 Upload winning screenshot"}
                   <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} style={{ display: "none" }} />
                 </label>
-                <span style={{ fontFamily: MONO, fontSize: 9.5, color: match.disputed ? "#ffce7a" : "#8ee6b0", textAlign: "center", lineHeight: 1.4 }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: match.disputed ? "#ffce7a" : "#8ee6b0", textAlign: "center", lineHeight: 1.4 }}>
                   {match.disputed
                     ? "Required — upload your VICTORY screen so the organizer can decide."
                     : "Required to confirm the win — a clear VICTORY screen advances you instantly."}
@@ -1029,7 +1029,7 @@ export function TournamentDetailPage() {
   if (!tournament) {
     return (
       <div style={page.root}><div style={page.glow} /><SiteHeader />
-        <div style={{ ...page.wrap, textAlign: "center", color: "#475569" }}>Loading tournament…</div>
+        <div style={{ ...page.wrap, textAlign: "center", color: "#7c8aa3" }}>Loading tournament…</div>
       </div>
     );
   }
@@ -1106,7 +1106,7 @@ export function TournamentDetailPage() {
             <div style={{ ...page.card, padding: 26 }}>
               <span style={page.eyebrow}>◈ TEAMS ({teams.length})</span>
               {teams.length === 0 && incomplete.length === 0 && (
-                <p style={{ fontSize: 12.5, color: "#6f7180" }}>Nobody yet — be the first trio in.</p>
+                <p style={{ fontSize: 12.5, color: "#8b8b9c" }}>Nobody yet — be the first trio in.</p>
               )}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
                 {teams.map(t => (
@@ -1132,7 +1132,7 @@ export function TournamentDetailPage() {
                 )}
               </div>
               {teams.length >= 2 && (
-                <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 14 }}>
+                <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f", marginTop: 14 }}>
                   BRACKET MATH: {teams.length} TEAMS → {nextPowerOfTwo(teams.length)}-SLOT BRACKET · {byesNeeded(teams.length)} BYES · {totalRounds} ROUNDS
                 </p>
               )}
@@ -1154,8 +1154,8 @@ export function TournamentDetailPage() {
               ))}
             </div>
             {myTag
-              ? <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a" }}>PLAYING AS {myTag} — check-in and result-report buttons appear on your matches.</p>
-              : <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a" }}>REGISTERED? Set your tag on the <Link to="/tournaments/profile" style={{ color: "#c98bff" }}>profile page</Link> to unlock check-in buttons.</p>}
+              ? <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>PLAYING AS {myTag} — check-in and result-report buttons appear on your matches.</p>
+              : <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>REGISTERED? Set your tag on the <Link to="/tournaments/profile" style={{ color: "#c98bff" }}>profile page</Link> to unlock check-in buttons.</p>}
           </section>
         )}
       </div>
@@ -1172,14 +1172,14 @@ function FormPips({ series }) {
   const last = series.slice(0, 10).reverse();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 22, flexWrap: "wrap" }}>
-      <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#6f7180", marginRight: 4 }}>FORM</span>
+      <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#8b8b9c", marginRight: 4 }}>FORM</span>
       {last.map((x, i) => (
         <span key={i} title={x.won ? "Won" : "Lost"} style={{
           width: 9, height: 9, borderRadius: 999,
           background: x.won ? "#8ee6b0" : "#ff8f8f", opacity: 0.35 + (0.65 * (i + 1)) / last.length,
         }} />
       ))}
-      <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginLeft: 4 }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f", marginLeft: 4 }}>
         {last.filter(x => x.won).length}–{last.length - last.filter(x => x.won).length} last {last.length}
       </span>
     </div>
@@ -1464,9 +1464,9 @@ export function TournamentProfilePage() {
               { label: "MATCHES WON", value: wins, icon: <CheckCircle2 size={15} color="#8ee6b0" /> },
             ].map((st, i) => (
               <div key={st.label} className="bm-rise" style={{ ...page.card, padding: 20, animationDelay: `${0.10 + i * 0.05}s` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "#6f7180" }}>{st.icon}{st.label}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#8b8b9c" }}>{st.icon}{st.label}</div>
                 <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700, color: "#f4f4fa", marginTop: 8 }}>{st.value}</div>
-                {st.note && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{st.note.toUpperCase()}</div>}
+                {st.note && <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>{st.note.toUpperCase()}</div>}
               </div>
             ))}
           </div>
@@ -1506,20 +1506,20 @@ export function TournamentProfilePage() {
         <Chapter {...CHAPTERS[3]} delay={0.12}>
           <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#6f7180" }}>· 🔒 PERMANENT</span>}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#8b8b9c" }}>· 🔒 PERMANENT</span>}</span>
               <input
                 style={{ ...page.input, maxWidth: 200, ...(nameLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
                 placeholder="Choose a unique name" value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={30}
                 readOnly={nameLocked} title={nameLocked ? "Your display name is set for good." : undefined} />
-              <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>{nameLocked ? "Set at signup — can't be changed" : "Unique & permanent once saved"}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG {tagLocked && <span style={{ color: "#6f7180" }}>· 🔒 LOCKED</span>}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>PLAYER TAG {tagLocked && <span style={{ color: "#8b8b9c" }}>· 🔒 LOCKED</span>}</span>
               <input
                 style={{ ...page.input, maxWidth: 200, ...(tagLocked ? { opacity: .7, cursor: "not-allowed" } : {}) }}
                 placeholder="#2C20JJRG" value={tagInput} onChange={e => setTagInput(e.target.value)}
                 readOnly={tagLocked} title={tagLocked ? "Locked once you've entered a tournament." : undefined} />
-              <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#5a5a6a" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
             </div>
             <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Save</button>
             {saved && <span className="bm-pop" style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", paddingBottom: 12 }}>SAVED ✔</span>}
@@ -1623,7 +1623,7 @@ function Field({ label, hint, children, style }) {
     <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, ...style }}>
       <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>{label}</span>
       {children}
-      {hint && <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a" }}>{hint}</span>}
+      {hint && <span style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>{hint}</span>}
     </label>
   );
 }
@@ -1799,7 +1799,7 @@ export function CreateTournamentPage() {
             {busy ? "Creating…" : "Create Tournament"}
           </button>
         </form>
-        <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 14 }}>
+        <p style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f", marginTop: 14 }}>
           After creation you'll land on your management dashboard — generate the bracket whenever registration is full.
         </p>
       </div>
@@ -1913,7 +1913,7 @@ export function ManageTournamentPage() {
   };
 
   if (!tournament) {
-    return <div style={page.root}><div style={page.glow} /><SiteHeader /><div style={{ ...page.wrap, textAlign: "center", color: "#475569" }}>Loading…</div></div>;
+    return <div style={page.root}><div style={page.glow} /><SiteHeader /><div style={{ ...page.wrap, textAlign: "center", color: "#7c8aa3" }}>Loading…</div></div>;
   }
 
   if (user && tournament.created_by && user.id !== tournament.created_by) {
@@ -1939,7 +1939,7 @@ export function ManageTournamentPage() {
     <a href={url} target="_blank" rel="noreferrer" style={{ display: "block" }}>
       <img src={url} alt={label} style={{ width: "100%", maxHeight: 150, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)" }} />
     </a>
-  ) : <div style={{ padding: "18px 10px", textAlign: "center", fontFamily: MONO, fontSize: 10, color: "#5a5a6a", border: "1px dashed rgba(255,255,255,.14)", borderRadius: 10 }}>no screenshot</div>;
+  ) : <div style={{ padding: "18px 10px", textAlign: "center", fontFamily: MONO, fontSize: 10, color: "#7c7e8f", border: "1px dashed rgba(255,255,255,.14)", borderRadius: 10 }}>no screenshot</div>;
 
   return (
     <div style={page.root}>
@@ -1962,7 +1962,7 @@ export function ManageTournamentPage() {
           ].map(s => (
             <div key={s.label} style={{ padding: "18px 20px", borderRadius: 20, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", fontFamily: MONO }}>
               <div style={{ fontSize: s.small ? 15 : 26, fontWeight: 700, color: s.color, fontFamily: s.small ? MONO : DISPLAY, letterSpacing: s.small ? 1 : 0 }}>{s.value}</div>
-              <div style={{ fontSize: 10, letterSpacing: 2, color: "#6f7180", marginTop: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "#8b8b9c", marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -2052,10 +2052,10 @@ export function ManageTournamentPage() {
               {/* Add-friend info (optional) — how opponents reach this team in-game */}
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
                 <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#9a9aab" }}>ADD-FRIEND INFO</span>
-                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180" }}>OPTIONAL</span>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c" }}>OPTIONAL</span>
               </div>
               <input style={page.input} placeholder="Captain's player ID" value={teamFriendId} onChange={e => setTeamFriendId(e.target.value)} maxLength={40} />
-              <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180", marginTop: -4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c", marginTop: -4 }}>
                 Advised to upload in case a streamer wants to watch and cast your games!
               </span>
               {teamFriendQrUrl ? (
@@ -2069,7 +2069,7 @@ export function ManageTournamentPage() {
                   <input type="file" accept="image/*" onChange={uploadTeamQr} disabled={qrUploading} style={{ display: "none" }} />
                 </label>
               )}
-              <span style={{ fontFamily: MONO, fontSize: 9, color: "#6f7180" }}>Alternatively, the lobby host shares a team invite link inside the match.</span>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>Alternatively, the lobby host shares a team invite link inside the match.</span>
 
               <button type="submit" disabled={busy} style={{ ...page.btnGhost, alignSelf: "flex-start", opacity: busy ? .6 : 1 }}>Add team</button>
             </form>
@@ -2088,7 +2088,7 @@ export function ManageTournamentPage() {
                 <span style={{ color: GOLD, fontSize: 16, letterSpacing: 2 }}>
                   {"★".repeat(Math.round(feedback.reduce((s, f) => s + f.rating, 0) / feedback.length))}
                 </span>
-                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#6f7180" }}>AVERAGE RATING</span>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>AVERAGE RATING</span>
               </div>
               {feedback.filter(f => f.comment).map(f => (
                 <div key={f.id} style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10 }}>
@@ -2108,7 +2108,7 @@ export function ManageTournamentPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
               {matches.map(m => (
                 <div key={m.id} style={{ ...page.card, padding: 16, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#6f7180" }}>R{m.round} M{m.match_number + 1}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c" }}>R{m.round} M{m.match_number + 1}</span>
                   <span style={{ fontSize: 13, fontWeight: 700 }}>{m.team_a_name || "TBD"} vs {m.team_b_name || (m.status === "bye" ? "—" : "TBD")}</span>
                   <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#9a9aab" }}>{m.status.toUpperCase()}</span>
                   {m.result && <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8ee6b0" }}>WINNER: {m.result === "team_a" ? m.team_a_name : m.team_b_name}</span>}

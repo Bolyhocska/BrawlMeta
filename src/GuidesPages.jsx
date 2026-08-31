@@ -26,7 +26,7 @@ export function GuideShell({ children }) {
       <footer style={{
         position: "relative", zIndex: 10, padding: "32px 5vw", borderTop: "1px solid rgba(255,255,255,.06)",
         display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
-        fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#5a5a6a",
+        fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "#7c7e8f",
       }}>
         <span>BRAWLAPEX — UNOFFICIAL STRATEGY GUIDE</span>
         <span>v2026.1 · META SNAPSHOT</span>
@@ -53,7 +53,7 @@ function StatChip({ value, label, color = "#f4f4fa" }) {
   return (
     <div style={{ padding: "16px 22px", borderRadius: 20, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", fontFamily: MONO }}>
       <div style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#6f7180", marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 10, letterSpacing: 2, color: "#8b8b9c", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -415,7 +415,7 @@ export function GuidesLandingPage() {
             </div>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#f4f4fa", letterSpacing: "-.3px", fontFamily: DISPLAY }}>{c.heading}</div>
             <div style={{ color: "#9a9aab", fontSize: 14.5, lineHeight: 1.5 }}>{c.desc}</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: .5, color: "#6f7180" }}>{c.bullets}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: .5, color: "#8b8b9c" }}>{c.bullets}</div>
             <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 8, color: c.accent, fontWeight: 700, fontSize: 14 }}>{c.linkLabel} <span>→</span></span>
           </Link>
         ))}
@@ -756,7 +756,7 @@ export function SafeZoneGuidePage() {
 
       <section style={{ position: "relative", zIndex: 10, padding: "0 5vw 60px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ borderRadius: 28, overflow: "hidden", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" }}>
-          <div style={{ height: 280, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))", color: "#5a5a6a", fontFamily: MONO, fontSize: 11, letterSpacing: 1 }}>
+          <div style={{ height: 280, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, rgba(179,107,255,.10), rgba(20,14,32,.5))", color: "#7c7e8f", fontFamily: MONO, fontSize: 11, letterSpacing: 1 }}>
             Drop Safe Zone map layout image
           </div>
           <div style={{ padding: "32px 38px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -878,11 +878,11 @@ export function BrawlerGuidesPage() {
               </div>
             ); })()}
             <span style={{ fontSize: 13, fontWeight: 700, color: "#e9e9f2", textAlign: "center", fontFamily: DISPLAY }}>{b.name}</span>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: b.rarityColor }}>{b.rarity.toUpperCase()}</span>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: b.rarityColor }}>{b.rarity.toUpperCase()}</span>
           </Link>
         ))}
         {brawlers.length === 0 && (
-          <p style={{ gridColumn: "1/-1", textAlign: "center", color: "#6f7180", padding: 40 }}>No brawlers match "{search}".</p>
+          <p style={{ gridColumn: "1/-1", textAlign: "center", color: "#8b8b9c", padding: 40 }}>No brawlers match "{search}".</p>
         )}
       </div>
     </GuideShell>

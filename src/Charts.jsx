@@ -40,7 +40,7 @@ function useMeasuredWidth(fallback = 600) {
 
 const MONO = "'JetBrains Mono', monospace";
 const AXIS = "#3a3a46";
-const DIM = "#6f7180";
+const DIM = "#8b8b9c";
 const MUTED = "#8b8b9c";
 const TEXT = "#e9e9f2";
 

@@ -78,7 +78,7 @@ function NavDropdown({ item }) {
         onMouseLeave={e => { if (!open) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#b7b7c6"; } }}
       >
         {item.label}
-        <span style={{ fontSize: 9, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▼</span>
+        <span style={{ fontSize: 10.5, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▼</span>
       </button>
       {open && (
         <div className="nav-dropdown-panel" style={{
@@ -234,7 +234,7 @@ function MobileNav() {
           <span style={{
             display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
             border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 1.5, color: "#ffce7a",
           }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
             LIVE
@@ -243,7 +243,7 @@ function MobileNav() {
 
         {NAV_ITEMS.map(n => n.dropdown ? (
           <div key={n.label} style={{ marginTop: 6 }}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: 1.6, color: "#6f7180", padding: "8px 14px 4px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1.6, color: "#8b8b9c", padding: "8px 14px 4px" }}>
               {n.label.toUpperCase()}
             </div>
             {n.dropdown.map(d => (
@@ -266,7 +266,7 @@ function MobileNav() {
         ))}
 
         {!user && (
-          <p style={{ margin: "14px 14px 0", fontSize: 11.5, lineHeight: 1.5, color: "#6f7180", fontFamily: "'Chakra Petch', sans-serif" }}>
+          <p style={{ margin: "14px 14px 0", fontSize: 11.5, lineHeight: 1.5, color: "#8b8b9c", fontFamily: "'Chakra Petch', sans-serif" }}>
             Sign in to save drafts and enter tournaments.
           </p>
         )}
@@ -347,7 +347,7 @@ export default function SiteHeader() {
       <span style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
         border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-        fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: 1.5, color: "#ffce7a",
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 1.5, color: "#ffce7a",
       }}>
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
         LIVE

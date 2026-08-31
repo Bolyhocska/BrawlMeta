@@ -43,7 +43,7 @@ function Tabs({ items, value, onChange }) {
           }}>
             {it.label}
             {it.hint != null && (
-              <span style={{ color: on ? "#9a8fc0" : "#5a5a6a", marginLeft: 7 }}>{it.hint}</span>
+              <span style={{ color: on ? "#9a8fc0" : "#7c7e8f", marginLeft: 7 }}>{it.hint}</span>
             )}
           </button>
         );
@@ -55,7 +55,7 @@ function Tabs({ items, value, onChange }) {
 function SectionHead({ eyebrow, children }) {
   return (
     <>
-      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", margin: "26px 0 8px" }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8b8b9c", margin: "26px 0 8px" }}>
         {eyebrow}
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.65, color: "#9a9aab", marginBottom: 14 }}>{children}</div>
@@ -147,15 +147,15 @@ export default function UpgradePage() {
       <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 800, color: "#e9e9f2", margin: "0 0 6px" }}>
         What to upgrade next
       </h1>
-      <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", marginBottom: 20 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginBottom: 20 }}>
         {myTag} · patch {CURRENT_PATCH} · Masters data
       </div>
 
       {loading && (
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180" }}>Reading your roster…</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>Reading your roster…</div>
       )}
       {!loading && error === "no_roster" && (
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180" }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>
           Couldn't read your roster from the Brawl Stars API just now — try again shortly.
         </div>
       )}
@@ -167,7 +167,7 @@ export default function UpgradePage() {
               padding: "14px 16px", borderRadius: 12, marginBottom: 16,
               background: "rgba(255,180,61,.08)", border: "1px solid rgba(255,180,61,.28)",
             }}>
-              <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.6, color: "#ffce7a", marginBottom: 6 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color: "#ffce7a", marginBottom: 6 }}>
                 CONSIDER SAVING INSTEAD
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.65, color: "#e2d2b0" }}>{saveAdvice.text}</div>
@@ -239,7 +239,7 @@ export default function UpgradePage() {
             <Card key={`${cls}-${p.name}`} p={p} rank={i + 1} />
           ))}
           {cls && !(byClass[cls] || []).length && (
-            <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "6px 2px 16px" }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", padding: "6px 2px 16px" }}>
               Nothing left to buy on any {classLabel(cls)} brawler you own.
             </div>
           )}
@@ -253,7 +253,7 @@ export default function UpgradePage() {
 
           <BuffiePacks roster={roster} />
 
-          <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 16, lineHeight: 1.65 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 16, lineHeight: 1.65 }}>
             Levelling always targets power 11, because ranked only allows power-11 brawlers from
             Mythic upward. Gear prices assume the cheap tier — epic and mythic gears cost more and
             the API doesn't tell us which you'd get. We can see power levels, star powers, gadgets,

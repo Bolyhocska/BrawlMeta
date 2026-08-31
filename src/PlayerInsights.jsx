@@ -29,8 +29,8 @@ const CARD = {
   padding: "18px 20px", borderRadius: 16, marginBottom: 14,
   background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
 };
-const EYEBROW = { fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.9, color: "#6f7180", marginBottom: 10 };
-const NOTE = { fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 10, lineHeight: 1.65 };
+const EYEBROW = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.9, color: "#8b8b9c", marginBottom: 10 };
+const NOTE = { fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 10, lineHeight: 1.65 };
 
 // ── OV-1 Above Draft ─────────────────────────────────────────────────────────
 
@@ -138,13 +138,13 @@ function BucketsPanel({ buckets }) {
               padding: "12px 14px", borderRadius: 12,
               background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)",
             }}>
-              <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.3, color: "#6f7180", lineHeight: 1.4 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.3, color: "#8b8b9c", lineHeight: 1.4 }}>
                 {label}
               </div>
               <div style={{ fontFamily: DISPLAY, fontSize: 21, fontWeight: 800, color: show ? colour : "#c9c9d6", marginTop: 5 }}>
                 {show ? `${(b.rate * 100).toFixed(0)}%` : `${b.wins}–${b.n - b.wins}`}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: 2 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f", marginTop: 2 }}>
                 {show ? `${b.wins}–${b.n - b.wins} in ${b.n} drafts` : `needs ${12 - b.n} more`}
               </div>
             </div>
@@ -199,7 +199,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
       fontFamily: MONO, fontSize: 11,
     }}>
       <span>{p.tag}</span>
-      <span style={{ color: "#6f7180" }}>
+      <span style={{ color: "#8b8b9c" }}>
         {kind === "squad" ? `${p.n} together` : `${p.n} against · ${p.wins}W`}
       </span>
     </button>
@@ -210,7 +210,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))" }}>
         {squad.length > 0 && (
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#8ee6b0", marginBottom: 7 }}>TEAMMATES</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", marginBottom: 7 }}>TEAMMATES</div>
             <div style={{ display: "grid", gap: 5 }}>
               {squad.slice(0, 5).map(p => <Row key={p.tag} p={p} kind="squad" />)}
             </div>
@@ -218,7 +218,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
         )}
         {rivals.length > 0 && (
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#ff8f8f", marginBottom: 7 }}>OPPONENTS</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", marginBottom: 7 }}>OPPONENTS</div>
             <div style={{ display: "grid", gap: 5 }}>
               {rivals.slice(0, 5).map(p => <Row key={p.tag} p={p} kind="rival" />)}
             </div>
@@ -261,14 +261,14 @@ function FingerprintPanel({ rows, n }) {
                 <div style={{ width: `${(r.theirs / max) * 100}%`, height: "100%", borderRadius: 999, background: "rgba(255,255,255,.20)" }} />
               </div>
             </div>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180", textAlign: "right" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#8b8b9c", textAlign: "right" }}>
               {(r.mine * 100).toFixed(0)}% / {(r.theirs * 100).toFixed(0)}%
             </span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: MONO, fontSize: 9.5, color: "#6f7180" }}>
+      <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>
         <span><span style={{ color: "#c9a6ff" }}>▬</span> you</span>
         <span><span style={{ color: "rgba(255,255,255,.4)" }}>▬</span> everyone in your bracket</span>
       </div>
@@ -320,9 +320,9 @@ function NemesisPanel({ table }) {
             <span style={{ fontFamily: MONO, fontSize: 11, color: r.popRate < 45 ? "#ff8f8f" : "#c9c9d6", textAlign: "right" }}>
               {r.popRate.toFixed(1)}%
               {/* the sample is what justifies trusting this column, so show it */}
-              <span style={{ color: "#5a5a6a", fontSize: 9 }}> · {r.popPicks.toLocaleString("en-US")} games</span>
+              <span style={{ color: "#7c7e8f", fontSize: 10.5 }}> · {r.popPicks.toLocaleString("en-US")} games</span>
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180", textAlign: "right", minWidth: 96 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#8b8b9c", textAlign: "right", minWidth: 96 }}>
               {r.mine
                 ? (r.qualified
                     ? `you ${((r.mine.wins / r.mine.n) * 100).toFixed(0)}%`

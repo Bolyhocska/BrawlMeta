@@ -251,7 +251,7 @@ export default function ScrimsPage() {
                 <span style={{ fontFamily: DISPLAY, fontSize: 21, fontWeight: 700, color: "#f4f4fa" }}>{p.team}</span>
                 <Tag color="#ffce7a" bg="rgba(255,180,61,.12)" border="rgba(255,180,61,.3)">{p.rank.toUpperCase()}</Tag>
                 <Tag color="#8ee6b0" bg="rgba(142,230,176,.12)" border="rgba(142,230,176,.3)">{p.region}</Tag>
-                <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#6f7180" }}>{p.ago}</span>
+                <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#8b8b9c" }}>{p.ago}</span>
               </div>
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                 {p.modes.map(m => <Tag key={m}>{m}</Tag>)}
@@ -265,7 +265,7 @@ export default function ScrimsPage() {
             </div>
           ))}
           {filteredPosts.length === 0 && (
-            <p style={{ textAlign: "center", color: "#6f7180", padding: 40 }}>No postings match those filters yet — be the first to post.</p>
+            <p style={{ textAlign: "center", color: "#8b8b9c", padding: 40 }}>No postings match those filters yet — be the first to post.</p>
           )}
         </div>
       )}
@@ -291,7 +291,7 @@ export default function ScrimsPage() {
                 </div>
               ))}
             </div>
-            <p style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .5, color: "#6f7180" }}>
+            <p style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .5, color: "#8b8b9c" }}>
               DEMO MODE — credits are practice currency while accounts & real payouts are in development.
             </p>
           </div>
@@ -326,7 +326,7 @@ export default function ScrimsPage() {
                   </span>
                   <Tag color={st.color} bg={st.bg} border={`${st.color}40`}>{st.label}</Tag>
                   <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 15, fontWeight: 700, color: "#ffce7a" }}>
-                    {w.stake * 2} <span style={{ fontSize: 10, color: "#6f7180" }}>POT</span>
+                    {w.stake * 2} <span style={{ fontSize: 10, color: "#8b8b9c" }}>POT</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>

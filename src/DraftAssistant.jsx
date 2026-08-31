@@ -135,7 +135,7 @@ function PhaseStepper({ phase, bansEnabled, done }) {
               fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, fontWeight: 700,
               background: state === "active" ? "rgba(179,107,255,.16)" : "rgba(255,255,255,.04)",
               border: `1px solid ${state === "active" ? "rgba(179,107,255,.5)" : "rgba(255,255,255,.08)"}`,
-              color: state === "active" ? "#e9d5ff" : state === "past" ? "#8ee6b0" : "#6f7180",
+              color: state === "active" ? "#e9d5ff" : state === "past" ? "#8ee6b0" : "#8b8b9c",
               boxShadow: state === "active" ? "0 0 18px rgba(179,107,255,.25)" : "none",
             }}>
               <span>{state === "past" ? "✓" : String(i + 1).padStart(2, "0")}</span>
@@ -236,7 +236,7 @@ function BuildChips({ build }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {items.map(it => (
         <div key={it.label} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-          <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#6f7180", minWidth: 42 }}>{it.label}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#8b8b9c", minWidth: 42 }}>{it.label}</span>
           <span style={{ fontSize: 11, color: "#e9e9f2", fontWeight: 600, lineHeight: 1.35 }}>{it.value}</span>
         </div>
       ))}
@@ -257,7 +257,7 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
       border: `1px solid ${isMid ? "rgba(124,196,255,.22)" : "rgba(255,255,255,.08)"}`,
     }}>
       <span style={{
-        alignSelf: "flex-start", fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4,
+        alignSelf: "flex-start", fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.4,
         color: isMid ? "#7cc4ff" : "#8b8b9c", border: `1px solid ${isMid ? "rgba(124,196,255,.35)" : "rgba(255,255,255,.14)"}`,
         borderRadius: 5, padding: "2px 7px",
       }}>{lane.lane.toUpperCase()}</span>
@@ -268,13 +268,13 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
           {me && <BrawlerTile brawler={me} size={40} title={me.name} />}
-          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#7cc4ff" }}>YOU</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7cc4ff" }}>YOU</span>
         </div>
         <div style={{ textAlign: "center", minWidth: 62 }}>
           <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 800, color: tone, lineHeight: 1.1 }}>
             {lane.winRate == null ? "—" : `${Math.round(lane.winRate)}%`}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 7.5, letterSpacing: 0.8, color: "#6f7180" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.8, color: "#8b8b9c" }}>
             {lane.basis === "head-to-head"
               ? `${lane.games.toLocaleString("en-US")} H2H`
               : lane.basis === "overall" ? "FROM SOLO WR" : "NO DATA"}
@@ -282,13 +282,13 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
           {foe && <BrawlerTile brawler={foe} size={40} title={foe.name} />}
-          <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ff8f8f" }}>THEM</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#ff8f8f" }}>THEM</span>
         </div>
       </div>
 
       {/* Confidence, stated rather than implied by a bare number. */}
       {lane.state !== "measured" && (
-        <span style={{ fontFamily: MONO, fontSize: 8.5, color: "#ffce7a", lineHeight: 1.4 }}>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#ffce7a", lineHeight: 1.4 }}>
           {lane.state === "thin"
             ? `⚠ only ${lane.games} games of this pairing — treat as a lean, not a read`
             : lane.state === "inferred"
@@ -300,7 +300,7 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
       <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
         {playstyle.build ? (
           <>
-            <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1.2, color: "#6f7180" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, color: "#8b8b9c" }}>
               {me?.name?.toUpperCase()} · {playstyle.build.forMode ? `${modeLabel} BUILD`.toUpperCase() : "ALL-PURPOSE BUILD"}
             </span>
             <BuildChips build={playstyle.build} />
@@ -309,14 +309,14 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
             )}
           </>
         ) : (
-          <span style={{ fontSize: 10.5, color: "#6f7180", lineHeight: 1.5 }}>
+          <span style={{ fontSize: 10.5, color: "#8b8b9c", lineHeight: 1.5 }}>
             No written build for {me?.name} yet{playstyle.classOf ? ` — play it as a ${playstyle.classOf.toLowerCase()}` : ""}.
           </span>
         )}
 
         {playstyle.vsPlan.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 1 }}>
-            <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1.2, color: "#6f7180" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, color: "#8b8b9c" }}>
               PLAYING AGAINST {foe?.name?.toUpperCase()}
             </span>
             {playstyle.vsPlan.map((t, i) => (
@@ -326,7 +326,7 @@ function LaneCard({ lane, playstyle, brawlerOf, modeLabel }) {
             ))}
           </div>
         ) : (
-          <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.4 }}>
+          <span style={{ fontSize: 10, color: "#8b8b9c", lineHeight: 1.4 }}>
             No counter guide written for {foe?.name} yet.
           </span>
         )}
@@ -340,11 +340,11 @@ export function LaneMatchups({ lanes, playstyles, brawlerOf, side, onFlip, modeL
   return (
     <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: "#6f7180" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8b8b9c" }}>
           {side === "blue" ? "BLUE" : "RED"} LANE MATCHUPS
         </span>
         <button onClick={onFlip} style={{
-          fontFamily: MONO, fontSize: 9, letterSpacing: 1, cursor: "pointer",
+          fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, cursor: "pointer",
           color: "#8b8b9c", background: "rgba(255,255,255,.04)",
           border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, padding: "4px 9px",
         }}>SHOW {side === "blue" ? "RED" : "BLUE"}'S VIEW</button>
@@ -357,7 +357,7 @@ export function LaneMatchups({ lanes, playstyles, brawlerOf, side, onFlip, modeL
         ))}
       </div>
 
-      <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.5 }}>
+      <span style={{ fontSize: 10, color: "#8b8b9c", lineHeight: 1.5 }}>
         Lanes are <em>inferred</em> from each brawler's range and draft class — the game exposes no positional
         data, so this is the most likely formation, not an observed one. Both teams are ordered the same way and
         paired rank-for-rank, which is the one assignment that can't flatter either side. Percentages are your
@@ -415,7 +415,7 @@ function LaneBoard({ mapName, blueTeam, redTeam }) {
       }}>
         {full
           ? <><BrawlerTile brawler={full} size={34} />
-              <span style={{ fontSize: 9, color: "#e8e8f0", fontFamily: MONO, letterSpacing: .2,
+              <span style={{ fontSize: 10.5, color: "#e8e8f0", fontFamily: MONO, letterSpacing: .2,
                              maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {full.name}
               </span></>
@@ -447,12 +447,12 @@ function LaneBoard({ mapName, blueTeam, redTeam }) {
         <div style={{ position: "relative", height: "100%", padding: "12px 12px 10px",
                       display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4, color: "#ff8f8f" }}>RED · TOP</span>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.4, color: "#ff8f8f" }}>RED · TOP</span>
             {row("red", red)}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
             {LANES.map(([id, label]) => (
-              <div key={`lab-${id}`} style={{ textAlign: "center", fontFamily: MONO, fontSize: 8,
+              <div key={`lab-${id}`} style={{ textAlign: "center", fontFamily: MONO, fontSize: 10,
                                               letterSpacing: 1.6, color: "rgba(255,255,255,.42)" }}>
                 {label}
               </div>
@@ -460,7 +460,7 @@ function LaneBoard({ mapName, blueTeam, redTeam }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             {row("blue", blue)}
-            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: 1.4, color: "#7cc4ff" }}>BLUE · BOTTOM</span>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.4, color: "#7cc4ff" }}>BLUE · BOTTOM</span>
           </div>
         </div>
       </div>
@@ -792,7 +792,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
     setPhase("setup"); setFirstPick(null); setSearch(""); setFilterRole("All");
   };
 
-  const mc = selectedMap ? (MODE_COLORS[selectedMap.mode?.replace(/\s/g, "")] ?? MODE_COLORS[selectedMap.mode?.toLowerCase?.()] ?? "#64748b") : "#64748b";
+  const mc = selectedMap ? (MODE_COLORS[selectedMap.mode?.replace(/\s/g, "")] ?? MODE_COLORS[selectedMap.mode?.toLowerCase?.()] ?? "#8b98ad") : "#8b98ad";
 
   return (
     <div style={{ position: "relative", zIndex: 10, maxWidth: 1280, margin: "0 auto", padding: "26px 5vw 80px" }}>
@@ -820,7 +820,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
               <ChevronDown size={14} color="#8b8b9c" style={{ transform: mapOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
             </button>
           ) : (
-            <span style={{ fontSize: 13, color: "#6f7180" }}>Loading maps…</span>
+            <span style={{ fontSize: 13, color: "#8b8b9c" }}>Loading maps…</span>
           )}
           {mapOpen && maps.length > 0 && (
             <MapFlyout maps={maps} selectedMap={selectedMap} onSelect={m => { setSelectedMap(m); setMapOpen(false); }} />
@@ -864,7 +864,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "18px 22px", borderRadius: 20, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#f4f4fa" }}>Enable bans</div>
-                  <div style={{ fontSize: 12.5, color: "#6f7180", marginTop: 2 }}>3 bans per team before picking, blue bans first</div>
+                  <div style={{ fontSize: 12.5, color: "#8b8b9c", marginTop: 2 }}>3 bans per team before picking, blue bans first</div>
                 </div>
                 <button onClick={() => setBansEnabled(v => !v)} style={{
                   width: 52, height: 28, borderRadius: 999, border: "none", cursor: "pointer", position: "relative",
@@ -910,7 +910,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 style={{
                   padding: "17px 34px", borderRadius: 999, border: "none",
                   background: firstPick ? "#ffb43d" : "rgba(255,255,255,.06)",
-                  color: firstPick ? "#1a1206" : "#6f7180",
+                  color: firstPick ? "#1a1206" : "#8b8b9c",
                   fontWeight: 700, fontSize: 16, letterSpacing: .5, cursor: firstPick ? "pointer" : "not-allowed",
                   fontFamily: "'Chakra Petch', sans-serif",
                   boxShadow: firstPick ? "0 0 30px rgba(255,180,61,.35)" : "none",
@@ -1033,12 +1033,12 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                       }}
                     />
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: .6, color: "#5f6070" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: .6, color: "#5f6070" }}>
                     RIGHT-CLICK OR LONG-PRESS A BRAWLER TO BAN
                   </div>
                   {extraBans.length > 0 && (
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.2, color: "#ff8f8f" }}>BANNED</span>
+                      <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.2, color: "#ff8f8f" }}>BANNED</span>
                       {extraBans.map(b => (
                         <button key={b.id} onClick={() => unbanExtra(b.id)} title={`Un-ban ${b.name}`} style={{
                           display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 5px", borderRadius: 999,
@@ -1076,7 +1076,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                             onClick={() => { if (used) return; banMode ? banBrawler(b) : handleBrawlerSelect(b); }}
                             onBan={used ? undefined : () => banBrawler(b)}
                             title={used ? b.name : `${b.name} — right-click or long-press to ban`} />
-                          <span style={{ fontSize: 10, color: used ? "#4a4a58" : "#c9c9d6", fontWeight: 600, textAlign: "center", lineHeight: 1.1 }}>{b.name}</span>
+                          <span style={{ fontSize: 10, color: used ? "#6f7180" : "#c9c9d6", fontWeight: 600, textAlign: "center", lineHeight: 1.1 }}>{b.name}</span>
                         </div>
                       );
                     })}
@@ -1108,7 +1108,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
               padding: "11px 13px", borderRadius: 16,
               background: "rgba(255,206,122,.06)", border: "1px solid rgba(255,206,122,.18)",
             }}>
-              <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 5 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 5 }}>
                 MAP READ
               </div>
               <p style={{ fontSize: 12.5, color: "#c9c9d6", lineHeight: 1.55, margin: 0 }}>{mapNote}</p>
@@ -1137,7 +1137,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   background: banIntel.picksFirst ? "rgba(124,196,255,.08)" : "rgba(255,143,143,.08)",
                   border: `1px solid ${banIntel.picksFirst ? "rgba(124,196,255,.22)" : "rgba(255,143,143,.22)"}`,
                 }}>
-                  <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.3, color: banIntel.picksFirst ? "#7cc4ff" : "#ff8f8f" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.3, color: banIntel.picksFirst ? "#7cc4ff" : "#ff8f8f" }}>
                     {activeSlot?.team ? `${activeSlot.team.toUpperCase()} BANS` : "BAN STRATEGY"}
                   </div>
                   <div style={{ fontSize: 12.5, color: "#e6e6ee", marginTop: 3, lineHeight: 1.45 }}>
@@ -1172,11 +1172,11 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
                         <span style={{
                           fontSize: 13.5, fontWeight: 700, fontFamily: DISPLAY,
-                          color: done ? "#6f7180" : "#f4f4fa",
+                          color: done ? "#8b8b9c" : "#f4f4fa",
                           textDecoration: done ? "line-through" : "none",
                         }}>{b.name}</span>
                         {b.reason && (
-                          <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .4, color: b.isPro ? "#ffce7a" : "#8b8b9c" }}>
+                          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .4, color: b.isPro ? "#ffce7a" : "#8b8b9c" }}>
                             {done ? "BANNED" : b.reason.toUpperCase()}
                           </span>
                         )}
@@ -1188,14 +1188,14 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                         textDecoration: done ? "line-through" : "none",
                       }}>
                         {b.winRate}%
-                        <div style={{ fontFamily: MONO, fontSize: 8, fontWeight: 400, color: "#5a5a68", letterSpacing: .5 }}>
+                        <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 400, color: "#5a5a68", letterSpacing: .5 }}>
                           {b.presencePct}% PICKED
                         </div>
                       </span>
                     </BanTarget>
                   );
                 })}
-                {banIntel.bans.length === 0 && <p style={{ fontSize: 12, color: "#6f7180" }}>Not enough map data yet for ban intel.</p>}
+                {banIntel.bans.length === 0 && <p style={{ fontSize: 12, color: "#8b8b9c" }}>Not enough map data yet for ban intel.</p>}
               </div>
             </>
           )}
@@ -1237,12 +1237,12 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                           <span style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: compact ? "#d8d8e4" : "#f4f4fa", fontFamily: DISPLAY }}>{s.name}</span>
                           {s.classLabel && (
-                            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>
+                            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>
                               {s.classLabel.toUpperCase()}
                             </span>
                           )}
                           {!compact && s.ability && (
-                            <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>
+                            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: .8, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>
                               {s.ability.toUpperCase()}
                             </span>
                           )}
@@ -1251,7 +1251,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
                             {s.reasons.map((r, ri) => (
                               <span key={ri} style={{
-                                fontFamily: MONO, fontSize: 9, letterSpacing: .5, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                                fontFamily: MONO, fontSize: 10.5, letterSpacing: .5, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
                                 color: r.tone === "good" ? "#8ee6b0" : "#ff8f8f",
                                 background: r.tone === "good" ? "rgba(142,230,176,.12)" : "rgba(255,122,122,.12)",
                                 border: `1px solid ${r.tone === "good" ? "rgba(142,230,176,.3)" : "rgba(255,122,122,.3)"}`,
@@ -1288,21 +1288,21 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                         <div style={{ fontFamily: MONO, fontSize: compact ? 13 : 16, fontWeight: 700, color }}>{s.winRate}%</div>
                         {compact ? null : s.mapGames > 0 ? (
                           <>
-                            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: s.sampleScope === "map" ? "#8ee6b0" : "#6f7180" }}>
+                            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: s.sampleScope === "map" ? "#8ee6b0" : "#8b8b9c" }}>
                               {fmtGames(s.mapGames)} MAP
                               {s.mapPresencePct != null && ` · ${s.mapPresencePct}%`}
                             </div>
                             {s.overallGames > 0 && (
-                              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
                                 {fmtGames(s.overallGames)} OVERALL
                               </div>
                             )}
                           </>
                         ) : (
                           <>
-                            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#ff8f8f" }}>NO MAP DATA</div>
+                            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#ff8f8f" }}>NO MAP DATA</div>
                             {s.overallGames > 0 && (
-                              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#5a5a68", marginTop: 1 }}>
                                 {fmtGames(s.overallGames)} OVERALL
                               </div>
                             )}
@@ -1313,12 +1313,12 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                   );
                 })}
                 {suggestions.length === 0 && (
-                  <p style={{ fontSize: 12, color: "#6f7180", textAlign: "center", padding: "14px 0" }}>
+                  <p style={{ fontSize: 12, color: "#8b8b9c", textAlign: "center", padding: "14px 0" }}>
                     Not enough data for this matchup — pick from the board.
                   </p>
                 )}
               </div>
-              <p style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: .5, color: "#4a4a58" }}>
+              <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: .5, color: "#6f7180" }}>
                 TAP A SUGGESTION TO LOCK IT INTO THE ACTIVE SLOT
               </p>
             </>
@@ -1332,7 +1332,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
               <div style={{ textAlign: "center", padding: "10px 0 4px" }}>
                 <div style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 700 }}>
                   <span style={{ color: "#7cc4ff" }}>{winSplit.blue}</span>
-                  <span style={{ color: "#4a4a58", fontSize: 20 }}> — </span>
+                  <span style={{ color: "#6f7180", fontSize: 20 }}> — </span>
                   <span style={{ color: "#ff8f8f" }}>{winSplit.red}</span>
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, color: "#8b8b9c", marginTop: 2 }}>
@@ -1343,13 +1343,13 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                 <div style={{ width: `${winSplit.blue}%`, background: "#7cc4ff", boxShadow: "0 0 12px rgba(124,196,255,.5)", transition: "width .7s ease" }} />
                 <div style={{ width: `${winSplit.red}%`, background: "#ff8f8f", transition: "width .7s ease" }} />
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "#6f7180", textAlign: "center", marginTop: -4 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: "#8b8b9c", textAlign: "center", marginTop: -4 }}>
                 MATCHUP EDGE · AFTER COUNTERS & STRUCTURE
               </div>
 
               {/* Second lens: raw roster strength on the map, before any head-to-head. */}
               <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
-                <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5, color: "#6f7180" }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8b8b9c" }}>
                   ROSTER STRENGTH · SOLO WR ON MAP
                 </span>
                 {[["BLUE", teamStrength.blue, "#7cc4ff", winSplit.blueSanity], ["RED", teamStrength.red, "#ff8f8f", winSplit.redSanity]].map(([label, v, color, sanity]) => (
@@ -1358,7 +1358,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                     {sanity.missing.length > 0 && <span style={{ color: "#ffce7a", textAlign: "right" }}>⚠ no {sanity.missing[0]}</span>}
                   </div>
                 ))}
-                <span style={{ fontSize: 10, color: "#6f7180", lineHeight: 1.4 }}>
+                <span style={{ fontSize: 10, color: "#8b8b9c", lineHeight: 1.4 }}>
                   Each side's average brawler win rate on this map on its own — not the matchup. The {winSplit.blue}–{winSplit.red} above is who wins once counters, synergy and comp gaps are applied.
                 </span>
               </div>
@@ -1430,12 +1430,12 @@ function TeamColumn({ label, color, team, bans, bansEnabled, phase, activeSlot, 
                     <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#ff8f8f", textDecoration: "line-through" }}>
                       {b.name.slice(0, 6).toUpperCase()}
                     </span>
-                    <button onClick={() => onRemoveBan(idx)} style={{ position: "absolute", top: 2, right: 4, background: "none", border: "none", color: "#6f7180", cursor: "pointer", padding: 0 }}>
+                    <button onClick={() => onRemoveBan(idx)} style={{ position: "absolute", top: 2, right: 4, background: "none", border: "none", color: "#8b8b9c", cursor: "pointer", padding: 0 }}>
                       <X size={9} />
                     </button>
                   </>
                 ) : (
-                  <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: active ? "#ff8f8f" : "#4a4a58" }}>{active ? "BAN" : "—"}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, color: active ? "#ff8f8f" : "#6f7180" }}>{active ? "BAN" : "—"}</span>
                 )}
               </div>
             );
@@ -1458,12 +1458,12 @@ function TeamColumn({ label, color, team, bans, bansEnabled, phase, activeSlot, 
               <>
                 <BrawlerTile brawler={brawler} size={42} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#f4f4fa", fontFamily: DISPLAY, flex: 1, textAlign: alignRight ? "right" : "left" }}>{brawler.name}</span>
-                <button onClick={(e) => { e.stopPropagation(); onRemovePick(idx); }} style={{ background: "none", border: "none", color: "#6f7180", cursor: "pointer", padding: 4 }}>
+                <button onClick={(e) => { e.stopPropagation(); onRemovePick(idx); }} style={{ background: "none", border: "none", color: "#8b8b9c", cursor: "pointer", padding: 4 }}>
                   <X size={13} />
                 </button>
               </>
             ) : (
-              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: active ? color : "#4a4a58", flex: 1, textAlign: alignRight ? "right" : "left" }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: active ? color : "#6f7180", flex: 1, textAlign: alignRight ? "right" : "left" }}>
                 {active ? "PICKING…" : `PICK ${idx + 1}`}
               </span>
             )}
@@ -1489,7 +1489,7 @@ function MapFlyout({ maps, selectedMap, onSelect }) {
     <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 300, display: "flex" }}>
       <div style={{ background: "rgba(13,13,20,.95)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 20, overflow: "hidden", minWidth: 170, backdropFilter: "blur(14px)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", padding: 6 }}>
         {modes.map(mode => {
-          const mc = MODE_COLORS[mode?.replace(/\s/g, "")] ?? MODE_COLORS[mode?.toLowerCase?.()] ?? "#64748b";
+          const mc = MODE_COLORS[mode?.replace(/\s/g, "")] ?? MODE_COLORS[mode?.toLowerCase?.()] ?? "#8b98ad";
           const isHovered = hoveredMode === mode;
           return (
             // Hover ALONE opened this submenu, which meant the map picker had
@@ -1511,7 +1511,7 @@ function MapFlyout({ maps, selectedMap, onSelect }) {
               background: isHovered ? `${mc}18` : "transparent",
             }}>
               <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: 1, color: mc }}>{formatMode(mode).toUpperCase()}</span>
-              <span style={{ color: "#4a4a58", fontSize: 10 }}>›</span>
+              <span style={{ color: "#6f7180", fontSize: 10 }}>›</span>
             </div>
           );
         })}
@@ -1555,11 +1555,11 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 22, fontWeight: 700, fontFamily: DISPLAY, color: "#f4f4fa" }}>{formatBrawlerName(brawlerKey)}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>{profile.class.toUpperCase()}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(179,107,255,.12)", color: "#c98bff", border: "1px solid rgba(179,107,255,.3)" }}>{profile.class.toUpperCase()}</span>
               {abilityCode && (
-                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>{abilityLabel(abilityCode).toUpperCase()}</span>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(124,196,255,.12)", color: "#7cc4ff", border: "1px solid rgba(124,196,255,.3)" }}>{abilityLabel(abilityCode).toUpperCase()}</span>
               )}
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: `${safety.color}15`, color: safety.color, border: `1px solid ${safety.color}40` }}>{safety.text}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: `${safety.color}15`, color: safety.color, border: `1px solid ${safety.color}40` }}>{safety.text}</span>
             </div>
           </div>
           <button onClick={onClose} style={{ background: "rgba(255,122,122,.1)", border: "1px solid rgba(255,122,122,.3)", color: "#ff8f8f", borderRadius: 999, padding: 8, cursor: "pointer", display: "flex" }}>
@@ -1571,10 +1571,10 @@ function QuickInfoModal({ brawlerKey, brawlerStats, rankBracket, onClose }) {
           {overall ? (
             <>
               <div style={{ fontFamily: MONO, fontSize: 22, fontWeight: 700, color: "#8ee6b0" }}>{parseFloat(overall.win_rate)}%</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.5, color: "#6f7180", marginTop: 2 }}>OVERALL WIN RATE · {overall.picks} GAMES</div>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.5, color: "#8b8b9c", marginTop: 2 }}>OVERALL WIN RATE · {overall.picks} GAMES</div>
             </>
           ) : (
-            <div style={{ fontSize: 12, color: "#6f7180" }}>No overall data for this bracket yet.</div>
+            <div style={{ fontSize: 12, color: "#8b8b9c" }}>No overall data for this bracket yet.</div>
           )}
         </div>
       </div>
@@ -1692,7 +1692,7 @@ function DraftFeedbackCard({ map, mode, rankBracket, patch, blueTeam, redTeam, w
 
           <button onClick={submit} disabled={busy} style={{
             padding: "13px 26px", borderRadius: 999, border: "none",
-            background: busy ? "rgba(255,255,255,.06)" : "#ffb43d", color: busy ? "#6f7180" : "#1a1206",
+            background: busy ? "rgba(255,255,255,.06)" : "#ffb43d", color: busy ? "#8b8b9c" : "#1a1206",
             fontWeight: 700, fontSize: 14, cursor: busy ? "default" : "pointer",
             fontFamily: "'Chakra Petch', sans-serif", alignSelf: "flex-start",
             boxShadow: busy ? "none" : "0 0 22px rgba(255,180,61,.3)",

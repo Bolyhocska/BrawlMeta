@@ -111,7 +111,7 @@ function BrawlerChip({ name, size = 26, dim = false }) {
     }}>
       {art
         ? <img src={art} alt="" width={size} height={size} style={{ objectFit: "cover" }} loading="lazy" />
-        : <span style={{ fontFamily: MONO, fontSize: 9, color: "#8a8a9c" }}>{String(name).slice(0, 2)}</span>}
+        : <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c" }}>{String(name).slice(0, 2)}</span>}
     </span>
   );
 }
@@ -122,9 +122,9 @@ function Stat({ label, value, color = "#e9e9f2", sub }) {
       padding: "13px 15px", borderRadius: 12, background: "rgba(255,255,255,.03)",
       border: "1px solid rgba(255,255,255,.07)", minWidth: 0,
     }}>
-      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.6, color: "#6f7180" }}>{label}</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.6, color: "#8b8b9c" }}>{label}</div>
       <div style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 800, color, marginTop: 3 }}>{value}</div>
-      {sub && <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -195,7 +195,7 @@ function DraftVerdict({ s, won }) {
   }, [s.key, bracket]);
 
   if (state.loading) {
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#6f7180", padding: "10px 2px" }}>Grading the draft…</div>;
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", padding: "10px 2px" }}>Grading the draft…</div>;
   }
   if (state.error || !state.split) {
     return <div style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c", padding: "10px 2px" }}>
@@ -215,7 +215,7 @@ function DraftVerdict({ s, won }) {
 
   return (
     <div style={{ paddingTop: 12, marginTop: 12, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.8, color: "#6f7180", marginBottom: 8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.8, color: "#8b8b9c", marginBottom: 8 }}>
         DRAFT VERDICT
       </div>
 
@@ -254,7 +254,7 @@ function DraftVerdict({ s, won }) {
           marginTop: 11, padding: "12px 14px", borderRadius: 11,
           background: "rgba(124,196,255,.07)", border: "1px solid rgba(124,196,255,.24)",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1.6, color: "#7cc4ff", marginBottom: 6 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.6, color: "#7cc4ff", marginBottom: 6 }}>
             THE PICK THAT WAS THERE
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.65, color: "#c9c9d6" }}>
@@ -263,14 +263,14 @@ function DraftVerdict({ s, won }) {
             grades this draft {state.swap.to.toFixed(0)}/{(100 - state.swap.to).toFixed(0)} instead
             of {state.swap.from.toFixed(0)}/{(100 - state.swap.from).toFixed(0)}.
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: 7, lineHeight: 1.6 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f", marginTop: 7, lineHeight: 1.6 }}>
             A straight swap with the other five held fixed — we don't know draft order, so this is
             not "you should have counter-picked". It also can't see bans or which brawlers you own.
           </div>
         </div>
       )}
 
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", marginTop: 9, lineHeight: 1.6 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 9, lineHeight: 1.6 }}>
         Matchup edge only — measured win rates on {s.map} plus head-to-head data, not player skill.
         {assumedBracket && " Graded against Masters data, since this match's rank tier is unknown."}
       </div>
@@ -317,7 +317,7 @@ function SeriesCard({ s }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 7, flexWrap: "wrap" }}>
           {s.teamNames.map((n, i) => <BrawlerChip key={`t${i}`} name={n} size={22} />)}
-          <span style={{ fontFamily: MONO, fontSize: 10, color: "#5a5a6a", margin: "0 4px" }}>VS</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", margin: "0 4px" }}>VS</span>
           {s.enemyNames.map((n, i) => <BrawlerChip key={`e${i}`} name={n} size={22} dim />)}
         </div>
       </div>
@@ -329,11 +329,11 @@ function SeriesCard({ s }) {
         }}>
           {s.rounds.length > 1 ? `${wins}–${losses}` : (won ? "WIN" : "LOSS")}
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#5a5a6a", marginTop: 2 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f", marginTop: 2 }}>
           {s.rounds.length > 1 ? `${s.rounds.length} rounds · ` : ""}
           {when.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: open ? "#c9a6ff" : "#5a5a6a", marginTop: 4, letterSpacing: 1 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10.5, color: open ? "#c9a6ff" : "#7c7e8f", marginTop: 4, letterSpacing: 1 }}>
           {open ? "HIDE ▲" : "VERDICT ▼"}
         </div>
       </div>
@@ -399,7 +399,7 @@ function TrackingBox({ tag, tracked, historyCount }) {
           background: "transparent", border: "1px solid rgba(255,255,255,.14)", opacity: busy ? .6 : 1,
         }}>STOP TRACKING</button>
       </div>
-      <div style={{ marginTop: 9, fontSize: 10.5, color: "#6f7180" }}>
+      <div style={{ marginTop: 9, fontSize: 10.5, color: "#8b8b9c" }}>
         Boost checks this profile every few hours instead of twice a day and adds trophy progression.
         It's free — <Link to="/privacy" style={{ color: "#9a8fc0" }}>how we handle your data</Link>.
       </div>
@@ -502,13 +502,13 @@ export default function PlayerPage() {
           {live && (
             <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
               <div>
-                <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#6f7180" }}>TROPHIES</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#8b8b9c" }}>TROPHIES</div>
                 <div style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 800, color: "#ffce7a" }}>
                   🏆 {live.trophies.toLocaleString("en-US")}
                 </div>
               </div>
               <div>
-                <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.4, color: "#6f7180" }}>3V3 WINS</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#8b8b9c" }}>3V3 WINS</div>
                 <div style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 800, color: "#8ee6b0" }}>
                   {live.victories3v3.toLocaleString("en-US")}
                 </div>
@@ -555,14 +555,14 @@ export default function PlayerPage() {
             "brawlers you actually draft" simply contributes nothing — every
             other signal still applies. That makes it the one thing on this page
             with something to say to a first-time visitor. */}
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180", margin: "4px 0 10px" }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8b8b9c", margin: "4px 0 10px" }}>
           [ WHAT TO UPGRADE NEXT ]
         </div>
         <UpgradeAdvisor tag={tag} rankedRows={rows} />
 
         {/* History */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "0 0 12px" }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6f7180" }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8b8b9c" }}>
             [ MATCH HISTORY ]
           </span>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
@@ -574,7 +574,7 @@ export default function PlayerPage() {
                 <button key={k} onClick={() => setFilter(k)}
                   disabled={needsGrade && !labels}
                   style={{
-                    fontFamily: MONO, fontSize: 9, letterSpacing: 1.1, padding: "5px 10px",
+                    fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.1, padding: "5px 10px",
                     borderRadius: 999, cursor: needsGrade && !labels ? "default" : "pointer",
                     color: on ? "#0d0d14" : "#8a8a9c", fontWeight: on ? 700 : 400,
                     background: on ? "#c9a6ff" : "transparent",
@@ -586,7 +586,7 @@ export default function PlayerPage() {
           </div>
         </div>
 
-        {loading && <div style={{ fontFamily: MONO, fontSize: 12, color: "#6f7180" }}>Loading history…</div>}
+        {loading && <div style={{ fontFamily: MONO, fontSize: 12, color: "#8b8b9c" }}>Loading history…</div>}
 
         {!loading && rows.length === 0 && (
           <div style={{
@@ -606,19 +606,19 @@ export default function PlayerPage() {
         {!loading && shown.map(s => <SeriesCard key={s.key} s={s} />)}
 
         {!loading && series.length > 0 && shown.length === 0 && (
-          <div style={{ fontFamily: MONO, fontSize: 11.5, color: "#6f7180", padding: "14px 2px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 11.5, color: "#8b8b9c", padding: "14px 2px" }}>
             No drafts match that filter.
           </div>
         )}
 
         {rows.length >= 300 && (
-          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 10 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f", marginTop: 10 }}>
             Showing the 300 most recent matches.
           </div>
         )}
 
         {rows.length > 0 && (
-          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#5a5a6a", marginTop: 16, lineHeight: 1.7 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f", marginTop: 16, lineHeight: 1.7 }}>
             Tracked since {tracked?.first_seen_at
               ? new Date(tracked.first_seen_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
               : "recently"}. Competitive Ranked only — trophy and friendly games are not recorded.
