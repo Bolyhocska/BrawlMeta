@@ -1593,11 +1593,25 @@ export function computeWinSplit({ blueTeam, redTeam, mode, mapStats = {}, intell
     const sanity = finalSanityCheck(teamKeys, mode);
     s -= sanity.missing.length * 3;
 
-    // Diversity: each duplicate class bleeds points ("three control brawlers
-    // are all countered by one aggro")
+    // Diversity, read from the SAME config the recommender uses. It used to be
+    // a flat -3 per extra copy while getDraftAdvice applied x0.7; once that side
+    // was measured and rescaled to -0.45 / -2.27 the two scorers disagreed by
+    // about 6.5x, in the direction where the recommender happily builds a comp
+    // the verdict then marks down. Keeping one source of truth is what stops
+    // the two code paths contradicting each other about who is favoured.
+    //
+    // Cumulative here, not marginal: computeWinSplit grades a FINISHED comp, so
+    // a class appearing three times costs the whole -2.27, where getDraftAdvice
+    // charges a pick only the step it adds.
+    const cd = CONFIG.constraints?.classDiversity;
+    const dupExempt = (cd?.exemptModes || []).includes(mode);
     const counts = {};
     for (const c of classes) counts[c] = (counts[c] || 0) + 1;
-    for (const n of Object.values(counts)) if (n > 1) s -= (n - 1) * 3;
+    if (!dupExempt) {
+      for (const n of Object.values(counts)) {
+        for (let k = 2; k <= n; k++) s += cd?.duplicatePts?.[String(k)] ?? 0;
+      }
+    }
 
     return { score: s, sanity };
   };
