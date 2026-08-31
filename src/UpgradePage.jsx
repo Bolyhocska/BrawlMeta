@@ -147,6 +147,9 @@ export default function UpgradePage() {
       <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 800, color: "#e9e9f2", margin: "0 0 6px" }}>
         What to upgrade next
       </h1>
+      <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "#8b98ad", margin: "0 0 8px", maxWidth: 620 }}>
+        Your own brawlers, sorted by how much your next upgrade would actually help you win.
+      </p>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginBottom: 20 }}>
         {myTag} · patch {CURRENT_PATCH} · Masters data
       </div>

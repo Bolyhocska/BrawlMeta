@@ -82,6 +82,14 @@ export default function HomePage() {
             Surge<br />Meta is<br />
             <span style={{ color: "#b36bff", textShadow: "0 0 46px rgba(179,107,255,.55)", animation: "bm-flicker 6s infinite" }}>Here</span>
           </h1>
+          {/* The landing page named a brawler and showed three numbers, and
+              never said what the site DOES. A first-time visitor had to work
+              that out from the nav. One sentence fixes it. */}
+          <p style={{ fontSize: "clamp(15px,1.5vw,18px)", lineHeight: 1.6, color: "#c9c9d6", maxWidth: 460, margin: 0 }}>
+            Free Brawl Stars stats from real Ranked games — see which brawlers are
+            winning right now, get told what to pick during a draft, and track your
+            own matches.
+          </p>
           <div style={{ display: "flex", gap: 16 }}>
             <StatChip value="S+" label="TIER RATING" color="#f4f4fa" />
             <StatChip value="61%" label="WIN RATE" color="#ffb43d" />
