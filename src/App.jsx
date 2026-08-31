@@ -638,9 +638,12 @@ function PremiumView() {
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Real-time companion overlay linkage</span></div>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Hypercharge availability & matchup prediction maps</span></div>
         <div style={{ display: "flex", gap: 8, fontSize: 12 }}><Check size={14} color="#10b981" /> <span>Deep premium structural party counters (3v3 Synergy Maps)</span></div>
-        <button style={{ width: "100%", background: "#ffb43d", color: "#1a1206", border: "none", padding: "12px", borderRadius: 999, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8, boxShadow: "0 0 22px rgba(255,180,61,.3)" }}>
+        {/* This was a dead button: styled with cursor:pointer, carrying the
+            page's primary call to action, and wired to nothing at all. It now
+            goes to the upgrade page like every other upgrade prompt. */}
+        <Link to="/upgrade" className="bm-lift" style={{ width: "100%", background: "#ffb43d", color: "#1a1206", border: "none", padding: "12px", borderRadius: 999, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8, boxShadow: "0 0 22px rgba(255,180,61,.3)", textDecoration: "none" }}>
           Upgrade Now <ArrowUpRight size={14} />
-        </button>
+        </Link>
       </div>
     </div>
   );

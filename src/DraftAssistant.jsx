@@ -1492,7 +1492,20 @@ function MapFlyout({ maps, selectedMap, onSelect }) {
           const mc = MODE_COLORS[mode?.replace(/\s/g, "")] ?? MODE_COLORS[mode?.toLowerCase?.()] ?? "#64748b";
           const isHovered = hoveredMode === mode;
           return (
-            <div key={mode} onMouseEnter={() => setHoveredMode(mode)} style={{
+            // Hover ALONE opened this submenu, which meant the map picker had
+            // no way in on a touch screen: onMouseEnter does not fire on a tap,
+            // so the mode list showed a pointer cursor and a chevron and then
+            // did nothing. Tap, focus and Enter/Space now open it too.
+            <div key={mode} className="bm-tap"
+              role="button" tabIndex={0}
+              aria-expanded={isHovered} aria-label={`Show ${formatMode(mode)} maps`}
+              onMouseEnter={() => setHoveredMode(mode)}
+              onClick={() => setHoveredMode(mode)}
+              onFocus={() => setHoveredMode(mode)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setHoveredMode(mode); }
+              }}
+              style={{
               display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
               padding: "10px 14px", cursor: "pointer", borderRadius: 999,
               background: isHovered ? `${mc}18` : "transparent",
