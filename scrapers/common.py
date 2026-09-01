@@ -48,15 +48,42 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-CURRENT_PATCH = "68.250"
+CURRENT_PATCH = "69.230"
 
 # Patch start times (UTC). Used to determine which patch a match actually
 # belongs to based on its own battleTime, instead of blindly stamping every
 # collected match with CURRENT_PATCH — a player's battlelog can still contain
 # battles from before the patch changed if they haven't played since.
+#
+# GETTING A BOUNDARY IN BEFORE THE NEXT SCRAPE IS THE WHOLE GAME. ranked_matches
+# stores collected_at but NOT battle_time, so a new-patch game stamped with the
+# old patch is permanently indistinguishable afterwards — there is nothing left
+# to re-derive the truth from. Patch bookkeeping is the one piece of this
+# pipeline that cannot be fixed retroactively.
 PATCH_START_TIMES = [
     ("67.306", datetime(2000, 1, 1, tzinfo=timezone.utc)),   # earliest known patch, catch-all floor
     ("68.250", datetime(2026, 6, 30, 8, 0, 0, tzinfo=timezone.utc)),  # 10:00 CET = 08:00 UTC
+    # 69.230 — "Royal Academy & Brawl-O-Ween", the September 2026 balance patch
+    # (22 brawlers buffed, 14 nerfed, plus new Buffies for Poco/El Primo/Amber
+    # and Gus/Chuck/Shade). Balance patches are epoch boundaries: the aggregates
+    # are only meaningful within one.
+    #
+    # THE BOUNDARY IS MEASURED, NOT GUESSED. The APK went up 2026-09-01 06:08
+    # UTC, but the number that matters is when Ranked games resumed, and our own
+    # data pins the dead window precisely: the newest battle across all of
+    # player_matches is 2026-08-31 23:56:51 UTC, and tracked_players polled 66
+    # accounts as late as 07:54 UTC that morning with not one new battle among
+    # them. Servers were down across that whole span, so NO ranked match exists
+    # between 23:56:51 and the relaunch — which makes every candidate boundary
+    # inside the window exactly equivalent, and this one exact rather than
+    # approximate.
+    #
+    # 06:00 rather than 00:00 because the two errors are not symmetric. Too late
+    # spills a few new-patch games into 68.250, which already holds 2.1M rows and
+    # will not notice. Too early spills OLD-balance games into a patch starting
+    # from zero, where they are proportionally enormous and poison the first
+    # tier list anyone sees. Bias toward the big patch.
+    ("69.230", datetime(2026, 9, 1, 6, 0, 0, tzinfo=timezone.utc)),
 ]
 
 def determine_patch(battle_time_str):
@@ -144,6 +171,21 @@ RANKED_MAPS = {
         "Spiraling Out",
     },
 }
+
+# 69.230 inherits 68.250's floor. THIS ENTRY IS NOT OPTIONAL AND IT IS NOT
+# COSMETIC. parse_battle does `allowed_maps = RANKED_MAPS.get(match_patch)` and
+# then skips the map check entirely when that comes back None — so bumping
+# CURRENT_PATCH without adding a key here does not tighten the allowlist, it
+# SILENTLY REMOVES IT, and every themed reskin and event map starts landing in
+# ranked_matches under the new patch. That is the precise failure the allowlist
+# exists to prevent, and it would arrive disguised as a great collection day.
+#
+# A copy rather than a hand-written list: the ranked rotation turns over every
+# day or two and map_pool.py already unions the live pool in on top, so this only
+# has to be a known-good floor, and last patch's floor is exactly that. New maps
+# arriving with the season get picked up by the daily pool refresh without anyone
+# editing this file.
+RANKED_MAPS["69.230"] = set(RANKED_MAPS["68.250"])
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DYNAMIC MAP POOL

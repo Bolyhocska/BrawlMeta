@@ -11,7 +11,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
-import { supabase, MODE_ICONS, GEAR_ICONS } from "./appCore";
+import { supabase, MODE_ICONS, GEAR_ICONS, CURRENT_PATCH } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import {
   getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS, iconOverride,
@@ -592,7 +592,12 @@ export default function BrawlerGuidePage({
       .from("brawler_intelligence")
       .select("with_brawler, vs_brawler")
       .eq("brawler", brawler.key)
-      .eq("patch", "68.250")
+      // Was hardcoded "68.250" while every other page read CURRENT_PATCH. That
+      // cost nothing until a patch rollover, and 69.230 is one: on the day the
+      // site moves, a literal here would leave this one section quietly serving
+      // the previous balance patch's match-ups next to current numbers, which is
+      // worse than showing nothing.
+      .eq("patch", CURRENT_PATCH)
       .eq("rank_bracket", rankBracket)
       .maybeSingle()
       .then(({ data }) => {

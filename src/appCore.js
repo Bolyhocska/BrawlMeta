@@ -8,6 +8,21 @@ import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
+// DELIBERATELY BEHIND scrapers/common.py's CURRENT_PATCH, which is already on
+// "69.230". The two are not meant to move together and this is not drift.
+//
+// The scraper constant decides how an incoming match is LABELLED, and it had to
+// move the moment 69.230 went live or those games would have been filed under
+// the old balance patch forever (ranked_matches keeps no battle_time, so that
+// mistake is unrecoverable). This constant decides what the SITE READS, and
+// 69.230 has no aggregates yet — pointing the app at it today empties the tier
+// list, the map pages and the draft intelligence in one commit.
+//
+// So the scraper fills the new patch in the background while the site keeps
+// serving the patch that actually has data. Flip this once 69.230 carries
+// enough matches to aggregate honestly; the two RPCs that rebuild the
+// aggregates are both scoped `WHERE patch = target_patch`, so 68.250 stays
+// intact underneath the whole time and the flip is reversible.
 export const CURRENT_PATCH = "68.250";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
