@@ -86,6 +86,65 @@ PATCH_START_TIMES = [
     ("69.230", datetime(2026, 9, 1, 6, 0, 0, tzinfo=timezone.utc)),
 ]
 
+# ──────────────────────────────────────────────────────────────────────────────
+# PATCH-LAUNCH BURST MODE
+# ──────────────────────────────────────────────────────────────────────────────
+# For the first few days of a balance patch the new epoch has NO data, so the
+# tier list, map pages and draft intelligence are all thin at once. Collection
+# speed matters more in that window than at any other time in a patch's life.
+#
+# The lever is frequency, not breadth: one spider pass saturates its 2-hop
+# neighbourhood at ~30k unique matches and then reports "ran out of players", so
+# a bigger target collects nothing extra. What produces new rows is ELAPSED TIME
+# — the same players keep playing between passes.
+#
+# So a launch-window run makes several passes inside its own scheduled slot,
+# sleeping between them, instead of the schedule gaining extra runs. That is
+# deliberate and it is not just about avoiding cron conflicts with the other
+# scrapers over the shared Supercell key:
+#
+#   Round accounting is PER PROCESS. SEEN_IDENTITIES (battleTime + all six
+#   tags) is what stops one physical round being counted once per battlelog it
+#   appears in, and PUSHED_COUNTS is what makes push_matches send round-count
+#   deltas rather than absolutes. Extra passes inside one process inherit both,
+#   so re-reading a battlelog that has not rotated contributes exactly nothing.
+#   Extra WORKFLOW RUNS start with both empty, so overlapping battlelog entries
+#   are pushed again and times_seen inflates for games that were played once.
+#   Same wall-clock frequency, and only one of the two keeps the counts honest.
+PATCH_LAUNCH_DAYS = 3            # how long after a patch start the burst applies
+PATCH_LAUNCH_PASS_GAP_SECS = 40 * 60   # let players actually play between passes
+# 4h, not the 350-minute workflow timeout. Two separate limits bound this:
+# a pass is only STARTED with >= 50 min of budget left but can still run ~90,
+# so the real ceiling is budget + 40; and the masters cron fires every 6h, so
+# the burst has to be done well before its own successor queues behind it.
+# It does still overlap scrape-diamond-mythic (07:30) and track-players from
+# the 06:00 slot, and those share the one IP-allowlisted Supercell key. That
+# costs throughput on whichever job is throttled - it cannot corrupt anything -
+# and it lasts only as long as the launch window.
+PATCH_LAUNCH_BUDGET_SECS = 240 * 60
+
+
+def hours_since_patch_start(now=None):
+    """Hours since the newest patch in PATCH_START_TIMES began. None if the
+    newest entry is the catch-all floor, which would otherwise read as a patch
+    that started in the year 2000 and has been 'launching' ever since."""
+    if not PATCH_START_TIMES:
+        return None
+    name, start = PATCH_START_TIMES[-1]
+    if start.year < 2020:
+        return None
+    now = now or datetime.now(timezone.utc)
+    return (now - start).total_seconds() / 3600.0
+
+
+def in_patch_launch_window(now=None):
+    """True while the newest patch is less than PATCH_LAUNCH_DAYS old. Self
+    expiring on purpose — a burst mode someone has to remember to switch off is
+    a burst mode that stays on."""
+    age = hours_since_patch_start(now)
+    return age is not None and 0 <= age < PATCH_LAUNCH_DAYS * 24
+
+
 def determine_patch(battle_time_str):
     """Given the API's battleTime (e.g. '20260630T101500.000Z'), return which
     patch that match actually happened in."""

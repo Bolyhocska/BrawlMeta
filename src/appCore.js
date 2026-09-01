@@ -8,28 +8,26 @@ import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-// DELIBERATELY BEHIND scrapers/common.py's CURRENT_PATCH, which is already on
-// "69.230". The two are not meant to move together and this is not drift.
+// The patch the site READS. Moved to 69.230 on 2026-09-01, one day after the
+// scraper constant in scrapers/common.py did, once the new epoch could actually
+// carry the pages: 103 of 106 brawlers past 100 games, all 212 brawler_intelligence
+// rows rebuilt, 175 of them with head-to-head data.
 //
-// The scraper constant decides how an incoming match is LABELLED, and it had to
-// move the moment 69.230 went live or those games would have been filed under
-// the old balance patch forever (ranked_matches keeps no battle_time, so that
-// mistake is unrecoverable). This constant decides what the SITE READS, and
-// 69.230 has no aggregates yet — pointing the app at it today empties the tier
-// list, the map pages and the draft intelligence in one commit.
+// What is still thin is MAP-level data - 527 brawler-map cells above 200 games
+// against 2,422 on the patch we left. That degrades by design rather than
+// breaking: mapPriority.blendPriorGames weights a map rate by its own sample
+// and falls back to the brawler's mode and global rate for this patch, and
+// map_pair_edges falls through to the patch-wide vs_brawler rate. Both fill in
+// as the launch burst in scrapers/common.py collects.
 //
-// So the scraper fills the new patch in the background while the site keeps
-// serving the patch that actually has data. Flip this once 69.230 carries
-// enough matches to aggregate honestly; the two RPCs that rebuild the
-// aggregates are both scoped `WHERE patch = target_patch`, so 68.250 stays
-// intact underneath the whole time and the flip is reversible.
-export const CURRENT_PATCH = "68.250";
-// The patch actually live in the game, which during a staged rollover is ahead
-// of the one the site reads. Kept separate so the UI can say which is which:
-// labelling the patch we happen to have data for as "CURRENT" was defensible
-// only while the two were the same, and stops being true the moment they part.
-// Set this equal to CURRENT_PATCH again when the flip happens and the
-// distinction disappears from the UI on its own.
+// The two rebuild RPCs are scoped `WHERE patch = target_patch`, so 68.250 is
+// still intact underneath and setting this back is a one-line revert.
+export const CURRENT_PATCH = "69.230";
+// The patch actually live in the game. Equal to CURRENT_PATCH once a rollover
+// has completed, and AHEAD of it during the staging window between a patch going
+// live and the site having enough of it to read - which is exactly when the UI
+// must not call the older patch "current". Keeping the constant when the two
+// agree costs nothing and makes the next rollover a one-line stage.
 export const LIVE_PATCH = "69.230";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
