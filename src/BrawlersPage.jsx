@@ -7,7 +7,7 @@ import GENERAL_TIER_LIST from "./data/generalTierList.json";
 import { tileStyles } from "./data/brawlerTile";
 import { getExtendedGuide } from "./data/extendedGuides";
 import { iconOverride, hasBrawlerGuide, getBrawlerGuide } from "./data/brawlerTips";
-import { supabase, CURRENT_PATCH, GEAR_ICONS } from "./appCore";
+import { supabase, CURRENT_PATCH, GEAR_ICONS, shrunkWinRate } from "./appCore";
 
 // URL-safe slug for a brawler key, e.g. "MR. P" -> "mr-p", "LARRY & LAWRIE" -> "larry-lawrie"
 export const slugifyBrawlerKey = (key) =>
@@ -237,13 +237,21 @@ function useMapModeStats(brawler, byMode, byMap) {
       .map(([map, data]) => {
         const s = data.brawlers[brawler.key];
         if (!s || s.picks < MIN_PICKS_MAP) return null;
-        const wr = Math.round((s.wins / s.picks) * 1000) / 10;
+        // This list is SORTED BY WIN RATE, which means a raw rate puts the
+        // noisiest cells at the top: on a fresh patch the median brawler-map
+        // sample is under a hundred games, so "best maps" would rank by luck.
+        // Shrink toward the brawler's rate across the REST of this mode.
+        const m = byMode[data.mode]?.[brawler.key];
+        const restPicks = (m?.picks ?? 0) - s.picks;
+        const restWins = (m?.wins ?? 0) - s.wins;
+        const wr = Math.round(shrunkWinRate(
+          s.wins, s.picks, restPicks > 0 ? (restWins / restPicks) * 100 : null) * 10) / 10;
         const stars = toStars(wr, 0, 1000, s.picks >= MIN_PICKS_MAP ? MIN_PICKS_OVERALL : 0);
         return { map, mode: data.mode, picks: s.picks, winRate: wr, stars };
       })
       .filter(Boolean)
       .sort((a, b) => b.winRate - a.winRate);
-  }, [byMap, brawler.key]);
+  }, [byMap, byMode, brawler.key]);
 
   const modeStats = useMemo(() => {
     return Object.entries(byMode).map(([mode, brawlers]) => {

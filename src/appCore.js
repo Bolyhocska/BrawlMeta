@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
+import DRAFT_CONFIG from "./data/draft_logic_config.json";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
@@ -30,6 +31,41 @@ export const CURRENT_PATCH = "69.230";
 // agree costs nothing and makes the next rollover a one-line stage.
 export const LIVE_PATCH = "69.230";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── Sample-weighted win rate ────────────────────────────────────────────────
+// A map cell's win rate is only worth what its sample can carry, and right after
+// a patch rollover almost none of them can carry much: on 69.230's first day the
+// MEDIAN brawler-map cell held 59 games (±12.8 points at 95%) and 75% of them sat
+// under 200. Printing "58.3%" off 59 games is noise dressed as evidence.
+//
+// So a displayed rate is pulled toward the brawler's own broader rate on the SAME
+// patch, weighted by its own sample: weight = picks / (picks + prior). Thin cells
+// lean on the broader rate, and the pull fades to nothing as games arrive — the
+// weights let go by themselves, with no second deploy and no threshold to trip
+// over.
+//
+// The prior target is the brawler's rate in this MODE on this patch, not the old
+// patch's rate for the same cell. That distinction is the whole point and it was
+// measured on the 68.250 -> 69.230 rollover: shrinking toward the previous
+// patch showed El Primo at 48.7% when he measures 53.1%, Amber at 55.6% against
+// 59.0%, Shade at 54.5% against 58.0%, and pulled the NERFED Nori UP from 45.0%
+// to 48.6%. A balance patch is precisely the moment the old patch stops being a
+// valid prior, and it is wrong hardest for the brawlers the patch changed —
+// which are the ones anyone is looking up. Cross-patch priors are a trap here.
+//
+// Shared with the draft engine on purpose: the same constant the engine uses to
+// weight a map rate in SCORING, so a map page and a suggestion card can never
+// quote different numbers for the same brawler on the same map.
+export const MAP_BLEND_PRIOR_GAMES = DRAFT_CONFIG?.mapPriority?.blendPriorGames ?? 400;
+
+/** Win rate in percent, shrunk toward `priorRatePct` by sample size.
+ *  Returns null for an empty cell, and the prior itself when there is no
+ *  broader rate to fall back on. */
+export const shrunkWinRate = (wins, picks, priorRatePct, priorGames = MAP_BLEND_PRIOR_GAMES) => {
+  if (!picks) return null;
+  if (priorRatePct == null || !Number.isFinite(priorRatePct)) return (wins / picks) * 100;
+  return ((wins + priorGames * (priorRatePct / 100)) / (picks + priorGames)) * 100;
+};
 
 export const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({
   id: i + 1,

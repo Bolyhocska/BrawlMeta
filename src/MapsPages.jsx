@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  supabase, CURRENT_PATCH, MODE_COLORS, MODE_ICONS, formatMode,
+  supabase, CURRENT_PATCH, MODE_COLORS, MODE_ICONS, formatMode, shrunkWinRate,
   formatBrawlerName, useSmartBack,
 } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
@@ -107,16 +107,54 @@ function buildTable(rows, mapName, bracket) {
   const mine = rows.filter(r => r.map === mapName && r.rank_bracket === bracket);
   const totalPicks = mine.reduce((a, r) => a + (r.picks || 0), 0);
   const matches = totalPicks / 6 || 1;
+  const mode = mine[0]?.mode ?? rows.find(r => r.map === mapName)?.mode;
+
+  // The prior a thin cell on THIS map is pulled toward: the same brawler's rate
+  // across the rest of this mode, on this patch. Leave-one-out — the current map
+  // is excluded, or a cell would be shrunk partly toward itself and a mode with
+  // few maps would barely move at all.
+  const pool = (sameMode) => {
+    const acc = {};
+    for (const r of rows) {
+      if (r.rank_bracket !== bracket || r.map === mapName) continue;
+      if (sameMode && r.mode !== mode) continue;
+      const k = String(r.brawler).toUpperCase();
+      const a = acc[k] || (acc[k] = { picks: 0, wins: 0 });
+      a.picks += r.picks || 0;
+      a.wins += r.wins || 0;
+    }
+    return acc;
+  };
+  const modePool = pool(true);
+  const allPool = pool(false);
+  const priorFor = (key) => {
+    // Mode first, because a record in gem grab is a better prior for a gem grab
+    // map than one pooled across heist and bounty — the same reasoning that made
+    // the engine's map blend target the mode rate. All-maps is the backstop for a
+    // brawler who has only ever been seen on this one map in this mode.
+    for (const p of [modePool[key], allPool[key]]) {
+      if (p && p.picks > 0) return (p.wins / p.picks) * 100;
+    }
+    return null;
+  };
+
   return {
     matches: Math.round(matches),
-    brawlers: mine.map(r => ({
-      key: String(r.brawler).toUpperCase(),
-      name: formatBrawlerName(r.brawler),
-      picks: r.picks || 0,
-      winRate: r.picks ? (r.wins / r.picks) * 100 : null,
-      pickRate: (r.picks / matches) * 100,
-      cls: classLabel(draftClassOf(String(r.brawler).toUpperCase())),
-    })).filter(b => b.winRate != null),
+    brawlers: mine.map(r => {
+      const key = String(r.brawler).toUpperCase();
+      return {
+        key,
+        name: formatBrawlerName(r.brawler),
+        picks: r.picks || 0,
+        // Shrunk, not raw. The median brawler-map cell on a fresh patch holds
+        // well under a hundred games, and a raw rate off that sample is a
+        // confident-looking number the sample cannot support.
+        winRate: shrunkWinRate(r.wins, r.picks, priorFor(key)),
+        rawWinRate: r.picks ? (r.wins / r.picks) * 100 : null,
+        pickRate: (r.picks / matches) * 100,
+        cls: classLabel(draftClassOf(key)),
+      };
+    }).filter(b => b.winRate != null),
   };
 }
 
@@ -153,7 +191,10 @@ export function MapsLandingPage() {
           <h1 style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 800, margin: "4px 0 6px" }}>Maps</h1>
           <p style={{ fontSize: 13.5, color: "#8b8b9c", lineHeight: 1.6, maxWidth: 760 }}>
             Every ranked map, with the brawlers that actually win on it — measured from live match data,
-            not opinion. A brawler needs {MIN_PICKS}+ games on a map before it is ranked here.
+            not opinion. A brawler needs {MIN_PICKS}+ games on a map before it is ranked here, and each
+            win rate is weighted by how many games it rests on: a brawler with a small sample here sits
+            near its record for the mode until enough games on this map say otherwise. The game count is
+            printed beside every rate.
           </p>
         </div>
 

@@ -11,7 +11,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import { getExtendedGuide } from "./data/extendedGuides";
-import { supabase, MODE_ICONS, GEAR_ICONS, CURRENT_PATCH } from "./appCore";
+import { supabase, MODE_ICONS, GEAR_ICONS, CURRENT_PATCH, shrunkWinRate } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import {
   getBrawlerGuide, getGeneralTier, scaleStatValue, POWER_LEVELS, iconOverride,
@@ -622,11 +622,22 @@ export default function BrawlerGuidePage({
     for (const [map, data] of Object.entries(byMap)) {
       const s = data.brawlers[brawler.key];
       if (!s || s.picks < 30) continue;
-      (out[data.mode] ||= []).push({ map, picks: s.picks, winRate: Math.round((s.wins / s.picks) * 1000) / 10 });
+      // Sorted by win rate below, so a raw rate would rank this brawler's maps
+      // by which sample got lucky. Shrunk toward its record across the rest of
+      // the mode, which costs a well-measured map almost nothing and stops a
+      // 40-game cell from headlining as a best map.
+      const m = byMode[data.mode]?.[brawler.key];
+      const restPicks = (m?.picks ?? 0) - s.picks;
+      const restWins = (m?.wins ?? 0) - s.wins;
+      (out[data.mode] ||= []).push({
+        map, picks: s.picks,
+        winRate: Math.round(shrunkWinRate(
+          s.wins, s.picks, restPicks > 0 ? (restWins / restPicks) * 100 : null) * 10) / 10,
+      });
     }
     for (const list of Object.values(out)) list.sort((a, b) => b.winRate - a.winRate);
     return out;
-  }, [byMap, brawler.key]);
+  }, [byMap, byMode, brawler.key]);
 
   // Overall rank across every brawler with a real sample — a real number from
   // our data, replacing the design's hardcoded "#8".
