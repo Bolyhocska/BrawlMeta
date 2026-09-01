@@ -291,7 +291,7 @@ def main():
             remaining = deadline - time.monotonic()
             if remaining < PATCH_LAUNCH_PASS_GAP_SECS + 600:
                 print(f"\n🚀 launch burst done after {p} pass(es) — "
-                      f"{int(remaining // 60)} min left in budget, not enough for another.")
+                      f"{max(0, int(remaining // 60))} min left in budget, not enough for another.")
                 break
             print(f"   sleeping {PATCH_LAUNCH_PASS_GAP_SECS // 60} min so the "
                   f"same players can generate new games...")
