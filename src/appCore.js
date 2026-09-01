@@ -24,6 +24,13 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 // aggregates are both scoped `WHERE patch = target_patch`, so 68.250 stays
 // intact underneath the whole time and the flip is reversible.
 export const CURRENT_PATCH = "68.250";
+// The patch actually live in the game, which during a staged rollover is ahead
+// of the one the site reads. Kept separate so the UI can say which is which:
+// labelling the patch we happen to have data for as "CURRENT" was defensible
+// only while the two were the same, and stops being true the moment they part.
+// Set this equal to CURRENT_PATCH again when the flip happens and the
+// distinction disappears from the UI on its own.
+export const LIVE_PATCH = "69.230";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export const BRAWLERS = Object.entries(BRAWLER_META_IMPORT).map(([key, meta], i) => ({

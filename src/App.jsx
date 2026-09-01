@@ -26,7 +26,7 @@ const TournamentProfilePage = lazy(() => import("./TournamentPages").then(m => (
 const CreateTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.CreateTournamentPage })));
 const ManageTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.ManageTournamentPage })));
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
-import { supabase, CURRENT_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
+import { supabase, CURRENT_PATCH, LIVE_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
 import { tileStyles } from "./data/brawlerTile";
 
 const RANK_BRACKETS = [
@@ -233,7 +233,8 @@ function RankBracketSelector({ value, onChange, selectedPatch, onPatchChange, pa
             {patches.map(p => (
               <button key={p} onClick={() => { onPatchChange(p); setPatchOpen(false); }}
                 style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 14px", borderRadius: 999, background: selectedPatch === p ? "rgba(255,180,61,.12)" : "transparent", border: "none", color: selectedPatch === p ? "#ffce7a" : "#94a3b8", fontSize: 12, fontWeight: selectedPatch === p ? 700 : 400, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}>
-                {p === CURRENT_PATCH ? `${p} · CURRENT` : p}
+                {p === LIVE_PATCH ? `${p} · LIVE`
+                  : p === CURRENT_PATCH ? `${p} · MOST DATA` : p}
               </button>
             ))}
           </div>
