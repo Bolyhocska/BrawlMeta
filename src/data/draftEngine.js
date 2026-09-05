@@ -539,6 +539,31 @@ export function getDraftAdvice({
       score += (useCfg.weight ?? 0) * ((mapPicks / mapTotalMatches) * 100);
     }
 
+    // Off-meta: SAYS something the score already prices, rather than pricing it
+    // twice. The line above is the whole presence term, and it spans about 0.9
+    // points across the presence range - which is inside the 0.56-1.73 that a
+    // within-player measurement puts on choosing a rare brawler. Adding a second
+    // penalty here would double count it.
+    //
+    // The chip exists because the reason is not visible in the number. A rare
+    // pick's win rate is measured on the players who CHOSE it, and they are
+    // stronger than average - our own tracked population wins 57.7% because it
+    // is seeded from leaderboards. So the displayed rate flatters a rare pick
+    // slightly, and the honest response is to state that, the same way the thin
+    // map chip states a thin sample instead of hiding it.
+    //
+    // Gated on the map having a real sample of its own: on a 200-match map every
+    // brawler looks rare, and the chip would fire on all of them and mean
+    // nothing.
+    const omCfg = CONFIG.offMeta || {};
+    if (omCfg.label && mapTotalMatches >= (omCfg.minMapMatches ?? 400) && mapPicks > 0) {
+      const presencePct = (mapPicks / mapTotalMatches) * 100;
+      if (presencePct < (omCfg.presencePct ?? 1.5)) {
+        chips.push({ label: omCfg.label, tone: "bad" });
+        why.push(`off-meta here — picked in ${presencePct.toFixed(1)}% of games, and that win rate comes from the players who choose it`);
+      }
+    }
+
     // ── Counterability ───────────────────────────────────────────────────────
     // The risk that the enemy simply answers this pick. It is NOT a property of
     // "no enemy revealed yet" — it lasts as long as they still hold picks, so
