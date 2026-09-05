@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  supabase, CURRENT_PATCH, MODE_COLORS, MODE_ICONS, formatMode, shrunkWinRate,
+  supabase, CURRENT_PATCH, MODE_COLORS, MODE_ICONS, formatMode, shrunkWinRate, MODE_FALLBACK_MIN_PICKS, CONFIDENCE_PRIOR_GAMES,
   formatBrawlerName, useSmartBack,
 } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
@@ -130,10 +130,22 @@ function buildTable(rows, mapName, bracket) {
   const priorFor = (key) => {
     // Mode first, because a record in gem grab is a better prior for a gem grab
     // map than one pooled across heist and bounty — the same reasoning that made
-    // the engine's map blend target the mode rate. All-maps is the backstop for a
-    // brawler who has only ever been seen on this one map in this mode.
-    for (const p of [modePool[key], allPool[key]]) {
-      if (p && p.picks > 0) return (p.wins / p.picks) * 100;
+    // the engine's map blend target the mode rate.
+    //
+    // But ONLY once the mode sample can carry it. This mirrors the engine's
+    // modeOrGlobalTWR exactly, and the guard is the whole point: without it a
+    // thin cell gets shrunk toward an even thinner prior. Angelo's 34 games on
+    // Beach Ball were being stabilised by his 30 games in that mode, so he
+    // headlined at 67.4% while 26,557 games say he is a 50.0% brawler. Below
+    // the floor we fall through to his record across every OTHER map, which for
+    // him is those same 26k games.
+    const m = modePool[key];
+    if (m && m.picks >= MODE_FALLBACK_MIN_PICKS) return (m.wins / m.picks) * 100;
+    const a = allPool[key];
+    // Bayesian-shrunk toward 50 at the engine's own prior, so a brawler who is
+    // thin EVERYWHERE cannot supply a confident prior either.
+    if (a && a.picks > 0) {
+      return ((a.wins + CONFIDENCE_PRIOR_GAMES * 0.5) / (a.picks + CONFIDENCE_PRIOR_GAMES)) * 100;
     }
     return null;
   };

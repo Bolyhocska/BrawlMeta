@@ -57,6 +57,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // weight a map rate in SCORING, so a map page and a suggestion card can never
 // quote different numbers for the same brawler on the same map.
 export const MAP_BLEND_PRIOR_GAMES = DRAFT_CONFIG?.mapPriority?.blendPriorGames ?? 400;
+// A prior is only worth shrinking toward if it rests on more evidence than the
+// cell it is stabilising. The engine enforces that in modeOrGlobalTWR - a mode
+// rate under modeFallbackMinPicks is discarded for the brawler's global rate -
+// and these two constants exist so a map PAGE applies the identical rule. When
+// it did not, ANGELO's 34 games on Beach Ball were being pulled toward his 30
+// games in that mode: noise stabilising noise, which put a brawler measured at
+// 50.0% over 26,557 games top of the map at 67.4%.
+export const MODE_FALLBACK_MIN_PICKS = DRAFT_CONFIG?.mapPriority?.modeFallbackMinPicks ?? 300;
+export const CONFIDENCE_PRIOR_GAMES = DRAFT_CONFIG?.statisticalCoefficients?.confidencePriorGames ?? 30;
 
 /** Win rate in percent, shrunk toward `priorRatePct` by sample size.
  *  Returns null for an empty cell, and the prior itself when there is no
