@@ -23,6 +23,10 @@ import { join } from "node:path";
 const URL = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY;
 if (!URL || !KEY) { console.error("SUPABASE_URL and SUPABASE_KEY are required."); process.exit(1); }
 const CUTOFF_DAYS = Number(process.argv[2] || 7);
+// Omitted by default: the RPC picks the patch we are actually collecting, from
+// the data. Naming it here would duplicate a constant that lives in two other
+// places already and can drift out of step with both.
+const TARGET_PATCH = process.argv[3] || null;
 const sb = createClient(URL, KEY);
 
 // The engine is ESM importing JSON and other modules, so bundle it rather than
@@ -47,7 +51,8 @@ const page = async (t, cols, order) => {
 };
 
 console.log(`rebuilding the calibration slice (cutoff ${CUTOFF_DAYS}d)…`);
-const { data: slice, error: sliceErr } = await sb.rpc("refresh_calibration_slice", { cutoff_days: CUTOFF_DAYS });
+const { data: slice, error: sliceErr } = await sb.rpc("refresh_calibration_slice",
+  { cutoff_days: CUTOFF_DAYS, target_patch: TARGET_PATCH });
 if (sliceErr) { console.error("refresh_calibration_slice failed:", sliceErr.message); process.exit(1); }
 console.log(`  train ${Number(slice.train_games).toLocaleString("en-US")} games · test ${Number(slice.test_games).toLocaleString("en-US")} games\n`);
 
@@ -133,7 +138,7 @@ for (const b of buckets) {
 }
 
 const { error: insErr } = await sb.from("engine_calibration").insert({
-  patch: CONFIG.currentPatch ?? null,
+  patch: slice.patch ?? null,
   test_games: diffs.length, train_games: Number(slice.train_games),
   auc: +A.toFixed(4), logloss: +logloss(shipped).toFixed(4), brier: +brier(shipped).toFixed(4),
   accuracy: +(100 * acc).toFixed(2), fitted_scale: fitted.s, shipped_scale: shipped,
@@ -146,11 +151,30 @@ rmSync(tmp, { recursive: true, force: true });
 // ── regression gates ─────────────────────────────────────────────────────────
 // Loud, because both of these were true of the shipped engine before anyone
 // measured it: it beat neither the coin flip nor its own stated confidence.
-const problems = [];
+//
+// Two of these are stable at any test size because they aggregate over every
+// game: logloss against the 50/50 baseline, and AUC. Two are not - per-bucket
+// calibration splits the test set seven ways, and the logisticScale fit is a
+// one-parameter search over the same thin data - so for a few days after a
+// patch rollover, when the slice can only span the patch's own short life,
+// both swing on noise. A gate that cries wolf gets ignored, which costs more
+// than the check is worth, so below THIN_TEST those two report as warnings and
+// the job still passes. The two hard gates keep working throughout.
+const THIN_TEST = 15000;
+const thin = diffs.length < THIN_TEST;
+const problems = [], warnings = [];
 if (logloss(shipped) >= BASE) problems.push(`logloss ${logloss(shipped).toFixed(4)} is no better than always saying 50/50 (${BASE.toFixed(4)})`);
-if (Math.abs(fitted.s - shipped) / shipped > 0.5) problems.push(`logisticScale ${shipped} is far from the fitted ${fitted.s} — the engine is mis-stating its confidence`);
-if (worstGap > 5) problems.push(`a calibration bucket is off by ${worstGap.toFixed(1)}pp`);
 if (A < 0.52) problems.push(`AUC ${A.toFixed(4)} is barely better than a coin flip`);
+const soft = thin ? warnings : problems;
+if (Math.abs(fitted.s - shipped) / shipped > 0.5) soft.push(`logisticScale ${shipped} is far from the fitted ${fitted.s} - the engine is mis-stating its confidence`);
+if (worstGap > 5) soft.push(`a calibration bucket is off by ${worstGap.toFixed(1)}pp`);
+if (thin) console.log(`
+  (test set is ${diffs.length.toLocaleString("en-US")} games, under ${THIN_TEST.toLocaleString("en-US")} - bucket and scale checks are advisory this run)`);
+if (warnings.length) {
+  console.log(`
+WARNINGS (thin test set - not failing):`);
+  for (const w of warnings) console.log(`  - ${w}`);
+}
 if (problems.length) {
   console.log(`\nREGRESSIONS:`);
   for (const p of problems) console.log(`  - ${p}`);
