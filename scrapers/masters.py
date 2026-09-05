@@ -14,7 +14,6 @@
 # instead of drifting down the ladder.
 
 import re
-import time
 import random
 import requests
 from datetime import datetime, timezone
@@ -34,9 +33,7 @@ from scrapers.common import (
     harvest_bracket, push_matches, push_players, reaggregate, prune_bracket,
     SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
     MASTERS_BASELINE, MASTERS_STEADY, MASTERS_RUN_CAP, SPIDER_DEPTH,
-    MASTERS_WINDOW_CAP, CURRENT_PATCH,
-    in_patch_launch_window, hours_since_patch_start,
-    PATCH_LAUNCH_DAYS, PATCH_LAUNCH_PASS_GAP_SECS, PATCH_LAUNCH_BUDGET_SECS,
+    MASTERS_WINDOW_CAP,
 )
 
 BRACKET = "masters_legendary"
@@ -226,78 +223,33 @@ def main():
     seeds, verified_seeds = get_masters_seeds()
     print(f"Masters seeds this run: {', '.join(seeds)} (verified: {', '.join(sorted(verified_seeds)) or 'none'})")
 
-    depth1_tags = set()
-
-    def one_pass():
-        """One full spider walk from the seeds, pushed and aggregated.
-
-        seen_tags and seen_hashes are per-pass: the point of a second pass is to
-        re-walk the SAME players and pick up the games they have played since,
-        so carrying the visited set forward would make it a no-op. What must NOT
-        reset is the module-level round accounting in common.py — SEEN_IDENTITIES
-        and PUSHED_COUNTS — and it does not, because those live in the process,
-        not here. A battle already counted in an earlier pass is skipped by
-        identity, so times_seen stays exact however many passes run.
-        """
-        extracted, seen_tags, seen_hashes = [], set(), set()
-        # Write periodically instead of only at the end. A run takes ~75 minutes
-        # and a killed runner used to discard all of it; push_matches sends
-        # round-count deltas, so flushing early cannot double-count anything.
-        harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
-                        target_matches=target, max_depth=SPIDER_DEPTH,
-                        depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds,
-                        flush=lambda: (push_players(), push_matches(extracted, lookups)))
-
-        # Every battlelog the spider read handed us {tag, name} for six players.
-        # Recorded before the match push so a failure there still leaves the
-        # directory richer than it was.
-        named = push_players()
-        if named:
-            print(f"player_directory: {named} name(s) recorded.")
-
-        inserted, touched = push_matches(extracted, lookups)
-        if inserted:
-            # Sliding window BEFORE re-aggregation, so the fresh aggregates and
-            # intelligence are computed over exactly the retained window.
-            prune_bracket(BRACKET, MASTERS_WINDOW_CAP)
-            reaggregate(touched)
-            # Keep the Intelligence Engine's statistical layer in step with the data
-            from scrapers.meta_weights import refresh_intelligence
-            refresh_intelligence(sorted(touched))
-        return inserted
-
-    if not in_patch_launch_window():
-        one_pass()
-    else:
-        age_h = hours_since_patch_start()
-        deadline = time.monotonic() + PATCH_LAUNCH_BUDGET_SECS
-        print(f"🚀 patch launch burst: {CURRENT_PATCH} is {age_h:.1f}h old "
-              f"(< {PATCH_LAUNCH_DAYS}d) — re-walking the graph every "
-              f"{PATCH_LAUNCH_PASS_GAP_SECS // 60} min for up to "
-              f"{PATCH_LAUNCH_BUDGET_SECS // 60} min.")
-        # RUN_INSERTED is cumulative across the process, so read it as a running
-        # total rather than a per-pass count.
-        p, before = 0, 0
-        while True:
-            p += 1
-            print(f"\n── launch pass {p} ──")
-            total = one_pass()
-            print(f"── pass {p}: +{total - before} new compositions "
-                  f"({total} this run) ──")
-            before = total
-            # Only sleep if a whole further pass plus its gap still fits. A pass
-            # cut off by the workflow timeout loses nothing already pushed, but
-            # it does waste the API budget it spent getting there.
-            remaining = deadline - time.monotonic()
-            if remaining < PATCH_LAUNCH_PASS_GAP_SECS + 600:
-                print(f"\n🚀 launch burst done after {p} pass(es) — "
-                      f"{max(0, int(remaining // 60))} min left in budget, not enough for another.")
-                break
-            print(f"   sleeping {PATCH_LAUNCH_PASS_GAP_SECS // 60} min so the "
-                  f"same players can generate new games...")
-            time.sleep(PATCH_LAUNCH_PASS_GAP_SECS)
+    extracted, seen_tags, seen_hashes, depth1_tags = [], set(), set(), set()
+    # Write periodically instead of only at the end. A run takes ~75 minutes and
+    # a killed runner used to discard all of it; push_matches sends round-count
+    # deltas, so flushing early cannot double-count anything.
+    harvest_bracket(BRACKET, seeds, extracted, seen_tags, seen_hashes,
+                    target_matches=target, max_depth=SPIDER_DEPTH,
+                    depth1_tags=depth1_tags, depth1_source_whitelist=verified_seeds,
+                    flush=lambda: (push_players(), push_matches(extracted, lookups)))
 
     persist_spider_players(depth1_tags)
+
+    # Every battlelog the spider read handed us {tag, name} for six players.
+    # Recorded before the match push so a failure there still leaves the
+    # directory richer than it was.
+    named = push_players()
+    if named:
+        print(f"player_directory: {named} name(s) recorded.")
+
+    inserted, touched = push_matches(extracted, lookups)
+    if inserted:
+        # Sliding window BEFORE re-aggregation, so the fresh aggregates and
+        # intelligence are computed over exactly the retained window.
+        prune_bracket(BRACKET, MASTERS_WINDOW_CAP)
+        reaggregate(touched)
+        # Keep the Intelligence Engine's statistical layer in step with the data
+        from scrapers.meta_weights import refresh_intelligence
+        refresh_intelligence(sorted(touched))
 
 if __name__ == "__main__":
     main()
