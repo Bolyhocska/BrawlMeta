@@ -14,6 +14,10 @@ export const NO_HYPERCHARGE = new Set([
   "BOLT", "STARR NOVA", "DAMIAN", "NAJIA", "SIRIUS", "GLOWY", "GIGI",
   "PIERCE", "ZIGGY", "MINA", "TRUNK", "ALLI", "KAZE",
   "JAE-YONG", "FINX", "LUMI", "OLLIE", "MEEPLE",
+  // WENDY (16000108) is the newest brawler we hold and newer than BOLT, who is
+  // already listed, so she is assumed to have no hypercharge yet. Inferred, not
+  // confirmed - if she has one, deleting this line is the whole fix.
+  "WENDY",
 ]);
 
 export const hasHypercharge = (key) => !NO_HYPERCHARGE.has((key || "").toUpperCase().trim());

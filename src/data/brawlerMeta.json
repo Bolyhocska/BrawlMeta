@@ -1225,6 +1225,16 @@
       }
     ]
   },
+  "WENDY": {
+    "imageUrl": "/icons/brawlers/16000108.png",
+    "id": 16000108,
+    "rarity": "Mythic",
+    "rarityColor": "#fe5e72",
+    "class": "Support",
+    "description": "",
+    "starPowers": [],
+    "gadgets": []
+  },
   "WILLOW": {
     "imageUrl": "/icons/brawlers/16000067.png",
     "id": 16000067,
