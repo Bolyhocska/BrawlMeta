@@ -736,10 +736,31 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
   // fall into an "Unknown" tab and the filter labels contradict the card labels.
   const draftClassName = (b) => classLabel(draftClassOf(b.key));
   const roles = ["All", ...Array.from(new Set(BRAWLERS.map(draftClassName))).sort()];
+
+  // Strictly A-Z, deliberately. Frequency ordering was tried and reverted
+  // (owner, 2026-09-05): entering a pick is a LOOKUP, not a browse - you already
+  // know it is Mortis and you need to find Mortis - and a predictable index
+  // beats a statistically faster but structureless one. The "most picked here"
+  // strip below carries the speed win without disturbing this order.
   const filtered = BRAWLERS.filter(b =>
-    b.name.toLowerCase().includes(search.toLowerCase()) &&
+    b.name.toLowerCase().includes(search.trim().toLowerCase()) &&
     (filterRole === "All" || draftClassName(b) === filterRole)
   );
+
+  // The 10 most-picked brawlers on THIS map, as a one-tap strip above the grid.
+  // Measured on 69.230: the 16 most-picked on a map are 67% of real picks and
+  // the top 24 are 80%, so a short strip covers a large share of entries at one
+  // tap while the grid underneath stays alphabetical for everything else.
+  // Hidden while searching, since a query is already a faster path.
+  const quickPicks = useMemo(() => {
+    if (!selectedMap || search.trim()) return [];
+    return BRAWLERS
+      .map(b => ({ b, picks: mapStatsByKey[b.key]?.picks ?? 0 }))
+      .filter(x => x.picks > 0)
+      .sort((x, y) => y.picks - x.picks)
+      .slice(0, 10)
+      .map(x => x.b);
+  }, [selectedMap, search, mapStatsByKey]);
 
   const handleBrawlerSelect = (brawler) => {
     if (allUsed.includes(brawler.id) || !activeSlot) return;
@@ -850,7 +871,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
           {phase === "setup" && (
-            <div style={{ ...PANEL, padding: 38, display: "flex", flexDirection: "column", gap: 26 }}>
+            <div className="da-panel" style={{ ...PANEL, padding: 38, display: "flex", flexDirection: "column", gap: 26 }}>
               <div>
                 <h2 style={{ fontFamily: DISPLAY, fontSize: "clamp(28px,3.4vw,40px)", fontWeight: 700, color: "#f4f4fa", letterSpacing: "-.5px" }}>
                   Set up the <span style={{ color: "#b36bff", textShadow: "0 0 30px rgba(179,107,255,.5)" }}>draft</span>
@@ -921,7 +942,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
           )}
 
           {phase !== "setup" && (
-            <div style={{ ...PANEL, padding: 30, display: "flex", flexDirection: "column", gap: 24 }}>
+            <div className="da-panel" style={{ ...PANEL, padding: 30, display: "flex", flexDirection: "column", gap: 24 }}>
               {/* Teams */}
               <div className="da-teams" style={{ display: "grid", gridTemplateColumns: "1fr 52px 1fr", gap: 14, alignItems: "start" }}>
                 {/* BLUE */}
@@ -1063,7 +1084,33 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
                       }}>{r}</button>
                     ))}
                   </div>
-                  <div style={{
+                  {quickPicks.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.4, color: "#8b8b9c" }}>
+                        MOST PICKED ON {selectedMap.name.toUpperCase()}
+                      </span>
+                      {/* A horizontal strip, not a reordering of the grid below:
+                          the grid stays alphabetical so a known brawler is still
+                          findable by jumping, while the handful people actually
+                          pick here are one tap away. */}
+                      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                        {quickPicks.map(b => {
+                          const used = allUsed.includes(b.id);
+                          const isBanned = allBanned.includes(b.id);
+                          return (
+                            <div key={`q-${b.id}`} style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 54 }}>
+                              <BrawlerTile brawler={b} size={44} dim={used && !isBanned} banned={isBanned}
+                                onClick={() => { if (used) return; banMode ? banBrawler(b) : handleBrawlerSelect(b); }}
+                                onBan={used ? undefined : () => banBrawler(b)}
+                                title={used ? b.name : `${b.name} — right-click or long-press to ban`} />
+                              <span style={{ fontSize: 9.5, color: used ? "#6f7180" : "#c9c9d6", fontWeight: 600, textAlign: "center", lineHeight: 1.05, maxWidth: 54, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div className="da-picker-grid" style={{
                     display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 10,
                     maxHeight: 300, overflowY: "auto", paddingRight: 4,
                   }}>
@@ -1098,7 +1145,7 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
         </div>
 
         {/* ── RIGHT: draft intel ── */}
-        <div className="da-sidebar" style={{ ...PANEL, padding: 26, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 20 }}>
+        <div className="da-sidebar da-panel" style={{ ...PANEL, padding: 26, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 20 }}>
           <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#c98bff" }}>◈ DRAFT INTEL</span>
 
           {/* Pro map read — advisory context from the map-rules config. Never
@@ -1393,6 +1440,21 @@ export default function DraftAssistant({ selectedPatch, rankBracket, maps, brawl
           .da-sidebar { position: static !important; }
           .da-teams { grid-template-columns: 1fr !important; }
           .da-teams > div:nth-child(2) { display: none !important; }
+        }
+        /* Phones. The 980px block above only restacks the columns - every SIZE
+           below it is still desktop, and on a 390px screen that is expensive:
+           30px of panel padding on each side spends 15% of the width, which is
+           the difference between a 3-column and a 4-column picker.
+           4 columns x 4 rows shows 16 tiles, and 16 is exactly where the
+           measured pick coverage reaches 67%. The taller grid is in vh so it
+           tracks the actual phone rather than a guess at one. */
+        @media (max-width: 560px) {
+          .da-panel { padding: 14px !important; border-radius: 18px !important; }
+          .da-picker-grid {
+            grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)) !important;
+            max-height: 46vh !important;
+            gap: 8px !important;
+          }
         }
       `}</style>
     </div>
