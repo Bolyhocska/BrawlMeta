@@ -183,6 +183,20 @@ def run_patch_impact():
         "source": "internal_stats",
         "source_urls": [],
         "auto_generated": True,
+        # Structured numbers for the detail page's chart — the rendered
+        # `summary` text above is for the feed card and for anyone reading
+        # via the API directly; this is for anything that needs to draw it.
+        "data": {
+            "priorPatch": prior,
+            "minPicks": PATCH_IMPACT_MIN_PICKS,
+            "movers": [
+                {
+                    "brawler": brawler_name(m["brawler"]), "delta": round(m["delta"], 1),
+                    "priorWr": round(m["prior_wr"], 1), "curWr": round(m["cur_wr"], 1),
+                }
+                for m in top
+            ],
+        },
     })
     print(f"news_digest[patch]: published \"{post['slug']}\" ({len(top)} movers).")
 
@@ -221,6 +235,17 @@ def run_meta_snapshot():
         "source": "internal_stats",
         "source_urls": [],
         "auto_generated": True,
+        "data": {
+            "minPicks": META_MIN_PICKS,
+            "strongest": [
+                {"brawler": brawler_name(r["brawler"]), "winRate": round(r["true_win_rate"], 1), "picks": r["picks"]}
+                for r in top
+            ],
+            "weakest": [
+                {"brawler": brawler_name(r["brawler"]), "winRate": round(r["true_win_rate"], 1), "picks": r["picks"]}
+                for r in bottom
+            ],
+        },
     })
     print(f"news_digest[meta]: published \"{post['slug']}\" ({len(top)} strong, {len(bottom)} weak).")
 

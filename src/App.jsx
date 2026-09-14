@@ -14,6 +14,7 @@ const SafeZoneGuidePage = lazy(() => import("./GuidesPages").then(m => ({ defaul
 const BrawlerGuidesPage = lazy(() => import("./GuidesPages").then(m => ({ default: m.BrawlerGuidesPage })));
 const ScrimsPage = lazy(() => import("./ScrimsPage"));
 const NewsPage = lazy(() => import("./NewsPage"));
+const NewsPostDetail = lazy(() => import("./NewsPage").then(m => ({ default: m.NewsPostDetail })));
 import SiteFooter from "./SiteFooter";
 const PrivacyPolicyPage = lazy(() => import("./LegalPages").then(m => ({ default: m.PrivacyPolicyPage })));
 const AboutPage         = lazy(() => import("./LegalPages").then(m => ({ default: m.AboutPage })));
@@ -817,6 +818,7 @@ export default function AppRoutes() {
       <Route path="/app" element={<BrawlApex />} />
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
       <Route path="/news" element={<NewsPage />} />
+      <Route path="/news/:slug" element={<NewsPostDetail />} />
       <Route path="/scrims" element={<ScrimsPage />} />
       <Route path="/tournaments" element={<TournamentLandingPage />} />
       <Route path="/tournaments/create" element={<CreateTournamentPage />} />

@@ -233,6 +233,53 @@ export function BarList({ rows = [], height = 26, unit = "%", emptyMessage = "No
   );
 }
 
+// ── Signed deltas (movers) ────────────────────────────────────────────────────
+// BarList assumes an ABSOLUTE win rate: its bars start at 0% width and its
+// green/red split sits at 52/48. A mover is a DELTA around zero — El Primo
+// +9.9pp, Kit -7.7pp — so a BarList bar for -7.7 would render nearly as long
+// as one for +9.9, and both would come out green (both "values" are far from
+// the 48-52 band on the wrong axis entirely). This draws bars growing out from
+// a centre zero-line instead, which is the shape a signed delta actually has.
+export function DeltaBarList({ rows = [], height = 22, unit = "pp", emptyMessage = "No data." }) {
+  if (!rows.length) return <EmptyState height={90} message={emptyMessage} />;
+  const maxAbs = Math.max(...rows.map(r => Math.abs(r.value)), 0.1);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {rows.map((r, i) => {
+        const pct = (Math.abs(r.value) / maxAbs) * 50; // half-width max, either side of centre
+        const positive = r.value >= 0;
+        const colour = positive ? CHART_COLORS.green : CHART_COLORS.red;
+        return (
+          <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 11, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
+            <span style={{ flex: "0 0 100px", fontSize: 13, color: TEXT, overflow: "hidden",
+                           textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</span>
+            <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, position: "relative", minWidth: 60 }}>
+              {/* Centre zero-line, always visible so a small bar still reads
+                  as "near zero" rather than "no data". */}
+              <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,.14)" }} />
+              <div style={{
+                position: "absolute", top: 0, bottom: 0,
+                left: positive ? "50%" : `${50 - pct}%`,
+                width: `${Math.max(2, pct)}%`, borderRadius: 5,
+                background: `linear-gradient(${positive ? "90deg" : "270deg"}, ${colour}66, ${colour})`,
+                boxShadow: `0 0 14px -4px ${colour}`,
+                transition: "left .55s cubic-bezier(.2,.7,.3,1), width .55s cubic-bezier(.2,.7,.3,1)",
+              }} />
+            </div>
+            <span style={{ flex: "0 0 56px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: colour }}>
+              {positive ? "+" : ""}{r.value.toFixed(1)}{unit}
+            </span>
+            {r.sub != null && (
+              <span style={{ flex: "0 0 110px", textAlign: "right", fontFamily: MONO, fontSize: 10.5, color: DIM }}>{r.sub}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Pick rate vs win rate ────────────────────────────────────────────────────
 // The one chart that shows the shape of a meta rather than a ranking. The
 // quadrants are the site's existing vocabulary made visible: high pick + low
