@@ -7,6 +7,7 @@
 #   python -m scrapers.leaderboard      → SiteFeed relays + top_200_leaderboard
 #   python -m scrapers.masters          → Masters+ ranked matches (brawlace seeds)
 #   python -m scrapers.diamond_mythic   → Diamond/Mythic ranked matches
+#   python -m scrapers.news_watch       → daily news search + approval publish loop
 #
 # Shared plumbing (config, Supercell/Supabase clients, spider, normalized
 # insert pipeline) lives in scrapers/common.py.
