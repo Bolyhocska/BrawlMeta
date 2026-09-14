@@ -1,0 +1,54 @@
+name: News — Weekly Meta Snapshot
+
+# Posts a snapshot of the CURRENT meta to /news once a week — who is strong
+# right now, who is weak — using brawler_intelligence.true_win_rate (the
+# Bayesian-shrunk column already built for exactly this "how good is X
+# really" question). Not a week-over-week delta: no comparison, no dependence
+# on prior-week data, so it works the same whether the patch is 3 days or 3
+# months old.
+#
+# WEEKLY, not 3x/week (owner correction, 2026-09-15 — an earlier version ran
+# this Mon/Wed/Fri, which would have posted three near-identical snapshots in
+# one week since standings barely move day to day; once a week is the content
+# type this actually suits). Deliberately its OWN schedule, separate from
+# news-patch-impact.yml — see that workflow's header for why they don't
+# compete for one slot.
+#
+# Mondays 09:45 UTC: after news-watch (09:15) and news-patch-impact (09:30),
+# clear of every scraper slot.
+on:
+  schedule:
+    - cron: '45 9 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: news-meta-snapshot
+  cancel-in-progress: false
+
+jobs:
+  news-meta-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Publish this week's meta snapshot
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # Unused by this script — it never touches the Supercell API — but
+          # common.require_credentials() checks all three unconditionally
+          # (same reason check-map-pool.yml sets it despite not needing it).
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+        run: python -m scrapers.news_digest meta

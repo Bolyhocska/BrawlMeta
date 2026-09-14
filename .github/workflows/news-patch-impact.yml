@@ -1,0 +1,52 @@
+name: News — Patch Impact (daily check)
+
+# Checks daily whether there's a fresh, unposted "patch impact" story to tell —
+# this patch vs the previous one, real win-rate deltas, our own data. Fires
+# ONCE per patch: scrapers/news_digest.py's `patch` mode gates on the patch
+# being old enough (3+ days), having enough per-brawler sample against the
+# prior patch, and not already having a post. Every other day this is a
+# silent no-op, same "usually nothing, that's fine" pattern as news-watch.
+#
+# Deliberately its OWN schedule, separate from news-meta-snapshot.yml — an
+# earlier version had these two content types compete for one weekly slot,
+# which meant a patch-impact post could silently swallow that week's meta
+# snapshot. They are independent now and can both post in the same week.
+#
+# 09:30 UTC: between news-watch (09:15) and the meta snapshot slot (09:45
+# Mondays), clear of every scraper slot.
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: news-patch-impact
+  cancel-in-progress: false
+
+jobs:
+  news-patch-impact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Check for a fresh patch-impact story
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # Unused by this script — it never touches the Supercell API — but
+          # common.require_credentials() checks all three unconditionally
+          # (same reason check-map-pool.yml sets it despite not needing it).
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+        run: python -m scrapers.news_digest patch

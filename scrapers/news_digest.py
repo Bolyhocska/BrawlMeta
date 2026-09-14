@@ -1,43 +1,44 @@
-# ─── News digest: our own measured data, published on a fixed 3x/week beat ──
+# ─── News digest: our own measured data, two INDEPENDENT triggers ───────────
 #
 # Writes DIRECTLY to news_posts, unlike news_watch.py — no review queue, no
 # GitHub issue. That is deliberate and safe here specifically: the content is
-# either "our own win-rate numbers, patch A vs patch B" or "our own win-rate
-# numbers, this week vs before" — the same trust level as the tier list, not a
+# our own win-rate numbers, the same trust level as the tier list, never a
 # websearch result that could be describing something that never happened.
 # There is no fabrication risk to guard against, so TEXT IS TEMPLATED, not
 # LLM-generated: Python string formatting cannot misstate a number the way an
 # LLM asked to "write a nice paragraph" conceivably could, even from real data.
 #
-# Runs on a fixed schedule (Mon/Wed/Fri, see news-digest.yml) rather than only
-# right after a patch, because patches land every few weeks and the owner
-# wants a steady cadence on /news, not silence in between. Two content types,
-# tried in priority order each run:
+# TWO CONTENT TYPES, TWO SCHEDULES, DELIBERATELY NOT COMPETING FOR ONE SLOT
+# (owner correction, 2026-09-15 — an earlier version tried patch-impact first
+# and only fell through to the recurring post if it didn't fire, which meant
+# a patch impact post could silently swallow that week's meta snapshot):
 #
-#   1. PATCH IMPACT — fires ONCE per patch, the first scheduled run after the
-#      patch is old enough and has enough per-brawler sample to compare
-#      honestly against the previous patch. This is the same computation done
-#      by hand for 68.250 -> 69.230 earlier in this project (Amber +7.9pp,
-#      El Primo +9.6pp, ...), now automated and gated on real sample floors
-#      instead of eyeballed.
-#   2. WEEKLY MOVERS — the steady content. Compares the last 7 days of a
-#      brawler's win rate against everything in the patch BEFORE those 7 days,
-#      using meta_daily. If nothing clears the significance bar this week
-#      (rare but possible), the run publishes NOTHING rather than force a
-#      post — same principle as news_watch.py: most days having nothing to
-#      say is expected, not a failure.
+#   patch  — `python -m scrapers.news_digest patch`, run DAILY
+#     (news-patch-impact.yml). Fires ONCE per patch: the first run where the
+#     patch is old enough and enough brawlers clear the sample floor against
+#     the previous patch. Every other day it's a silent no-op, same as
+#     news_watch.py — checking daily and firing rarely is the same "usually
+#     nothing, that's fine" pattern, not "once per update" happening to mean
+#     "runs once".
 #
-# meta_daily IS A CUMULATIVE SNAPSHOT, NOT A DAILY DELTA — capture_meta_history
-# in common.py writes "the freshly-rebuilt BrawlerStats" each day, i.e. the
-# patch-to-date total as of that day. SUMMING several days' rows therefore
-# sums overlapping totals and wildly overcounts (verified: summing 7 days gave
-# NORI 6.16 MILLION "picks" against a total site volume far below that).
-# Every query here DIFFS two snapshot days instead, the same pattern this
-# codebase already uses for times_seen deltas in push_matches.
+#   meta   — `python -m scrapers.news_digest meta`, run WEEKLY
+#     (news-meta-snapshot.yml, Mondays). A snapshot of the CURRENT meta —
+#     who is strong right now, who is weak — not a week-over-week delta. No
+#     comparison needed, so no dependence on meta_daily history depth.
+#
+# meta_daily (used by an earlier version of this file for a movers-style
+# delta) IS A CUMULATIVE SNAPSHOT, NOT A DAILY DELTA — capture_meta_history in
+# common.py writes "the freshly-rebuilt BrawlerStats" each day, i.e. the
+# patch-to-date total as of that day. Summing several days' rows sums
+# overlapping totals and wildly overcounts (caught before shipping: summing 7
+# days gave NORI 6.16 million "picks" against far less total site volume).
+# Recorded here because the mistake is easy to re-make if a delta-style report
+# is ever added back.
 
 import re
+import sys
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from scrapers.common import (
     require_credentials, SUPABASE_URL, SUPABASE_HEADERS, CURRENT_PATCH, PATCH_START_TIMES,
@@ -45,19 +46,20 @@ from scrapers.common import (
 
 BRACKET = "masters_legendary"
 
-# Per-brawler floors, not an aggregate readiness percentage — simpler, and
-# consistent with every other "is this sample trustworthy" gate in this
-# project (see confidencePriorGames / minRecentPicks in draft_logic_config.json,
-# all in the same 300-ish neighbourhood).
-PATCH_IMPACT_MIN_PICKS = 300      # per brawler, in EACH patch being compared
-PATCH_IMPACT_MIN_DAYS = 3         # don't compare against a patch <3 days old
-PATCH_IMPACT_MIN_MOVERS = 3       # skip the post if fewer than this many brawlers qualify
+# Per-brawler floor for the patch-impact comparison, in EACH patch being
+# compared — consistent with every other "is this sample trustworthy" gate in
+# this project (confidencePriorGames / minRecentPicks sit in the same
+# neighbourhood in draft_logic_config.json).
+PATCH_IMPACT_MIN_PICKS = 300
+PATCH_IMPACT_MIN_DAYS = 3          # don't compare against a patch <3 days old
+PATCH_IMPACT_MIN_MOVERS = 3        # skip the post if fewer than this many brawlers qualify
 PATCH_IMPACT_TOP_N = 6
 
-WEEKLY_MIN_PICKS = 1000           # per brawler, on EACH side of the 7-day split
-WEEKLY_MIN_DELTA = 2.0            # win-rate points; below this is noise at these sample sizes
-WEEKLY_MIN_MOVERS = 3
-WEEKLY_TOP_N = 6
+# Floor for the weekly snapshot — same 300-game neighbourhood, applied to
+# brawler_intelligence.picks (patch-to-date, not a 7-day slice).
+META_MIN_PICKS = 300
+META_TOP_N = 8
+META_BOTTOM_N = 4
 
 
 def sb_get(table, params):
@@ -85,7 +87,15 @@ def fmt_pp(delta):
     return f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
 
 
-# ── Patch impact ─────────────────────────────────────────────────────────────
+def brawler_name(raw):
+    """Title-case for prose. Matches the frontend's own hyphen-aware
+    capitalization (formatBrawlerName in appCore.js) closely enough for a
+    summary paragraph: Python's str.title() already capitalizes after a
+    hyphen, so 'JAE-YONG' -> 'Jae-Yong' and 'EL PRIMO' -> 'El Primo'."""
+    return raw.title()
+
+
+# ── Patch impact (daily check, fires once per patch) ─────────────────────────
 
 def prior_patch_of(patch):
     """The patch immediately before `patch` in PATCH_START_TIMES, skipping the
@@ -112,21 +122,21 @@ def already_posted_patch_impact(patch):
     return bool(rows)
 
 
-def try_patch_impact():
+def run_patch_impact():
     age = days_since_patch_start(CURRENT_PATCH)
     if age is None or age < PATCH_IMPACT_MIN_DAYS:
-        print(f"news_digest: patch impact skipped — {CURRENT_PATCH} is "
+        print(f"news_digest[patch]: skipped — {CURRENT_PATCH} is "
               f"{'unknown age' if age is None else f'{age:.1f}d old'}, needs {PATCH_IMPACT_MIN_DAYS}d.")
-        return False
+        return
 
     prior = prior_patch_of(CURRENT_PATCH)
     if not prior:
-        print("news_digest: patch impact skipped — no prior patch to compare against.")
-        return False
+        print("news_digest[patch]: skipped — no prior patch to compare against.")
+        return
 
     if already_posted_patch_impact(CURRENT_PATCH):
-        print(f"news_digest: patch impact already posted for {CURRENT_PATCH}.")
-        return False
+        print(f"news_digest[patch]: already posted for {CURRENT_PATCH} — nothing to do.")
+        return
 
     cur_rows = sb_get("BrawlerStats", {
         "select": "brawler,picks,wins", "patch": f"eq.{CURRENT_PATCH}",
@@ -149,13 +159,13 @@ def try_patch_impact():
 
     movers.sort(key=lambda m: abs(m["delta"]), reverse=True)
     if len(movers) < PATCH_IMPACT_MIN_MOVERS:
-        print(f"news_digest: patch impact skipped — only {len(movers)} brawlers clear "
+        print(f"news_digest[patch]: skipped — only {len(movers)} brawlers clear "
               f"{PATCH_IMPACT_MIN_PICKS} games in both {CURRENT_PATCH} and {prior}.")
-        return False
+        return
 
     top = movers[:PATCH_IMPACT_TOP_N]
     lines = [
-        f"{m['brawler'].title()} {fmt_pp(m['delta'])}pp ({m['prior_wr']:.1f}% → {m['cur_wr']:.1f}%)"
+        f"{brawler_name(m['brawler'])} {fmt_pp(m['delta'])}pp ({m['prior_wr']:.1f}% → {m['cur_wr']:.1f}%)"
         for m in top
     ]
     summary = (
@@ -174,95 +184,37 @@ def try_patch_impact():
         "source_urls": [],
         "auto_generated": True,
     })
-    print(f"news_digest: published patch-impact post \"{post['slug']}\" ({len(top)} movers).")
-    return True
+    print(f"news_digest[patch]: published \"{post['slug']}\" ({len(top)} movers).")
 
 
-# ── Weekly movers ─────────────────────────────────────────────────────────────
+# ── Weekly meta snapshot (current standings, no delta) ───────────────────────
 
-def latest_meta_day():
-    rows = sb_get("meta_daily", {
-        "select": "day", "patch": f"eq.{CURRENT_PATCH}", "rank_bracket": f"eq.{BRACKET}",
-        "order": "day.desc", "limit": "1",
+def run_meta_snapshot():
+    rows = sb_get("brawler_intelligence", {
+        "select": "brawler,picks,true_win_rate", "patch": f"eq.{CURRENT_PATCH}",
+        "rank_bracket": f"eq.{BRACKET}", "picks": f"gte.{META_MIN_PICKS}",
     })
-    return rows[0]["day"] if rows else None
+    if len(rows) < META_TOP_N:
+        print(f"news_digest[meta]: skipped — only {len(rows)} brawlers clear {META_MIN_PICKS} games.")
+        return
 
+    rows.sort(key=lambda r: r["true_win_rate"], reverse=True)
+    top = rows[:META_TOP_N]
+    bottom = rows[-META_BOTTOM_N:][::-1]  # weakest first, still descending order
 
-def meta_day_totals(day):
-    """{brawler: {picks, wins}} summed across every map for one snapshot day.
-    Paged, matching the paging pattern already used in calibrate.mjs and
-    appCore.js — a single day's rows (all maps, one bracket, one patch) is a
-    few hundred to ~2,700, comfortably under one page in practice, but this
-    stays correct if that grows."""
-    out = {}
-    offset = 0
-    while True:
-        rows = sb_get("meta_daily", {
-            "select": "brawler,picks,wins", "patch": f"eq.{CURRENT_PATCH}",
-            "rank_bracket": f"eq.{BRACKET}", "day": f"eq.{day}",
-            "limit": "1000", "offset": str(offset),
-        })
-        if not rows:
-            break
-        for r in rows:
-            a = out.setdefault(r["brawler"], {"picks": 0, "wins": 0})
-            a["picks"] += r["picks"]
-            a["wins"] += r["wins"]
-        if len(rows) < 1000:
-            break
-        offset += 1000
-    return out
+    strong_lines = [f"{brawler_name(r['brawler'])} {r['true_win_rate']:.1f}%" for r in top]
+    weak_lines = [f"{brawler_name(r['brawler'])} {r['true_win_rate']:.1f}%" for r in bottom]
 
-
-def try_weekly_movers():
-    latest = latest_meta_day()
-    if not latest:
-        print("news_digest: weekly movers skipped — no meta_daily snapshot yet for this patch.")
-        return False
-
-    latest_dt = datetime.strptime(latest, "%Y-%m-%d")
-    week_ago = (latest_dt - timedelta(days=7)).strftime("%Y-%m-%d")
-
-    now_totals = meta_day_totals(latest)
-    week_ago_totals = meta_day_totals(week_ago)
-    if not week_ago_totals:
-        print(f"news_digest: weekly movers skipped — no snapshot from {week_ago} "
-              f"(patch is younger than 7 days).")
-        return False
-
-    movers = []
-    for name, now in now_totals.items():
-        before = week_ago_totals.get(name)
-        if not before:
-            continue
-        last7d_picks = now["picks"] - before["picks"]
-        last7d_wins = now["wins"] - before["wins"]
-        if last7d_picks < WEEKLY_MIN_PICKS or before["picks"] < WEEKLY_MIN_PICKS:
-            continue
-        last7d_wr = 100.0 * last7d_wins / last7d_picks
-        before_wr = 100.0 * before["wins"] / before["picks"]
-        movers.append({"brawler": name, "delta": last7d_wr - before_wr, "last7d_wr": last7d_wr, "before_wr": before_wr})
-
-    movers = [m for m in movers if abs(m["delta"]) >= WEEKLY_MIN_DELTA]
-    movers.sort(key=lambda m: abs(m["delta"]), reverse=True)
-    if len(movers) < WEEKLY_MIN_MOVERS:
-        print(f"news_digest: weekly movers skipped — only {len(movers)} brawlers moved "
-              f"{WEEKLY_MIN_DELTA}pp+ this week (need {WEEKLY_MIN_MOVERS}).")
-        return False
-
-    top = movers[:WEEKLY_TOP_N]
-    lines = [
-        f"{m['brawler'].title()} {fmt_pp(m['delta'])}pp ({m['before_wr']:.1f}% → {m['last7d_wr']:.1f}%)"
-        for m in top
-    ]
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     summary = (
-        f"Over the last 7 days in Masters+ (patch {CURRENT_PATCH}, minimum {WEEKLY_MIN_PICKS} games "
-        f"on each side of the split):\n\n" + "\n".join(f"• {l}" for l in lines)
+        f"Current Masters+ standings on patch {CURRENT_PATCH} (minimum {META_MIN_PICKS} games):\n\n"
+        f"Strongest:\n" + "\n".join(f"• {l}" for l in strong_lines) + "\n\n"
+        f"Weakest:\n" + "\n".join(f"• {l}" for l in weak_lines)
     )
 
     post = sb_insert("news_posts", {
-        "slug": f"weekly-movers-{latest}",
-        "title": f"This week in the meta — {latest}",
+        "slug": f"meta-snapshot-{today}",
+        "title": f"The meta this week — {today}",
         "summary": summary,
         "category": "balance",
         "patch": CURRENT_PATCH,
@@ -270,16 +222,20 @@ def try_weekly_movers():
         "source_urls": [],
         "auto_generated": True,
     })
-    print(f"news_digest: published weekly-movers post \"{post['slug']}\" ({len(top)} movers).")
-    return True
+    print(f"news_digest[meta]: published \"{post['slug']}\" ({len(top)} strong, {len(bottom)} weak).")
 
 
 def main():
     require_credentials()
-    print(f"📊 News digest: patch {CURRENT_PATCH}...")
-    if try_patch_impact():
-        return  # one post per scheduled run — don't also post weekly movers today
-    try_weekly_movers()
+    mode = sys.argv[1] if len(sys.argv) > 1 else None
+    if mode not in ("patch", "meta"):
+        print("Usage: python -m scrapers.news_digest [patch|meta]")
+        raise SystemExit(1)
+    print(f"📊 News digest [{mode}]: patch {CURRENT_PATCH}...")
+    if mode == "patch":
+        run_patch_impact()
+    else:
+        run_meta_snapshot()
 
 
 if __name__ == "__main__":
