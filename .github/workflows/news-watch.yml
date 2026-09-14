@@ -55,6 +55,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Unused by this script — it never touches the Supercell API — but
+          # common.require_credentials() checks all three unconditionally
+          # (same reason check-map-pool.yml sets it despite not needing it).
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
           # GITHUB_TOKEN and GITHUB_REPOSITORY are provided automatically by
           # Actions for every job — nothing to add in repo secrets for these.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

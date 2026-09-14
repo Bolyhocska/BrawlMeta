@@ -6,7 +6,6 @@ import HomePage from "./HomePage";
 import SiteHeader from "./SiteHeader";
 const MapsLandingPage = lazy(() => import("./MapsPages").then(m => ({ default: m.MapsLandingPage })));
 const MapDetailPage   = lazy(() => import("./MapsPages").then(m => ({ default: m.MapDetailPage })));
-import ComingSoonPage from "./ComingSoonPage";
 const GuidesLandingPage = lazy(() => import("./GuidesPages").then(m => ({ default: m.GuidesLandingPage })));
 const SkillsGuidePage   = lazy(() => import("./GuidesPages").then(m => ({ default: m.SkillsGuidePage })));
 const ModesGuidesPage   = lazy(() => import("./GuidesPages").then(m => ({ default: m.ModesGuidesPage })));
@@ -14,6 +13,7 @@ const ModeGuidePage     = lazy(() => import("./GuidesPages").then(m => ({ defaul
 const SafeZoneGuidePage = lazy(() => import("./GuidesPages").then(m => ({ default: m.SafeZoneGuidePage })));
 const BrawlerGuidesPage = lazy(() => import("./GuidesPages").then(m => ({ default: m.BrawlerGuidesPage })));
 const ScrimsPage = lazy(() => import("./ScrimsPage"));
+const NewsPage = lazy(() => import("./NewsPage"));
 import SiteFooter from "./SiteFooter";
 const PrivacyPolicyPage = lazy(() => import("./LegalPages").then(m => ({ default: m.PrivacyPolicyPage })));
 const AboutPage         = lazy(() => import("./LegalPages").then(m => ({ default: m.AboutPage })));
@@ -816,7 +816,7 @@ export default function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/app" element={<BrawlApex />} />
       <Route path="/brawlers/:brawlerSlug" element={<BrawlerGuideRoute />} />
-      <Route path="/news" element={<ComingSoonPage eyebrow="META NEWS · COMING SOON" title="News is on the way" description="Patch breakdowns, balance changes, and pro-scene highlights are coming to BrawlApex soon." />} />
+      <Route path="/news" element={<NewsPage />} />
       <Route path="/scrims" element={<ScrimsPage />} />
       <Route path="/tournaments" element={<TournamentLandingPage />} />
       <Route path="/tournaments/create" element={<CreateTournamentPage />} />
