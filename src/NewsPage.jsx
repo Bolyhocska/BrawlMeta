@@ -258,6 +258,10 @@ export function NewsPostDetail() {
   const d = post.data || {};
   const hasMovers = Array.isArray(d.movers) && d.movers.length > 0;
   const hasStandings = Array.isArray(d.strongest) && d.strongest.length > 0;
+  const hasShifters = Array.isArray(d.shifters) && d.shifters.length > 0;
+  const hasClasses = Array.isArray(d.classes) && d.classes.length > 0;
+  const hasSynergies = Array.isArray(d.synergies) && d.synergies.length > 0;
+  const hasUnusual = Array.isArray(d.unusual) && d.unusual.length > 0;
   const sources = Array.isArray(post.source_urls) ? post.source_urls : [];
 
   return (
@@ -296,6 +300,58 @@ export function NewsPostDetail() {
             <div style={card}>
               <div style={eyebrow}>WEAKEST · MIN {d.minPicks} GAMES</div>
               <BarList rows={(d.weakest || []).map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US") }))} />
+            </div>
+          </div>
+        )}
+
+        {hasShifters && (
+          <div style={card}>
+            <div style={eyebrow}>BIGGEST SHIFTS · LAST 7 DAYS</div>
+            <DeltaBarList rows={d.shifters.map(s => ({ label: s.brawler, value: s.delta, sub: `${s.beforeWr}% → ${s.last7dWr}%` }))} />
+          </div>
+        )}
+
+        {hasClasses && (
+          <div style={card}>
+            <div style={eyebrow}>MOST DRAFTED CLASSES</div>
+            {/* Neutral accent, not the win-rate green/red BarList defaults to —
+                this is a SHARE OF PICKS, not a win rate, and 52/48 thresholds
+                would color it meaninglessly. */}
+            <BarList accent="#c98bff" unit="%"
+              rows={d.classes.map(c => ({ label: c.class.replace(/_/g, " ").replace(/\b\w/g, ch => ch.toUpperCase()), value: c.sharePct, sub: c.picks.toLocaleString("en-US") }))} />
+          </div>
+        )}
+
+        {hasSynergies && (
+          <div style={card}>
+            <div style={eyebrow}>BEST DUOS · ABOVE THEIR OWN SOLO AVERAGE</div>
+            <DeltaBarList rows={d.synergies.map(s => ({ label: `${s.a} + ${s.b}`, value: s.excess, sub: `${s.duoWr}% together` }))} />
+          </div>
+        )}
+
+        {hasUnusual && (
+          <div style={card}>
+            <div style={eyebrow}>UNUSUAL ON A SPECIFIC MAP</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {d.unusual.map((u, i) => {
+                const colour = u.deviation >= 0 ? "#8ee6b0" : "#ff8f8f";
+                return (
+                  <div key={i} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,.03)",
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa" }}>{u.brawler} on {u.map}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginTop: 2 }}>
+                        {u.overallWr}% overall → {u.mapWr}% here · {u.picks.toLocaleString("en-US")} games
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: colour }}>
+                      {u.deviation >= 0 ? "+" : ""}{u.deviation}pp
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
