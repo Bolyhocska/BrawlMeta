@@ -18,9 +18,55 @@
 
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase, useSmartBack } from "./appCore";
+import { supabase, useSmartBack, BRAWLERS } from "./appCore";
 import { BarList, DeltaBarList } from "./Charts";
+import { tileStyles } from "./data/brawlerTile";
+import { mapSlug } from "./MapsPages";
 import SiteHeader from "./SiteHeader";
+
+// ── icons ─────────────────────────────────────────────────────────────────────
+// Every brawler name in this file's generated content is an exact reversible
+// title-case of the brawlerMeta.json key (brawler_name() in news_digest.py is
+// just .title() on the uppercase DB name — "EL PRIMO" -> "El Primo", "8-BIT"
+// -> "8-Bit"), so re-uppercasing a label finds the same BRAWLERS entry the
+// rest of the site already uses. No change needed on the Python side.
+function findBrawler(label) {
+  const key = (label || "").toUpperCase();
+  return BRAWLERS.find(b => b.key === key) || null;
+}
+
+// Same rarity-tile treatment as every other brawler portrait on the site
+// (DraftAssistant's BrawlerTile, the tier list), just small enough to sit
+// inline in a chart row or a headline card. Falls back to initials on a
+// missing/broken image rather than leaving a gap.
+function BrawlerIcon({ name, size = 26 }) {
+  const [broken, setBroken] = useState(false);
+  const b = findBrawler(name);
+  if (!b) return null;
+  const t = tileStyles({ key: b.key, rarity: b.rarity, rarityColor: b.color, size });
+  return (
+    <div style={t.outer}>
+      <div style={t.inner}>
+        {!broken && b.imageUrl
+          ? <img src={b.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />
+          : <span style={{ fontSize: size * 0.4, fontWeight: 800, color: b.color }}>{b.initial}</span>}
+      </div>
+    </div>
+  );
+}
+
+// Self-hosted map art (public/maps/, same source as MapsPages) — renders
+// nothing at all for a map with no file yet, same graceful-absence behaviour
+// as MapArt on the maps pages, rather than a broken-image icon.
+function MapThumb({ name, size = 26 }) {
+  const [ok, setOk] = useState(true);
+  if (!name || !ok) return null;
+  return (
+    <img src={`/maps/${mapSlug(name)}.png`} alt="" aria-hidden="true" onError={() => setOk(false)}
+      style={{ width: size, height: size, objectFit: "cover", borderRadius: Math.round(size * 0.2),
+               border: "1px solid rgba(255,255,255,.12)", flexShrink: 0 }} />
+  );
+}
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -110,11 +156,14 @@ function PostCard({ post }) {
             {post.title}
           </h2>
           {fact && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: MONO, fontSize: 19, fontWeight: 800, color: fact.positive ? "#8ee6b0" : "#ff8f8f" }}>
-                {fact.value}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <BrawlerIcon name={fact.label} size={30} />
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: MONO, fontSize: 19, fontWeight: 800, color: fact.positive ? "#8ee6b0" : "#ff8f8f" }}>
+                  {fact.value}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{fact.label}</div>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: "#6f7180" }}>{fact.label}</div>
             </div>
           )}
         </div>
@@ -227,8 +276,13 @@ function HeadlineStat({ label, name, value, positive }) {
       borderRadius: 16, padding: "18px 20px",
     }}>
       <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.4, color: colour, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 800, color: "#f4f4fa" }}>{name}</div>
-      <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: colour, marginTop: 2 }}>{value}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <BrawlerIcon name={name} size={40} />
+        <div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 800, color: "#f4f4fa", lineHeight: 1.1 }}>{name}</div>
+          <div style={{ fontFamily: MONO, fontSize: 19, fontWeight: 700, color: colour, marginTop: 2 }}>{value}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -287,7 +341,7 @@ export function NewsPostDetail() {
         {hasMovers && (
           <div style={card}>
             <div style={eyebrow}>WIN-RATE CHANGE VS {d.priorPatch} · MIN {d.minPicks} GAMES</div>
-            <DeltaBarList rows={d.movers.map(m => ({ label: m.brawler, value: m.delta, sub: `${m.priorWr}% → ${m.curWr}%` }))} />
+            <DeltaBarList rows={d.movers.map(m => ({ label: m.brawler, value: m.delta, sub: `${m.priorWr}% → ${m.curWr}%`, icon: <BrawlerIcon name={m.brawler} /> }))} />
           </div>
         )}
 
@@ -295,11 +349,11 @@ export function NewsPostDetail() {
           <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
             <div style={card}>
               <div style={eyebrow}>STRONGEST · MIN {d.minPicks} GAMES</div>
-              <BarList rows={d.strongest.map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US") }))} />
+              <BarList rows={d.strongest.map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} /> }))} />
             </div>
             <div style={card}>
               <div style={eyebrow}>WEAKEST · MIN {d.minPicks} GAMES</div>
-              <BarList rows={(d.weakest || []).map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US") }))} />
+              <BarList rows={(d.weakest || []).map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} /> }))} />
             </div>
           </div>
         )}
@@ -307,7 +361,7 @@ export function NewsPostDetail() {
         {hasShifters && (
           <div style={card}>
             <div style={eyebrow}>BIGGEST SHIFTS · LAST 7 DAYS</div>
-            <DeltaBarList rows={d.shifters.map(s => ({ label: s.brawler, value: s.delta, sub: `${s.beforeWr}% → ${s.last7dWr}%` }))} />
+            <DeltaBarList rows={d.shifters.map(s => ({ label: s.brawler, value: s.delta, sub: `${s.beforeWr}% → ${s.last7dWr}%`, icon: <BrawlerIcon name={s.brawler} /> }))} />
           </div>
         )}
 
@@ -325,7 +379,15 @@ export function NewsPostDetail() {
         {hasSynergies && (
           <div style={card}>
             <div style={eyebrow}>BEST DUOS · ABOVE THEIR OWN SOLO AVERAGE</div>
-            <DeltaBarList rows={d.synergies.map(s => ({ label: `${s.a} + ${s.b}`, value: s.excess, sub: `${s.duoWr}% together` }))} />
+            <DeltaBarList rows={d.synergies.map(s => ({
+              label: `${s.a} + ${s.b}`, value: s.excess, sub: `${s.duoWr}% together`,
+              icon: (
+                <span style={{ display: "flex", alignItems: "center" }}>
+                  <BrawlerIcon name={s.a} size={22} />
+                  <span style={{ marginLeft: -6, zIndex: 1 }}><BrawlerIcon name={s.b} size={22} /></span>
+                </span>
+              ),
+            }))} />
           </div>
         )}
 
@@ -337,16 +399,22 @@ export function NewsPostDetail() {
                 const colour = u.deviation >= 0 ? "#8ee6b0" : "#ff8f8f";
                 return (
                   <div key={i} style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
                     padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,.03)",
                   }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa" }}>{u.brawler} on {u.map}</div>
-                      <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginTop: 2 }}>
-                        {u.overallWr}% overall → {u.mapWr}% here · {u.picks.toLocaleString("en-US")} games
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <BrawlerIcon name={u.brawler} size={30} />
+                        <span style={{ marginLeft: -8, zIndex: 1 }}><MapThumb name={u.map} size={30} /></span>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.brawler} on {u.map}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginTop: 2 }}>
+                          {u.overallWr}% overall → {u.mapWr}% here · {u.picks.toLocaleString("en-US")} games
+                        </div>
                       </div>
                     </div>
-                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: colour }}>
+                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: colour, flexShrink: 0 }}>
                       {u.deviation >= 0 ? "+" : ""}{u.deviation}pp
                     </div>
                   </div>

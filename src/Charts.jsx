@@ -210,6 +210,11 @@ export function BarList({ rows = [], height = 26, unit = "%", emptyMessage = "No
           || (r.value >= 52 ? CHART_COLORS.green : r.value <= 48 ? CHART_COLORS.red : CHART_COLORS.amber);
         return (
           <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 11, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
+            {/* Optional icon (a brawler portrait, typically) — a plain node the
+                caller renders, since this file has no business knowing what a
+                brawler is. Fixed width so bars stay aligned whether or not
+                every row has one. */}
+            {r.icon !== undefined && <span style={{ flex: "0 0 auto", display: "flex" }}>{r.icon}</span>}
             <span style={{ flex: "0 0 118px", fontSize: 13, color: TEXT, overflow: "hidden",
                            textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</span>
             <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, overflow: "hidden", minWidth: 40 }}>
@@ -252,6 +257,7 @@ export function DeltaBarList({ rows = [], height = 22, unit = "pp", emptyMessage
         const colour = positive ? CHART_COLORS.green : CHART_COLORS.red;
         return (
           <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 11, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
+            {r.icon !== undefined && <span style={{ flex: "0 0 auto", display: "flex" }}>{r.icon}</span>}
             <span style={{ flex: "0 0 100px", fontSize: 13, color: TEXT, overflow: "hidden",
                            textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</span>
             <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, position: "relative", minWidth: 60 }}>
