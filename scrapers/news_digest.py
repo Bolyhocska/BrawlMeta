@@ -22,23 +22,36 @@
 #     "runs once".
 #
 #   meta   — `python -m scrapers.news_digest meta`, run WEEKLY
-#     (news-meta-snapshot.yml, Mondays). FIVE sections, each independently
+#     (news-meta-snapshot.yml, Mondays). EIGHT sections, each independently
 #     gated on its own sample floor and each OMITTED (not forced) if it can't
 #     clear that floor — same "say nothing rather than force it" discipline
-#     as everywhere else in this pipeline:
-#       - standings   : strongest/weakest brawlers right now (unchanged)
+#     as everywhere else in this pipeline. Only standings gates the post:
+#       - standings   : strongest/weakest brawlers right now
 #       - shifters    : week-over-week win-rate movers (meta_daily diff)
 #       - classes     : which draft classes are most picked right now
-#       - synergies   : best duo pairs by EXCESS over solo rates, never raw
-#         duo win rate — raw conflates synergy with two brawlers each being
-#         independently strong, which is exactly the mistake the draft
-#         engine's own duo-synergy term was corrected for (see CLAUDE.md).
+#       - modes       : brawlers whose win rate swings hardest between their
+#         best and worst mode — Nori is a heist monster and nearly unplayable
+#         in knockout, and no patch-wide number says so.
 #       - unusual     : a brawler's win rate on ONE map deviating hard from
 #         their own overall rate. Floored at >=300 games on BOTH the map cell
 #         and the brawler's overall sample, which is the exact guard that was
 #         missing when a 34-game Angelo cell on Beach Ball read as 67.4% and
 #         topped that map's chart — this is deliberately the same shape of
 #         claim, so it gets the same protection from day one.
+#       - ranks       : Masters+ against Diamond/Mythic, i.e. the brawlers a
+#         player is most likely misjudging from their own rank.
+#       - synergies   : best duo pairs by EXCESS over solo rates, never raw
+#         duo win rate.
+#       - counters    : most lopsided matchups by RESIDUAL after removing the
+#         solo-strength difference, never raw head-to-head.
+#
+# THE LAST TWO SHARE ONE RULE AND TWO DIFFERENT COEFFICIENTS. Both subtract
+# what raw brawler strength already explains, because otherwise each list just
+# re-reports "strong brawlers are strong" — but the coefficient is NOT the same
+# for the two, and CLAUDE.md has it measured: 1.004 for head-to-head (so
+# counters use plain subtraction) and 0.508 for duo synergy (so synergies use
+# the pair's solo MEAN instead). Assuming one number for both has produced a
+# confidently wrong answer in this project twice already.
 #
 # meta_daily (used for `shifters`) IS A CUMULATIVE SNAPSHOT, NOT A DAILY
 # DELTA — capture_meta_history in common.py writes "the freshly-rebuilt
@@ -91,6 +104,28 @@ SYNERGY_TOP_N = 5
 UNUSUAL_MIN_MAP_PICKS = 300
 UNUSUAL_MIN_OVERALL_PICKS = 300
 UNUSUAL_TOP_N = 5
+
+# Mode specialists — a brawler's best mode against its worst. Needs a real
+# sample in EACH mode compared, and enough modes present that the swing isn't
+# just two thin readings at opposite ends of the noise.
+MODE_MIN_PICKS = 2000
+MODE_MIN_MODES = 4
+MODE_MIN_SWING = 8.0
+MODE_TOP_N = 4
+
+# Rank-bracket divergence — Masters+ against Diamond/Mythic.
+RANK_MIN_PICKS = 1000
+RANK_MIN_GAP = 5.0
+RANK_TOP_N = 4
+
+# Hardest counters. The edge is the RESIDUAL after removing raw strength:
+# a strong brawler beating a weak one is not a counter, it is just the
+# stronger brawler. The strength coefficient is 1.0 by measurement, not by
+# assumption — CLAUDE.md records it as 1.004 for head-to-head (against 0.508
+# for duo synergy, which is why that section cannot use the same subtraction).
+COUNTER_MIN_PICKS = 2000
+COUNTER_MIN_RESIDUAL = 5.0
+COUNTER_TOP_N = 5
 
 
 def sb_get(table, params):
@@ -365,9 +400,33 @@ def run_best_synergies(intel_rows):
     return results[:SYNERGY_TOP_N]
 
 
+# ── Shared: every per-map row for this patch/bracket ────────────────────────
+
+def fetch_map_rows():
+    """All brawler-map cells, paged. Fetched ONCE and shared by the unusual-map
+    and mode-specialist sections — they need different slices of the same data
+    (one filters to well-sampled single cells, the other sums every cell into
+    mode totals), so filtering server-side for either would break the other."""
+    out = []
+    offset = 0
+    while True:
+        rows = sb_get("BrawlerStats", {
+            "select": "brawler,map,mode,picks,wins", "patch": f"eq.{CURRENT_PATCH}",
+            "rank_bracket": f"eq.{BRACKET}", "map": "not.is.null",
+            "limit": "1000", "offset": str(offset),
+        })
+        if not rows:
+            break
+        out.extend(rows)
+        if len(rows) < 1000:
+            break
+        offset += 1000
+    return out
+
+
 # ── Section: unusual map cells ───────────────────────────────────────────────
 
-def run_unusual_map_cells(intel_rows):
+def run_unusual_map_cells(intel_rows, map_rows):
     """A brawler's win rate on ONE map deviating hard from their own overall
     rate. Floored at UNUSUAL_MIN_MAP_PICKS on the map cell AND
     UNUSUAL_MIN_OVERALL_PICKS on the brawler's overall sample — the exact
@@ -375,13 +434,10 @@ def run_unusual_map_cells(intel_rows):
     67.4% and topped that map's chart. This is deliberately the same shape
     of claim, so it gets the same protection from the start."""
     wr_by_brawler = {r["brawler"]: r["true_win_rate"] for r in intel_rows if r["picks"] >= UNUSUAL_MIN_OVERALL_PICKS}
-    map_rows = sb_get("BrawlerStats", {
-        "select": "brawler,map,picks,wins", "patch": f"eq.{CURRENT_PATCH}",
-        "rank_bracket": f"eq.{BRACKET}", "map": "not.is.null",
-        "picks": f"gte.{UNUSUAL_MIN_MAP_PICKS}", "limit": "5000",
-    })
     results = []
     for r in map_rows:
+        if r["picks"] < UNUSUAL_MIN_MAP_PICKS:
+            continue
         overall = wr_by_brawler.get(r["brawler"])
         if overall is None:
             continue
@@ -395,11 +451,130 @@ def run_unusual_map_cells(intel_rows):
     return results[:UNUSUAL_TOP_N]
 
 
+# ── Section: mode specialists ────────────────────────────────────────────────
+
+def run_mode_specialists(map_rows):
+    """Brawlers whose win rate swings hardest between their best and worst
+    mode — Nori is a heist monster and nearly unplayable in knockout, and
+    nothing in a patch-wide win rate says so. Requires MODE_MIN_MODES modes
+    each clearing MODE_MIN_PICKS, so a big swing can't come from two thin
+    readings sitting at opposite ends of their own noise."""
+    totals = {}
+    for r in map_rows:
+        if not r.get("mode"):
+            continue
+        key = (r["brawler"], r["mode"])
+        a = totals.setdefault(key, {"picks": 0, "wins": 0})
+        a["picks"] += r["picks"]
+        a["wins"] += r["wins"]
+
+    by_brawler = {}
+    for (brawler, mode), v in totals.items():
+        if v["picks"] < MODE_MIN_PICKS:
+            continue
+        by_brawler.setdefault(brawler, []).append({
+            "mode": mode, "wr": 100.0 * v["wins"] / v["picks"], "picks": v["picks"],
+        })
+
+    results = []
+    for brawler, modes in by_brawler.items():
+        if len(modes) < MODE_MIN_MODES:
+            continue
+        modes.sort(key=lambda m: m["wr"], reverse=True)
+        best, worst = modes[0], modes[-1]
+        swing = best["wr"] - worst["wr"]
+        if swing < MODE_MIN_SWING:
+            continue
+        results.append({
+            "brawler": brawler_name(brawler), "swing": round(swing, 1),
+            "bestMode": best["mode"], "bestWr": round(best["wr"], 1), "bestPicks": best["picks"],
+            "worstMode": worst["mode"], "worstWr": round(worst["wr"], 1), "worstPicks": worst["picks"],
+        })
+    results.sort(key=lambda x: x["swing"], reverse=True)
+    return results[:MODE_TOP_N]
+
+
+# ── Section: rank-bracket divergence ─────────────────────────────────────────
+
+def run_rank_divergence(intel_rows):
+    """Brawlers that perform very differently in Masters+ than in
+    Diamond/Mythic — i.e. the ones a player is most likely to be misjudging
+    from their own rank. Both sides need RANK_MIN_PICKS, and the gap is
+    reported as Masters MINUS Diamond, so a negative number means the brawler
+    is better down there than up here."""
+    other = sb_get("brawler_intelligence", {
+        "select": "brawler,picks,true_win_rate", "patch": f"eq.{CURRENT_PATCH}",
+        "rank_bracket": "eq.diamond_mythic", "picks": f"gte.{RANK_MIN_PICKS}",
+    })
+    other_by_name = {r["brawler"]: r for r in other}
+
+    results = []
+    for r in intel_rows:
+        if r["picks"] < RANK_MIN_PICKS:
+            continue
+        d = other_by_name.get(r["brawler"])
+        if not d:
+            continue
+        gap = r["true_win_rate"] - d["true_win_rate"]
+        if abs(gap) < RANK_MIN_GAP:
+            continue
+        results.append({
+            "brawler": brawler_name(r["brawler"]), "gap": round(gap, 1),
+            "mastersWr": round(r["true_win_rate"], 1), "diamondWr": round(d["true_win_rate"], 1),
+            "mastersPicks": r["picks"], "diamondPicks": d["picks"],
+        })
+    results.sort(key=lambda x: abs(x["gap"]), reverse=True)
+    return results[:RANK_TOP_N]
+
+
+# ── Section: hardest counters ────────────────────────────────────────────────
+
+def run_counters(intel_rows):
+    """The matchups that are lopsided BEYOND what raw strength explains.
+
+    A head-to-head win rate on its own mostly measures which brawler is
+    better, not who counters whom — so the reported edge is the residual
+    after subtracting the solo-strength difference. The coefficient is 1.0 by
+    MEASUREMENT (CLAUDE.md records 1.004 for head-to-head), which is why plain
+    subtraction is correct here and would NOT be for duo synergy, where the
+    measured coefficient is 0.508.
+
+    What survives is genuinely counter-intuitive and genuinely useful: Mortis
+    beats Sprout while being the weaker brawler overall, and Bolt loses to
+    Wendy by far less than an 11-point strength gap says he should.
+
+    vs_brawler is antisymmetric (A-vs-B is 100 minus B-vs-A), so a pair's two
+    residuals are negatives of each other and keeping only the positive side
+    deduplicates the list for free."""
+    solo = {r["brawler"]: r["true_win_rate"] for r in intel_rows}
+    results = []
+    for r in intel_rows:
+        a = r["brawler"]
+        for b, stats in (r.get("vs_brawler") or {}).items():
+            if b not in solo:
+                continue
+            picks = stats.get("picks", 0)
+            wr = stats.get("winRate")
+            if picks < COUNTER_MIN_PICKS or wr is None:
+                continue
+            residual = (wr - 50.0) - (solo[a] - solo[b])
+            if residual < COUNTER_MIN_RESIDUAL:
+                continue
+            results.append({
+                "winner": brawler_name(a), "loser": brawler_name(b),
+                "edge": round(residual, 1), "matchupWr": round(wr, 1),
+                "winnerSolo": round(solo[a], 1), "loserSolo": round(solo[b], 1),
+                "picks": picks,
+            })
+    results.sort(key=lambda x: x["edge"], reverse=True)
+    return results[:COUNTER_TOP_N]
+
+
 # ── Weekly meta snapshot: standings + all four sections above ───────────────
 
 def run_meta_snapshot():
     intel_rows = sb_get("brawler_intelligence", {
-        "select": "brawler,picks,true_win_rate,with_brawler", "patch": f"eq.{CURRENT_PATCH}",
+        "select": "brawler,picks,true_win_rate,with_brawler,vs_brawler", "patch": f"eq.{CURRENT_PATCH}",
         "rank_bracket": f"eq.{BRACKET}", "picks": f"gte.{META_MIN_PICKS}",
     })
     if len(intel_rows) < META_TOP_N:
@@ -410,10 +585,15 @@ def run_meta_snapshot():
     top = intel_rows[:META_TOP_N]
     bottom = intel_rows[-META_BOTTOM_N:][::-1]  # weakest first, still descending order
 
+    map_rows = fetch_map_rows()
+
     shifters = run_shifters()
     classes = run_class_distribution(intel_rows)
     synergies = run_best_synergies(intel_rows)
-    unusual = run_unusual_map_cells(intel_rows)
+    unusual = run_unusual_map_cells(intel_rows, map_rows)
+    modes = run_mode_specialists(map_rows)
+    ranks = run_rank_divergence(intel_rows)
+    counters = run_counters(intel_rows)
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -439,6 +619,19 @@ def run_meta_snapshot():
             f"• {u['brawler']} is {fmt_pp(u['deviation'])}pp off their own average on {u['map']} "
             f"({u['overallWr']}% overall → {u['mapWr']}% there, {u['picks']} games)" for u in unusual))
 
+    if modes:
+        sections.append("Mode specialists:\n" + "\n".join(
+            f"• {m['brawler']} swings {m['swing']}pp — {m['bestWr']}% in {m['bestMode']} "
+            f"against {m['worstWr']}% in {m['worstMode']}" for m in modes))
+    if ranks:
+        sections.append("Plays differently by rank:\n" + "\n".join(
+            f"• {r['brawler']} {r['mastersWr']}% in Masters+ against {r['diamondWr']}% in Diamond/Mythic "
+            f"({fmt_pp(r['gap'])}pp)" for r in ranks))
+    if counters:
+        sections.append("Hardest counters, beyond raw strength:\n" + "\n".join(
+            f"• {c['winner']} beats {c['loser']} {c['matchupWr']}% — {fmt_pp(c['edge'])}pp more than "
+            f"their {c['winnerSolo']}% vs {c['loserSolo']}% overall rates predict" for c in counters))
+
     summary = (
         f"Current Masters+ standings on patch {CURRENT_PATCH} (minimum {META_MIN_PICKS} games):\n\n"
         + "\n\n".join(sections)
@@ -457,6 +650,12 @@ def run_meta_snapshot():
         data["synergies"] = synergies
     if unusual:
         data["unusual"] = unusual
+    if modes:
+        data["modes"] = modes
+    if ranks:
+        data["ranks"] = ranks
+    if counters:
+        data["counters"] = counters
 
     post = sb_insert("news_posts", {
         "slug": f"meta-snapshot-{today}",

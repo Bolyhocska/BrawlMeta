@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase, useSmartBack, BRAWLERS } from "./appCore";
+import { supabase, useSmartBack, BRAWLERS, MODE_ICONS, formatMode } from "./appCore";
 import { BarList, DeltaBarList } from "./Charts";
 import { tileStyles } from "./data/brawlerTile";
 import { mapSlug } from "./MapsPages";
@@ -68,8 +68,57 @@ function MapThumb({ name, size = 26 }) {
   );
 }
 
+// Small mode badge for prose — mode recognition in this game is visual, and
+// "heist" reads faster with its own icon beside it than as bare text.
+function ModeIcon({ mode, size = 14 }) {
+  const src = MODE_ICONS[mode];
+  if (!src) return null;
+  return <img src={src} alt="" aria-hidden="true" style={{ width: size, height: size, verticalAlign: "-2px", marginRight: 4 }} />;
+}
+
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
+
+const card = {
+  background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.08)",
+  borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12,
+};
+const eyebrow = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8b8b9c" };
+
+// One row shape shared by every LIST-style section (unusual maps, mode
+// specialists, rank divergence, counters). Four bespoke layouts would read as
+// four unrelated widgets stacked up; one shape read four times reads as a
+// page. The bar-chart sections stay visually distinct from these on purpose —
+// a ranking and a set of individual facts are different things.
+function FactRow({ icons, title, detail, value, positive }) {
+  const colour = positive ? "#8ee6b0" : "#ff8f8f";
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+      padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,.03)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        {icons}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#f4f4fa",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c", marginTop: 2,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detail}</div>
+        </div>
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 800, color: colour, flexShrink: 0 }}>{value}</div>
+    </div>
+  );
+}
+
+function FactList({ label, children }) {
+  return (
+    <div style={card}>
+      <div style={eyebrow}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+    </div>
+  );
+}
 
 const CATEGORY_STYLE = {
   balance:   { label: "BALANCE",   color: "#ffb43d", bg: "rgba(255,180,61,.12)" },
@@ -77,12 +126,6 @@ const CATEGORY_STYLE = {
   event:     { label: "EVENT",     color: "#7cc4ff", bg: "rgba(124,196,255,.12)" },
   community: { label: "COMMUNITY", color: "#8ee6b0", bg: "rgba(142,230,176,.12)" },
 };
-
-const card = {
-  background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.08)",
-  borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12,
-};
-const eyebrow = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8b8b9c" };
 
 const formatDate = (iso) => new Date(iso).toLocaleDateString("en-US", {
   month: "short", day: "numeric", year: "numeric",
@@ -316,6 +359,9 @@ export function NewsPostDetail() {
   const hasClasses = Array.isArray(d.classes) && d.classes.length > 0;
   const hasSynergies = Array.isArray(d.synergies) && d.synergies.length > 0;
   const hasUnusual = Array.isArray(d.unusual) && d.unusual.length > 0;
+  const hasModes = Array.isArray(d.modes) && d.modes.length > 0;
+  const hasRanks = Array.isArray(d.ranks) && d.ranks.length > 0;
+  const hasCounters = Array.isArray(d.counters) && d.counters.length > 0;
   const sources = Array.isArray(post.source_urls) ? post.source_urls : [];
 
   return (
@@ -376,6 +422,57 @@ export function NewsPostDetail() {
           </div>
         )}
 
+        {hasModes && (
+          <FactList label="MODE SPECIALISTS · BEST MODE VS WORST">
+            {d.modes.map((m, i) => (
+              <FactRow key={i}
+                icons={<BrawlerIcon name={m.brawler} size={30} />}
+                title={m.brawler}
+                detail={<>
+                  <ModeIcon mode={m.bestMode} />{formatMode(m.bestMode)} {m.bestWr}%
+                  <span style={{ color: "#5c5e6b" }}>{"  ·  "}</span>
+                  <ModeIcon mode={m.worstMode} />{formatMode(m.worstMode)} {m.worstWr}%
+                </>}
+                value={`${m.swing}pp`}
+                positive
+              />
+            ))}
+          </FactList>
+        )}
+
+        {hasUnusual && (
+          <FactList label="UNUSUAL ON A SPECIFIC MAP">
+            {d.unusual.map((u, i) => (
+              <FactRow key={i}
+                icons={
+                  <span style={{ display: "flex", alignItems: "center" }}>
+                    <BrawlerIcon name={u.brawler} size={30} />
+                    <span style={{ marginLeft: -8, zIndex: 1 }}><MapThumb name={u.map} size={30} /></span>
+                  </span>
+                }
+                title={`${u.brawler} on ${u.map}`}
+                detail={`${u.overallWr}% overall → ${u.mapWr}% here · ${u.picks.toLocaleString("en-US")} games`}
+                value={`${u.deviation >= 0 ? "+" : ""}${u.deviation}pp`}
+                positive={u.deviation >= 0}
+              />
+            ))}
+          </FactList>
+        )}
+
+        {hasRanks && (
+          <FactList label="PLAYS DIFFERENTLY BY RANK">
+            {d.ranks.map((r, i) => (
+              <FactRow key={i}
+                icons={<BrawlerIcon name={r.brawler} size={30} />}
+                title={r.brawler}
+                detail={`${r.mastersWr}% Masters+ · ${r.diamondWr}% Diamond/Mythic`}
+                value={`${r.gap >= 0 ? "+" : ""}${r.gap}pp`}
+                positive={r.gap >= 0}
+              />
+            ))}
+          </FactList>
+        )}
+
         {hasSynergies && (
           <div style={card}>
             <div style={eyebrow}>BEST DUOS · ABOVE THEIR OWN SOLO AVERAGE</div>
@@ -391,37 +488,23 @@ export function NewsPostDetail() {
           </div>
         )}
 
-        {hasUnusual && (
-          <div style={card}>
-            <div style={eyebrow}>UNUSUAL ON A SPECIFIC MAP</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {d.unusual.map((u, i) => {
-                const colour = u.deviation >= 0 ? "#8ee6b0" : "#ff8f8f";
-                return (
-                  <div key={i} style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
-                    padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,.03)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <BrawlerIcon name={u.brawler} size={30} />
-                        <span style={{ marginLeft: -8, zIndex: 1 }}><MapThumb name={u.map} size={30} /></span>
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.brawler} on {u.map}</div>
-                        <div style={{ fontFamily: MONO, fontSize: 11, color: "#8b8b9c", marginTop: 2 }}>
-                          {u.overallWr}% overall → {u.mapWr}% here · {u.picks.toLocaleString("en-US")} games
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: colour, flexShrink: 0 }}>
-                      {u.deviation >= 0 ? "+" : ""}{u.deviation}pp
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {hasCounters && (
+          <FactList label="HARDEST COUNTERS · BEYOND RAW STRENGTH">
+            {d.counters.map((c, i) => (
+              <FactRow key={i}
+                icons={
+                  <span style={{ display: "flex", alignItems: "center" }}>
+                    <BrawlerIcon name={c.winner} size={30} />
+                    <span style={{ marginLeft: -8, zIndex: 1 }}><BrawlerIcon name={c.loser} size={30} /></span>
+                  </span>
+                }
+                title={`${c.winner} beats ${c.loser}`}
+                detail={`${c.matchupWr}% head-to-head · solo ${c.winnerSolo}% vs ${c.loserSolo}%`}
+                value={`+${c.edge}pp`}
+                positive
+              />
+            ))}
+          </FactList>
         )}
 
         {!hasMovers && !hasStandings && (
