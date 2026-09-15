@@ -90,9 +90,9 @@ const eyebrow = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, color: "#8
 // four unrelated widgets stacked up; one shape read four times reads as a
 // page. The bar-chart sections stay visually distinct from these on purpose —
 // a ranking and a set of individual facts are different things.
-function FactRow({ icons, title, detail, value, positive }) {
+function FactRow({ icons, title, detail, value, positive, to }) {
   const colour = positive ? "#8ee6b0" : "#ff8f8f";
-  return (
+  const body = (
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
       padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,.03)",
@@ -101,7 +101,13 @@ function FactRow({ icons, title, detail, value, positive }) {
         {icons}
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: "#f4f4fa",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {title}
+            {/* Only rendered when the row actually goes somewhere, so a row
+                without a destination never looks clickable — a cursor:pointer
+                that leads nowhere is worse than no affordance at all. */}
+            {to && <span style={{ color: "#7cc4ff", marginLeft: 6, fontWeight: 600 }}>→</span>}
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8b8b9c", marginTop: 2,
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detail}</div>
         </div>
@@ -109,14 +115,33 @@ function FactRow({ icons, title, detail, value, positive }) {
       <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 800, color: colour, flexShrink: 0 }}>{value}</div>
     </div>
   );
+  if (!to) return body;
+  return (
+    <Link to={to} className="bm-lift" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+      {body}
+    </Link>
+  );
 }
 
-function FactList({ label, children }) {
+function FactList({ label, children, footer }) {
   return (
     <div style={card}>
       <div style={eyebrow}>{label}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+      {footer}
     </div>
+  );
+}
+
+// "This post says one thing about that map; the maps tab says everything."
+// A news row is a single measured fact, and the natural next question is
+// always the full picture — so the rows link through rather than dead-ending.
+function SectionLink({ to, children }) {
+  return (
+    <Link to={to} style={{
+      fontFamily: MONO, fontSize: 11.5, color: "#7cc4ff", textDecoration: "none",
+      alignSelf: "flex-start",
+    }}>{children} →</Link>
   );
 }
 
@@ -423,7 +448,8 @@ export function NewsPostDetail() {
         )}
 
         {hasModes && (
-          <FactList label="MODE SPECIALISTS · BEST MODE VS WORST">
+          <FactList label="MODE SPECIALISTS · BEST MODE VS WORST"
+            footer={<SectionLink to="/maps">Browse every map by mode</SectionLink>}>
             {d.modes.map((m, i) => (
               <FactRow key={i}
                 icons={<BrawlerIcon name={m.brawler} size={30} />}
@@ -441,9 +467,16 @@ export function NewsPostDetail() {
         )}
 
         {hasUnusual && (
-          <FactList label="UNUSUAL ON A SPECIFIC MAP">
+          <FactList label="UNUSUAL ON A SPECIFIC MAP"
+            footer={<SectionLink to="/maps">See every brawler on every map</SectionLink>}>
             {d.unusual.map((u, i) => (
               <FactRow key={i}
+                // Straight to that map's full breakdown. The slug is built with
+                // the same mapSlug() the route resolves with, so the two can't
+                // drift; an old post naming a map that has since rotated out
+                // lands on the maps page's own not-found state rather than
+                // breaking.
+                to={`/maps/${mapSlug(u.map)}`}
                 icons={
                   <span style={{ display: "flex", alignItems: "center" }}>
                     <BrawlerIcon name={u.brawler} size={30} />
