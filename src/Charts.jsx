@@ -203,21 +203,35 @@ export function BarList({ rows = [], height = 26, unit = "%", emptyMessage = "No
   const span = hi - lo || 1;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((r, i) => {
         const pct = ((r.value - lo) / span) * 100;
         const colour = r.color || accent
           || (r.value >= 52 ? CHART_COLORS.green : r.value <= 48 ? CHART_COLORS.red : CHART_COLORS.amber);
         return (
-          <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 11, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
+          <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 8, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
             {/* Optional icon (a brawler portrait, typically) — a plain node the
                 caller renders, since this file has no business knowing what a
-                brawler is. Fixed width so bars stay aligned whether or not
-                every row has one. */}
+                brawler is. */}
             {r.icon !== undefined && <span style={{ flex: "0 0 auto", display: "flex" }}>{r.icon}</span>}
-            <span style={{ flex: "0 0 118px", fontSize: 13, color: TEXT, overflow: "hidden",
-                           textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</span>
-            <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, overflow: "hidden", minWidth: 40 }}>
+            {/* label + sub STACKED, not two more fixed-width columns beside the
+                bar. A trailing "sub" column used to sit at a fixed 66px next to
+                the bar, which was fine for a short number until an icon column
+                was added ahead of it with nothing given up to make room — the
+                row's minimum width then exceeded a narrow two-up card and the
+                fixed-width sub text overflowed visibly past the card's edge.
+                Stacking removes the fixed-width failure mode entirely: sub
+                wraps under the label and ellipsizes on its own line instead of
+                fighting the bar for horizontal space. */}
+            <div style={{ flex: "0 0 78px", minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: TEXT, overflow: "hidden",
+                            textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</div>
+              {r.sub != null && (
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: DIM, overflow: "hidden",
+                              textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sub}</div>
+              )}
+            </div>
+            <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, overflow: "hidden", minWidth: 24 }}>
               <div style={{
                 width: `${Math.max(3, pct)}%`, height: "100%", borderRadius: 7,
                 background: `linear-gradient(90deg, ${colour}66, ${colour})`,
@@ -225,12 +239,9 @@ export function BarList({ rows = [], height = 26, unit = "%", emptyMessage = "No
                 transition: "width .55s cubic-bezier(.2,.7,.3,1)",
               }} />
             </div>
-            <span style={{ flex: "0 0 62px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: colour }}>
+            <span style={{ flex: "0 0 52px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: colour, whiteSpace: "nowrap" }}>
               {r.value.toFixed(1)}{unit}
             </span>
-            {r.sub != null && (
-              <span style={{ flex: "0 0 66px", textAlign: "right", fontFamily: MONO, fontSize: 10.5, color: DIM }}>{r.sub}</span>
-            )}
           </div>
         );
       })}
@@ -250,17 +261,27 @@ export function DeltaBarList({ rows = [], height = 22, unit = "pp", emptyMessage
   const maxAbs = Math.max(...rows.map(r => Math.abs(r.value)), 0.1);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((r, i) => {
         const pct = (Math.abs(r.value) / maxAbs) * 50; // half-width max, either side of centre
         const positive = r.value >= 0;
         const colour = positive ? CHART_COLORS.green : CHART_COLORS.red;
         return (
-          <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 11, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
+          <div key={r.label} className="bm-rise" style={{ display: "flex", alignItems: "center", gap: 8, animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
             {r.icon !== undefined && <span style={{ flex: "0 0 auto", display: "flex" }}>{r.icon}</span>}
-            <span style={{ flex: "0 0 100px", fontSize: 13, color: TEXT, overflow: "hidden",
-                           textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</span>
-            <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, position: "relative", minWidth: 60 }}>
+            {/* label + sub stacked — see the identical note in BarList. Here it
+                matters even more: sub is typically "50.4% -> 58.8%", too long
+                for any fixed column that also has to leave room for an icon
+                and the bar without a narrow two-up card overflowing. */}
+            <div style={{ flex: "0 0 92px", minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: TEXT, overflow: "hidden",
+                            textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.label}>{r.label}</div>
+              {r.sub != null && (
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: DIM, overflow: "hidden",
+                              textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.sub}>{r.sub}</div>
+              )}
+            </div>
+            <div style={{ flex: 1, height, background: "rgba(255,255,255,.045)", borderRadius: 7, position: "relative", minWidth: 32 }}>
               {/* Centre zero-line, always visible so a small bar still reads
                   as "near zero" rather than "no data". */}
               <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,.14)" }} />
@@ -273,12 +294,9 @@ export function DeltaBarList({ rows = [], height = 22, unit = "pp", emptyMessage
                 transition: "left .55s cubic-bezier(.2,.7,.3,1), width .55s cubic-bezier(.2,.7,.3,1)",
               }} />
             </div>
-            <span style={{ flex: "0 0 56px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: colour }}>
+            <span style={{ flex: "0 0 54px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: colour, whiteSpace: "nowrap" }}>
               {positive ? "+" : ""}{r.value.toFixed(1)}{unit}
             </span>
-            {r.sub != null && (
-              <span style={{ flex: "0 0 110px", textAlign: "right", fontFamily: MONO, fontSize: 10.5, color: DIM }}>{r.sub}</span>
-            )}
           </div>
         );
       })}

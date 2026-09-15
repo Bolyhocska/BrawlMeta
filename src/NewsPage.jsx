@@ -341,7 +341,7 @@ export function NewsPostDetail() {
         {hasMovers && (
           <div style={card}>
             <div style={eyebrow}>WIN-RATE CHANGE VS {d.priorPatch} · MIN {d.minPicks} GAMES</div>
-            <DeltaBarList rows={d.movers.map(m => ({ label: m.brawler, value: m.delta, sub: `${m.priorWr}% → ${m.curWr}%`, icon: <BrawlerIcon name={m.brawler} /> }))} />
+            <DeltaBarList rows={d.movers.map(m => ({ label: m.brawler, value: m.delta, sub: `${m.priorWr}% → ${m.curWr}%`, icon: <BrawlerIcon name={m.brawler} size={20} /> }))} />
           </div>
         )}
 
@@ -349,11 +349,11 @@ export function NewsPostDetail() {
           <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
             <div style={card}>
               <div style={eyebrow}>STRONGEST · MIN {d.minPicks} GAMES</div>
-              <BarList rows={d.strongest.map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} /> }))} />
+              <BarList rows={d.strongest.map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} size={20} /> }))} />
             </div>
             <div style={card}>
               <div style={eyebrow}>WEAKEST · MIN {d.minPicks} GAMES</div>
-              <BarList rows={(d.weakest || []).map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} /> }))} />
+              <BarList rows={(d.weakest || []).map(r => ({ label: r.brawler, value: r.winRate, sub: r.picks.toLocaleString("en-US"), icon: <BrawlerIcon name={r.brawler} size={20} /> }))} />
             </div>
           </div>
         )}
@@ -361,7 +361,7 @@ export function NewsPostDetail() {
         {hasShifters && (
           <div style={card}>
             <div style={eyebrow}>BIGGEST SHIFTS · LAST 7 DAYS</div>
-            <DeltaBarList rows={d.shifters.map(s => ({ label: s.brawler, value: s.delta, sub: `${s.beforeWr}% → ${s.last7dWr}%`, icon: <BrawlerIcon name={s.brawler} /> }))} />
+            <DeltaBarList rows={d.shifters.map(s => ({ label: s.brawler, value: s.delta, sub: `${s.beforeWr}% → ${s.last7dWr}%`, icon: <BrawlerIcon name={s.brawler} size={20} /> }))} />
           </div>
         )}
 
@@ -383,8 +383,8 @@ export function NewsPostDetail() {
               label: `${s.a} + ${s.b}`, value: s.excess, sub: `${s.duoWr}% together`,
               icon: (
                 <span style={{ display: "flex", alignItems: "center" }}>
-                  <BrawlerIcon name={s.a} size={22} />
-                  <span style={{ marginLeft: -6, zIndex: 1 }}><BrawlerIcon name={s.b} size={22} /></span>
+                  <BrawlerIcon name={s.a} size={18} />
+                  <span style={{ marginLeft: -6, zIndex: 1 }}><BrawlerIcon name={s.b} size={18} /></span>
                 </span>
               ),
             }))} />
