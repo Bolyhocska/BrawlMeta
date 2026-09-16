@@ -158,6 +158,13 @@ def find_candidate(known_titles):
         },
         timeout=90,
     )
+    if not res.ok:
+        # raise_for_status() discards the body, and Anthropic puts the actual
+        # cause there. A 400 is both 'your credit balance is too low' and
+        # 'your request was malformed' — without the body those are
+        # indistinguishable in the Actions log, which cost a debugging round
+        # trip on 2026-09-16. Never let this fail with only a status code.
+        print(f"news_watch: Anthropic API returned {res.status_code}: {res.text[:800]}")
     res.raise_for_status()
     data = res.json()
 
