@@ -8,7 +8,8 @@
 // API key, unreadable image, network error, name mismatch) returns
 // confident:false so the caller falls back to the normal 3-minute timer.
 //
-// Requires the ANTHROPIC_API_KEY env var. If it's unset, OCR is simply skipped.
+// Requires the ANTHROPIC_API_KEY env var. If it's unset, OCR is skipped and
+// logs an error — a silent skip is indistinguishable from a declined verdict.
 
 const MODEL = "claude-haiku-4-5-20251001"; // cheap, fast vision
 
@@ -56,8 +57,16 @@ export async function verifyVictoryScreenshot({ imageUrl, winnerNames, loserName
   const key = process.env.ANTHROPIC_API_KEY;
   const winners = (winnerNames || []).filter(Boolean);
   const losers = (loserNames || []).filter(Boolean);
-  if (!key || !imageUrl || !winners.length) {
-    return { confident: false, reason: "ocr_disabled_or_no_names" };
+  if (!key) {
+    // Distinguish a MISSING KEY from an unreadable screenshot. Both fall
+    // through to the dispute window in report-result, which discards the
+    // reason — so without this line an unset key looks exactly like OCR
+    // running and declining, and the fast path stays silently dead.
+    console.error("ocr: ANTHROPIC_API_KEY is not set — screenshot verification is DISABLED");
+    return { confident: false, reason: "ocr_no_api_key" };
+  }
+  if (!imageUrl || !winners.length) {
+    return { confident: false, reason: "ocr_no_image_or_names" };
   }
   try {
     const prompt = [
