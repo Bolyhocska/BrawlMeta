@@ -22,6 +22,7 @@ import { supabase, useSmartBack, BRAWLERS, MODE_ICONS, formatMode } from "./appC
 import { BarList, DeltaBarList } from "./Charts";
 import { tileStyles } from "./data/brawlerTile";
 import { mapSlug } from "./MapsPages";
+import { slugifyBrawlerKey } from "./BrawlersPage";
 import SiteHeader from "./SiteHeader";
 
 // ── icons ─────────────────────────────────────────────────────────────────────
@@ -452,6 +453,7 @@ export function NewsPostDetail() {
             footer={<SectionLink to="/maps">Browse every map by mode</SectionLink>}>
             {d.modes.map((m, i) => (
               <FactRow key={i}
+                to={`/app?tab=brawlers&brawler=${slugifyBrawlerKey(m.brawler.toUpperCase())}`}
                 icons={<BrawlerIcon name={m.brawler} size={30} />}
                 title={m.brawler}
                 detail={<>
@@ -496,6 +498,7 @@ export function NewsPostDetail() {
           <FactList label="PLAYS DIFFERENTLY BY RANK">
             {d.ranks.map((r, i) => (
               <FactRow key={i}
+                to={`/app?tab=brawlers&brawler=${slugifyBrawlerKey(r.brawler.toUpperCase())}`}
                 icons={<BrawlerIcon name={r.brawler} size={30} />}
                 title={r.brawler}
                 detail={`${r.mastersWr}% Masters+ · ${r.diamondWr}% Diamond/Mythic`}

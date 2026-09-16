@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Star, Users, Map, X } from "lucide-react";
 import BRAWLER_META from "./data/brawlerMeta.json";
 import BRAWLER_GUIDES from "./data/brawlerGuides.json";
@@ -732,6 +732,7 @@ function GuideSection({ guide }) {
 // ─── Main brawlers page ───────────────────────────────────────────────────────
 export default function BrawlersPage({ brawlerStats, loading, error, rankBracket }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tierMode, setTierMode] = useState("general");
   const [selectedBrawler, setSelectedBrawler] = useState(null);
 
@@ -739,6 +740,38 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
     () => computeStatsFromAggregated(brawlerStats || [], rankBracket),
     [brawlerStats, rankBracket]
   );
+
+  // ?brawler=<slug> opens that brawler's stats panel directly, so anything
+  // elsewhere on the site can deep-link to ONE brawler's full numbers — the
+  // map/mode splits and synergies that already live in this panel — instead
+  // of dumping the reader on a 100-row list to find them by eye.
+  //
+  // Deliberately NOT the brawler GUIDE route (/brawlers/:slug): that page is
+  // tips and star powers. This is the stats view, which is what a link from a
+  // measured claim should land on.
+  //
+  // Depends on `brawlers`, so it sits after that useMemo — a dependency array
+  // is evaluated during render, and this file's sibling (TournamentPages) has
+  // already cost a white screen to reading a const above its declaration.
+  // Derived, not an effect that opens the panel: an effect would fire after
+  // the first paint (one visible frame of the bare tier list before the
+  // panel appears) and would reopen the panel every time the user closed it
+  // while the param was still in the URL. Closing therefore clears the param.
+  const deepLinkSlug = searchParams.get("brawler");
+  const deepLinkBrawler = useMemo(
+    () => (deepLinkSlug ? brawlers.find(b => slugifyBrawlerKey(b.key) === deepLinkSlug) || null : null),
+    [deepLinkSlug, brawlers]);
+  const activeBrawler = selectedBrawler || deepLinkBrawler;
+
+  const closeDetail = useCallback(() => {
+    setSelectedBrawler(null);
+    if (!deepLinkSlug) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("brawler");
+    // replace, so Back leaves /news rather than stepping through the same
+    // page with and without the param.
+    setSearchParams(next, { replace: true });
+  }, [deepLinkSlug, searchParams, setSearchParams]);
 
   // Modes that actually have data, in canonical order
   const tierModes = useMemo(() => {
@@ -799,8 +832,8 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
   }, [tierMode, byMode, brawlerByKey]);
 
   const selectedBrawlerFull = useMemo(() =>
-    selectedBrawler ? brawlers.find(b => b.key === selectedBrawler.key) || selectedBrawler : null,
-    [selectedBrawler, brawlers]);
+    activeBrawler ? brawlers.find(b => b.key === activeBrawler.key) || activeBrawler : null,
+    [activeBrawler, brawlers]);
 
   const totalRanked = TIERS.reduce((sum, t) => sum + tierRows[t.id].length, 0);
 
@@ -887,8 +920,8 @@ export default function BrawlersPage({ brawlerStats, loading, error, rankBracket
           byMode={byMode}
           byMap={byMap}
           rankBracket={rankBracket}
-          onClose={() => setSelectedBrawler(null)}
-          onOpenFullGuide={(b) => { setSelectedBrawler(null); navigate(`/brawlers/${slugifyBrawlerKey(b.key)}`); }}
+          onClose={closeDetail}
+          onOpenFullGuide={(b) => { closeDetail(); navigate(`/brawlers/${slugifyBrawlerKey(b.key)}`); }}
         />
       )}
     </div>
