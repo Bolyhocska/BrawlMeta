@@ -111,6 +111,11 @@ export async function verifyVictoryScreenshot({ imageUrl, winnerNames, loserName
     });
     if (!resp.ok) {
       const detail = await resp.text().catch(() => "");
+      // report-result reads only ocr.confident and discards the reason, so
+      // without this the body is captured and thrown away — an exhausted
+      // credit balance would look exactly like a declined screenshot and
+      // drop the match to the dispute window with no explanation anywhere.
+      console.error(`ocr: Anthropic API returned ${resp.status}: ${detail.slice(0, 400)}`);
       return { confident: false, reason: `vision_http_${resp.status}`, detail: detail.slice(0, 200) };
     }
     const data = await resp.json();
