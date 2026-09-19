@@ -60,7 +60,7 @@ function readSectionOpen(key, fallback) {
   }
 }
 
-function Section({ title, children, defaultOpen = true, storageKey }) {
+function Section({ title, subtitle, children, defaultOpen = true, storageKey }) {
   const key = storageKey || (typeof title === "string" ? title : "section");
   const [open, setOpen] = useState(() => readSectionOpen(key, defaultOpen));
 
@@ -81,11 +81,20 @@ function Section({ title, children, defaultOpen = true, storageKey }) {
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
           width: "100%", padding: "15px 20px", cursor: "pointer", textAlign: "left",
-          background: "transparent", border: "none",
-          ...EYEBROW, marginBottom: 0,
+          background: "transparent", border: "none", color: "#e9e9f2",
         }}
       >
-        <span style={{ minWidth: 0 }}>{title}</span>
+        <span style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: DISPLAY, fontSize: 15.5, fontWeight: 700, letterSpacing: -0.1 }}>
+            {title}
+          </span>
+          {/* The qualifier that used to live after a "·" in the title. Kept,
+              but demoted, so the bold half is short enough to scan down a
+              column of eleven collapsed headers. */}
+          {subtitle && (
+            <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>{subtitle}</span>
+          )}
+        </span>
         {/* A caret rather than +/-: it rotates, so the open state is legible
             at a glance across a column of eleven headers. */}
         <span aria-hidden="true" style={{
@@ -216,7 +225,7 @@ function AboveDraftPanel({ ad, series }) {
   const colour = !ad.bandExcludesZero ? "#c9c9d6" : ad.delta > 0 ? "#8ee6b0" : "#ff8f8f";
 
   return (
-    <Section title="ABOVE DRAFT">
+    <Section title="Above draft">
 
       {state === LADDER.RECORD_ONLY ? (
         <>
@@ -283,7 +292,7 @@ function BucketsPanel({ buckets }) {
   const tracking = draftTracking(buckets);
 
   return (
-    <Section title="PICKS OR PLAY?">
+    <Section title="Picks or play?">
       <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
         {order.map(([k, label, colour]) => {
           const b = buckets[k];
@@ -367,7 +376,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
     </button>
   );
   return (
-    <Section title="PEOPLE YOU KEEP MEETING">
+    <Section title="People you keep meeting">
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))" }}>
         {squad.length > 0 && (
           <div>
@@ -410,7 +419,7 @@ function FingerprintPanel({ rows, n }) {
   const top = rows.find(r => r.notable && r.diff > 0);
 
   return (
-    <Section title="YOUR DRAFT FINGERPRINT">
+    <Section title="Your draft fingerprint">
 
       <div style={{ display: "grid", gap: 7 }}>
         {rows.filter(r => r.mine > 0 || r.theirs > 0.02).map(r => (
@@ -466,7 +475,8 @@ function NemesisPanel({ table }) {
   const worst = table.rows.slice(0, 6);
 
   return (
-    <Section title={<>WHAT BEATS YOUR {formatBrawlerName(table.brawler).toUpperCase()}</>}>
+    <Section title={<>What beats your {formatBrawlerName(table.brawler)}</>}
+             storageKey="nemesis">
 
       <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c", marginBottom: 11 }}>
         Your most-drafted brawler — {table.played} draft{table.played === 1 ? "" : "s"}.
@@ -544,7 +554,7 @@ export function TrophyCurve({ snapshots }) {
   const days = Math.max(1, Math.round((t1 - t0) / 86400000));
 
   return (
-    <Section title="TROPHY HISTORY">
+    <Section title="Trophy history">
       <div style={{ display: "flex", alignItems: "baseline", gap: 11, flexWrap: "wrap", marginBottom: 10 }}>
         <span style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 800, color: "#ffce7a" }}>
           {pts[pts.length - 1].v.toLocaleString("en-US")}
@@ -690,7 +700,7 @@ function ClassDonutPanel({ series }) {
   const base = baselineRate(series);
 
   return (
-    <Section title="WHAT YOU PLAY · SHARE OF DRAFTS">
+    <Section title="What you play" subtitle="share of drafts">
       <DonutChart
         size={180}
         thickness={30}
@@ -720,7 +730,7 @@ function VsClassPanel({ series }) {
   const worst = [...rows].reverse().find((r) => r.qualified);
 
   return (
-    <Section title="HOW YOU DO AGAINST EACH CLASS">
+    <Section title="How you do against each class">
       <RateRows rows={rows} max={8} showRate labelOf={(r) => classLabel(r.key) || r.key} />
       {best && worst && best.key !== worst.key && (
         <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
@@ -746,7 +756,7 @@ function MatchupPanel({ series }) {
   if (vs.length < PANEL_MIN_ROWS && wth.length < PANEL_MIN_ROWS) return null;
 
   return (
-    <Section title="SPECIFIC BRAWLERS">
+    <Section title="Specific brawlers">
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {vs.length >= PANEL_MIN_ROWS && (
           <div>
@@ -797,7 +807,7 @@ function ContextPanel({ series }) {
   ];
 
   return (
-    <Section title="WHERE YOU PLAY">
+    <Section title="Where you play">
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {modes.length > 0 && (
           <div>
@@ -873,7 +883,7 @@ function EncounterPanel({ series, intel }) {
   if (!intel || rows.length < 3) return null;
 
   return (
-    <Section title="WHO YOU FACE MOST · AND WHAT BEATS THEM">
+    <Section title="Who you face most" subtitle="and what beats them">
 
       <div style={{ display: "grid", gap: 6 }}>
         {rows.map((r) => (
@@ -959,7 +969,7 @@ function PartyPanel({ series, selfTag }) {
   const spread = (best.rate - worst.rate) * 100;
 
   return (
-    <Section title="WHO YOU QUEUE WITH">
+    <Section title="Who you queue with">
       <RateRows rows={rows} max={3} showRate />
       {spread >= 4 && (
         <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
@@ -992,7 +1002,7 @@ function SessionPanel({ series }) {
   const drop = fresh && tilted ? (fresh.rate - tilted.rate) * 100 : null;
 
   return (
-    <Section title="SESSIONS · TILT, FATIGUE AND CLOCK">
+    <Section title="Sessions" subtitle="tilt, fatigue and clock">
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
         <div>
           <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ff8f8f", marginBottom: 8 }}>
@@ -1054,7 +1064,7 @@ function PoolPanel({ series }) {
   const bothRated = pool.onMains.qualified && pool.offMains.qualified;
 
   return (
-    <Section title="YOUR BRAWLER POOL">
+    <Section title="Your brawler pool">
       <div style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c", marginBottom: 10 }}>
         {pool.distinct} brawlers drafted · mains:{" "}
         {pool.mains.map((m) => formatBrawlerName(m)).join(", ")}
