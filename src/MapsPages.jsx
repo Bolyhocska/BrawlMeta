@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  supabase, CURRENT_PATCH, MODE_COLORS, MODE_ICONS, formatMode, shrunkWinRate, MODE_FALLBACK_MIN_PICKS, CONFIDENCE_PRIOR_GAMES,
+  supabase, CURRENT_PATCH, DIAMOND_ENABLED, MODE_COLORS, MODE_ICONS, formatMode, shrunkWinRate, MODE_FALLBACK_MIN_PICKS, CONFIDENCE_PRIOR_GAMES,
   formatBrawlerName, useSmartBack,
 } from "./appCore";
 import { draftClassOf, classLabel } from "./data/draftEngine";
@@ -38,7 +38,7 @@ const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 const BRACKETS = [
   { id: "masters_legendary", label: "Masters+" },
-  { id: "diamond_mythic", label: "Diamond & Mythic" },
+  ...(DIAMOND_ENABLED ? [{ id: "diamond_mythic", label: "Diamond & Mythic" }] : []),
 ];
 
 // A brawler needs a real sample on a map before its rate means anything. The

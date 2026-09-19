@@ -24,6 +24,16 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 // The two rebuild RPCs are scoped `WHERE patch = target_patch`, so 68.250 is
 // still intact underneath and setting this back is a one-line revert.
 export const CURRENT_PATCH = "69.230";
+
+// Diamond/Mythic is PAUSED, not removed (owner decision 2026-09-19): the free
+// Supabase tier is 500 MB and the bracket costs ~66 MB across ranked_matches
+// and every per-bracket aggregate. Flip this to true and re-enable
+// .github/workflows/scrape-diamond-mythic.yml to bring it back — the scraper
+// rebuilds the bracket from scratch, so nothing here needs restoring by hand.
+// Everything the bracket touches is LABELLED Masters+ already, so a paused
+// bracket shows honest data rather than silently serving Masters numbers as
+// if they were the player's own rank.
+export const DIAMOND_ENABLED = false;
 // The patch actually live in the game. Equal to CURRENT_PATCH once a rollover
 // has completed, and AHEAD of it during the staging window between a patch going
 // live and the site having enough of it to read - which is exactly when the UI

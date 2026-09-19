@@ -27,12 +27,14 @@ const TournamentProfilePage = lazy(() => import("./TournamentPages").then(m => (
 const CreateTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.CreateTournamentPage })));
 const ManageTournamentPage  = lazy(() => import("./TournamentPages").then(m => ({ default: m.ManageTournamentPage })));
 import BRAWLER_META_IMPORT from "./data/brawlerMeta.json";
-import { supabase, CURRENT_PATCH, LIVE_PATCH, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
+import { supabase, CURRENT_PATCH, LIVE_PATCH, DIAMOND_ENABLED, BRAWLERS, formatBrawlerName, formatMode, MODE_COLORS, useSmartBack } from "./appCore";
 import { tileStyles } from "./data/brawlerTile";
 
 const RANK_BRACKETS = [
   { id: "masters_legendary", label: "Masters & Legendary", accent: "#ffb43d" },
-  { id: "diamond_mythic", label: "Diamond & Mythic", accent: "#c98bff" },
+  ...(DIAMOND_ENABLED
+    ? [{ id: "diamond_mythic", label: "Diamond & Mythic", accent: "#c98bff" }]
+    : []),
 ];
 
 const TIER_COLORS = { S: "#ffb43d", A: "#60a5fa", B: "#94a3b8", C: "#6b7280" };

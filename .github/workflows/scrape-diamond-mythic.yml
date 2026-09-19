@@ -3,9 +3,18 @@ name: Scrape — Diamond/Mythic Matches
 # Diamond/Mythic ranked-match spider. Daily, offset from the Masters run so
 # the two spiders never share the proxy/API budget at the same time. Exits
 # early on its own if the Masters 400k baseline isn't met yet.
+# PAUSED 2026-09-19 (owner decision). The schedule is commented out rather than
+# the file deleted, and workflow_dispatch is deliberately kept so the bracket
+# can be smoke-tested before it is turned back on. To resume: uncomment the
+# two schedule lines AND flip DIAMOND_ENABLED to true in src/appCore.js — the
+# collector refilling a bracket the UI still hides would be pure cost.
+#
+# Reason: the free Supabase tier is 500 MB and this bracket costs ~66 MB across
+# ranked_matches plus every per-bracket aggregate. Nothing needs restoring by
+# hand when it comes back; the spider rebuilds the bracket from scratch.
 on:
-  schedule:
-    - cron: '30 7 * * *'
+  # schedule:
+  #   - cron: '30 7 * * *'
   workflow_dispatch:
 
 
