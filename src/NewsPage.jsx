@@ -18,10 +18,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase, useSmartBack, BRAWLERS, MODE_ICONS, formatMode } from "./appCore";
+import { supabase, useSmartBack, formatMode } from "./appCore";
 import { BarList, DeltaBarList } from "./Charts";
-import { tileStyles } from "./data/brawlerTile";
 import { mapSlug } from "./MapsPages";
+import { BrawlerIcon, MapThumb, ModeIcon } from "./MetaIcons";
 import { slugifyBrawlerKey } from "./BrawlersPage";
 import SiteHeader from "./SiteHeader";
 
@@ -31,52 +31,6 @@ import SiteHeader from "./SiteHeader";
 // just .title() on the uppercase DB name — "EL PRIMO" -> "El Primo", "8-BIT"
 // -> "8-Bit"), so re-uppercasing a label finds the same BRAWLERS entry the
 // rest of the site already uses. No change needed on the Python side.
-function findBrawler(label) {
-  const key = (label || "").toUpperCase();
-  return BRAWLERS.find(b => b.key === key) || null;
-}
-
-// Same rarity-tile treatment as every other brawler portrait on the site
-// (DraftAssistant's BrawlerTile, the tier list), just small enough to sit
-// inline in a chart row or a headline card. Falls back to initials on a
-// missing/broken image rather than leaving a gap.
-function BrawlerIcon({ name, size = 26 }) {
-  const [broken, setBroken] = useState(false);
-  const b = findBrawler(name);
-  if (!b) return null;
-  const t = tileStyles({ key: b.key, rarity: b.rarity, rarityColor: b.color, size });
-  return (
-    <div style={t.outer}>
-      <div style={t.inner}>
-        {!broken && b.imageUrl
-          ? <img src={b.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />
-          : <span style={{ fontSize: size * 0.4, fontWeight: 800, color: b.color }}>{b.initial}</span>}
-      </div>
-    </div>
-  );
-}
-
-// Self-hosted map art (public/maps/, same source as MapsPages) — renders
-// nothing at all for a map with no file yet, same graceful-absence behaviour
-// as MapArt on the maps pages, rather than a broken-image icon.
-function MapThumb({ name, size = 26 }) {
-  const [ok, setOk] = useState(true);
-  if (!name || !ok) return null;
-  return (
-    <img src={`/maps/${mapSlug(name)}.png`} alt="" aria-hidden="true" onError={() => setOk(false)}
-      style={{ width: size, height: size, objectFit: "cover", borderRadius: Math.round(size * 0.2),
-               border: "1px solid rgba(255,255,255,.12)", flexShrink: 0 }} />
-  );
-}
-
-// Small mode badge for prose — mode recognition in this game is visual, and
-// "heist" reads faster with its own icon beside it than as bare text.
-function ModeIcon({ mode, size = 14 }) {
-  const src = MODE_ICONS[mode];
-  if (!src) return null;
-  return <img src={src} alt="" aria-hidden="true" style={{ width: size, height: size, verticalAlign: "-2px", marginRight: 4 }} />;
-}
-
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 

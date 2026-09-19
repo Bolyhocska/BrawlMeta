@@ -24,6 +24,7 @@ import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
 import { supabase } from "./appCore";
 import { formatBrawlerName, formatMode } from "./appCore";
+import { BrawlerIcon, MapThumb, ModeIcon } from "./MetaIcons";
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -439,7 +440,10 @@ const deltaColor = (pts, qualified) =>
   !qualified ? "#6b6d7c" : pts >= 0 ? "#8ee6b0" : "#ff8f8f";
 
 /** One list of bucketed rates. Shared by every breakdown below. */
-function RateRows({ rows, labelOf = (r) => r.key, max = 6, emptyMessage = "Nothing yet." }) {
+function RateRows({
+  rows, labelOf = (r) => r.key, max = 6, emptyMessage = "Nothing yet.",
+  iconOf = null, showRate = false,
+}) {
   const shown = rows.slice(0, max);
   if (!shown.length) {
     return <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>{emptyMessage}</div>;
@@ -456,13 +460,19 @@ function RateRows({ rows, labelOf = (r) => r.key, max = 6, emptyMessage = "Nothi
         const pts = r.delta * 100;
         const col = deltaColor(pts, r.qualified);
         return (
-          <div key={r.key} style={{ display: "grid", gridTemplateColumns: "1fr 64px 46px", gap: 8, alignItems: "center" }}>
+          <div key={r.key} style={{
+            display: "grid", gap: 8, alignItems: "center",
+            gridTemplateColumns: showRate ? "1fr 44px 56px 42px" : "1fr 64px 46px",
+          }}>
             <div style={{ minWidth: 0 }}>
               <div style={{
+                display: "flex", alignItems: "center", gap: 6,
                 fontFamily: MONO, fontSize: 11.5, color: r.qualified ? "#e9e9f2" : "#8a8a9c",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>
-                {labelOf(r)}
+                {iconOf ? iconOf(r) : null}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {labelOf(r)}
+                </span>
               </div>
               {/* Centred on the player's own baseline, so left of centre is
                   literally "worse than you usually are". */}
@@ -481,6 +491,15 @@ function RateRows({ rows, labelOf = (r) => r.key, max = 6, emptyMessage = "Nothi
                 )}
               </div>
             </div>
+            {showRate && (
+              /* The absolute rate, which is what people actually want to read off
+                 a map or mode row. The delta beside it is what makes it mean
+                 something — 57% is only good if you are not a 60% player. */
+              <span style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 700,
+                             color: r.qualified ? "#e9e9f2" : "#6b6d7c", textAlign: "right" }}>
+                {r.n ? `${Math.round(r.raw * 100)}%` : "—"}
+              </span>
+            )}
             <span style={{ fontFamily: MONO, fontSize: 11, color: col, textAlign: "right" }}>
               {r.qualified ? signed(pts) : "—"}
             </span>
@@ -567,11 +586,11 @@ function MatchupPanel({ series }) {
             <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8ee6b0", marginBottom: 8 }}>
               YOU BEAT
             </div>
-            <RateRows rows={vs.slice(0, 5)} max={5} labelOf={(r) => formatBrawlerName(r.key)} />
+            <RateRows rows={vs.slice(0, 5)} max={5} labelOf={(r) => formatBrawlerName(r.key)} iconOf={(r) => <BrawlerIcon name={r.key} size={20} />} />
             <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ff8f8f", margin: "14px 0 8px" }}>
               YOU LOSE TO
             </div>
-            <RateRows rows={vs.slice(-5).reverse()} max={5} labelOf={(r) => formatBrawlerName(r.key)} />
+            <RateRows rows={vs.slice(-5).reverse()} max={5} labelOf={(r) => formatBrawlerName(r.key)} iconOf={(r) => <BrawlerIcon name={r.key} size={20} />} />
           </div>
         )}
         {wth.length >= PANEL_MIN_ROWS && (
@@ -579,7 +598,7 @@ function MatchupPanel({ series }) {
             <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#c9a6ff", marginBottom: 8 }}>
               BEST ALONGSIDE YOU
             </div>
-            <RateRows rows={wth.slice(0, 6)} max={6} labelOf={(r) => formatBrawlerName(r.key)} />
+            <RateRows rows={wth.slice(0, 6)} max={6} labelOf={(r) => formatBrawlerName(r.key)} iconOf={(r) => <BrawlerIcon name={r.key} size={20} />} />
             <div style={NOTE}>
               A teammate&apos;s BRAWLER, not a teammate player — your win rate when someone on
               your side drafted them.
@@ -598,11 +617,17 @@ function MatchupPanel({ series }) {
 /** Mode and map context, plus brawler-in-a-mode outliers. */
 function ContextPanel({ series }) {
   const modes = modeRates(series).filter((r) => r.n > 0);
-  const maps = mapRates(series).filter((r) => r.qualified);
+  const maps = mapRates(series);
   const outliers = brawlerModeOutliers(series);
   if (!modes.length && !maps.length && !outliers.length) return null;
 
-  const mapRows = [...maps.slice(0, 3), ...maps.slice(-3)].filter((v, i, a) => a.indexOf(v) === i);
+  // Rated maps first (best to worst), then the rest by how close they are to
+  // qualifying — so the list degrades into "and here is what you are still
+  // building" rather than stopping dead at the floor.
+  const mapRows = [
+    ...maps.filter((r) => r.qualified),
+    ...maps.filter((r) => !r.qualified).sort((a, b) => b.n - a.n),
+  ];
 
   return (
     <div style={CARD}>
@@ -613,15 +638,18 @@ function ContextPanel({ series }) {
             <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
               BY MODE
             </div>
-            <RateRows rows={modes} max={6} labelOf={(r) => formatMode(r.key)} />
+            <RateRows rows={modes} max={8} showRate
+              labelOf={(r) => formatMode(r.key)}
+              iconOf={(r) => <ModeIcon mode={r.key} size={15} inline={false} />} />
           </div>
         )}
         {mapRows.length > 0 && (
           <div>
             <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
-              {mapRows.length >= 4 ? "BEST AND WORST MAPS" : "MAPS WITH ENOUGH GAMES"}
+              BY MAP
             </div>
-            <RateRows rows={mapRows} max={6} />
+            <RateRows rows={mapRows} max={10} showRate
+              iconOf={(r) => <MapThumb name={r.key} size={20} />} />
           </div>
         )}
       </div>
@@ -645,10 +673,15 @@ function ContextPanel({ series }) {
       )}
 
       <div style={NOTE}>
-        Mode, not map, and that is a data limit rather than a choice: across every tracked
-        player the largest brawler-on-one-map sample in the database is 9 drafts, which
-        cannot separate a real weakness from a run of bad luck. A mode pools six times as
-        many games. Outliers are listed only when the gap beats the cell&apos;s own error.
+        A <strong style={{ color: "#8a8a9c" }}>dimmed</strong> win rate is your raw record on a
+        sample too small to read as a rate — it is shown because it is your real record, but it
+        gets no &plusmn;pp and should not be treated as a finding. 75% off 6&ndash;2 and 75% off
+        60&ndash;20 are not the same claim. Maps need 10 drafts, modes 10.
+        <br /><br />
+        The outliers above are by mode, not map, and that is a data limit rather than a choice:
+        across every tracked player the largest brawler-on-one-map sample in the database is 9
+        drafts, which cannot separate a real weakness from a run of bad luck. A mode pools six
+        times as many games, and a gap is only listed when it beats the cell&apos;s own error.
       </div>
     </div>
   );
