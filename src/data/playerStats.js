@@ -862,3 +862,228 @@ export function modeImprovement(series, minModeDrafts = 10) {
   if (!over || over.gap < 0.15) return { mode: worst, over: null };
   return { mode: worst, over };
 }
+
+// ── OP-6 sessions, party, tilt ───────────────────────────────────────────────
+// The coaching half. Everything above answers "what do you play and against
+// whom"; this answers "under what conditions do you play it well", which is
+// the part a player can act on tonight.
+//
+// ALL OF IT RUNS ON SERIES, NEVER ROWS. player_matches stores one row per
+// ROUND and the same teammates play every round of a series by definition, so
+// a naive party detector run on rows reports that 98.7% of teammates recur —
+// measured 2026-09-19, and that is an artefact of the storage shape, not a
+// fact about the player. Rounds also make a 2-0 look like two wins in a row,
+// which would invent tilt that never happened.
+
+// Gap that ends a session: long enough to survive a queue plus a lobby, short
+// enough that two evenings do not merge into one.
+const SESSION_GAP_MS = 45 * 60 * 1000;
+
+// Every bucket below needs this many SERIES before it is rated. Lower than the
+// 15 the class panels use because these splits have few buckets each, so a
+// given bucket fills much faster than one of ~106 brawlers.
+const SESSION_BUCKET_MIN = 12;
+
+/** Split series into sessions, oldest-first within each. */
+export function toSessions(series, gapMs = SESSION_GAP_MS) {
+  const asc = [...series].sort(
+    (a, b) => new Date(a.started_at) - new Date(b.started_at));
+  const out = [];
+  for (const s of asc) {
+    const last = out[out.length - 1];
+    const t = new Date(s.started_at).getTime();
+    if (last && t - last.endedAt <= gapMs) {
+      last.series.push(s);
+      last.endedAt = t;
+    } else {
+      out.push({ series: [s], startedAt: t, endedAt: t });
+    }
+  }
+  return out;
+}
+
+// Below this a bucket is dropped entirely rather than shown greyed. The other
+// panels show a thin row because the row NAMES something real (a map you have
+// played 4 times). Here the buckets are fixed and exhaustive, so a 1-0 bucket
+// adds no information and renders as a shouting 100% next to rows that mean
+// something.
+const BUCKET_SHOW_MIN = 3;
+
+/** Shared tail: shrink a bucket toward the player's own rate and mark it. */
+function rated(b, base) {
+  const sh = shrink(b.wins, b.n, base);
+  return { ...b, raw: b.n ? b.wins / b.n : 0, rate: sh.rate, delta: sh.delta,
+           qualified: b.n >= SESSION_BUCKET_MIN };
+}
+
+/**
+ * Solo / duo / trio, INFERRED — the API never says who queued together.
+ *
+ * A teammate counts as premade for a session when their tag appears in at
+ * least two DIFFERENT series of that session. Two strangers matched together
+ * twice in one evening happens; the same person across three drafts is a
+ * party. Series, not rounds, for the reason at the top of this block.
+ *
+ * It is a heuristic and the panel says so: it will call a long random
+ * coincidence a duo, and a party that played one game solo.
+ */
+export function partyBreakdown(series, selfTag) {
+  const base = baselineRate(series);
+  const buckets = [
+    { key: "Solo queue", mates: 0, n: 0, wins: 0 },
+    { key: "With one regular", mates: 1, n: 0, wins: 0 },
+    { key: "Full trio", mates: 2, n: 0, wins: 0 },
+  ];
+
+  for (const session of toSessions(series)) {
+    const seen = {};
+    for (const s of session.series) {
+      for (const t of s.team_tags || []) {
+        if (!t || t === selfTag) continue;
+        (seen[t] = seen[t] || new Set()).add(s.key);
+      }
+    }
+    const premade = new Set(
+      Object.entries(seen).filter(([, set]) => set.size >= 2).map(([t]) => t));
+
+    for (const s of session.series) {
+      const n = (s.team_tags || [])
+        .filter((t) => t && t !== selfTag && premade.has(t)).length;
+      const b = buckets[Math.min(n, 2)];
+      b.n += 1;
+      if (s.won) b.wins += 1;
+    }
+  }
+  return buckets.filter((b) => b.n >= BUCKET_SHOW_MIN).map((b) => rated(b, base));
+}
+
+/**
+ * Win rate by how many games you have already lost in a row THIS SESSION.
+ *
+ * The tilt question, and the one thing on this page a player can act on
+ * within the hour. Streaks reset between sessions — a loss last Tuesday does
+ * not tilt you tonight.
+ */
+export function tiltCurve(series) {
+  const base = baselineRate(series);
+  const buckets = [
+    { key: "Fresh or after a win", lo: 0, hi: 0, n: 0, wins: 0 },
+    { key: "After 1 loss", lo: 1, hi: 1, n: 0, wins: 0 },
+    { key: "After 2 losses", lo: 2, hi: 2, n: 0, wins: 0 },
+    { key: "After 3+ losses", lo: 3, hi: 1e9, n: 0, wins: 0 },
+  ];
+  for (const session of toSessions(series)) {
+    let streak = 0;
+    for (const s of session.series) {
+      const b = buckets.find((x) => streak >= x.lo && streak <= x.hi);
+      if (b) { b.n += 1; if (s.won) b.wins += 1; }
+      streak = s.won ? 0 : streak + 1;
+    }
+  }
+  return buckets.filter((b) => b.n >= BUCKET_SHOW_MIN).map((b) => rated(b, base));
+}
+
+/** Win rate by how deep into a session you are — the fatigue question. */
+export function sessionDepth(series) {
+  const base = baselineRate(series);
+  const buckets = [
+    { key: "Games 1-3", lo: 0, hi: 2, n: 0, wins: 0 },
+    { key: "Games 4-6", lo: 3, hi: 5, n: 0, wins: 0 },
+    { key: "Games 7-10", lo: 6, hi: 9, n: 0, wins: 0 },
+    { key: "Game 11+", lo: 10, hi: 1e9, n: 0, wins: 0 },
+  ];
+  for (const session of toSessions(series)) {
+    session.series.forEach((s, i) => {
+      const b = buckets.find((x) => i >= x.lo && i <= x.hi);
+      if (b) { b.n += 1; if (s.won) b.wins += 1; }
+    });
+  }
+  return buckets.filter((b) => b.n >= BUCKET_SHOW_MIN).map((b) => rated(b, base));
+}
+
+/**
+ * Win rate by time of day, in the VIEWER'S local clock.
+ *
+ * battle_time is UTC and we do not know the player's timezone, so on someone
+ * else's profile these blocks are the reader's evening, not theirs. The panel
+ * only renders on a profile the viewer is looking at for themselves.
+ */
+export function timeOfDay(series) {
+  const base = baselineRate(series);
+  const blocks = [
+    { key: "Morning (6-12)", lo: 6, hi: 11 },
+    { key: "Afternoon (12-18)", lo: 12, hi: 17 },
+    { key: "Evening (18-24)", lo: 18, hi: 23 },
+    { key: "Late night (0-6)", lo: 0, hi: 5 },
+  ].map((b) => ({ ...b, n: 0, wins: 0 }));
+  for (const s of series) {
+    const h = new Date(s.started_at).getHours();
+    const b = blocks.find((x) => h >= x.lo && h <= x.hi);
+    if (b) { b.n += 1; if (s.won) b.wins += 1; }
+  }
+  return blocks.filter((b) => b.n >= BUCKET_SHOW_MIN).map((b) => rated(b, base));
+}
+
+/**
+ * Your mains versus the rest of your pool.
+ *
+ * Framed as the player's OWN comparison, not "specialists beat generalists" —
+ * that is a claim about a population, it would need many players to test, and
+ * we have not tested it.
+ */
+export function poolBreadth(series, mainCount = 3) {
+  const byBrawler = {};
+  for (const s of series) {
+    const b = byBrawler[s.brawler] || (byBrawler[s.brawler] = { n: 0, wins: 0 });
+    b.n += 1;
+    if (s.won) b.wins += 1;
+  }
+  const ranked = Object.entries(byBrawler).sort((a, b) => b[1].n - a[1].n);
+  const mains = new Set(ranked.slice(0, mainCount).map(([k]) => k));
+  const base = baselineRate(series);
+
+  const agg = (key, pred) => {
+    let n = 0, wins = 0;
+    for (const s of series) if (pred(s)) { n += 1; if (s.won) wins += 1; }
+    return rated({ key, n, wins }, base);
+  };
+  return {
+    distinct: ranked.length,
+    mains: [...mains],
+    onMains: agg("Your top " + mains.size, (s) => mains.has(s.brawler)),
+    offMains: agg("Everyone else", (s) => !mains.has(s.brawler)),
+  };
+}
+
+/**
+ * Star player rate, overall and per brawler.
+ *
+ * COVERAGE IS THE CATCH: is_star_player is null on most stored rows (233
+ * known of 561 on the heaviest profile, 42%) because the field is only
+ * present on some battlelog shapes. Rates are over KNOWN rows only and the
+ * denominator is always shown; a per-brawler split is mostly out of reach, so
+ * the panel states the coverage rather than quietly dividing by a number it
+ * does not have.
+ */
+export function starRates(series, minKnown = 10) {
+  let known = 0, stars = 0;
+  const per = {};
+  for (const s of series) {
+    for (const r of s.rounds || []) {
+      if (r.is_star_player === null || r.is_star_player === undefined) continue;
+      known += 1;
+      if (r.is_star_player) stars += 1;
+      const p = per[s.brawler] || (per[s.brawler] = { key: s.brawler, known: 0, stars: 0 });
+      p.known += 1;
+      if (r.is_star_player) p.stars += 1;
+    }
+  }
+  return {
+    known, stars,
+    rate: known ? stars / known : null,
+    perBrawler: Object.values(per)
+      .filter((p) => p.known >= minKnown)
+      .map((p) => ({ ...p, rate: p.stars / p.known }))
+      .sort((a, b) => b.rate - a.rate),
+  };
+}

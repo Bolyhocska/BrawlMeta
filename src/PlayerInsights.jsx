@@ -20,6 +20,7 @@ import {
   baselineRate, vsBrawlers, withBrawlers, vsClassRates, modeRates, mapRates,
   brawlerModeOutliers, classSplit, PANEL_MIN_ROWS,
   mostEncountered, lossConcentration, modeImprovement,
+  partyBreakdown, tiltCurve, sessionDepth, timeOfDay, poolBreadth, starRates,
 } from "./data/playerStats";
 import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
@@ -942,6 +943,175 @@ function EncounterPanel({ series, intel }) {
   );
 }
 
+// ── OP-6 the coaching panels ─────────────────────────────────────────────────
+// These answer "under what conditions do you play well", which is the only
+// part of this page a player can change tonight. They are also the panels
+// most able to mislead, so each one states its own weakness in the note.
+
+/** Solo vs duo vs trio. Inferred, and labelled as inferred. */
+function PartyPanel({ series, selfTag }) {
+  const rows = useMemo(() => partyBreakdown(series, selfTag), [series, selfTag]);
+  const rated = rows.filter((r) => r.qualified);
+  if (rated.length < 2) return null;
+
+  const best = rated[0];
+  const worst = rated[rated.length - 1];
+  const spread = (best.rate - worst.rate) * 100;
+
+  return (
+    <Section title="WHO YOU QUEUE WITH">
+      <RateRows rows={rows} max={3} showRate />
+      {spread >= 4 && (
+        <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+          <strong style={{ color: "#e9e9f2" }}>{best.key}</strong> is worth about{" "}
+          <strong style={{ color: "#8ee6b0" }}>{spread.toFixed(0)} points</strong> of win rate
+          over <strong style={{ color: "#e9e9f2" }}>{worst.key.toLowerCase()}</strong> for you.
+          {best.mates > 0 && " If you are climbing, queue with people."}
+        </div>
+      )}
+      <div style={NOTE}>
+        The game never tells us who queued together, so this is inferred: a teammate counts as
+        a regular when they turn up in at least two different drafts of the same session. It
+        will call a long coincidence a duo, and a party that only played once solo. Counted in
+        drafts, never rounds — your teammates are the same in every round of one draft, so
+        counting rounds would report almost everyone as a regular.
+      </div>
+    </Section>
+  );
+}
+
+/** Tilt, fatigue and clock. The three conditions a player actually controls. */
+function SessionPanel({ series }) {
+  const tilt = useMemo(() => tiltCurve(series), [series]);
+  const depth = useMemo(() => sessionDepth(series), [series]);
+  const clock = useMemo(() => timeOfDay(series), [series]);
+  if (!tilt.some((r) => r.qualified)) return null;
+
+  const fresh = tilt.find((r) => r.lo === 0 && r.qualified);
+  const tilted = [...tilt].reverse().find((r) => r.lo >= 2 && r.qualified);
+  const drop = fresh && tilted ? (fresh.rate - tilted.rate) * 100 : null;
+
+  return (
+    <Section title="SESSIONS · TILT, FATIGUE AND CLOCK">
+      <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ff8f8f", marginBottom: 8 }}>
+            AFTER LOSING IN A ROW
+          </div>
+          <RateRows rows={tilt} max={4} showRate />
+        </div>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
+            HOW DEEP INTO A SESSION
+          </div>
+          <RateRows rows={depth} max={4} showRate />
+        </div>
+        {clock.length > 1 && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
+              TIME OF DAY
+            </div>
+            <RateRows rows={clock} max={4} showRate />
+          </div>
+        )}
+      </div>
+
+      {drop != null && drop >= 5 && (
+        <div style={{
+          marginTop: 14, padding: "11px 13px", borderRadius: 10,
+          background: "rgba(255,143,143,.06)", border: "1px solid rgba(255,143,143,.18)",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ff8f8f", marginBottom: 6 }}>
+            THE ONE YOU CAN FIX TONIGHT
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+            You win <strong style={{ color: "#8ee6b0" }}>{Math.round(fresh.raw * 100)}%</strong>{" "}
+            fresh and <strong style={{ color: "#ff8f8f" }}>{Math.round(tilted.raw * 100)}%</strong>{" "}
+            once you are two losses down — a <strong>{drop.toFixed(0)} point</strong> swing.
+            Stopping after two is the cheapest rating you will ever save.
+          </div>
+        </div>
+      )}
+
+      <div style={NOTE}>
+        A session is games with less than 45 minutes between them, and streaks reset between
+        sessions — a loss last week does not tilt you tonight. Time of day is read from{" "}
+        <strong style={{ color: "#8a8a9c" }}>your browser&apos;s clock</strong>, not the
+        player&apos;s, so on someone else&apos;s profile those blocks are your evening rather
+        than theirs.
+      </div>
+    </Section>
+  );
+}
+
+/** Pool breadth and the star-player rate, both with their coverage stated. */
+function PoolPanel({ series }) {
+  const pool = useMemo(() => poolBreadth(series), [series]);
+  const star = useMemo(() => starRates(series), [series]);
+  if (!pool.onMains.qualified && !pool.offMains.qualified && !star.known) return null;
+
+  const gap = (pool.onMains.rate - pool.offMains.rate) * 100;
+  const bothRated = pool.onMains.qualified && pool.offMains.qualified;
+
+  return (
+    <Section title="YOUR BRAWLER POOL">
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c", marginBottom: 10 }}>
+        {pool.distinct} brawlers drafted · mains:{" "}
+        {pool.mains.map((m) => formatBrawlerName(m)).join(", ")}
+      </div>
+      <RateRows rows={[pool.onMains, pool.offMains]} max={2} showRate />
+
+      {bothRated && Math.abs(gap) >= 4 && (
+        <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+          {/* The quoted gap is the SHRUNK one, so it is smaller than the two raw
+              rates above imply. Saying which is the difference between a reader
+              trusting the number and thinking we cannot subtract. */}
+          {gap > 0
+            ? <>Your mains run about <strong style={{ color: "#8ee6b0" }}>{gap.toFixed(0)} points</strong> ahead of the rest of your pool once the smaller samples are accounted for. Narrowing it when it matters is worth real rating.</>
+            : <>You run about <strong style={{ color: "#8ee6b0" }}>{Math.abs(gap).toFixed(0)} points</strong> better OUTSIDE your three most-played brawlers, sample-adjusted — worth asking whether your mains are actually your best.</>}
+        </div>
+      )}
+
+      {star.known > 0 && (
+        <>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ffce7a", margin: "16px 0 8px" }}>
+            STAR PLAYER
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+            You were star player in{" "}
+            <strong style={{ color: "#ffce7a" }}>{Math.round(star.rate * 100)}%</strong> of the{" "}
+            {star.known} rounds where the game told us — against a{" "}
+            <strong>16.7%</strong> baseline if it were random across six players.
+          </div>
+          {star.perBrawler.length > 0 && (
+            <div style={{ display: "grid", gap: 5, marginTop: 9 }}>
+              {star.perBrawler.slice(0, 4).map((p) => (
+                <div key={p.key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11 }}>
+                  <BrawlerIcon name={p.key} size={18} />
+                  <span style={{ flex: 1, color: "#c9c9d6" }}>{formatBrawlerName(p.key)}</span>
+                  <span style={{ color: p.rate >= 0.167 ? "#ffce7a" : "#7c7e8f", fontWeight: 700 }}>
+                    {Math.round(p.rate * 100)}%
+                  </span>
+                  <span style={{ color: "#7c7e8f", minWidth: 58, textAlign: "right" }}>
+                    of {p.known}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <div style={NOTE}>
+        Star player is only reported on some battlelog shapes, so it is counted over the rounds
+        where the game actually told us — {star.known} of them here — and the denominator is
+        shown on every row rather than hidden. 16.7% is what pure chance would give across six
+        players, so it is the line to beat, not 50%.
+      </div>
+    </Section>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
@@ -1005,11 +1175,14 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
           a draft); per-brawler ones need a heavy one; each panel hides itself
           until it has something true to say, so a thin profile simply shows
           fewer cards rather than a wall of empty ones. */}
+      <SessionPanel series={series} />
+      <PartyPanel series={series} selfTag={selfTag} />
       <ClassDonutPanel series={series} />
       <VsClassPanel series={series} />
       <ContextPanel series={series} />
       <MatchupPanel series={series} />
       <EncounterPanel series={series} intel={intel} />
+      <PoolPanel series={series} />
 
       {intel && <NemesisPanel table={nemesisTable(series, intel)} />}
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
