@@ -36,6 +36,67 @@ const CARD = {
 const EYEBROW = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.9, color: "#8b8b9c", marginBottom: 10 };
 const NOTE = { fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 10, lineHeight: 1.65 };
 
+// ── collapsible section ──────────────────────────────────────────────────────
+// Every panel is a Section so the page can be folded down to the parts a
+// player cares about. Eleven cards is a long scroll, and which ones matter
+// differs per person — someone checking matchups does not want to pass the
+// donut every time.
+//
+// Open/closed is remembered per section in localStorage, keyed by title.
+// Deliberately per-browser rather than in the profile: it is a reading
+// preference, not data about the player, and it must work for a signed-out
+// visitor reading someone else's profile. Every access is wrapped — Safari
+// private mode THROWS on localStorage rather than returning null, and an
+// unhandled throw here would take the whole page down to save a chevron.
+const SECTION_STATE_PREFIX = "bm.profile.open.";
+
+function readSectionOpen(key, fallback) {
+  try {
+    const v = window.localStorage.getItem(SECTION_STATE_PREFIX + key);
+    return v === null ? fallback : v === "1";
+  } catch {
+    return fallback;
+  }
+}
+
+function Section({ title, children, defaultOpen = true, storageKey }) {
+  const key = storageKey || (typeof title === "string" ? title : "section");
+  const [open, setOpen] = useState(() => readSectionOpen(key, defaultOpen));
+
+  const toggle = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(SECTION_STATE_PREFIX + key, next ? "1" : "0"); } catch { /* unavailable */ }
+      return next;
+    });
+  };
+
+  return (
+    <div style={{ ...CARD, padding: 0, overflow: "hidden" }}>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          width: "100%", padding: "15px 20px", cursor: "pointer", textAlign: "left",
+          background: "transparent", border: "none",
+          ...EYEBROW, marginBottom: 0,
+        }}
+      >
+        <span style={{ minWidth: 0 }}>{title}</span>
+        {/* A caret rather than +/-: it rotates, so the open state is legible
+            at a glance across a column of eleven headers. */}
+        <span aria-hidden="true" style={{
+          flexShrink: 0, color: "#8b8b9c", fontSize: 10, lineHeight: 1,
+          transform: open ? "rotate(180deg)" : "none", transition: "transform .15s ease",
+        }}>▼</span>
+      </button>
+      {open && <div style={{ padding: "0 20px 18px" }}>{children}</div>}
+    </div>
+  );
+}
+
 // ── OV-1 Above Draft ─────────────────────────────────────────────────────────
 
 function AboveDraftChart({ points }) {
@@ -154,8 +215,7 @@ function AboveDraftPanel({ ad, series }) {
   const colour = !ad.bandExcludesZero ? "#c9c9d6" : ad.delta > 0 ? "#8ee6b0" : "#ff8f8f";
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>ABOVE DRAFT</div>
+    <Section title="ABOVE DRAFT">
 
       {state === LADDER.RECORD_ONLY ? (
         <>
@@ -205,7 +265,7 @@ function AboveDraftPanel({ ad, series }) {
           </div>
         </>
       )}
-    </div>
+    </Section>
   );
 }
 
@@ -222,8 +282,7 @@ function BucketsPanel({ buckets }) {
   const tracking = draftTracking(buckets);
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>PICKS OR PLAY?</div>
+    <Section title="PICKS OR PLAY?">
       <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
         {order.map(([k, label, colour]) => {
           const b = buckets[k];
@@ -257,7 +316,7 @@ function BucketsPanel({ buckets }) {
         A draft counts as favoured above 56% and against you below 44%. Drafts cluster near even, so
         the outer buckets fill slowest.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -307,8 +366,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
     </button>
   );
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>PEOPLE YOU KEEP MEETING</div>
+    <Section title="PEOPLE YOU KEEP MEETING">
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))" }}>
         {squad.length > 0 && (
           <div>
@@ -333,7 +391,7 @@ function PeoplePanel({ squad, rivals, onOpen }) {
         For teammates this is a PLAYER, not a brawler — the brawler version is in
         &ldquo;best alongside you&rdquo; above.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -351,8 +409,7 @@ function FingerprintPanel({ rows, n }) {
   const top = rows.find(r => r.notable && r.diff > 0);
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>YOUR DRAFT FINGERPRINT</div>
+    <Section title="YOUR DRAFT FINGERPRINT">
 
       <div style={{ display: "grid", gap: 7 }}>
         {rows.filter(r => r.mine > 0 || r.theirs > 0.02).map(r => (
@@ -392,7 +449,7 @@ function FingerprintPanel({ rows, n }) {
         Share of picks, not win rate — so this is meaningful long before any rate is.
         {n < 20 && ` Differences aren't called out until 20 drafts; you have ${n}.`}
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -408,8 +465,7 @@ function NemesisPanel({ table }) {
   const worst = table.rows.slice(0, 6);
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>WHAT BEATS YOUR {formatBrawlerName(table.brawler).toUpperCase()}</div>
+    <Section title={<>WHAT BEATS YOUR {formatBrawlerName(table.brawler).toUpperCase()}</>}>
 
       <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c", marginBottom: 11 }}>
         Your most-drafted brawler — {table.played} draft{table.played === 1 ? "" : "s"}.
@@ -450,7 +506,7 @@ function NemesisPanel({ table }) {
         Your own column needs {table.personalMin} drafts against a brawler before it becomes a
         percentage — until then it shows the raw record and how far off it is.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -487,8 +543,7 @@ export function TrophyCurve({ snapshots }) {
   const days = Math.max(1, Math.round((t1 - t0) / 86400000));
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>TROPHY HISTORY</div>
+    <Section title="TROPHY HISTORY">
       <div style={{ display: "flex", alignItems: "baseline", gap: 11, flexWrap: "wrap", marginBottom: 10 }}>
         <span style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 800, color: "#ffce7a" }}>
           {pts[pts.length - 1].v.toLocaleString("en-US")}
@@ -505,7 +560,7 @@ export function TrophyCurve({ snapshots }) {
         One point a day from when tracking started — free for everyone, no account needed.
         {pts.length < 7 && ` ${pts.length} days so far; the shape gets meaningful after a week or two.`}
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -634,8 +689,7 @@ function ClassDonutPanel({ series }) {
   const base = baselineRate(series);
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>WHAT YOU PLAY · SHARE OF DRAFTS</div>
+    <Section title="WHAT YOU PLAY · SHARE OF DRAFTS">
       <DonutChart
         size={180}
         thickness={30}
@@ -653,7 +707,7 @@ function ClassDonutPanel({ series }) {
         that class once it clears 15 drafts, green if it beats your own {pct(base)}{" "}
         overall — otherwise it shows the draft count so far.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -665,8 +719,7 @@ function VsClassPanel({ series }) {
   const worst = [...rows].reverse().find((r) => r.qualified);
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>HOW YOU DO AGAINST EACH CLASS</div>
+    <Section title="HOW YOU DO AGAINST EACH CLASS">
       <RateRows rows={rows} max={8} showRate labelOf={(r) => classLabel(r.key) || r.key} />
       {best && worst && best.key !== worst.key && (
         <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
@@ -681,7 +734,7 @@ function VsClassPanel({ series }) {
         once — the unit is the draft, and double-counting would shrink the error bar on a
         sample that never grew.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -692,8 +745,7 @@ function MatchupPanel({ series }) {
   if (vs.length < PANEL_MIN_ROWS && wth.length < PANEL_MIN_ROWS) return null;
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>SPECIFIC BRAWLERS</div>
+    <Section title="SPECIFIC BRAWLERS">
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {vs.length >= PANEL_MIN_ROWS && (
           <div>
@@ -724,7 +776,7 @@ function MatchupPanel({ series }) {
         Only brawlers you have met at least 8 times. At a typical sample very few qualify;
         that is the honest state of this data, not a missing feature.
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -744,8 +796,7 @@ function ContextPanel({ series }) {
   ];
 
   return (
-    <div style={CARD}>
-      <div style={EYEBROW}>WHERE YOU PLAY</div>
+    <Section title="WHERE YOU PLAY">
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {modes.length > 0 && (
           <div>
@@ -799,99 +850,98 @@ function ContextPanel({ series }) {
         drafts, which cannot separate a real weakness from a run of bad luck. A mode pools six
         times as many games, and a gap is only listed when it beats the cell&apos;s own error.
       </div>
-    </div>
+    </Section>
   );
 }
 
-/**
- * Who you actually face, and what the field answers them with.
- *
- * Sorted by ENCOUNTERS rather than by how badly each beats you. The brawler
- * you meet in a third of your games is worth preparing for at an even record;
- * the one that crushes you twice a season is not. "You lose to" in the panel
- * above already covers the other ordering.
- *
- * The counter column is the FIELD's answer, not yours — it comes from
- * vs_brawler over the whole bracket. It is not filtered to brawlers you own or
- * play, because ownership is invisible to us and quietly withholding the real
- * answer would be worse than naming one you cannot pick yet.
- */
-function EncounterPanel({ series, intel }) {
-  const rows = useMemo(() => mostEncountered(series, intel, 6), [series, intel]);
-  if (!intel || rows.length < 3) return null;
-
-  return (
-    <div style={CARD}>
-      <div style={EYEBROW}>WHO YOU FACE MOST · AND WHAT BEATS THEM</div>
-
-      <div style={{ display: "grid", gap: 6 }}>
-        {rows.map((r) => (
-          <div
-            key={r.key}
-            style={{
-              display: "grid", gap: 10, alignItems: "center",
-              gridTemplateColumns: "minmax(0,1.1fr) 62px minmax(0,1.2fr)",
-              padding: "8px 11px", borderRadius: 10,
-              background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)",
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-              <BrawlerIcon name={r.key} size={24} />
-              <span style={{ minWidth: 0 }}>
-                <span style={{
-                  display: "block", fontSize: 12.5, color: "#e2e2ec",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                  {formatBrawlerName(r.key)}
-                </span>
-                <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>
-                  {r.n} faced
-                </span>
-              </span>
-            </span>
-
-            <span style={{ fontFamily: MONO, fontSize: 11, textAlign: "right" }}>
-              <span style={{
-                display: "block", fontWeight: 700,
-                color: r.qualified ? (r.delta >= 0 ? "#8ee6b0" : "#ff8f8f") : "#6b6d7c",
-              }}>
-                {Math.round(r.raw * 100)}%
-              </span>
-              <span style={{ fontSize: 10, color: "#7c7e8f" }}>
-                {r.wins}&ndash;{r.n - r.wins}
-              </span>
-            </span>
-
-            <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, justifyContent: "flex-end" }}>
-              {r.counters.length ? (
-                r.counters.map((c) => (
-                  <span key={c.brawler} title={`${formatBrawlerName(c.brawler)} wins ${c.rate.toFixed(1)}% of ${c.picks.toLocaleString("en-US")} games vs ${formatBrawlerName(r.key)}`}
-                        style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                    <BrawlerIcon name={c.brawler} size={20} />
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0" }}>
-                      {c.rate.toFixed(0)}%
-                    </span>
-                  </span>
-                ))
-              ) : (
-                <span style={{ fontFamily: MONO, fontSize: 10, color: "#6b6d7c" }}>no clear answer</span>
-              )}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div style={NOTE}>
-        Left is how often you meet them and your record. Right is what the field beats them
-        with — a brawler needs 200+ games into that matchup and a 53%+ edge to be listed, so
-        &ldquo;no clear answer&rdquo; means the matchup genuinely has no strong counter rather
-        than that we lack data. These are the bracket&apos;s answers, not filtered to brawlers
-        you own or play.
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Who you actually face, and what the field answers them with.
+ *
+ * Sorted by ENCOUNTERS rather than by how badly each beats you. The brawler
+ * you meet in a third of your games is worth preparing for at an even record;
+ * the one that crushes you twice a season is not. "You lose to" in the panel
+ * above already covers the other ordering.
+ *
+ * The counter column is the FIELD's answer, not yours — it comes from
+ * vs_brawler over the whole bracket. It is not filtered to brawlers you own or
+ * play, because ownership is invisible to us and quietly withholding the real
+ * answer would be worse than naming one you cannot pick yet.
+ */
+function EncounterPanel({ series, intel }) {
+  const rows = useMemo(() => mostEncountered(series, intel, 6), [series, intel]);
+  if (!intel || rows.length < 3) return null;
+
+  return (
+    <Section title="WHO YOU FACE MOST · AND WHAT BEATS THEM">
+
+      <div style={{ display: "grid", gap: 6 }}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            style={{
+              display: "grid", gap: 10, alignItems: "center",
+              gridTemplateColumns: "minmax(0,1.1fr) 62px minmax(0,1.2fr)",
+              padding: "8px 11px", borderRadius: 10,
+              background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+              <BrawlerIcon name={r.key} size={24} />
+              <span style={{ minWidth: 0 }}>
+                <span style={{
+                  display: "block", fontSize: 12.5, color: "#e2e2ec",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {formatBrawlerName(r.key)}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>
+                  {r.n} faced
+                </span>
+              </span>
+            </span>
+
+            <span style={{ fontFamily: MONO, fontSize: 11, textAlign: "right" }}>
+              <span style={{
+                display: "block", fontWeight: 700,
+                color: r.qualified ? (r.delta >= 0 ? "#8ee6b0" : "#ff8f8f") : "#6b6d7c",
+              }}>
+                {Math.round(r.raw * 100)}%
+              </span>
+              <span style={{ fontSize: 10, color: "#7c7e8f" }}>
+                {r.wins}&ndash;{r.n - r.wins}
+              </span>
+            </span>
+
+            <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, justifyContent: "flex-end" }}>
+              {r.counters.length ? (
+                r.counters.map((c) => (
+                  <span key={c.brawler} title={`${formatBrawlerName(c.brawler)} wins ${c.rate.toFixed(1)}% of ${c.picks.toLocaleString("en-US")} games vs ${formatBrawlerName(r.key)}`}
+                        style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                    <BrawlerIcon name={c.brawler} size={20} />
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0" }}>
+                      {c.rate.toFixed(0)}%
+                    </span>
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontFamily: MONO, fontSize: 10, color: "#6b6d7c" }}>no clear answer</span>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={NOTE}>
+        Left is how often you meet them and your record. Right is what the field beats them
+        with — a brawler needs 200+ games into that matchup and a 53%+ edge to be listed, so
+        &ldquo;no clear answer&rdquo; means the matchup genuinely has no strong counter rather
+        than that we lack data. These are the bracket&apos;s answers, not filtered to brawlers
+        you own or play.
+      </div>
+    </Section>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
