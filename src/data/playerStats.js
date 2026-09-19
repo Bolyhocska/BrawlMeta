@@ -565,3 +565,165 @@ export function nemesisTable(series, intelligence) {
   rows.sort((a, b) => a.popRate - b.popRate);
   return { brawler, played, rows, personalMin: NEMESIS_PERSONAL_MIN };
 }
+
+// ── OP-3 opponent, teammate and context breakdowns ───────────────────────────
+// Everything below answers "where are you better or worse than YOUR OWN
+// normal", so every rate is shrunk toward the player's own overall series win
+// rate — not toward 50% and not toward the population. The question is not
+// "are you good", it is "is this matchup different for you", and the player's
+// baseline is what makes that difference meaningful.
+//
+// SAMPLE REALITY, measured 2026-09-19 over 1,224 tracked players. The median
+// player has 151 rows (~68 series) and the heaviest has 561 (~250 series):
+//
+//   breakdown          heaviest        median
+//   enemy brawler      27 at >=20      1 at >=20
+//   teammate brawler   28 at >=20      2 at >=20
+//   own brawler x mode  6 at >=15      0 at >=15
+//   own brawler x MAP   best cell 9    best cell 1-2
+//
+// Two consequences are baked in below. Per-CLASS works for everyone (seven
+// buckets over three enemies a game), which is why the class panels carry the
+// page. Per-BRAWLER is real only for heavy players, so those panels sort by
+// shrunk delta, always print n, and hide entirely below a floor. Own-brawler
+// x MAP is NOT built at any floor: the best cell in the entire database is 9
+// series, so the honest answer to "am I worse with him on this map" is that
+// nobody has played enough for anyone to know. Brawler x MODE is offered
+// instead — six buckets rather than twenty — and still gated.
+
+// Floors, in SERIES. Below these a bucket is counted but never rated.
+export const VS_BRAWLER_MIN = 8;
+export const WITH_BRAWLER_MIN = 8;
+export const CLASS_MIN = 15;
+export const MODE_MIN = 10;
+export const MAP_MIN = 10;
+export const OWN_BRAWLER_MIN = 8;
+// A panel needs this many qualifying rows before it is worth rendering at all.
+export const PANEL_MIN_ROWS = 3;
+
+/** Overall series win rate — the baseline every breakdown shrinks toward. */
+export function baselineRate(series) {
+  if (!series.length) return 0.5;
+  return series.filter(s => s.won).length / series.length;
+}
+
+/**
+ * Generic "bucket the series, shrink each bucket" pass.
+ * @param series  drafts
+ * @param keysOf  (s) => string[]  buckets this series contributes to
+ * @param min     floor in series before a bucket is rated
+ */
+function bucketed(series, keysOf, min) {
+  const base = baselineRate(series);
+  const acc = {};
+  for (const s of series) {
+    for (const key of keysOf(s) || []) {
+      if (!key) continue;
+      const a = acc[key] || (acc[key] = { key, n: 0, wins: 0 });
+      a.n += 1;
+      if (s.won) a.wins += 1;
+    }
+  }
+  return Object.values(acc).map(a => {
+    const sh = shrink(a.wins, a.n, base);
+    return {
+      ...a,
+      raw: a.n ? a.wins / a.n : 0,
+      rate: sh.rate,
+      delta: sh.delta,            // vs the player's own normal
+      se: sePoints(a.n),
+      qualified: a.n >= min,
+    };
+  }).sort((x, y) => y.delta - x.delta);
+}
+
+/** Win rate against each specific ENEMY brawler. "Who do you beat?" */
+export function vsBrawlers(series) {
+  return bucketed(series, s => s.enemyNames, VS_BRAWLER_MIN);
+}
+
+/**
+ * Win rate when a TEAMMATE picked each brawler. "Your best synergy pick."
+ * Note this is a teammate's brawler, not a teammate player — squadAndRivals
+ * already covers the people.
+ */
+export function withBrawlers(series) {
+  return bucketed(series, s => s.teamNames, WITH_BRAWLER_MIN);
+}
+
+/** Win rate by the class of the brawler YOU played. */
+export function ownClassRates(series) {
+  return bucketed(series, s => [draftClassOf(s.brawler)], CLASS_MIN);
+}
+
+/**
+ * Win rate against each enemy CLASS — "how do you do into throwers".
+ * A game with two throwers counts once for THROWER, not twice: the unit is a
+ * series outcome, and counting it twice would make the same win support two
+ * observations and shrink the error bar on a sample that never grew.
+ */
+export function vsClassRates(series) {
+  return bucketed(series, s => [...new Set((s.enemyNames || []).map(draftClassOf))], CLASS_MIN);
+}
+
+/** Win rate per game mode. Six buckets, so this survives a median sample. */
+export function modeRates(series) {
+  return bucketed(series, s => [s.mode], MODE_MIN);
+}
+
+/** Win rate per map. Thin for most players — always shown with n. */
+export function mapRates(series) {
+  return bucketed(series, s => [s.map], MAP_MIN);
+}
+
+/** Win rate on each brawler the player actually drafts. */
+export function ownBrawlerRates(series) {
+  return bucketed(series, s => [s.brawler], OWN_BRAWLER_MIN);
+}
+
+/**
+ * Own brawler x MODE, for "you are fine with him generally but not here".
+ * Deliberately mode and not map — see the sample table above; the best
+ * brawler x map cell in the whole database is 9 series.
+ *
+ * Only returns a row where BOTH the overall brawler rate and the mode cell
+ * clear their floors, and where the cell differs from that brawler's own
+ * overall rate by more than the cell's own standard error. Without that last
+ * test every player has a "weak spot" that is pure noise.
+ */
+export function brawlerModeOutliers(series, minCell = 12) {
+  const overall = {};
+  for (const r of ownBrawlerRates(series)) overall[r.key] = r;
+
+  const acc = {};
+  for (const s of series) {
+    if (!s.brawler || !s.mode) continue;
+    const k = `${s.brawler}|${s.mode}`;
+    const a = acc[k] || (acc[k] = { brawler: s.brawler, mode: s.mode, n: 0, wins: 0 });
+    a.n += 1;
+    if (s.won) a.wins += 1;
+  }
+
+  const out = [];
+  for (const a of Object.values(acc)) {
+    const base = overall[a.brawler];
+    if (!base || !base.qualified || a.n < minCell) continue;
+    const sh = shrink(a.wins, a.n, base.rate);
+    const gapPts = (sh.rate - base.rate) * 100;
+    if (Math.abs(gapPts) <= sePoints(a.n)) continue;   // inside the noise floor
+    out.push({
+      ...a, brawlerRate: base.rate, brawlerN: base.n,
+      rate: sh.rate, gapPts, se: sePoints(a.n),
+    });
+  }
+  return out.sort((x, y) => Math.abs(y.gapPts) - Math.abs(x.gapPts));
+}
+
+/** Pick SHARE and win rate per own class together — feeds the donut. */
+export function classSplit(series) {
+  const rates = ownClassRates(series);
+  const total = rates.reduce((sum, r) => sum + r.n, 0) || 1;
+  return rates
+    .map(r => ({ ...r, label: classLabel(r.key) || r.key, share: r.n / total }))
+    .sort((a, b) => b.n - a.n);
+}

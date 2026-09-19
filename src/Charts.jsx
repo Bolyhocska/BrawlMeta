@@ -380,3 +380,97 @@ export function ScatterChart({ points = [], height = 360, emptyMessage = "No dat
     </div>
   );
 }
+
+// ─── Donut ───────────────────────────────────────────────────────────────────
+// Pick share by class, with win rate carried in the legend rather than in the
+// geometry. A pie can encode exactly ONE quantity in its angles, and here that
+// is share-of-picks. Colouring slices by win rate as well was tried and
+// dropped: it makes a large slice of a bad class look like a large problem
+// when it is really just a preference, and it collides with the site's
+// green/red = above/below-50 convention used everywhere else.
+//
+// Sub-2% slices are pooled into "Other" — below that a slice is thinner than
+// its own border and reads as a rendering artefact.
+export function DonutChart({
+  rows = [], size = 190, thickness = 30, centreLabel, centreSub,
+  emptyMessage = "No data.", minShare = 0.02,
+}) {
+  if (!rows.length) {
+    return <div style={{ fontFamily: MONO, fontSize: 11.5, color: MUTED, padding: "18px 0" }}>{emptyMessage}</div>;
+  }
+
+  const palette = [CHART_COLORS.purple, CHART_COLORS.blue, CHART_COLORS.green,
+                   CHART_COLORS.amber, CHART_COLORS.red, "#6ee7d7", "#f0a6ff", "#a3a3b8"];
+
+  const total = rows.reduce((sum, r) => sum + (r.value || 0), 0);
+  if (total <= 0) {
+    return <div style={{ fontFamily: MONO, fontSize: 11.5, color: MUTED, padding: "18px 0" }}>{emptyMessage}</div>;
+  }
+
+  const big = rows.filter(r => r.value / total >= minShare);
+  const smallTotal = rows.reduce((sum, r) => sum + (r.value / total < minShare ? r.value : 0), 0);
+  const slices = smallTotal > 0
+    ? [...big, { label: "Other", value: smallTotal, pooled: true }]
+    : big;
+
+  const r = size / 2;
+  const inner = r - thickness;
+  // -90deg so the first slice starts at twelve o'clock, which is where the eye
+  // begins and what makes the legend order read as the slice order.
+  let angle = -Math.PI / 2;
+  const arcs = slices.map((s, i) => {
+    const frac = s.value / total;
+    const start = angle;
+    const end = angle + frac * Math.PI * 2;
+    angle = end;
+    const large = end - start > Math.PI ? 1 : 0;
+    const p = (rad, radius) => [r + radius * Math.cos(rad), r + radius * Math.sin(rad)];
+    const [x0, y0] = p(start, r), [x1, y1] = p(end, r);
+    const [x2, y2] = p(end, inner), [x3, y3] = p(start, inner);
+    // A single slice covering the whole circle cannot be drawn as one arc —
+    // start and end coincide, so the path collapses to nothing. Two half arcs.
+    const d = frac >= 0.9999
+      ? `M ${r} ${r - r} A ${r} ${r} 0 1 1 ${r} ${r + r} A ${r} ${r} 0 1 1 ${r} ${r - r} `
+        + `M ${r} ${r - inner} A ${inner} ${inner} 0 1 0 ${r} ${r + inner} A ${inner} ${inner} 0 1 0 ${r} ${r - inner} Z`
+      : `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${inner} ${inner} 0 ${large} 0 ${x3} ${y3} Z`;
+    return { ...s, d, frac, color: s.pooled ? CHART_COLORS.muted : (s.color || palette[i % palette.length]) };
+  });
+
+  return (
+    <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }} role="img">
+        {arcs.map((a, i) => (
+          <path key={i} d={a.d} fill={a.color} fillRule="evenodd"
+                stroke="#0d0d14" strokeWidth="1.5">
+            <title>{`${a.label}: ${(a.frac * 100).toFixed(1)}%`}</title>
+          </path>
+        ))}
+        {centreLabel != null && (
+          <text x={r} y={r - 2} textAnchor="middle" fontFamily={MONO}
+                fontSize={20} fontWeight="700" fill={TEXT}>{centreLabel}</text>
+        )}
+        {centreSub != null && (
+          <text x={r} y={r + 15} textAnchor="middle" fontFamily={MONO}
+                fontSize={10} fill={DIM}>{centreSub}</text>
+        )}
+      </svg>
+
+      <div style={{ display: "grid", gap: 7, minWidth: 190, flex: "1 1 200px" }}>
+        {arcs.map((a, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11.5 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: a.color, flexShrink: 0 }} />
+            <span style={{ color: TEXT, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {a.label}
+            </span>
+            <span style={{ color: DIM, flexShrink: 0 }}>{(a.frac * 100).toFixed(0)}%</span>
+            {a.note != null && (
+              <span style={{ color: a.noteColor || DIM, flexShrink: 0, minWidth: 52, textAlign: "right" }}>
+                {a.note}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

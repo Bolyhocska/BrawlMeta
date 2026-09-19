@@ -17,10 +17,13 @@ import {
   toSeries, gradeSeries, aboveDraft, draftBuckets, eventFacts,
   squadAndRivals, ladderState, LADDER, classFingerprint, nemesisTable,
   loadIntelligence, DEFAULT_BRACKET, draftTracking,
+  baselineRate, vsBrawlers, withBrawlers, vsClassRates, modeRates, mapRates,
+  brawlerModeOutliers, classSplit, PANEL_MIN_ROWS,
 } from "./data/playerStats";
+import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
 import { supabase } from "./appCore";
-import { formatBrawlerName } from "./appCore";
+import { formatBrawlerName, formatMode } from "./appCore";
 
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
@@ -420,6 +423,237 @@ export function CoverageLine({ tracked, seriesCount }) {
  *   through to the full public profile. /profile is a hub — it should summarise
  *   and route, not re-render everything that lives on /player/:tag.
  */
+// ── OP-3 breakdowns: opponents, teammates, context ───────────────────────────
+// All of these read "against YOUR OWN normal", so a +6pp row means six points
+// better than this player's overall rate, not six points above 50. That framing
+// is what makes them useful at these sample sizes: a 48% player who is 54% into
+// throwers has learned something real about themselves.
+//
+// Every row prints its record, and the delta is the SHRUNK one. Rows under
+// their floor are still listed — the count is honest information — but greyed
+// and never given a percentage.
+
+const pct = (x) => `${(x * 100).toFixed(0)}%`;
+const signed = (pts) => `${pts >= 0 ? "+" : ""}${pts.toFixed(1)}pp`;
+const deltaColor = (pts, qualified) =>
+  !qualified ? "#6b6d7c" : pts >= 0 ? "#8ee6b0" : "#ff8f8f";
+
+/** One list of bucketed rates. Shared by every breakdown below. */
+function RateRows({ rows, labelOf = (r) => r.key, max = 6, emptyMessage = "Nothing yet." }) {
+  const shown = rows.slice(0, max);
+  if (!shown.length) {
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: "#7c7e8f" }}>{emptyMessage}</div>;
+  }
+  // Scale from RATED rows only. An unqualified row's shrunk delta can be the
+  // largest on the panel (a 11-2 record shrinks to a big number on a small n),
+  // and letting it set the scale draws the eye straight to the one row we are
+  // deliberately not rating.
+  const rated = shown.filter((r) => r.qualified);
+  const widest = Math.max(...(rated.length ? rated : shown).map((r) => Math.abs(r.delta * 100)), 3);
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      {shown.map((r) => {
+        const pts = r.delta * 100;
+        const col = deltaColor(pts, r.qualified);
+        return (
+          <div key={r.key} style={{ display: "grid", gridTemplateColumns: "1fr 64px 46px", gap: 8, alignItems: "center" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontFamily: MONO, fontSize: 11.5, color: r.qualified ? "#e9e9f2" : "#8a8a9c",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {labelOf(r)}
+              </div>
+              {/* Centred on the player's own baseline, so left of centre is
+                  literally "worse than you usually are". */}
+              <div style={{ position: "relative", height: 5, borderRadius: 999, background: "rgba(255,255,255,.05)", marginTop: 3 }}>
+                <div style={{ position: "absolute", left: "50%", top: -1, bottom: -1, width: 1, background: "rgba(255,255,255,.18)" }} />
+                {/* No bar at all below the floor. A dimmed bar still asserts a
+                    magnitude, and an 11-2 record shrinks to a large delta, so the
+                    row we are explicitly refusing to rate was drawing the longest
+                    bar on the panel. The record on the right is the honest output. */}
+                {r.qualified && (
+                  <div style={{
+                    position: "absolute", top: 0, bottom: 0, borderRadius: 999, background: col,
+                    left: pts >= 0 ? "50%" : `${50 - Math.min(Math.abs(pts) / widest, 1) * 50}%`,
+                    width: `${Math.min(Math.abs(pts) / widest, 1) * 50}%`,
+                  }} />
+                )}
+              </div>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: col, textAlign: "right" }}>
+              {r.qualified ? signed(pts) : "—"}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f", textAlign: "right" }}>
+              {r.wins}-{r.n - r.wins}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Pick share by class as a donut, with each class's own win rate alongside. */
+function ClassDonutPanel({ series }) {
+  const rows = classSplit(series);
+  if (rows.length < 2) return null;
+  const base = baselineRate(series);
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>WHAT YOU PLAY · SHARE OF DRAFTS</div>
+      <DonutChart
+        size={180}
+        thickness={30}
+        centreLabel={series.length}
+        centreSub="drafts"
+        rows={rows.map((r) => ({
+          label: r.label,
+          value: r.n,
+          note: r.qualified ? pct(r.rate) : `${r.n}`,
+          noteColor: r.qualified ? (r.rate >= base ? "#8ee6b0" : "#ff8f8f") : "#6b6d7c",
+        }))}
+      />
+      <div style={NOTE}>
+        Slice size is share of your drafts. The figure on the right is your win rate on
+        that class once it clears 15 drafts, green if it beats your own {pct(base)}{" "}
+        overall — otherwise it shows the draft count so far.
+      </div>
+    </div>
+  );
+}
+
+/** Win rate INTO each enemy class — the "how do I do against throwers" panel. */
+function VsClassPanel({ series }) {
+  const rows = vsClassRates(series).filter((r) => r.n > 0);
+  if (rows.filter((r) => r.qualified).length < PANEL_MIN_ROWS) return null;
+  const best = rows.find((r) => r.qualified);
+  const worst = [...rows].reverse().find((r) => r.qualified);
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>HOW YOU DO AGAINST EACH CLASS</div>
+      <RateRows rows={rows} max={8} labelOf={(r) => classLabel(r.key) || r.key} />
+      {best && worst && best.key !== worst.key && (
+        <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+          You handle <strong style={{ color: "#8ee6b0" }}>{classLabel(best.key)}</strong> better
+          than anything else ({signed(best.delta * 100)} on your own rate), and{" "}
+          <strong style={{ color: "#ff8f8f" }}>{classLabel(worst.key)}</strong> worst (
+          {signed(worst.delta * 100)}).
+        </div>
+      )}
+      <div style={NOTE}>
+        Measured against your own overall rate, not 50%. A draft with two of a class counts
+        once — the unit is the draft, and double-counting would shrink the error bar on a
+        sample that never grew.
+      </div>
+    </div>
+  );
+}
+
+/** Best and worst specific opponents, and best teammate brawlers. */
+function MatchupPanel({ series }) {
+  const vs = vsBrawlers(series).filter((r) => r.qualified);
+  const wth = withBrawlers(series).filter((r) => r.qualified);
+  if (vs.length < PANEL_MIN_ROWS && wth.length < PANEL_MIN_ROWS) return null;
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>SPECIFIC BRAWLERS</div>
+      <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        {vs.length >= PANEL_MIN_ROWS && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8ee6b0", marginBottom: 8 }}>
+              YOU BEAT
+            </div>
+            <RateRows rows={vs.slice(0, 5)} max={5} labelOf={(r) => formatBrawlerName(r.key)} />
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ff8f8f", margin: "14px 0 8px" }}>
+              YOU LOSE TO
+            </div>
+            <RateRows rows={vs.slice(-5).reverse()} max={5} labelOf={(r) => formatBrawlerName(r.key)} />
+          </div>
+        )}
+        {wth.length >= PANEL_MIN_ROWS && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#c9a6ff", marginBottom: 8 }}>
+              BEST ALONGSIDE YOU
+            </div>
+            <RateRows rows={wth.slice(0, 6)} max={6} labelOf={(r) => formatBrawlerName(r.key)} />
+            <div style={NOTE}>
+              A teammate&apos;s BRAWLER, not a teammate player — your win rate when someone on
+              your side drafted them.
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={NOTE}>
+        Only brawlers you have met at least 8 times. At a typical sample very few qualify;
+        that is the honest state of this data, not a missing feature.
+      </div>
+    </div>
+  );
+}
+
+/** Mode and map context, plus brawler-in-a-mode outliers. */
+function ContextPanel({ series }) {
+  const modes = modeRates(series).filter((r) => r.n > 0);
+  const maps = mapRates(series).filter((r) => r.qualified);
+  const outliers = brawlerModeOutliers(series);
+  if (!modes.length && !maps.length && !outliers.length) return null;
+
+  const mapRows = [...maps.slice(0, 3), ...maps.slice(-3)].filter((v, i, a) => a.indexOf(v) === i);
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>WHERE YOU PLAY</div>
+      <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        {modes.length > 0 && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
+              BY MODE
+            </div>
+            <RateRows rows={modes} max={6} labelOf={(r) => formatMode(r.key)} />
+          </div>
+        )}
+        {mapRows.length > 0 && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 8 }}>
+              {mapRows.length >= 4 ? "BEST AND WORST MAPS" : "MAPS WITH ENOUGH GAMES"}
+            </div>
+            <RateRows rows={mapRows} max={6} />
+          </div>
+        )}
+      </div>
+
+      {outliers.length > 0 && (
+        <>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ffce7a", margin: "16px 0 8px" }}>
+            A BRAWLER THAT BEHAVES DIFFERENTLY IN ONE MODE
+          </div>
+          <div style={{ display: "grid", gap: 7 }}>
+            {outliers.slice(0, 4).map((o, i) => (
+              <div key={i} style={{ fontSize: 13.5, lineHeight: 1.65, color: "#c9c9d6" }}>
+                <strong style={{ color: "#e9e9f2" }}>{formatBrawlerName(o.brawler)}</strong> is{" "}
+                {pct(o.brawlerRate)} for you overall ({o.brawlerN} drafts) but{" "}
+                <strong style={{ color: o.gapPts >= 0 ? "#8ee6b0" : "#ff8f8f" }}>{pct(o.rate)}</strong>{" "}
+                in {o.mode} ({o.n} drafts).
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div style={NOTE}>
+        Mode, not map, and that is a data limit rather than a choice: across every tracked
+        player the largest brawler-on-one-map sample in the database is 9 drafts, which
+        cannot separate a real weakness from a run of bad luck. A mode pools six times as
+        many games. Outliers are listed only when the gap beats the cell&apos;s own error.
+      </div>
+    </div>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
   const [snapshots, setSnapshots] = useState([]);
   useEffect(() => {
@@ -491,6 +725,17 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
       <AboveDraftPanel ad={ad} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}
+
+      {/* Ordered by how soon each becomes real for a typical player. Class
+          breakdowns survive a median sample (seven buckets over three enemies
+          a draft); per-brawler ones need a heavy one; each panel hides itself
+          until it has something true to say, so a thin profile simply shows
+          fewer cards rather than a wall of empty ones. */}
+      <ClassDonutPanel series={series} />
+      <VsClassPanel series={series} />
+      <ContextPanel series={series} />
+      <MatchupPanel series={series} />
+
       {intel && <NemesisPanel table={nemesisTable(series, intel)} />}
       <TrophyCurve snapshots={snapshots} />
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
