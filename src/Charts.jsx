@@ -392,15 +392,22 @@ export function ScatterChart({ points = [], height = 360, emptyMessage = "No dat
 // Sub-2% slices are pooled into "Other" — below that a slice is thinner than
 // its own border and reads as a rendering artefact.
 export function DonutChart({
-  rows = [], size = 190, thickness = 30, centreLabel, centreSub,
+  rows = [], size = 190, thickness = 26, centreLabel, centreSub,
   emptyMessage = "No data.", minShare = 0.02,
 }) {
   if (!rows.length) {
     return <div style={{ fontFamily: MONO, fontSize: 11.5, color: MUTED, padding: "18px 0" }}>{emptyMessage}</div>;
   }
 
-  const palette = [CHART_COLORS.purple, CHART_COLORS.blue, CHART_COLORS.green,
-                   CHART_COLORS.amber, CHART_COLORS.red, "#6ee7d7", "#f0a6ff", "#a3a3b8"];
+  // A restrained categorical ramp, NOT the site's CHART_COLORS. Those are
+  // tuned for one or two series against a dark ground, and seven of them
+  // side by side in a ring reads as a toy: full-saturation green, red,
+  // amber and pink at the same weight give the eye nothing to rank and the
+  // red/green pair borrows the site's good/bad meaning for what is only a
+  // preference. These hold a constant lightness and a lower saturation, so
+  // slices separate by hue alone and none of them shouts.
+  const palette = ["#7b6fc4", "#5286b5", "#489b86", "#b2924f",
+                   "#b06b78", "#5f8fa8", "#8a72ad", "#6f7183"];
 
   const total = rows.reduce((sum, r) => sum + (r.value || 0), 0);
   if (total <= 0) {
@@ -441,30 +448,38 @@ export function DonutChart({
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }} role="img">
         {arcs.map((a, i) => (
           <path key={i} d={a.d} fill={a.color} fillRule="evenodd"
-                stroke="#0d0d14" strokeWidth="1.5">
+                stroke="#0d0d14" strokeWidth="2">
             <title>{`${a.label}: ${(a.frac * 100).toFixed(1)}%`}</title>
           </path>
         ))}
         {centreLabel != null && (
-          <text x={r} y={r - 2} textAnchor="middle" fontFamily={MONO}
-                fontSize={20} fontWeight="700" fill={TEXT}>{centreLabel}</text>
+          <text x={r} y={r - 1} textAnchor="middle" fontFamily={MONO}
+                fontSize={22} fontWeight="700" fill={TEXT}>{centreLabel}</text>
         )}
         {centreSub != null && (
           <text x={r} y={r + 15} textAnchor="middle" fontFamily={MONO}
-                fontSize={10} fill={DIM}>{centreSub}</text>
+                fontSize={9.5} letterSpacing="1.2" fill={DIM}>{centreSub}</text>
         )}
       </svg>
 
       <div style={{ display: "grid", gap: 7, minWidth: 190, flex: "1 1 200px" }}>
         {arcs.map((a, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: 11.5 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: a.color, flexShrink: 0 }} />
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 11.5,
+            paddingBottom: 5,
+            borderBottom: i < arcs.length - 1 ? "1px solid rgba(255,255,255,.05)" : "none",
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: a.color, flexShrink: 0 }} />
             <span style={{ color: TEXT, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {a.label}
             </span>
-            <span style={{ color: DIM, flexShrink: 0 }}>{(a.frac * 100).toFixed(0)}%</span>
+            <span style={{ color: DIM, flexShrink: 0, minWidth: 32, textAlign: "right",
+                           fontVariantNumeric: "tabular-nums" }}>
+              {(a.frac * 100).toFixed(0)}%
+            </span>
             {a.note != null && (
-              <span style={{ color: a.noteColor || DIM, flexShrink: 0, minWidth: 52, textAlign: "right" }}>
+              <span style={{ color: a.noteColor || DIM, flexShrink: 0, minWidth: 46,
+                             textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
                 {a.note}
               </span>
             )}

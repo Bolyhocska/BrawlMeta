@@ -727,3 +727,138 @@ export function classSplit(series) {
     .map(r => ({ ...r, label: classLabel(r.key) || r.key, share: r.n / total }))
     .sort((a, b) => b.n - a.n);
 }
+
+// ── OP-5 who you face, and what answers them ─────────────────────────────────
+
+// Field pairs below this are noise even at 1.5M matches — same floor the
+// nemesis table uses, and for the same reason: a 20-game pair carries ~11
+// points of error, which cannot support the word "counter".
+const COUNTER_MIN_PICKS = 200;
+// A counter has to actually beat the target by a margin that clears its own
+// error, not merely be above 50.
+const COUNTER_MIN_RATE = 53;
+
+/**
+ * Which brawlers the FIELD beats `enemy` with.
+ *
+ * Read off `vs_brawler`, which stores each brawler's win rate against every
+ * other, so "what counters X" is a scan for high rates against X rather than a
+ * separate table. Note this is the FIELD's answer, not the player's: a counter
+ * only works if you can actually play it, and nothing here knows that.
+ *
+ * Deliberately NOT filtered to brawlers the player owns or drafts — ownership
+ * is invisible to us, and silently hiding the real answer because we guessed
+ * they lack it would be worse than naming it.
+ */
+export function bestCountersTo(enemy, intelligence, limit = 2) {
+  const target = (enemy || "").toUpperCase();
+  if (!target || !intelligence) return [];
+  const out = [];
+  for (const [brawler, row] of Object.entries(intelligence)) {
+    if (brawler === target) continue;
+    const cell = row?.vs_brawler?.[target] || row?.vs_brawler?.[enemy];
+    if (!cell) continue;
+    const picks = Number(cell.picks) || 0;
+    const rate = parseFloat(cell.winRate);
+    if (picks < COUNTER_MIN_PICKS || !Number.isFinite(rate) || rate < COUNTER_MIN_RATE) continue;
+    out.push({ brawler, rate, picks });
+  }
+  return out.sort((a, b) => b.rate - a.rate).slice(0, limit);
+}
+
+/**
+ * The enemy brawlers you meet most, with your record and the field's answer.
+ * Sorted by ENCOUNTERS, not by how badly they beat you — the point is "this is
+ * what your ladder actually looks like", and the most common opponent is worth
+ * preparing for even at a neutral record.
+ */
+export function mostEncountered(series, intelligence, limit = 6) {
+  const base = baselineRate(series);
+  const acc = {};
+  for (const s of series) {
+    for (const e of s.enemyNames || []) {
+      if (!e) continue;
+      const a = acc[e] || (acc[e] = { key: e, n: 0, wins: 0 });
+      a.n += 1;
+      if (s.won) a.wins += 1;
+    }
+  }
+  return Object.values(acc)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, limit)
+    .map((a) => {
+      const sh = shrink(a.wins, a.n, base);
+      return {
+        ...a,
+        raw: a.wins / a.n,
+        rate: sh.rate,
+        delta: sh.delta,
+        qualified: a.n >= VS_BRAWLER_MIN,
+        counters: bestCountersTo(a.key, intelligence),
+      };
+    });
+}
+
+/**
+ * Where a negative Above-Draft gap is CONCENTRATED.
+ *
+ * Above Draft says the picks were fine and the games were lost anyway; it
+ * cannot say why, because nothing in a battlelog records execution. What the
+ * data CAN do is say where those losses cluster, which is a real lead rather
+ * than a guess. Returns the worst mode and worst enemy class that clear their
+ * own floors, or nulls.
+ */
+export function lossConcentration(series) {
+  const modes = modeRates(series).filter((r) => r.qualified);
+  const classes = vsClassRates(series).filter((r) => r.qualified);
+  const worstMode = modes.length ? modes[modes.length - 1] : null;
+  const worstClass = classes.length ? classes[classes.length - 1] : null;
+  return {
+    worstMode: worstMode && worstMode.delta < 0 ? worstMode : null,
+    worstClass: worstClass && worstClass.delta < 0 ? worstClass : null,
+  };
+}
+
+/**
+ * For the player's weakest mode, what they actually bring to it versus what
+ * they bring to the modes they win.
+ *
+ * Deliberately built from the player's OWN data rather than a "best brawlers
+ * in heist" list. A generic recommendation is available on the tier list and
+ * says nothing about them; "you take Control into your worst mode twice as
+ * often as into your best ones" is specific, checkable, and actionable without
+ * assuming anything about which brawlers they own.
+ */
+export function modeImprovement(series, minModeDrafts = 10) {
+  const modes = modeRates(series).filter((r) => r.qualified);
+  if (modes.length < 2) return null;
+  const worst = modes[modes.length - 1];
+  if (worst.delta >= 0 || worst.n < minModeDrafts) return null;
+
+  const good = new Set(modes.filter((m) => m.delta > 0).map((m) => m.key));
+  if (!good.size) return null;
+
+  const mix = (pred) => {
+    const c = {};
+    let total = 0;
+    for (const s of series) {
+      if (!pred(s)) continue;
+      const cls = draftClassOf(s.brawler);
+      c[cls] = (c[cls] || 0) + 1;
+      total += 1;
+    }
+    return { c, total };
+  };
+  const bad = mix((s) => s.mode === worst.key);
+  const ok = mix((s) => good.has(s.mode));
+  if (!bad.total || !ok.total) return null;
+
+  let over = null;
+  for (const cls of new Set([...Object.keys(bad.c), ...Object.keys(ok.c)])) {
+    const gap = (bad.c[cls] || 0) / bad.total - (ok.c[cls] || 0) / ok.total;
+    if (!over || gap > over.gap) over = { cls, gap, inBad: (bad.c[cls] || 0), badTotal: bad.total };
+  }
+  // Under a 15-point share gap this is just drafting noise, not a habit.
+  if (!over || over.gap < 0.15) return { mode: worst, over: null };
+  return { mode: worst, over };
+}

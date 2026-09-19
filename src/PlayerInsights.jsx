@@ -19,10 +19,10 @@ import {
   loadIntelligence, DEFAULT_BRACKET, draftTracking,
   baselineRate, vsBrawlers, withBrawlers, vsClassRates, modeRates, mapRates,
   brawlerModeOutliers, classSplit, PANEL_MIN_ROWS,
+  mostEncountered, lossConcentration, modeImprovement,
 } from "./data/playerStats";
 import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
-import { supabase } from "./appCore";
 import { formatBrawlerName, formatMode } from "./appCore";
 import { BrawlerIcon, MapThumb, ModeIcon } from "./MetaIcons";
 
@@ -62,7 +62,92 @@ function AboveDraftChart({ points }) {
   );
 }
 
-function AboveDraftPanel({ ad }) {
+// ── the two "so what do I do" leads ──────────────────────────────────────────
+// Both exist because a diagnosis with no lead is just a scoreboard. Both are
+// also careful about the line they must not cross: we can see WHERE results
+// go wrong, never WHY, because a battlelog records outcomes and compositions
+// and nothing about how the game was played. Every sentence below is a
+// pointer at the player's own measured splits, not coaching inferred from
+// them.
+
+/** Where a negative Above-Draft gap concentrates. */
+function LossLead({ series }) {
+  const { worstMode, worstClass } = useMemo(() => lossConcentration(series || []), [series]);
+  if (!worstMode && !worstClass) return null;
+
+  return (
+    <div style={{
+      marginTop: 11, padding: "11px 13px", borderRadius: 10,
+      background: "rgba(255,143,143,.06)", border: "1px solid rgba(255,143,143,.18)",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ff8f8f", marginBottom: 6 }}>
+        WHERE IT GOES WRONG
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+        {worstMode && (
+          <>
+            Those losses are not spread evenly — you are{" "}
+            <strong style={{ color: "#ff8f8f" }}>{signed(worstMode.delta * 100)}</strong> in{" "}
+            <strong style={{ color: "#e9e9f2" }}>{formatMode(worstMode.key)}</strong>{" "}
+            ({worstMode.wins}&ndash;{worstMode.n - worstMode.wins}).{" "}
+          </>
+        )}
+        {worstClass && (
+          <>
+            Against <strong style={{ color: "#e9e9f2" }}>{classLabel(worstClass.key)}</strong> you are{" "}
+            <strong style={{ color: "#ff8f8f" }}>{signed(worstClass.delta * 100)}</strong>{" "}
+            ({worstClass.wins}&ndash;{worstClass.n - worstClass.wins}).{" "}
+          </>
+        )}
+        Start there — it is the largest measured gap you have.
+      </div>
+      <div style={{ ...NOTE, marginTop: 8 }}>
+        This says where, not why. Positioning, trades and objective timing are not in a
+        battlelog, so nothing here can separate a bad rotation from bad luck — only tell you
+        which games to go and watch.
+      </div>
+    </div>
+  );
+}
+
+/** What the player brings to their worst mode versus their best ones. */
+function ModeLead({ series }) {
+  const lead = useMemo(() => modeImprovement(series || []), [series]);
+  if (!lead) return null;
+  const { mode, over } = lead;
+
+  return (
+    <div style={{
+      marginTop: 16, padding: "11px 13px", borderRadius: 10,
+      background: "rgba(255,206,122,.06)", border: "1px solid rgba(255,206,122,.18)",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1.4, color: "#ffce7a", marginBottom: 6 }}>
+        YOUR WEAKEST MODE
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
+        <strong style={{ color: "#e9e9f2" }}>{formatMode(mode.key)}</strong> is your worst mode at{" "}
+        {Math.round(mode.raw * 100)}% ({mode.wins}&ndash;{mode.n - mode.wins}),{" "}
+        <strong style={{ color: "#ff8f8f" }}>{signed(mode.delta * 100)}</strong> on your own rate.{" "}
+        {over ? (
+          <>
+            The clearest difference in what you bring: you draft{" "}
+            <strong style={{ color: "#e9e9f2" }}>{classLabel(over.cls)}</strong> in{" "}
+            {Math.round((over.inBad / over.badTotal) * 100)}% of your {formatMode(mode.key)} games,
+            about {Math.round(over.gap * 100)} points more than in the modes you win. Worth trying a
+            draft there that looks more like the ones that work for you.
+          </>
+        ) : (
+          <>
+            Your draft mix there looks much like the modes you win, so this is not a pick-pattern
+            problem — compare it against the map pages for {formatMode(mode.key)} instead.
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AboveDraftPanel({ ad, series }) {
   if (!ad.n) return null;
   const state = ladderState(ad.n, 10, ad.bandExcludesZero);
   const sign = ad.delta >= 0 ? "+" : "";
@@ -105,6 +190,12 @@ function AboveDraftPanel({ ad }) {
                   : "You're losing games your drafts had already won. The picks aren't the problem.")
               : "So far, indistinguishable from your drafts — which is most players. Come back with more games."}
           </div>
+
+          {/* Nothing in a battlelog records execution, so this panel cannot say
+              WHY a won draft was lost. What it can do is say where those losses
+              cluster, which is a lead rather than a guess — and saying "we
+              cannot see the rest" is the honest other half. */}
+          {ad.bandExcludesZero && ad.delta < 0 && <LossLead series={series} />}
 
           <div style={NOTE}>
             Each draft is graded by the same engine the Draft Assistant uses, on measured win rates
@@ -203,8 +294,15 @@ function PeoplePanel({ squad, rivals, onOpen }) {
       fontFamily: MONO, fontSize: 11,
     }}>
       <span>{p.tag}</span>
-      <span style={{ color: "#8b8b9c" }}>
-        {kind === "squad" ? `${p.n} together` : `${p.n} against · ${p.wins}W`}
+      <span style={{ color: "#8b8b9c", display: "flex", gap: 8, alignItems: "baseline" }}>
+        {/* A rate only once the pair has 10 together/against — below that the
+            count is the honest output and a percentage would be theatre. */}
+        {p.n >= 10 && (
+          <span style={{ color: (p.wins / p.n) >= 0.5 ? "#8ee6b0" : "#ff8f8f", fontWeight: 700 }}>
+            {Math.round((p.wins / p.n) * 100)}%
+          </span>
+        )}
+        <span>{p.wins}&ndash;{p.n - p.wins} {kind === "squad" ? "together" : "against"}</span>
       </span>
     </button>
   );
@@ -229,7 +327,12 @@ function PeoplePanel({ squad, rivals, onOpen }) {
           </div>
         )}
       </div>
-      <div style={NOTE}>Counts of encounters, not win rates — so these need no sample size to be true.</div>
+      <div style={NOTE}>
+        Your record with or against each person. The percentage appears once you have
+        met them 10 times; the raw record below that is true at any sample.
+        For teammates this is a PLAYER, not a brawler — the brawler version is in
+        &ldquo;best alongside you&rdquo; above.
+      </div>
     </div>
   );
 }
@@ -320,7 +423,12 @@ function NemesisPanel({ table }) {
             padding: "9px 12px", borderRadius: 10,
             background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)",
           }}>
-            <span style={{ fontSize: 13, color: "#e2e2ec" }}>{formatBrawlerName(r.enemy)}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#e2e2ec", minWidth: 0 }}>
+              <BrawlerIcon name={r.enemy} size={24} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {formatBrawlerName(r.enemy)}
+              </span>
+            </span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: r.popRate < 45 ? "#ff8f8f" : "#c9c9d6", textAlign: "right" }}>
               {r.popRate.toFixed(1)}%
               {/* the sample is what justifies trusting this column, so show it */}
@@ -354,7 +462,13 @@ function NemesisPanel({ table }) {
 // been the same shape. Boost only buys per-brawler detail daily instead of
 // weekly; the curve itself is never withheld.
 
-function TrophyCurve({ snapshots }) {
+// MOVED OFF THE PROFILE 2026-09-19 (owner): trophies are a TROPHY-LADDER
+// stat and this page is explicitly ranked-only — the header says
+// "competitive Ranked only" and every other panel honours that, so a
+// trophy curve sitting among them invited exactly the comparison the rest
+// of the page is careful to avoid. Still exported, and it fetches nothing
+// itself: pass it rows from player_snapshots wherever trophies belong.
+export function TrophyCurve({ snapshots }) {
   if (!snapshots || snapshots.length < 2) return null;
   const pts = snapshots
     .filter(s => Number.isFinite(Number(s.trophies)))
@@ -553,7 +667,7 @@ function VsClassPanel({ series }) {
   return (
     <div style={CARD}>
       <div style={EYEBROW}>HOW YOU DO AGAINST EACH CLASS</div>
-      <RateRows rows={rows} max={8} labelOf={(r) => classLabel(r.key) || r.key} />
+      <RateRows rows={rows} max={8} showRate labelOf={(r) => classLabel(r.key) || r.key} />
       {best && worst && best.key !== worst.key && (
         <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.7, color: "#c9c9d6" }}>
           You handle <strong style={{ color: "#8ee6b0" }}>{classLabel(best.key)}</strong> better
@@ -654,6 +768,8 @@ function ContextPanel({ series }) {
         )}
       </div>
 
+      <ModeLead series={series} />
+
       {outliers.length > 0 && (
         <>
           <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#ffce7a", margin: "16px 0 8px" }}>
@@ -687,20 +803,96 @@ function ContextPanel({ series }) {
   );
 }
 
+/**
+ * Who you actually face, and what the field answers them with.
+ *
+ * Sorted by ENCOUNTERS rather than by how badly each beats you. The brawler
+ * you meet in a third of your games is worth preparing for at an even record;
+ * the one that crushes you twice a season is not. "You lose to" in the panel
+ * above already covers the other ordering.
+ *
+ * The counter column is the FIELD's answer, not yours — it comes from
+ * vs_brawler over the whole bracket. It is not filtered to brawlers you own or
+ * play, because ownership is invisible to us and quietly withholding the real
+ * answer would be worse than naming one you cannot pick yet.
+ */
+function EncounterPanel({ series, intel }) {
+  const rows = useMemo(() => mostEncountered(series, intel, 6), [series, intel]);
+  if (!intel || rows.length < 3) return null;
+
+  return (
+    <div style={CARD}>
+      <div style={EYEBROW}>WHO YOU FACE MOST · AND WHAT BEATS THEM</div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            style={{
+              display: "grid", gap: 10, alignItems: "center",
+              gridTemplateColumns: "minmax(0,1.1fr) 62px minmax(0,1.2fr)",
+              padding: "8px 11px", borderRadius: 10,
+              background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+              <BrawlerIcon name={r.key} size={24} />
+              <span style={{ minWidth: 0 }}>
+                <span style={{
+                  display: "block", fontSize: 12.5, color: "#e2e2ec",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {formatBrawlerName(r.key)}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: "#7c7e8f" }}>
+                  {r.n} faced
+                </span>
+              </span>
+            </span>
+
+            <span style={{ fontFamily: MONO, fontSize: 11, textAlign: "right" }}>
+              <span style={{
+                display: "block", fontWeight: 700,
+                color: r.qualified ? (r.delta >= 0 ? "#8ee6b0" : "#ff8f8f") : "#6b6d7c",
+              }}>
+                {Math.round(r.raw * 100)}%
+              </span>
+              <span style={{ fontSize: 10, color: "#7c7e8f" }}>
+                {r.wins}&ndash;{r.n - r.wins}
+              </span>
+            </span>
+
+            <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, justifyContent: "flex-end" }}>
+              {r.counters.length ? (
+                r.counters.map((c) => (
+                  <span key={c.brawler} title={`${formatBrawlerName(c.brawler)} wins ${c.rate.toFixed(1)}% of ${c.picks.toLocaleString("en-US")} games vs ${formatBrawlerName(r.key)}`}
+                        style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                    <BrawlerIcon name={c.brawler} size={20} />
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#8ee6b0" }}>
+                      {c.rate.toFixed(0)}%
+                    </span>
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontFamily: MONO, fontSize: 10, color: "#6b6d7c" }}>no clear answer</span>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={NOTE}>
+        Left is how often you meet them and your record. Right is what the field beats them
+        with — a brawler needs 200+ games into that matchup and a 53%+ edge to be listed, so
+        &ldquo;no clear answer&rdquo; means the matchup genuinely has no strong counter rather
+        than that we lack data. These are the bracket&apos;s answers, not filtered to brawlers
+        you own or play.
+      </div>
+    </div>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
-  const [snapshots, setSnapshots] = useState([]);
-  useEffect(() => {
-    if (!selfTag) return;
-    let cancelled = false;
-    supabase.from("player_snapshots")
-      .select("taken_at,trophies")
-      .eq("player_tag", selfTag)
-      .order("taken_at", { ascending: false })
-      .limit(400)
-      .then(({ data }) => { if (!cancelled) setSnapshots(data || []); });
-    return () => { cancelled = true; };
-  }, [selfTag]);
-
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
 
@@ -745,8 +937,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
       <>
         <CoverageLine tracked={tracked} seriesCount={series.length} />
         <FactsStrip facts={facts.slice(0, 2)} />
-        <AboveDraftPanel ad={ad} />
-        <TrophyCurve snapshots={snapshots} />
+        <AboveDraftPanel ad={ad} series={series} />
       </>
     );
   }
@@ -755,7 +946,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
     <>
       <CoverageLine tracked={tracked} seriesCount={series.length} />
       <FactsStrip facts={facts} />
-      <AboveDraftPanel ad={ad} />
+      <AboveDraftPanel ad={ad} series={series} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}
 
@@ -768,9 +959,9 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
       <VsClassPanel series={series} />
       <ContextPanel series={series} />
       <MatchupPanel series={series} />
+      <EncounterPanel series={series} intel={intel} />
 
       {intel && <NemesisPanel table={nemesisTable(series, intel)} />}
-      <TrophyCurve snapshots={snapshots} />
       <PeoplePanel squad={people.squad} rivals={people.rivals} onOpen={onOpenPlayer} />
     </>
   );

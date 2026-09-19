@@ -410,6 +410,39 @@ function TrackingBox({ tag, tracked, historyCount }) {
 
 // ── page ─────────────────────────────────────────────────────────────────────
 
+function UpgradeAdvisorBox({ tag, rows }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      margin: "4px 0 22px", borderRadius: 14, overflow: "hidden",
+      background: "rgba(201,166,255,.05)", border: "1px solid rgba(201,166,255,.20)",
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          width: "100%", padding: "14px 16px", cursor: "pointer", textAlign: "left",
+          background: "transparent", border: "none", color: "#e9e9f2",
+          fontFamily: DISPLAY, fontSize: 15.5, fontWeight: 700,
+        }}
+      >
+        <span>What brawler should I upgrade next?</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "#c9a6ff", flexShrink: 0 }}>
+          {open ? "HIDE" : "SHOW"}
+        </span>
+      </button>
+      {/* Mounted only when open, so the advisor's roster fetch does not run on
+          every profile view for a question nobody asked. */}
+      {open && (
+        <div style={{ padding: "0 16px 16px" }}>
+          <UpgradeAdvisor tag={tag} rankedRows={rows} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PlayerPage() {
   const { tag: rawTag } = useParams();
   const navigate = useNavigate();
@@ -550,15 +583,13 @@ export default function PlayerPage() {
         <PlayerInsights rows={rows} tracked={tracked} selfTag={tag}
           onOpenPlayer={(t) => navigate(`/player/${t.replace("#", "")}`)} />
 
-        {/* Works from the very first lookup: the advisor reads the live roster
-            and our meta data, and needs no stored history at all. Without any,
-            "brawlers you actually draft" simply contributes nothing — every
-            other signal still applies. That makes it the one thing on this page
-            with something to say to a first-time visitor. */}
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#8b8b9c", margin: "4px 0 10px" }}>
-          [ WHAT TO UPGRADE NEXT ]
-        </div>
-        <UpgradeAdvisor tag={tag} rankedRows={rows} />
+        {/* Collapsed behind its own question (owner, 2026-09-19). It answers a
+            DIFFERENT question from the rest of the page — everything above is
+            "how am I doing", this is "what should I spend on" — and expanded by
+            default it sat between the analysis and the match history as a wall
+            of unrelated advice. It still works from the very first lookup, with
+            no stored history, so it stays on the page rather than moving. */}
+        <UpgradeAdvisorBox tag={tag} rows={rows} />
 
         {/* History */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "0 0 12px" }}>
