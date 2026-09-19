@@ -126,7 +126,16 @@ def determine_patch(battle_time_str):
 # them again. Matches tagged with a closed patch are dropped entirely (not
 # inserted), and BrawlerStats is never re-aggregated for them, since their
 # data is final.
-CLOSED_PATCHES = {"67.306"}
+# 68.250 closed 2026-09-19, 18 days after 69.230 started. The rollover runbook
+# says not to close the old patch immediately (battlelogs return pre-update
+# games for a day or two) — but "not yet" was never followed up, and the cost
+# is not just the stale matches. reaggregate() snapshots every TOUCHED patch
+# into meta_daily, and inactive players keep surfacing August games, so a dead
+# patch was re-aggregated and re-snapshotted on every run for 18 days: 136,047
+# meta_daily rows (56% of the table) that no consumer can read, since the
+# frontend moved to 69.230 on the flip. CLOSE THE OLD PATCH once the trickle
+# stops, about a week after a rollover.
+CLOSED_PATCHES = {"67.306", "68.250"}
 
 RANKED_MODES = {"brawlBall", "knockout", "bounty", "hotZone", "heist", "gemGrab"}
 
@@ -1150,6 +1159,37 @@ def reaggregate(touched_patches):
         else:
             print(f"⚠️ Aggregation failed for {patch}: {rpc_res.status_code} {rpc_res.text}")
 
+    prune_meta_history()
+
+
+
+def prune_meta_history():
+    """Drop meta_daily history for patches that are closed.
+
+    Retention driven by CLOSED_PATCHES rather than a date window, so closing a
+    patch retires its collection AND its history in one action. Nothing can
+    read these rows: the frontend serves CURRENT_PATCH, and both consumers
+    (MapsPages.useMapHistory, news_digest shifters) filter to a single patch.
+
+    Non-fatal for the same reason capture_meta_history is — a failed cleanup
+    must never fail a scrape that already stored its matches.
+    """
+    if not CLOSED_PATCHES:
+        return
+    try:
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/prune_meta_daily",
+            json={"closed_patches": sorted(CLOSED_PATCHES)},
+            headers=SUPABASE_HEADERS, timeout=120,
+        )
+        if res.status_code in (200, 204):
+            n = (res.text or "").strip()
+            if n not in ("", "0"):
+                print(f"🧹 meta_daily: {n} closed-patch history rows dropped.")
+        else:
+            print(f"⚠️ meta_daily prune failed: {res.status_code} {res.text[:200]}")
+    except Exception as exc:
+        print(f"⚠️ meta_daily prune error: {exc}")
 
 def capture_meta_history(patch):
     """Snapshot the freshly-rebuilt BrawlerStats into meta_daily.
