@@ -1,0 +1,68 @@
+name: Refresh — Brawler Metadata
+
+# Keeps src/data/brawlerMeta.json in step with the official brawler list, so a
+# newly released brawler cannot land structurally broken the way WENDY did
+# (empty description, no star powers, no gadgets, unnoticed).
+#
+# Daily rather than weekly: the cost of a run that changes nothing is one API
+# call, and the cost of being a week late is a guide page rendering blank for
+# whoever looks up the new brawler first. It only commits when the file
+# actually changed, so there is no deploy churn.
+#
+# 03:40 UTC — a quiet slot. map_pool is 04:40, leaderboard 05:00, masters 06:00.
+on:
+  schedule:
+    - cron: '40 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-brawler-meta
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to push the updated JSON back. This is the Actions-provided
+      # token, NOT the PAT in the git remote — scoped to this repo, this run.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Refresh brawlerMeta.json
+        env:
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          # common.require_credentials() checks all three unconditionally, so
+          # the Supabase pair must be present even though this job never
+          # touches the database.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: python -m scrapers.brawler_meta
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- src/data/brawlerMeta.json; then
+            echo "No change to brawlerMeta.json."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/brawlerMeta.json
+          git commit -m "chore(data): refresh brawlerMeta.json from the official API
+
+          Automated by .github/workflows/refresh-brawler-meta.yml. Names and
+          structure only — the API carries no descriptions, so any new entry
+          still needs a description, rarity, class and portrait by hand. See
+          the job log for exactly what is missing."
+          git push
