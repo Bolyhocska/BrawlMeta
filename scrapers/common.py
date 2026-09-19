@@ -290,6 +290,17 @@ DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
 # refresh_brawler_pairs' 600k recent_limit, keeping that RPC cheap.
 DIAMOND_WINDOW_CAP = 750000
 SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity
+
+# How far back player_directory keeps a name searchable. A TIME window, not a
+# row cap: the monthly Ranked reset re-stratifies the ladder and dumps a few
+# hundred thousand one-off strangers into the spider's 2-hop neighbourhood
+# (~296k over 2026-09-17..19), and a row cap would evict the recurring
+# competitive pool to make room for them. Measured in the saturated week
+# before that reset: ~537k distinct players are seen every 3 days and only
+# ~9k/day are genuinely new, so 7 days holds ~600k and loses nobody who still
+# plays. Anyone at all is still reachable by TAG — that path calls the
+# Supercell API live and never touches this table.
+PLAYER_DIRECTORY_MAX_AGE_DAYS = 7
 MAX_PLAYERS_PER_BRACKET = 50000        # safety cap so a run can't spider forever if the target is unreachable
 CONCURRENCY = 8                        # parallel battlelog requests
 REQUEST_DELAY = 0.15                   # seconds before each API call (per worker) — stays under rate limits
@@ -699,7 +710,37 @@ def push_players(players=None):
         time.sleep(0.2)
     if players is None:
         SEEN_PLAYERS.clear()
+        prune_player_directory()
     return written
+
+
+def prune_player_directory(max_age_days=PLAYER_DIRECTORY_MAX_AGE_DAYS):
+    """Age out directory entries nobody can still be searching for.
+
+    Runs on the END-OF-RUN flush only (players is None), not on every batched
+    upsert — the window moves by hours, not by the 1000 rows between chunks.
+
+    Tracked players are exempt inside the RPC: claimed accounts, tournament
+    entrants and looked-up tags are people we deliberately follow, and they
+    must stay searchable through a quiet fortnight.
+
+    Non-fatal, same as capture_meta_history — a failed cleanup must never fail
+    a scrape that already stored its matches.
+    """
+    try:
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/prune_player_directory",
+            json={"max_age_days": max_age_days},
+            headers=SUPABASE_HEADERS, timeout=120,
+        )
+        if res.status_code in (200, 204):
+            n = (res.text or "").strip()
+            if n not in ("", "0"):
+                print(f"🧹 player_directory: {n} entries older than {max_age_days}d dropped.")
+        else:
+            print(f"⚠️ player_directory prune failed: {res.status_code} {res.text[:200]}")
+    except Exception as exc:
+        print(f"⚠️ player_directory prune error: {exc}")
 
 
 def parse_battle(match, player_tag, bracket):
