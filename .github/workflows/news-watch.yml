@@ -16,9 +16,18 @@ name: News — Daily Watch
 # leaderboard, 07:30 diamond, 08:30 intelligence, 02:20/10:20/14:20/20:20
 # tracker, 04:40 map-pool). Touches no Supercell API budget at all — this only
 # calls the Anthropic and GitHub APIs.
+# PAUSED 2026-09-19. The Anthropic account has no credit balance, so every run
+# fails with 400 'Your credit balance is too low' — verified from the API's own
+# response body, not inferred. A workflow that is red every single day trains
+# you to ignore red, which is how a real failure gets missed.
+#
+# TO RESUME: add credits at console.anthropic.com (Plans & Billing), then
+# uncomment the two schedule lines. Run it once via workflow_dispatch first to
+# confirm before putting it back on a timer. The GitHub secret itself is
+# already correct — a wrong key returns 401, and this returns 400.
 on:
-  schedule:
-    - cron: '15 9 * * *'
+  # schedule:
+  #   - cron: '15 9 * * *'
   workflow_dispatch:
 
 concurrency:

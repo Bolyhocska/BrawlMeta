@@ -538,7 +538,7 @@ function Section({ id, title, subtitle, right, open, onToggle, variant = "card",
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function BrawlerGuidePage({
-  brawler, byMode, byMap, allBrawlers = [], onBack, backLabel = "Tier List",
+  brawler, byMode, byMap, allBrawlers = [], onBack, backLabel = "Brawlers",
   rankBracket = "masters_legendary", onRankBracketChange, rankBrackets = [],
 }) {
   // Every number on this page — overall rate, per-mode, per-map, match-ups —

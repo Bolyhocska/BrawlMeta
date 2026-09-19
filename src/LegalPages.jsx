@@ -44,9 +44,9 @@ const CONTROLLER = {
 };
 
 const META = {
-  updated: "24/08/2026",
+  updated: "19/09/2026",
   jurisdiction: "EU · GDPR",
-  version: "1.0",
+  version: "1.1",
 };
 
 const SECTIONS = [
@@ -333,11 +333,34 @@ export function PrivacyPolicyPage() {
                   contact us and we will remove it.
                 </P>
                 <P>
-                  Brawl Stars has a young player base, and we take one deliberate precaution because
-                  of it: <Term>we do not offer a way to search for players by name.</Term> Match
-                  history can only be reached by entering a player tag that you already have, so this
-                  site is not a browsable directory of players. The opt-out in section 02 applies to
-                  anyone, at any age, and a parent or guardian may use it on a child's behalf.
+                  Brawl Stars has a young player base, so it is worth being exact about how a player
+                  can be found here. There are two ways, and they are not the same.
+                </P>
+                <P>
+                  <Term>By player tag.</Term> Entering a tag you already have looks that player up
+                  live from the official Brawl Stars API. This works for every player in the game,
+                  and it stores nothing until you do it — see section 02.
+                </P>
+                <P>
+                  <Term>By name.</Term> You can also search names, but only against the directory
+                  described in section 02, which is <Term>not</Term> the whole playerbase. It holds
+                  players we have actually observed in competitive Ranked matches at Diamond and
+                  above, or who played in one of those matches, and only those seen in the
+                  <Term>last 7 days</Term>. A name that stops appearing in matches drops out of the
+                  directory within a week, automatically. Anyone who has opted out is excluded from
+                  it entirely.
+                </P>
+                <P>
+                  We should be straightforward about the limits of that. It is a real name search, so
+                  someone who knows the display name of a player active in high-rank Ranked can find
+                  their tag and their match history here. What it is not is a way to browse the
+                  general playerbase: the overwhelming majority of Brawl Stars players have never
+                  been in one of these matches and are not in our records at all.
+                </P>
+                <P>
+                  The opt-out in section 02 removes a player from name search as well as from match
+                  history, applies to anyone at any age, and a parent or guardian may use it on a
+                  child's behalf.
                 </P>
               </Sec>
 

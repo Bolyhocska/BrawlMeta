@@ -703,7 +703,7 @@ const styles = {
 function BrawlerGuideRoute() {
   const { brawlerSlug } = useParams();
   const navigate = useNavigate();
-  const guideBack = useSmartBack("/app?tab=brawlers", "Tier List");
+  const guideBack = useSmartBack("/app?tab=brawlers", "Brawlers");
   const brawlerKey = findBrawlerKeyBySlug(brawlerSlug);
   const { stats: brawlerStats, loading } = useBrawlerStats(CURRENT_PATCH);
 

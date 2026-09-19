@@ -16,7 +16,11 @@ const NAV_STYLE = {
 const NAV_ITEMS = [
   { label: "News", to: "/news" },
   { label: "My Profile", to: "/profile" },
-  { label: "Tier List", to: "/app?tab=brawlers" },
+  // "Brawlers", not "Tier List": the page is a full per-brawler stats browser
+  // (per-mode, per-map, duos, head-to-head) and the tier grouping is one view
+  // of it. The old label undersold it and sent /news brawler facts somewhere
+  // that sounded like a ranking rather than a stat page.
+  { label: "Brawlers", to: "/app?tab=brawlers" },
   { label: "Leaderboards", to: "/app?tab=trending" },
   { label: "Guides", dropdown: [
     { label: "Skills Guide", desc: "Movement & shooting fundamentals", to: "/guides/skills" },
