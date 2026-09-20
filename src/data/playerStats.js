@@ -1238,7 +1238,7 @@ export function rankedQuality(series, pc, ad) {
     parts.push({
       key: "percentile", label: "Standing", weight: QUALITY_WEIGHTS.percentile,
       value: Number(pc.win_rate_pct_rank),
-      detail: `${Math.round(Number(pc.win_rate_pct_rank))}th percentile of ${pc.cohort} tracked players`,
+      detail: `${Math.round(Number(pc.win_rate_pct_rank))}th percentile of ${pc.cohort} Masters-tier players`,
     });
   }
 
@@ -1284,7 +1284,11 @@ export function rankedQuality(series, pc, ad) {
     parts.push({
       key: "breadth", label: "Breadth", weight: QUALITY_WEIGHTS.breadth,
       value: v * 100,
-      detail: `winning on ${modeWin} mode${modeWin === 1 ? "" : "s"} and ${brawlerWin} brawler${brawlerWin === 1 ? "" : "s"}`,
+      // Show the DENOMINATOR. "0 brawlers" reads as a verdict; "0 of 3 with
+      // enough games" reads as the small sample it actually is. The owner
+      // flagged exactly this on a 64-draft profile, where almost nothing
+      // clears the 8-draft floor. It does not change the score.
+      detail: `winning on ${modeWin} of ${modes.length} mode${modes.length === 1 ? "" : "s"}`        + ` and ${brawlerWin} of ${brawlers.length} brawler${brawlers.length === 1 ? "" : "s"} with enough games`,
     });
   }
 
