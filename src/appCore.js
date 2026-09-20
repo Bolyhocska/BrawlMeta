@@ -34,6 +34,13 @@ export const CURRENT_PATCH = "69.230";
 // bracket shows honest data rather than silently serving Masters numbers as
 // if they were the player's own rank.
 export const DIAMOND_ENABLED = false;
+
+// player_directory is PAUSED (owner decision 2026-09-20) — see
+// PLAYER_DIRECTORY_ENABLED in scrapers/common.py for why and how to resume.
+// Name search still works against top_200_leaderboard and masters_players,
+// which are small curated lists that keep filling; it is only the broad
+// 600k-row directory that drops out. Flip BOTH this and the scraper flag.
+export const DIRECTORY_SEARCH_ENABLED = false;
 // The patch actually live in the game. Equal to CURRENT_PATCH once a rollover
 // has completed, and AHEAD of it during the staging window between a patch going
 // live and the site having enough of it to read - which is exactly when the UI

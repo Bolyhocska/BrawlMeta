@@ -44,9 +44,9 @@ const CONTROLLER = {
 };
 
 const META = {
-  updated: "19/09/2026",
+  updated: "20/09/2026",
   jurisdiction: "EU · GDPR",
-  version: "1.1",
+  version: "1.2",
 };
 
 const SECTIONS = [
@@ -342,20 +342,15 @@ export function PrivacyPolicyPage() {
                   and it stores nothing until you do it — see section 02.
                 </P>
                 <P>
-                  <Term>By name.</Term> You can also search names, but only against the directory
-                  described in section 02, which is <Term>not</Term> the whole playerbase. It holds
-                  players we have actually observed in competitive Ranked matches at Diamond and
-                  above, or who played in one of those matches, and only those seen in the
-                  <Term>last 7 days</Term>. A name that stops appearing in matches drops out of the
-                  directory within a week, automatically. Anyone who has opted out is excluded from
-                  it entirely.
+                  <Term>By name.</Term> Name search currently covers only the public competitive
+                  leaderboards &mdash; the global top 200 and the tracked Masters list. That is a few
+                  hundred people who are already published by name on those ladders.
                 </P>
                 <P>
-                  We should be straightforward about the limits of that. It is a real name search, so
-                  someone who knows the display name of a player active in high-rank Ranked can find
-                  their tag and their match history here. What it is not is a way to browse the
-                  general playerbase: the overwhelming majority of Brawl Stars players have never
-                  been in one of these matches and are not in our records at all.
+                  It used to also search a broader directory of players observed in high-rank Ranked
+                  matches. <Term>That directory has been switched off and its contents deleted.</Term>
+                  If it is ever switched back on this page will say so before it happens, and the
+                  version above will change.
                 </P>
                 <P>
                   The opt-out in section 02 removes a player from name search as well as from match

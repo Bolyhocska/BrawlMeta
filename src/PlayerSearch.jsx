@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "./appCore";
+import { supabase, DIRECTORY_SEARCH_ENABLED } from "./appCore";
 import { Search, X } from "lucide-react";
 
 const MONO = "'JetBrains Mono', monospace";
@@ -65,8 +65,12 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
           supabase.from("masters_players").select("player_tag,name").ilike("name", like).limit(8),
           // The view, not the table: it excludes anyone who opted out of
           // tracking, so one opt-out covers both polling and searchability.
-          supabase.from("player_directory_public").select("player_tag,name,last_seen_at")
-            .ilike("name", like).order("last_seen_at", { ascending: false }).limit(12),
+          // Skipped entirely while the directory is paused — querying a table
+          // we have stopped filling is a round trip for a guaranteed zero rows.
+          DIRECTORY_SEARCH_ENABLED
+            ? supabase.from("player_directory_public").select("player_tag,name,last_seen_at")
+                .ilike("name", like).order("last_seen_at", { ascending: false }).limit(12)
+            : Promise.resolve({ data: [] }),
         ]);
         if (off) return;
         const seen = new Set(), out = [];

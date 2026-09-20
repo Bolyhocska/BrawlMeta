@@ -300,6 +300,19 @@ SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — r
 # ~9k/day are genuinely new, so 7 days holds ~600k and loses nobody who still
 # plays. Anyone at all is still reachable by TAG — that path calls the
 # Supercell API live and never touches this table.
+# PAUSED 2026-09-20 (owner decision). The directory is the fastest-growing
+# table in the schema and the database had crept back to 517 MB against the
+# 500 MB free tier. It is paused rather than removed because it REBUILDS FROM
+# THE SAME BATTLELOGS: measured on the original fill, 324k tags on day one
+# (22%), ~70% within a week, and with the 7-day window it reaches steady state
+# in exactly 7 days. Nothing is lost that a week does not restore.
+#
+# TO RESUME: flip this to True AND flip DIRECTORY_SEARCH_ENABLED in
+# src/appCore.js — the collector filling a table the UI does not read would
+# be pure cost, and the UI reading a table nothing fills would be an empty
+# search box.
+PLAYER_DIRECTORY_ENABLED = False
+
 PLAYER_DIRECTORY_MAX_AGE_DAYS = 7
 MAX_PLAYERS_PER_BRACKET = 50000        # safety cap so a run can't spider forever if the target is unreachable
 CONCURRENCY = 8                        # parallel battlelog requests
@@ -686,6 +699,13 @@ def push_players(players=None):
     the payload so the conflict path cannot reset it — PostgREST only updates the
     columns you send.
     """
+    if not PLAYER_DIRECTORY_ENABLED:
+        # Still clear the buffer on the end-of-run flush, or SEEN_PLAYERS grows
+        # for the life of the process while nothing drains it.
+        if players is None:
+            SEEN_PLAYERS.clear()
+        return 0
+
     rows = dict(SEEN_PLAYERS if players is None else players)
     if not rows:
         return 0
