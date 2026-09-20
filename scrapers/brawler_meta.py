@@ -34,6 +34,7 @@ Run:  python -m scrapers.brawler_meta            # fetch + merge + report
 
 import json
 import os
+import re
 import sys
 
 import requests
@@ -90,6 +91,11 @@ def save_meta(meta):
         fh.write("\n")
 
 
+def _norm(s):
+    """Name key ignoring case and punctuation — see merge_entries."""
+    return re.sub(r"[^A-Z0-9]", "", (s or "").upper())
+
+
 def merge_entries(meta, api_items):
     """Fold the API's structure into the file. Returns (changed, added_names)."""
     changed = False
@@ -121,10 +127,18 @@ def merge_entries(meta, api_items):
 
         for field in ("starPowers", "gadgets"):
             have = entry.setdefault(field, [])
-            have_names = {(e.get("name") or "").strip().upper() for e in have}
+            # Compare PUNCTUATION-INSENSITIVELY. The file was hand-written
+            # without apostrophes, commas or exclamation marks and the API has
+            # all three, so an exact-string check treated "Its Gonna Blow" and
+            # "IT'S GONNA BLOW" as different and appended a second copy. That
+            # silently duplicated 29 star powers and gadgets across 26
+            # brawlers on the first real run, and every duplicate arrived with
+            # an empty desc — which then read as 29 missing descriptions that
+            # were not actually missing.
+            have_names = {_norm(e.get("name")) for e in have}
             for api_entry in item.get(field, []) or []:
                 name = (api_entry.get("name") or "").strip()
-                if not name or name.upper() in have_names:
+                if not name or _norm(name) in have_names:
                     continue
                 # desc left empty on purpose: the API does not carry one, and a
                 # generated sentence would read as sourced fact on the guide.

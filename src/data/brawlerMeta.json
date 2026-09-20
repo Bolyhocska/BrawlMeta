@@ -59,11 +59,6 @@
       {
         "desc": "Alli reloads x% faster while enraged.",
         "img": "/icons/star-powers/23000990.png",
-        "name": "You Better Run You Better Take Cover"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "YOU BETTER RUN, YOU BETTER TAKE COVER"
       }
     ]
@@ -96,11 +91,6 @@
       {
         "desc": "While being near a puddle of fire fluid, Amber uses it to reload her firebreathing x% faster.",
         "img": "/icons/star-powers/23000308.png",
-        "name": "Scorchin Siphon"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "SCORCHIN' SIPHON"
       }
     ]
@@ -458,17 +448,12 @@
       {
         "desc": "Rocket Rain now rains down x% more rockets.",
         "img": "/icons/star-powers/23000079.png",
-        "name": "More Rockets"
+        "name": "MORE ROCKETS!"
       },
       {
         "desc": "Brock loads a fourth rocket into his launcher, increasing his ammo capacity (and discarding the thermos bottle he's been keeping in his launcher's fourth tube).",
         "img": "/icons/star-powers/23000150.png",
         "name": "Rocket No. 4"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "MORE ROCKETS!"
       }
     ]
   },
@@ -687,17 +672,12 @@
       {
         "desc": "The first bell of Chester's attack sequence does x% damage.",
         "img": "/icons/star-powers/23000527.png",
-        "name": "Single Bellomania"
+        "name": "SINGLE BELL'O'MANIA"
       },
       {
         "desc": "Chester will always know what his next Super will be.",
         "img": "/icons/star-powers/23000528.png",
         "name": "Sneak Peek"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "SINGLE BELL'O'MANIA"
       }
     ]
   },
@@ -729,11 +709,6 @@
       {
         "desc": "Dashing through enemies with his Super will also steal <!card.trait.value>% of their ammo.",
         "img": "/icons/star-powers/23000610.png",
-        "name": "Tickets Please"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "TICKETS PLEASE!"
       }
     ]
@@ -777,21 +752,11 @@
       {
         "desc": "Colette fires a projectile that charms a Brawler for <!card.accessory.skill.projectile.statuseffectenemy.duration.ticksasseconds> sec. Uses ammo.",
         "img": "/icons/gadgets/23000302.png",
-        "name": "Na-Ah"
+        "name": "NA-AH!"
       },
       {
         "desc": "Colette fires a projectile that heals for  <!card.accessory.skill.projectile.lifestealpercent>% of damage dealt. Uses ammo and can be fired 3 times before cooldown.",
         "img": "/icons/gadgets/23000457.png",
-        "name": "Gotcha"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "NA-AH!"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "GOTCHA!"
       }
     ],
@@ -1108,17 +1073,12 @@
       {
         "desc": "Edgar's scarf grabs the closest Brawler and he jumps behind them. His scarf can also pull him towards walls.",
         "img": "/icons/gadgets/23000340.png",
-        "name": "Lets Fly"
+        "name": "LET'S FLY"
       },
       {
         "desc": "Edgar gets a shield that protects him from the next <!card.character.maxhealth.scaletolevel.scaleaccessoryvalue1> damage. The shield gets weaker over time.",
         "img": "/icons/gadgets/23000403.png",
         "name": "Hardcore"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "LET'S FLY"
       }
     ],
     "id": 16000043,
@@ -1209,17 +1169,12 @@
       {
         "desc": "Eve jumps away and leaves behind a hatchling.",
         "img": "/icons/gadgets/23000454.png",
-        "name": "Gotta Go"
+        "name": "GOTTA GO!"
       },
       {
         "desc": "Hatchlings spawned from an active big egg will now heal allies over time instead of dealing damage.",
         "img": "/icons/gadgets/23000455.png",
         "name": "Motherly Love"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "GOTTA GO!"
       }
     ],
     "id": 16000056,
@@ -1430,7 +1385,7 @@
         "name": "A Helping Hand"
       },
       {
-        "desc": "",
+        "desc": "Increases Gigi's Super charge rate after she has not taken damage for a short time.",
         "img": null,
         "name": "PLIÉ PROTECTION"
       }
@@ -1448,11 +1403,6 @@
       {
         "desc": "Glowy supercharges his glowbeam tethers, doubling the damage/healing rate for x secs.",
         "img": "/icons/gadgets/23001184.png",
-        "name": "More Lumens"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "MORE LUMENS!"
       }
     ],
@@ -1584,7 +1534,7 @@
         "name": "Soul Switcher"
       },
       {
-        "desc": "",
+        "desc": "Fires a spirit that damages enemies and knocks them back.",
         "img": null,
         "name": "KNOCKBACK SPIRIT"
       }
@@ -1629,21 +1579,11 @@
       {
         "desc": "When Balloon Blast is charged over x%, Hank gains x% extra movement speed.",
         "img": "/icons/star-powers/23000577.png",
-        "name": "Its Gonna Blow"
+        "name": "IT'S GONNA BLOW"
       },
       {
         "desc": "Hank takes x% less damage when near a wall.",
         "img": "/icons/star-powers/23000578.png",
-        "name": "Take Cover"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "IT'S GONNA BLOW"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "TAKE COVER!"
       }
     ]
@@ -1911,21 +1851,11 @@
       {
         "desc": "Swap weapons with Lawrie.",
         "img": "/icons/gadgets/23000661.png",
-        "name": "Order Swap"
+        "name": "ORDER: SWAP"
       },
       {
         "desc": "Dash towards Lawrie while Lawrie dashes towards you, healing both for x% of max health.",
         "img": "/icons/gadgets/23000662.png",
-        "name": "Order Fall Back"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "ORDER: SWAP"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "ORDER: FALL BACK"
       }
     ],
@@ -1937,21 +1867,11 @@
       {
         "desc": "While Lawrie is in range, transfer x% incoming damage to himself instead.",
         "img": "/icons/star-powers/23000659.png",
-        "name": "Protocol Protect"
+        "name": "PROTOCOL: PROTECT"
       },
       {
         "desc": "While Lawrie is in range, reload x% of your ammo whenever he damages an enemy.",
         "img": "/icons/star-powers/23000660.png",
-        "name": "Protocol Assist"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "PROTOCOL: PROTECT"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "PROTOCOL: ASSIST"
       }
     ]
@@ -2123,21 +2043,11 @@
       {
         "desc": "Maisie blasts the ground, stunning enemies for x seconds while dashing forward.",
         "img": "/icons/gadgets/23000571.png",
-        "name": "Disengage"
+        "name": "DISENGAGE!"
       },
       {
         "desc": "Maisie instantly reloads x ammo and increases the next Pressure Rocket damage by x% of the target's missing HP.",
         "img": "/icons/gadgets/23000572.png",
-        "name": "Finish Them"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "DISENGAGE!"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "FINISH THEM!"
       }
     ],
@@ -2269,7 +2179,7 @@
         "name": "Toolbox"
       },
       {
-        "desc": "",
+        "desc": "Fires her Mecha in the direction Meg is facing, damaging enemies along the way and on impact.",
         "img": null,
         "name": "REPURPOSE"
       }
@@ -2522,17 +2432,12 @@
       {
         "desc": "Nani teleports to Peep's last known location and ends her Super.",
         "img": "/icons/gadgets/23000278.png",
-        "name": "Warpin Time"
+        "name": "WARPIN' TIME"
       },
       {
         "desc": "For the next x seconds, the first time Nani takes damage from an enemy, x% of the damage is returned to the enemy.",
         "img": "/icons/gadgets/23000353.png",
         "name": "Return To Sender"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "WARPIN' TIME"
       }
     ],
     "id": 16000036,
@@ -2639,17 +2544,12 @@
       {
         "desc": "While near walls Ollie kicks off his hoverboard and gains x% extra movement speed.",
         "img": "/icons/star-powers/23000883.png",
-        "name": "Kick Push"
+        "name": "KICK, PUSH"
       },
       {
         "desc": "After dashing forward with his Super, Ollie gains a x decaying shield over x seconds.",
         "img": "/icons/star-powers/23000884.png",
         "name": "Renegade"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "KICK, PUSH"
       }
     ]
   },
@@ -2708,21 +2608,11 @@
       {
         "desc": "Whenever Pam hits enemy Brawlers with Scrapstorm, she heals herself and nearby friendly Brawlers for x health.",
         "img": "/icons/star-powers/23000092.png",
-        "name": "Mamas Hug"
+        "name": "MAMA'S HUG"
       },
       {
         "desc": "Healing turret now also damages enemies for x damage per second.",
         "img": "/icons/star-powers/23000139.png",
-        "name": "Mamas Squeeze"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "MAMA'S HUG"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "MAMA'S SQUEEZE"
       }
     ]
@@ -2814,21 +2704,11 @@
       {
         "desc": "Pierce's last ammo also slows enemies by x%.",
         "img": "/icons/star-powers/23001060.png",
-        "name": "Mission Swimpossible"
+        "name": "MISSION: SWIMPOSSIBLE"
       },
       {
         "desc": "When collecting a shell, Pierce gains a short burst (x%) of movement speed.",
         "img": "/icons/star-powers/23001061.png",
-        "name": "Slip N Snipe"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "MISSION: SWIMPOSSIBLE"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "SLIP 'N SNIPE"
       }
     ]
@@ -2888,17 +2768,12 @@
       {
         "desc": "When Poco's attack hits friendly Brawlers they now heal for x health.",
         "img": "/icons/star-powers/23000089.png",
-        "name": "Da Capo"
+        "name": "DA CAPO!"
       },
       {
         "desc": "Poco's Super now also hits enemies, dealing x damage.",
         "img": "/icons/star-powers/23000144.png",
         "name": "Screeching Solo"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "DA CAPO!"
       }
     ]
   },
@@ -2914,11 +2789,6 @@
       {
         "desc": "Instantly trigger all active marks on all enemy Brawlers, dealing their damage.",
         "img": "/icons/gadgets/23000556.png",
-        "name": "Hacks"
-      },
-      {
-        "desc": "",
-        "img": null,
         "name": "HACKS!"
       }
     ],
@@ -2954,7 +2824,7 @@
         "name": "Bouncy Castle"
       },
       {
-        "desc": "",
+        "desc": "Fires a large bullet that splits into 3 smaller bullets when it hits a wall or an enemy.",
         "img": null,
         "name": "MULTIBALL"
       }
@@ -3319,17 +3189,12 @@
       {
         "desc": "Hitting an enemy Brawler while transformed increases your damage by <!card.statuseffect.damageboostpercent>% to a maximum of <!card.statuseffect.damageboostpercent.scalecardvalue2>%.",
         "img": "/icons/star-powers/23001253.png",
-        "name": "Power Level Maximum"
+        "name": "POWER LEVEL: MAXIMUM"
       },
       {
         "desc": "Starr Nova's main attack also heals teammates for <!card.character.weaponSkill.damage.scaleStatToLevel.scaleByCardProjectileHealOwnPercent>.",
         "img": "/icons/star-powers/23001254.png",
         "name": "Mystical Starr Technique"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "POWER LEVEL: MAXIMUM"
       }
     ]
   },
@@ -3388,17 +3253,12 @@
       {
         "desc": "Surge's main attack now splits when hitting walls.",
         "img": "/icons/star-powers/23000283.png",
-        "name": "To The Max"
+        "name": "TO THE MAX!"
       },
       {
         "desc": "Surge keeps his STAGE 1 Super upgrade for the full match duration.",
         "img": "/icons/star-powers/23000284.png",
         "name": "Serve Ice Cold"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "TO THE MAX!"
       }
     ]
   },
@@ -3473,17 +3333,12 @@
       {
         "desc": "Trunk instantly spreads ants in a large area.",
         "img": "/icons/gadgets/23001000.png",
-        "name": "For The Queen"
+        "name": "FOR THE QUEEN!"
       },
       {
         "desc": "Trunk heals from the first source of damage taken for the next x secs.",
         "img": "/icons/gadgets/23001001.png",
         "name": "Worker Ants"
-      },
-      {
-        "desc": "",
-        "img": null,
-        "name": "FOR THE QUEEN!"
       }
     ],
     "id": 16000096,
@@ -3539,15 +3394,15 @@
   },
   "WENDY": {
     "class": "Support",
-    "description": "",
+    "description": "A smart scientist, with a nostalgic soul. After years working in shady corporate laboratories, she left to build Windstock and help the planet, not harm it!",
     "gadgets": [
       {
-        "desc": "",
+        "desc": "Gives Wendy a boost from her platform, letting her jump a short distance.",
         "img": null,
         "name": "WIND-POWERED"
       },
       {
-        "desc": "",
+        "desc": "Lobs a grenade that slows enemies on hit and stops them from healing.",
         "img": null,
         "name": "GREEN GRENADE"
       }
@@ -3558,12 +3413,12 @@
     "rarityColor": "#fe5e72",
     "starPowers": [
       {
-        "desc": "",
+        "desc": "Slows enemies down while they are inside Wendy's shield generator.",
         "img": null,
         "name": "SLOWING SHIELD"
       },
       {
-        "desc": "",
+        "desc": "Wendy's shield generator gains 2000 extra health.",
         "img": null,
         "name": "SOLAR SHIELD"
       }
