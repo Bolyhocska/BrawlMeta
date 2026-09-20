@@ -60,7 +60,7 @@ function readSectionOpen(key, fallback) {
   }
 }
 
-function Section({ title, subtitle, children, defaultOpen = true, storageKey }) {
+function Section({ title, subtitle, children, defaultOpen = true, storageKey, flush = false }) {
   const key = storageKey || (typeof title === "string" ? title : "section");
   const [open, setOpen] = useState(() => readSectionOpen(key, defaultOpen));
 
@@ -73,7 +73,7 @@ function Section({ title, subtitle, children, defaultOpen = true, storageKey }) 
   };
 
   return (
-    <div style={{ ...CARD, padding: 0, overflow: "hidden" }}>
+    <div style={{ ...CARD, padding: 0, overflow: "hidden", ...(flush ? { marginBottom: 0 } : {}) }}>
       <button
         type="button"
         onClick={toggle}
@@ -1167,7 +1167,7 @@ function Tile({ label, value, color = "#e9e9f2", sub }) {
   );
 }
 
-function StandingPanel({ series, pc }) {
+function StandingPanel({ series, pc, flush = false }) {
   const st = useMemo(() => streaks(series), [series]);
   const form = useMemo(() => recentForm(series), [series]);
   const act = useMemo(() => activityCalendar(series, 28), [series]);
@@ -1185,7 +1185,7 @@ function StandingPanel({ series, pc }) {
   };
 
   return (
-    <Section title="Your standing" subtitle="against every tracked player">
+    <Section title="Your standing" subtitle="against every tracked player" flush={flush}>
       {ranked ? (
         <>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
@@ -1269,14 +1269,14 @@ function StandingPanel({ series, pc }) {
 // Account Quality score, which is built from trophies, collection, gears and
 // power levels — all money and time, none of it skill. See rankedQuality().
 
-function QualityPanel({ series, pc, ad }) {
+function QualityPanel({ series, pc, ad, flush = false }) {
   const q = useMemo(() => rankedQuality(series, pc, ad), [series, pc, ad]);
   if (!q) return null;
 
   const tone = q.band.tone;
 
   return (
-    <Section title="Ranked quality" subtitle="one number, four measured parts">
+    <Section title="Ranked quality" subtitle="one number, four measured parts" flush={flush}>
       <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         {/* The ring reads as a gauge at a glance; the number is the content. */}
         <div style={{ position: "relative", width: 104, height: 104, flexShrink: 0 }}>
@@ -1414,8 +1414,27 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
     <>
       <CoverageLine tracked={tracked} seriesCount={series.length} />
       <FactsStrip facts={facts} />
-      <QualityPanel series={series} pc={pc} ad={ad} />
-      <StandingPanel series={series} pc={pc} />
+      {/* Two-up hero. Only these two: they are the short SUMMARY cards, so
+          they fit half a column, and putting them side by side is what gets
+          more than one card above the fold. Everything below stays full
+          width because it is comparative — a percentile ladder, a donut, a
+          28-day calendar, centre-zero delta bars — and those either truncate
+          or lose their labels in a narrow column.
+
+          auto-fit with a 380px floor, so it is one column on a phone with no
+          media query, and align-items:start so a collapsed card shrinks to
+          its header instead of leaving its neighbour stretched. */}
+      <div style={{
+        display: "grid", gap: 14, marginBottom: 14, alignItems: "start",
+        // min(380px, 100%), NOT a bare 380px. minmax() cannot shrink below its
+        // floor, so on a 338px column the track stays 380 and the card runs 61px
+        // off the right edge — measured, and invisible in scrollWidth because an
+        // ancestor clips it. Same failure as the news-page overflow.
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))",
+      }}>
+        <QualityPanel series={series} pc={pc} ad={ad} flush />
+        <StandingPanel series={series} pc={pc} flush />
+      </div>
       <AboveDraftPanel ad={ad} series={series} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}

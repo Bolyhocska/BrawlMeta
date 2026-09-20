@@ -506,7 +506,13 @@ export default function PlayerPage() {
       fontFamily: "'Chakra Petch', sans-serif", WebkitFontSmoothing: "antialiased",
     }}>
       <SiteHeader />
-      <div style={{ position: "relative", zIndex: 2, maxWidth: 880, margin: "0 auto", padding: "34px 5vw 60px" }}>
+      {/* 880 -> 1280 on 2026-09-20. The narrow column was right when this page
+          was a match list and some prose; it is now fourteen analytical panels
+          and it was squeezing every one of them. It also meant the SAME
+          PlayerInsights rendered at 736px here and ~1180px on /profile, which
+          is how the two-up hero row worked on one route and silently stacked on
+          the other. 1280 is what /profile and most of the site already use. */}
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 1280, margin: "0 auto", padding: "34px 5vw 60px" }}>
 
         <button onClick={back.goBack} style={{
           fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: "#8a8a9c",
