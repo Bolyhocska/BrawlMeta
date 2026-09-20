@@ -32,7 +32,7 @@ const looksLikeTag = (raw) => {
   return t.startsWith("#") ? /^[0-9A-Za-z]+$/.test(bare) : TAG_CHARS.test(bare);
 };
 
-export default function PlayerSearch({ compact = false, placeholder = "Look up a player by tag or name" }) {
+export default function PlayerSearch({ compact = false, placeholder = "Look up a player by tag or name", onNavigate }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [rows, setRows] = useState([]);
@@ -95,6 +95,7 @@ export default function PlayerSearch({ compact = false, placeholder = "Look up a
     if (t.length < 3) return;
     setOpen(false); setQ("");
     navigate(`/player/${t}`);
+    onNavigate?.();
   };
   const tagCandidate = looksLikeTag(q) ? normalizeTag(q) : null;
 

@@ -1369,6 +1369,16 @@ export function TournamentProfilePage() {
           {profile?.is_premium && <span style={{ color: GOLD, fontWeight: 700 }}>👑 PREMIUM</span>}
         </div>
 
+        {/* Moved up from chapter 5 (owner, 2026-09-20). It was last because it
+            searches for SOMEONE ELSE and kept interrupting your own stats —
+            but at the bottom of a five-chapter page it may as well not exist,
+            and "look up a player" is a thing you arrive wanting to do. Up here
+            beside your own tag it reads as the other half of the same idea
+            rather than an interruption, so the chapter is gone, not duplicated. */}
+        <div style={{ maxWidth: 420, marginBottom: 18 }}>
+          <PlayerSearch compact placeholder="Look up another player" />
+        </div>
+
         <ChapterNav active={activeChapter} />
 
         {/* 1 · HOW YOU'RE PLAYING */}
@@ -1527,19 +1537,26 @@ export function TournamentProfilePage() {
                 readOnly={tagLocked} title={tagLocked ? "Locked once you've entered a tournament." : undefined} />
               <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f" }}>{tagLocked ? "Frozen — you've competed with it" : "Locks once you enter a tournament"}</span>
             </div>
-            <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Save</button>
+            {/* Save is hidden once BOTH fields are frozen. Before this it still
+                rendered next to two readOnly inputs, so the only control in the
+                section was one that could not change anything — the owner asked
+                what it was for, which is the correct reaction. With both locked
+                this stops being a form and becomes a statement of record, so it
+                says WHY they are locked instead of offering a dead button. */}
+            {!(nameLocked && tagLocked)
+              ? <button type="submit" style={{ ...page.btn, padding: "11px 20px", fontSize: 12 }}>Save</button>
+              : (
+                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7c7e8f", maxWidth: 300, lineHeight: 1.6, paddingBottom: 10 }}>
+                  Both are permanent, so there is nothing to save. The name is unique
+                  across the site and the tag froze when you first competed — that is
+                  what stops an account being sold or impersonated.
+                </span>
+              )}
             {saved && <span className="bm-pop" style={{ fontFamily: MONO, fontSize: 11, color: "#8ee6b0", paddingBottom: 12 }}>SAVED ✔</span>}
             {saveErr && <span style={{ fontFamily: MONO, fontSize: 11, color: "#ff8f8f", paddingBottom: 12 }}>{saveErr}</span>}
           </form>
         </Chapter>
 
-        {/* 5 · LOOK UP A PLAYER. Last, and separated. This box searches for
-            SOMEONE ELSE, and it used to sit between two blocks about you —
-            which is exactly the ordering complaint that prompted the rewrite.
-            Still useful, so it stays; it just stops interrupting your own stats. */}
-        <Chapter {...CHAPTERS[4]} delay={0.16}>
-          <PlayerSearch />
-        </Chapter>
       </div>
     </div>
   );
@@ -1562,7 +1579,6 @@ const CHAPTERS = [
   { id: "improve", n: 2, title: "Get better", blurb: "What to upgrade, and your trophy progress." },
   { id: "tournaments", n: 3, title: "Tournaments", blurb: "Your winnings, entries and match history." },
   { id: "account", n: 4, title: "Account", blurb: "Your name and player tag." },
-  { id: "lookup", n: 5, title: "Look up a player", blurb: "Check anyone else's stats." },
 ];
 
 function ChapterNav({ active }) {

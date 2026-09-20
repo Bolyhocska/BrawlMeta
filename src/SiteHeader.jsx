@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./auth";
+import PlayerSearch from "./PlayerSearch";
 
 const NAV_STYLE = {
   display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#b7b7c6",
@@ -139,7 +140,18 @@ function AccountMenu() {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    // Opens on HOVER as well as click. The menu now carries a player search,
+    // which is a thing you reach for often enough that a click to reveal it
+    // every time is friction. Click still works, and still toggles, so touch
+    // devices (which never fire mouseenter) are unaffected. The close-on-leave
+    // is on the wrapper, not the button, or the menu would vanish as soon as
+    // the pointer travelled from the pill down into it.
+    <div
+      ref={ref}
+      style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         onClick={() => setOpen(o => !o)}
         style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px 5px 6px", borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#f4f4fa", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
@@ -151,7 +163,7 @@ function AccountMenu() {
         {profile?.is_premium && <span style={{ fontSize: 10 }}>👑</span>}
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 210, padding: 8, borderRadius: 16, background: "rgba(13,13,20,.96)", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", zIndex: 200, backdropFilter: "blur(12px)" }}>
+        <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 268, padding: 8, borderRadius: 16, background: "rgba(13,13,20,.96)", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", zIndex: 200, backdropFilter: "blur(12px)" }}>
           <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 6 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#8a7fa6" }}>{profile?.player_tag || "no tag set"}</div>
@@ -166,6 +178,16 @@ function AccountMenu() {
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
             Sign out
           </button>
+
+          {/* Look up anyone, from anywhere on the site. A tag resolves live
+              against the Supercell API so it works for a player we have never
+              seen; a name only matches the directory. */}
+          <div style={{ marginTop: 6, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,.07)" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: 1.3, color: "#8a8a9c", padding: "0 4px 6px" }}>
+              LOOK UP A PLAYER
+            </div>
+            <PlayerSearch compact placeholder="Tag or name" onNavigate={() => setOpen(false)} />
+          </div>
         </div>
       )}
     </div>
