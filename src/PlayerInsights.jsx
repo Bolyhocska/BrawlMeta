@@ -21,7 +21,7 @@ import {
   brawlerModeOutliers, classSplit, PANEL_MIN_ROWS,
   mostEncountered, lossConcentration, modeImprovement,
   partyBreakdown, tiltCurve, sessionDepth, timeOfDay, poolBreadth, starRates,
-  loadPercentiles, streaks, recentForm, activityCalendar,
+  loadPercentiles, streaks, recentForm, activityCalendar, rankedQuality,
 } from "./data/playerStats";
 import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
@@ -1167,14 +1167,7 @@ function Tile({ label, value, color = "#e9e9f2", sub }) {
   );
 }
 
-function StandingPanel({ series, tag }) {
-  const [pc, setPc] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadPercentiles(tag).then(r => { if (!cancelled) setPc(r); });
-    return () => { cancelled = true; };
-  }, [tag]);
-
+function StandingPanel({ series, pc }) {
   const st = useMemo(() => streaks(series), [series]);
   const form = useMemo(() => recentForm(series), [series]);
   const act = useMemo(() => activityCalendar(series, 28), [series]);
@@ -1262,7 +1255,103 @@ function StandingPanel({ series, tag }) {
   );
 }
 
+// ── OP-8 the ranked quality score ────────────────────────────────────────────
+// One number for how well you play RANKED. Deliberately NOT Brawlify's
+// Account Quality score, which is built from trophies, collection, gears and
+// power levels — all money and time, none of it skill. See rankedQuality().
+
+function QualityPanel({ series, pc, ad }) {
+  const q = useMemo(() => rankedQuality(series, pc, ad), [series, pc, ad]);
+  if (!q) return null;
+
+  const tone = q.band.tone;
+
+  return (
+    <Section title="Ranked quality" subtitle="one number, four measured parts">
+      <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+        {/* The ring reads as a gauge at a glance; the number is the content. */}
+        <div style={{ position: "relative", width: 104, height: 104, flexShrink: 0 }}>
+          <svg width="104" height="104" viewBox="0 0 104 104">
+            <circle cx="52" cy="52" r="45" fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="9" />
+            <circle
+              cx="52" cy="52" r="45" fill="none" stroke={tone} strokeWidth="9" strokeLinecap="round"
+              strokeDasharray={`${(q.score / 100) * 2 * Math.PI * 45} ${2 * Math.PI * 45}`}
+              transform="rotate(-90 52 52)" />
+          </svg>
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 800, color: "#f4f4fa", lineHeight: 1 }}>
+              {q.score}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 9, color: "#7c7e8f" }}>/ 100</span>
+          </div>
+        </div>
+
+        <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 19, fontWeight: 800, color: tone }}>
+              {q.band.label}
+            </span>
+            {q.confidence.label && (
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "#ffce7a",
+                             border: "1px solid rgba(255,206,122,.3)", borderRadius: 999, padding: "2px 8px" }}>
+                {q.confidence.label} &plusmn;{q.confidence.band}
+              </span>
+            )}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, color: "#8a8a9c", marginTop: 6, lineHeight: 1.6 }}>
+            From {q.n} drafts. No trophies, no collection, no power levels — only things you did in
+            a ranked match.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: 8, marginTop: 18 }}>
+        {q.parts.map((p) => (
+          <div key={p.key} style={{ display: "grid", gridTemplateColumns: "92px 1fr 38px", gap: 10, alignItems: "center" }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#c9c9d6" }}>{p.label}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,.05)" }}>
+                <div style={{ width: `${p.value}%`, height: "100%", borderRadius: 999, background: tone, opacity: .8 }} />
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#7c7e8f", marginTop: 3 }}>
+                {p.detail} · {p.weight}% of the score
+              </div>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#e9e9f2", textAlign: "right" }}>
+              {Math.round(p.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={NOTE}>
+        {q.missing.length > 0 && (
+          <>
+            <strong style={{ color: "#8a8a9c" }}>Not enough data yet for:</strong>{" "}
+            {q.missing.join(", ")} — those parts are DROPPED and the rest reweighted, rather than
+            scored zero, because absent is not the same as bad.{" "}
+          </>
+        )}
+        <strong style={{ color: "#8a8a9c" }}>Volume is not a component.</strong> Playing more cannot
+        raise this number; it only narrows the band, which is why a thin profile shows the same score
+        marked provisional rather than a smaller one. A score that rewarded games played would partly
+        be measuring free time.
+      </div>
+    </Section>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
+  // One fetch, two consumers (standing + quality). Fetching it twice would
+  // be two RPC round trips for the same row.
+  const [pc, setPc] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadPercentiles(selfTag).then(r => { if (!cancelled) setPc(r); });
+    return () => { cancelled = true; };
+  }, [selfTag]);
+
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
 
@@ -1316,7 +1405,8 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
     <>
       <CoverageLine tracked={tracked} seriesCount={series.length} />
       <FactsStrip facts={facts} />
-      <StandingPanel series={series} tag={selfTag} />
+      <QualityPanel series={series} pc={pc} ad={ad} />
+      <StandingPanel series={series} pc={pc} />
       <AboveDraftPanel ad={ad} series={series} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}

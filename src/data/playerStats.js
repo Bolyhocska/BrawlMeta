@@ -1182,3 +1182,128 @@ export function activityCalendar(series, days = 28) {
   const busiest = out.reduce((m, c) => (c.n > (m?.n || 0) ? c : m), null);
   return { cells: out, days, played, busiest };
 }
+
+// ── OP-8 ranked quality score ────────────────────────────────────────────────
+// A single 0-100 for how well someone plays RANKED.
+//
+// It exists because Brawlify's Account Quality score is the most visible
+// number on their profile and it does not measure skill at all: Trophy
+// Efficiency, Mastery, Collection, Gears, Power Levels and total victories.
+// Every one of those is money and time. A whale who has maxed 44 brawlers and
+// never won a competitive game scores high, and a strong player on a young
+// account scores low. Copying it would import exactly the confusion the rest
+// of this profile is built to avoid.
+//
+// So nothing here reads trophies, collection, gears or power levels. Four
+// components, all of them things you did in a ranked match:
+//
+//   PERCENTILE   45%  where you rank on win rate against every tracked player
+//   ABOVE DRAFT  28%  do you beat what your drafts were worth — skill NET of
+//                     draft luck, which is the one thing no competitor has
+//   COMPOSURE    15%  how much you drop once you are two losses down
+//   BREADTH      12%  how many modes and brawlers you are actually winning on
+//
+// VOLUME IS DELIBERATELY NOT A COMPONENT. Their score rewards grinding
+// directly, which is why it reads high for an account that is merely old.
+// Here it sets CONFIDENCE instead: a thin sample gets the same score with a
+// wider band and a "provisional" label, never a smaller number. Rewarding
+// volume would make the score partly a measure of free time.
+//
+// A component with no data is DROPPED and the rest renormalise, rather than
+// scoring zero — absent is not bad.
+
+const QUALITY_WEIGHTS = { percentile: 45, aboveDraft: 28, composure: 15, breadth: 12 };
+
+// Bands are named for what they say about ranked play, not for prestige.
+const QUALITY_BANDS = [
+  { at: 80, label: "Elite",        tone: "#ffce7a" },
+  { at: 65, label: "Strong",       tone: "#8ee6b0" },
+  { at: 45, label: "Solid",        tone: "#7cc4ff" },
+  { at: 25, label: "Developing",   tone: "#c9a6ff" },
+  { at: 0,  label: "Early days",   tone: "#8b8b9c" },
+];
+
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+/**
+ * @param series   drafts
+ * @param pc       player_percentiles row, or null
+ * @param ad       aboveDraft() result, or null
+ */
+export function rankedQuality(series, pc, ad) {
+  const parts = [];
+
+  // 1. Percentile — already a 0-100 rank, used directly.
+  if (pc && pc.win_rate_pct_rank != null) {
+    parts.push({
+      key: "percentile", label: "Standing", weight: QUALITY_WEIGHTS.percentile,
+      value: Number(pc.win_rate_pct_rank),
+      detail: `${Math.round(Number(pc.win_rate_pct_rank))}th percentile of ${pc.cohort} tracked players`,
+    });
+  }
+
+  // 2. Above Draft, as a z-score so the sample size is priced in. Someone
+  //    +3 wins over 20 drafts has shown less than +3 over 200, and the
+  //    standard error is exactly that difference.
+  if (ad && ad.n >= 10 && ad.se > 0) {
+    const z = Math.max(-3, Math.min(3, ad.delta / ad.se));
+    parts.push({
+      key: "aboveDraft", label: "Above draft", weight: QUALITY_WEIGHTS.aboveDraft,
+      value: clamp01((z + 3) / 6) * 100,
+      detail: `${ad.delta >= 0 ? "+" : ""}${ad.delta.toFixed(1)} wins vs what your drafts were worth`,
+    });
+  }
+
+  // 3. Composure — the drop from fresh to two-or-more losses down. 0 drop or
+  //    better scores full marks; a 20-point collapse scores zero. Only when
+  //    both buckets are rated, or this measures nothing.
+  const tilt = tiltCurve(series);
+  const fresh = tilt.find((b) => b.lo === 0 && b.qualified);
+  const down = [...tilt].reverse().find((b) => b.lo >= 2 && b.qualified);
+  if (fresh && down) {
+    const dropPts = (fresh.rate - down.rate) * 100;
+    parts.push({
+      key: "composure", label: "Composure", weight: QUALITY_WEIGHTS.composure,
+      value: clamp01(1 - dropPts / 20) * 100,
+      detail: dropPts > 0
+        ? `drops ${dropPts.toFixed(0)}pts once two losses down`
+        : `holds up when behind`,
+    });
+  }
+
+  // 4. Breadth — modes and brawlers you are actually WINNING on, measured
+  //    against 50% rather than against your own average. Self-relative would
+  //    be circular: roughly half of anything is above its own mean.
+  const modes = modeRates(series).filter((r) => r.qualified);
+  const brawlers = ownBrawlerRates(series).filter((r) => r.qualified);
+  if (modes.length >= 2 || brawlers.length >= 2) {
+    const modeWin = modes.filter((r) => r.raw >= 0.5).length;
+    const brawlerWin = brawlers.filter((r) => r.raw >= 0.5).length;
+    // Six winning modes is every mode; six winning brawlers is a real pool.
+    const v = (clamp01(modeWin / 6) * 0.5) + (clamp01(brawlerWin / 6) * 0.5);
+    parts.push({
+      key: "breadth", label: "Breadth", weight: QUALITY_WEIGHTS.breadth,
+      value: v * 100,
+      detail: `winning on ${modeWin} mode${modeWin === 1 ? "" : "s"} and ${brawlerWin} brawler${brawlerWin === 1 ? "" : "s"}`,
+    });
+  }
+
+  if (!parts.length) return null;
+
+  // Renormalise over the components we actually have.
+  const wsum = parts.reduce((a, p) => a + p.weight, 0);
+  const score = Math.round(parts.reduce((a, p) => a + p.value * p.weight, 0) / wsum);
+  const band = QUALITY_BANDS.find((b) => score >= b.at);
+
+  // CONFIDENCE, not a score input. Drafts, because that is the unit the whole
+  // page counts in.
+  const n = series.length;
+  const confidence = n >= 150 ? { key: "solid", label: "", band: 0 }
+                   : n >= 60  ? { key: "fair", label: "Provisional", band: 5 }
+                   :            { key: "thin", label: "Provisional", band: 10 };
+
+  return {
+    score, band, parts, n, confidence,
+    missing: Object.keys(QUALITY_WEIGHTS).filter(k => !parts.some(p => p.key === k)),
+  };
+}
