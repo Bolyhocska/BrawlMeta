@@ -877,32 +877,33 @@
     ]
   },
   "COSMO": {
-    "class": "",
-    "description": "",
+    "class": "Controller",
+    "description": "Cosmo is the lead astronomer at Starr Park's Observatory. Besides teaching visitors about the universe, he is constantly gazing at the stars searching for something...",
     "gadgets": [
       {
-        "desc": "",
+        "desc": "Knocks back enemies in a selected area.",
         "img": null,
         "name": "PLANETARY PUSHBACK"
       },
       {
-        "desc": "",
+        "desc": "Reveals an area for 6 seconds and blocks dashes, jumps and teleports.",
         "img": null,
         "name": "TELESCOPE TRAP"
       }
     ],
     "id": 16000109,
     "imageUrl": "/icons/brawlers/16000109.png",
-    "rarity": "",
-    "rarityColor": "#888888",
+    "rankedEligible": false,
+    "rarity": "Mythic",
+    "rarityColor": "#fe5e72",
     "starPowers": [
       {
-        "desc": "",
+        "desc": "Increases the orbit speed of Cosmo's main attack by 25%.",
         "img": null,
         "name": "PRECESSION"
       },
       {
-        "desc": "",
+        "desc": "Reloads 2 ammo when you hit an enemy with your Super.",
         "img": null,
         "name": "AMMO ATTRACTOR"
       }
@@ -3519,8 +3520,10 @@
     ],
     "id": 16000110,
     "imageUrl": "/icons/brawlers/16000110.png",
+    "rankedEligible": false,
     "rarity": "",
     "rarityColor": "#888888",
+    "released": false,
     "starPowers": [
       {
         "desc": "",

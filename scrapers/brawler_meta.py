@@ -138,7 +138,16 @@ def report(meta):
     """Everything a human still has to fill. Exit code is informational only."""
     no_desc, no_kit, no_meta_fields, no_icon, empty_subdesc = [], [], [], [], []
 
+    # An UNRELEASED brawler cannot have art, a rarity or a description yet, so
+    # nagging about it every day until it ships trains you to ignore the whole
+    # report. The official /brawlers endpoint lists brawlers BEFORE release —
+    # VINCE was in it in September for an October launch. Mark it by hand with
+    # "released": false; merge_entries never touches that key, so it survives.
+    unreleased = sorted(k for k, e in meta.items() if e.get("released") is False)
+
     for key, entry in sorted(meta.items()):
+        if entry.get("released") is False:
+            continue
         if not (entry.get("description") or "").strip():
             no_desc.append(key)
         if not entry.get("starPowers") or not entry.get("gadgets"):
@@ -154,6 +163,9 @@ def report(meta):
                     empty_subdesc.append(f"{key}/{sub.get('name')}")
 
     print(f"\nbrawlerMeta.json: {len(meta)} brawlers")
+    if unreleased:
+        print("  . " + str(len(unreleased)) + " not released yet, skipped: "
+              + ", ".join(unreleased))
     for label, rows in (
         ("MISSING PORTRAIT (page renders broken)", no_icon),
         ("MISSING rarity/class (tier list colour wrong)", no_meta_fields),
