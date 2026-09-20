@@ -21,6 +21,7 @@ import {
   brawlerModeOutliers, classSplit, PANEL_MIN_ROWS,
   mostEncountered, lossConcentration, modeImprovement,
   partyBreakdown, tiltCurve, sessionDepth, timeOfDay, poolBreadth, starRates,
+  loadPercentiles, streaks, recentForm, activityCalendar,
 } from "./data/playerStats";
 import { DonutChart } from "./Charts";
 import { classLabel } from "./data/draftEngine";
@@ -34,7 +35,6 @@ const CARD = {
   padding: "18px 20px", borderRadius: 16, marginBottom: 14,
   background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
 };
-const EYEBROW = { fontFamily: MONO, fontSize: 11, letterSpacing: 1.9, color: "#8b8b9c", marginBottom: 10 };
 const NOTE = { fontFamily: MONO, fontSize: 10, color: "#7c7e8f", marginTop: 10, lineHeight: 1.65 };
 
 // ── collapsible section ──────────────────────────────────────────────────────
@@ -1122,6 +1122,146 @@ function PoolPanel({ series }) {
   );
 }
 
+// ── OP-7 standing ────────────────────────────────────────────────────────────
+// The only panel on this page that compares the player to other people. It is
+// also the one most able to flatter, so the cohort caveat is not a footnote —
+// every tracked player was seeded from a Masters/Diamond list or is within two
+// hops of one, and the cohort median is ~57%, not 50%.
+
+/** A percentile ladder with the player's position marked. */
+function PercentileBar({ value, p10, p50, p90 }) {
+  // Domain from the cohort itself, padded — a 0-100 axis would squash every
+  // real player into the middle third and make the ladder useless.
+  const lo = Math.min(p10, value) - 3;
+  const hi = Math.max(p90, value) + 3;
+  const at = (v) => `${Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100))}%`;
+  const tick = (v, label, strong) => (
+    <div style={{ position: "absolute", left: at(v), top: 0, bottom: 0 }}>
+      <div style={{ position: "absolute", top: -3, bottom: -3, width: 1, background: strong ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.14)" }} />
+      <div style={{ position: "absolute", top: 14, transform: "translateX(-50%)", fontFamily: MONO, fontSize: 9, color: "#6b6d7c", whiteSpace: "nowrap" }}>
+        {label}
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ position: "relative", height: 34, margin: "14px 0 6px" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 4, height: 6, borderRadius: 999, background: "linear-gradient(90deg,rgba(255,143,143,.25),rgba(255,206,122,.25),rgba(142,230,176,.3))" }} />
+      {tick(p10, "10th", false)}
+      {tick(p50, "median", true)}
+      {tick(p90, "90th", false)}
+      <div style={{ position: "absolute", left: at(value), top: -2, transform: "translateX(-50%)" }}>
+        <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#c9a6ff", border: "2px solid #0d0d14", boxShadow: "0 0 10px rgba(201,166,255,.6)" }} />
+      </div>
+    </div>
+  );
+}
+
+/** Small stat tile, shared by the standing strip. */
+function Tile({ label, value, color = "#e9e9f2", sub }) {
+  return (
+    <div style={{ padding: "10px 12px", borderRadius: 11, background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.07)" }}>
+      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.2, color: "#8b8b9c", marginBottom: 5 }}>{label}</div>
+      <div style={{ fontFamily: DISPLAY, fontSize: 19, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontFamily: MONO, fontSize: 9.5, color: "#7c7e8f", marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function StandingPanel({ series, tag }) {
+  const [pc, setPc] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadPercentiles(tag).then(r => { if (!cancelled) setPc(r); });
+    return () => { cancelled = true; };
+  }, [tag]);
+
+  const st = useMemo(() => streaks(series), [series]);
+  const form = useMemo(() => recentForm(series), [series]);
+  const act = useMemo(() => activityCalendar(series, 28), [series]);
+  if (!series.length) return null;
+
+  const ranked = pc && pc.win_rate_pct_rank != null;
+  // The PERCENTILE itself, not "top N%". A player on the 28th percentile is
+  // literally "top 72%", which is true, reads as praise, and is the exact
+  // kind of spin this page does not do. An ordinal is neutral in both
+  // directions and needs no interpretation.
+  const rank = ranked ? Math.round(Number(pc.win_rate_pct_rank)) : null;
+  const ordinal = (n) => {
+    const s2 = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s2[(v - 20) % 10] || s2[v] || s2[0]);
+  };
+
+  return (
+    <Section title="Your standing" subtitle="against every tracked player">
+      {ranked ? (
+        <>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 30, fontWeight: 800,
+                           color: rank >= 50 ? "#8ee6b0" : "#c9a6ff", lineHeight: 1 }}>
+              {ordinal(rank)}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c" }}>
+              percentile by win rate &mdash; better than {rank}% of{" "}
+              {Number(pc.cohort).toLocaleString("en-US")} tracked players
+            </span>
+          </div>
+          <PercentileBar
+            value={Number(pc.my_win_rate)}
+            p10={Number(pc.p10)} p50={Number(pc.p50)} p90={Number(pc.p90)} />
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c", marginTop: 14 }}>
+            More active than {Math.round(Number(pc.volume_pct_rank))}% of them ({pc.my_rounds} rounds tracked).
+          </div>
+        </>
+      ) : (
+        <div style={{ fontFamily: MONO, fontSize: 11.5, color: "#8a8a9c", lineHeight: 1.7 }}>
+          {pc
+            ? `Needs ${pc.min_rounds_used} tracked rounds to be ranked against the cohort — you have ${pc.my_rounds || 0}.`
+            : "Loading…"}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gap: 10, marginTop: 18, gridTemplateColumns: "repeat(auto-fit,minmax(118px,1fr))" }}>
+        <Tile label="CURRENT" value={st.current ? `${st.current.length}${st.current.won ? "W" : "L"}` : "—"}
+              color={st.current?.won ? "#8ee6b0" : "#ff8f8f"} />
+        <Tile label="BEST WIN RUN" value={st.bestWin || "—"} color="#8ee6b0" />
+        <Tile label="WORST SKID" value={st.worstLoss || "—"} color="#ff8f8f" />
+        <Tile label="ACTIVE DAYS" value={`${act.played}/${act.days}`} />
+        {form && (
+          <Tile label={`LAST ${form.n}`} value={`${Math.round(form.rate * 100)}%`}
+                color={form.deltaPts >= 0 ? "#8ee6b0" : "#ff8f8f"}
+                sub={`${form.deltaPts >= 0 ? "+" : ""}${form.deltaPts.toFixed(1)}pp vs all-time`} />
+        )}
+      </div>
+
+      <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.2, color: "#8b8b9c", margin: "18px 0 8px" }}>
+        LAST 28 DAYS
+      </div>
+      <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+        {act.cells.map((c, i) => {
+          // Four steps, not a continuous ramp: at these volumes a gradient is
+          // indistinguishable cell to cell and reads as noise.
+          const lvl = c.n === 0 ? 0 : c.n <= 2 ? 1 : c.n <= 5 ? 2 : c.n <= 9 ? 3 : 4;
+          const bg = ["rgba(255,255,255,.04)", "rgba(201,166,255,.22)", "rgba(201,166,255,.42)",
+                      "rgba(201,166,255,.66)", "rgba(201,166,255,.95)"][lvl];
+          return (
+            <div key={i} title={`${c.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${c.n} draft${c.n === 1 ? "" : "s"}${c.n ? `, ${c.wins}W` : ""}`}
+                 style={{ width: 14, height: 14, borderRadius: 3, background: bg, border: "1px solid rgba(255,255,255,.05)" }} />
+          );
+        })}
+      </div>
+
+      <div style={NOTE}>
+        <strong style={{ color: "#8a8a9c" }}>Read the cohort carefully.</strong> It is every player we
+        track, and every one of them was seeded from a Masters or Diamond list or played against
+        someone who was — so the middle of this ladder sits near {pc ? `${pc.p50}%` : "57%"}, not 50%.
+        Being mid-table here is not being mid-table in Brawl Stars. The ranking uses rounds rather
+        than drafts so that every player is measured the same way; that is why no percentage is
+        printed beside the rank, since it would not match the draft-based rate above.
+      </div>
+    </Section>
+  );
+}
+
 export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, compact = false }) {
   const [graded, setGraded] = useState(null);
   const series = useMemo(() => toSeries(rows || []), [rows]);
@@ -1176,6 +1316,7 @@ export default function PlayerInsights({ rows, tracked, selfTag, onOpenPlayer, c
     <>
       <CoverageLine tracked={tracked} seriesCount={series.length} />
       <FactsStrip facts={facts} />
+      <StandingPanel series={series} tag={selfTag} />
       <AboveDraftPanel ad={ad} series={series} />
       <BucketsPanel buckets={buckets} />
       {intel && <FingerprintPanel rows={classFingerprint(series, intel)} n={series.length} />}

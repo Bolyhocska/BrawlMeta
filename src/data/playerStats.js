@@ -1087,3 +1087,98 @@ export function starRates(series, minKnown = 10) {
       .sort((a, b) => b.rate - a.rate),
   };
 }
+
+// ── OP-7 standing: percentile, streaks, recent form, activity ────────────────
+// The "am I actually good" half. Everything else on this page is internal to
+// the player ("is this different for ME"); this is the only part that answers
+// the question against other people.
+
+/**
+ * Where this player sits against every other tracked player.
+ *
+ * Brawlify charges $4.99/mo for the equivalent; it is free here because
+ * players never pay on this site and the data is already ours.
+ *
+ * The RPC returns ROUND-based rates for everyone, so the ordering is valid
+ * even though the profile headline counts series. Show the RANK, never the
+ * RPC's win rate, or the page contradicts itself two cards apart.
+ */
+export function loadPercentiles(tag) {
+  if (!tag) return Promise.resolve(null);
+  return supabase
+    .rpc("player_percentiles", { target_tag: tag })
+    .then(({ data, error }) => (error ? null : (data && data[0]) || null))
+    .catch(() => null);
+}
+
+/**
+ * Win / loss streaks over the player's whole history, newest first.
+ *
+ * Counted in SERIES across the full history rather than inside a session,
+ * unlike tiltCurve — a best-ever streak that reset every time you went to bed
+ * would not be a record of anything.
+ */
+export function streaks(series) {
+  const asc = [...series].sort(
+    (a, b) => new Date(a.started_at) - new Date(b.started_at));
+  let bestWin = 0, worstLoss = 0, run = 0, breaks = 0;
+  let prev = null;
+  for (const s of asc) {
+    if (prev === null || s.won === prev) run += 1;
+    else { breaks += 1; run = 1; }
+    if (s.won) bestWin = Math.max(bestWin, run);
+    else worstLoss = Math.max(worstLoss, run);
+    prev = s.won;
+  }
+  // `run`/`prev` now describe the most recent streak, which is the live one.
+  return {
+    bestWin, worstLoss, breaks,
+    current: asc.length ? { won: prev, length: run } : null,
+  };
+}
+
+/** Win rate over the most recent N drafts, against the all-time rate. */
+export function recentForm(series, n = 20) {
+  const desc = [...series].sort(
+    (a, b) => new Date(b.started_at) - new Date(a.started_at));
+  const slice = desc.slice(0, n);
+  if (slice.length < Math.min(n, 10)) return null;
+  const wins = slice.filter(s => s.won).length;
+  const all = baselineRate(series);
+  return {
+    n: slice.length,
+    wins,
+    rate: wins / slice.length,
+    allTime: all,
+    deltaPts: (wins / slice.length - all) * 100,
+  };
+}
+
+/**
+ * Per-day draft counts for the last `days` days, oldest first, with empty
+ * days included — a calendar with the gaps removed is not a calendar.
+ */
+export function activityCalendar(series, days = 28) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const byDay = new Map();
+  for (const s of series) {
+    const d = new Date(s.started_at);
+    d.setHours(0, 0, 0, 0);
+    const k = d.getTime();
+    const cur = byDay.get(k) || { n: 0, wins: 0 };
+    cur.n += 1;
+    if (s.won) cur.wins += 1;
+    byDay.set(k, cur);
+  }
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const cell = byDay.get(d.getTime()) || { n: 0, wins: 0 };
+    out.push({ date: d, ...cell });
+  }
+  const played = out.filter(c => c.n > 0).length;
+  const busiest = out.reduce((m, c) => (c.n > (m?.n || 0) ? c : m), null);
+  return { cells: out, days, played, busiest };
+}
