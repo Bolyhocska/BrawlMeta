@@ -1195,7 +1195,7 @@ function StandingPanel({ series, pc }) {
             </span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: "#8a8a9c" }}>
               percentile by win rate &mdash; better than {rank}% of{" "}
-              {Number(pc.cohort).toLocaleString("en-US")} tracked players
+              {Number(pc.cohort).toLocaleString("en-US")} <strong>Masters-tier</strong> players we track
             </span>
           </div>
           <PercentileBar
@@ -1244,12 +1244,21 @@ function StandingPanel({ series, pc }) {
       </div>
 
       <div style={NOTE}>
-        <strong style={{ color: "#8a8a9c" }}>Read the cohort carefully.</strong> It is every player we
-        track, and every one of them was seeded from a Masters or Diamond list or played against
-        someone who was — so the middle of this ladder sits near {pc ? `${pc.p50}%` : "57%"}, not 50%.
-        Being mid-table here is not being mid-table in Brawl Stars. The ranking uses rounds rather
-        than drafts so that every player is measured the same way; that is why no percentage is
-        printed beside the rank, since it would not match the draft-based rate above.
+        <strong style={{ color: "#8a8a9c" }}>Who you are being compared to.</strong> Not the top{" "}
+        {pc ? Number(pc.cohort).toLocaleString("en-US") : "1,000"} players in the world &mdash; a
+        SAMPLE of Masters-tier players. We start from the global top 200 and the Masters list, then
+        walk two hops out through their battlelogs, so the cohort is them, their opponents, and
+        their opponents&apos; opponents. Of the current {pc ? Number(pc.cohort).toLocaleString("en-US") : ""}{" "}
+        only about 56 are verifiably in the global top 200.
+        <br /><br />
+        Two consequences. The middle of this ladder sits near {pc ? `${pc.p50}%` : "57%"}, not 50%,
+        so mid-table here is well above average in Brawl Stars. And because the spider finds people
+        by seeing them in battlelogs, it favours HIGH-VOLUME players — this is Masters-tier
+        grinders more than Masters-tier players in general.
+        <br /><br />
+        The ranking uses rounds rather than drafts so every player is measured identically; that is
+        why no percentage is printed beside the rank, since it would not match the draft-based rate
+        shown elsewhere on this page.
       </div>
     </Section>
   );
