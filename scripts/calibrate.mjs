@@ -166,7 +166,15 @@ const problems = [], warnings = [];
 if (logloss(shipped) >= BASE) problems.push(`logloss ${logloss(shipped).toFixed(4)} is no better than always saying 50/50 (${BASE.toFixed(4)})`);
 if (A < 0.52) problems.push(`AUC ${A.toFixed(4)} is barely better than a coin flip`);
 const soft = thin ? warnings : problems;
-if (Math.abs(fitted.s - shipped) / shipped > 0.5) soft.push(`logisticScale ${shipped} is far from the fitted ${fitted.s} - the engine is mis-stating its confidence`);
+// 15%, tightened from 50% on 2026-09-20 because at 50% THIS GATE COULD NEVER
+// FIRE FIRST. Measured: a 23% drift (shipped 31 against a fitted 38.25)
+// already produced a 3.8pp worst-bucket gap, so the 5pp bucket gate trips at
+// roughly 30% drift and the scale gate was strictly dominated — dead weight.
+// It is also the more useful of the two, because it names the CAUSE ("the
+// scale is wrong", a one-line fix) where the bucket gap only names a SYMPTOM.
+// Ordering them this way means the cheap diagnosis arrives first.
+const SCALE_DRIFT_MAX = 0.15;
+if (Math.abs(fitted.s - shipped) / shipped > SCALE_DRIFT_MAX) soft.push(`logisticScale ${shipped} is ${(100 * Math.abs(fitted.s - shipped) / shipped).toFixed(0)}% from the fitted ${fitted.s} - the engine is mis-stating its confidence`);
 if (worstGap > 5) soft.push(`a calibration bucket is off by ${worstGap.toFixed(1)}pp`);
 if (thin) console.log(`
   (test set is ${diffs.length.toLocaleString("en-US")} games, under ${THIN_TEST.toLocaleString("en-US")} - bucket and scale checks are advisory this run)`);
