@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import PlayerInsights from "./PlayerInsights";
+import PlayerInsights, { TrophyCurve } from "./PlayerInsights";
 import PlayerSearch from "./PlayerSearch";
 import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
@@ -1227,6 +1227,7 @@ export function TournamentProfilePage() {
   const [matchHistory, setMatchHistory] = useState([]);
   const [ranked, setRanked] = useState([]);
   const [trackedRow, setTrackedRow] = useState(null);
+  const [snapshots, setSnapshots] = useState([]);
   const rankedSeries = useMemo(() => toSeries(ranked), [ranked]);
   const myTag = profile?.player_tag || null;
 
@@ -1260,7 +1261,11 @@ export function TournamentProfilePage() {
   }, [profile]);
 
   useEffect(() => {
-    if (!myTag) { setWallet(null); setHistory([]); setMatchHistory([]); setRanked([]); setTrackedRow(null); return; }
+    if (!myTag) {
+      setWallet(null); setHistory([]); setMatchHistory([]);
+      setRanked([]); setTrackedRow(null); setSnapshots([]);
+      return;
+    }
     supabase.from("UserWallets").select("*").eq("player_tag", myTag).maybeSingle()
       .then(({ data }) => setWallet(data));
     supabase.from("Registrations").select("*, Tournaments(name,status,prize_pool_total)").eq("player_tag", myTag)
@@ -1284,12 +1289,17 @@ export function TournamentProfilePage() {
       const M = Object.fromEntries((mp || []).map(x => [x.id, x]));
       const P = Object.fromEntries((pa || []).map(x => [x.id, x.name]));
       const R = Object.fromEntries((rb || []).map(x => [x.id, x.name]));
-      const [{ data: rows }, { data: tp }] = await Promise.all([
+      const [{ data: rows }, { data: tp }, { data: snaps }] = await Promise.all([
         supabase.from("player_matches")
           .select("match_key,battle_time,map_id,brawler_id,patch_id,bracket_id,result,is_star_player,team_brawlers,enemy_brawlers,team_tags,enemy_tags")
           .eq("player_tag", myTag).order("battle_time", { ascending: false }).limit(300),
         supabase.from("tracked_players")
           .select("player_tag,boosted,poll_interval_mins,first_seen_at").eq("player_tag", myTag).limit(1),
+        // Progression history for the curve in "Get better", whose blurb has
+        // promised "your trophy progress" since this page was written.
+        supabase.from("player_snapshots")
+          .select("taken_at,trophies")
+          .eq("player_tag", myTag).order("taken_at", { ascending: false }).limit(400),
       ]);
       setRanked((rows || []).map(r => ({
         ...r,
@@ -1299,6 +1309,7 @@ export function TournamentProfilePage() {
         patch: P[r.patch_id] || null, bracket: R[r.bracket_id] || null,
       })));
       setTrackedRow(tp?.[0] || null);
+      setSnapshots(snaps || []);
     })();
   }, [myTag]);
 
@@ -1446,6 +1457,16 @@ export function TournamentProfilePage() {
             </span>
             <ChevronRight size={18} style={{ color: "#c9a6ff", flexShrink: 0 }} />
           </button>
+
+          {/* The curve itself. It lives HERE rather than among the ranked
+              panels in chapter 1: those are explicitly "competitive Ranked
+              only" and trophies are a ladder stat, so putting it there invited
+              the comparison chapter 1 is careful to avoid. This chapter already
+              promised it — CHAPTERS[1].blurb says "and your trophy progress" —
+              and until now only the boost upsell below rendered, which claimed
+              "your trophy curve is recorded daily and shown free" next to no
+              curve at all. */}
+          <TrophyCurve snapshots={snapshots} />
 
           {/* PROGRESSION. Trophy history is free for everyone — a curve is not
               something to withhold, and gating it behind signup would be the same
