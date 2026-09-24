@@ -2,8 +2,11 @@
 // Boost a profile into deeper tracking, or opt it out of tracking entirely.
 //
 // Body: { tag, action: "boost" | "untrack" }
-//   boost   → poll this profile every ~3h instead of ~12h, and start recording
-//             trophy/progression snapshots for it.
+//   boost   → poll this profile every ~3h instead of ~12h, and refresh the
+//             PER-BRAWLER trophy detail daily instead of weekly. It does not
+//             turn progression snapshots on: player_tracker takes one for every
+//             tracked player at SNAPSHOT_EVERY_HOURS. Both this comment and the
+//             privacy policy claimed otherwise until 2026-09-24.
 //   untrack → stop tracking, delete stored history, and tombstone the tag so a
 //             later lookup cannot silently re-enrol it.
 //
@@ -69,7 +72,7 @@ export default async function handler(req, res) {
       tracked: true,
       boosted: true,
       pollIntervalMins: out?.poll_interval_mins ?? 180,
-      message: "Boosted. This profile now updates several times a day and records trophy history.",
+      message: "Boosted. This profile now updates several times a day, and its per-brawler trophy detail refreshes daily.",
     });
   } catch (e) {
     console.error("track-player error:", e);

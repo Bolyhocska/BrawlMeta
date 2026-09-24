@@ -44,9 +44,9 @@ const CONTROLLER = {
 };
 
 const META = {
-  updated: "20/09/2026",
+  updated: "24/09/2026",
   jurisdiction: "EU · GDPR",
-  version: "1.2",
+  version: "1.3",
 };
 
 const SECTIONS = [
@@ -222,6 +222,15 @@ export function PrivacyPolicyPage() {
                   the brawler that player used, whether they won, and the tags and brawlers of the
                   other five players in the match. All of it comes from the official Brawl Stars API,
                   which publishes this for any tag to anyone who asks.</P>
+                <P>
+                  <Term>Also, about once a day, a progression snapshot:</Term> trophies, highest
+                  trophies, experience level, 3v3 / solo / duo win totals, how many brawlers are
+                  owned, and club tag — plus, weekly, the trophy count per brawler. This is kept as a
+                  dated series rather than a current value, so it forms a history of how an account
+                  has progressed, and <Term>the trophy part of it is shown publicly</Term> as a chart
+                  on that player's profile page. It applies to every tracked player, not only to those
+                  who asked to be followed more closely.
+                </P>
                 <P><Term>Whose history gets recorded:</Term> three groups, and the third is the largest.</P>
                 <UL>
                   <LI>Players on public competitive leaderboards, which we track to build the ranked meta.</LI>
@@ -252,7 +261,10 @@ export function PrivacyPolicyPage() {
                 </Callout>
                 <P>
                   <Term>Boosting</Term> is the opposite choice. It asks us to check a profile every
-                  few hours instead of twice a day and to record trophy and progression history too.
+                  few hours instead of twice a day, and to refresh the per-brawler trophy detail daily
+                  rather than weekly. It does <Term>not</Term> decide whether progression history is
+                  recorded at all — that happens for everyone we track, and an earlier version of this
+                  page described it as a boost feature, which understated what we collect.
                   It is <Term>free and always will be</Term>. It exists because the extra requests
                   cost us real capacity, so we spend them where someone actually wants them — not as
                   a paid tier.

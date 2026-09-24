@@ -568,7 +568,9 @@ export function TrophyCurve({ snapshots }) {
         <circle cx={x(pts[pts.length - 1].t)} cy={y(pts[pts.length - 1].v)} r="3.4" fill="#ffce7a" />
       </svg>
       <div style={NOTE}>
-        One point a day from when tracking started — free for everyone, no account needed.
+        About one point a day from when tracking started — free for everyone, no account
+        needed. The poll runs on a 20-hour cycle so a day never gets skipped, which means a
+        calendar day occasionally carries two points.
         {pts.length < 7 && ` ${pts.length} days so far; the shape gets meaningful after a week or two.`}
       </div>
     </Section>

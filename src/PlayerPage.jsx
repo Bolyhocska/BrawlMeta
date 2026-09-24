@@ -21,7 +21,7 @@ import SiteHeader from "./SiteHeader";
 import { supabase, formatBrawlerName, MODE_COLORS, formatMode, CURRENT_PATCH, useSmartBack } from "./appCore";
 import { computeWinSplit } from "./data/draftEngine";
 import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
-import PlayerInsights from "./PlayerInsights";
+import PlayerInsights, { TrophyCurve } from "./PlayerInsights";
 import PlayerSearch from "./PlayerSearch";
 import UpgradeAdvisor from "./UpgradeAdvisor";
 import BRAWLER_META from "./data/brawlerMeta.json";
@@ -36,7 +36,7 @@ const brawlerArt = (name) => BRAWLER_META[String(name || "").toUpperCase()]?.ima
 // ── data ─────────────────────────────────────────────────────────────────────
 
 function usePlayerHistory(tag) {
-  const [state, setState] = useState({ loading: true, rows: [], tracked: null, error: null });
+  const [state, setState] = useState({ loading: true, rows: [], tracked: null, snapshots: [], error: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +54,7 @@ function usePlayerHistory(tag) {
         const pById = Object.fromEntries((patches || []).map(x => [x.id, x.name]));
         const rById = Object.fromEntries((brackets || []).map(x => [x.id, x.name]));
 
-        const [{ data: rows, error }, { data: trackedRows }] = await Promise.all([
+        const [{ data: rows, error }, { data: trackedRows }, { data: snapRows }] = await Promise.all([
           supabase
             .from("player_matches")
             .select("match_key,battle_time,map_id,brawler_id,patch_id,bracket_id,result,is_star_player,team_brawlers,enemy_brawlers,team_tags,enemy_tags")
@@ -66,6 +66,16 @@ function usePlayerHistory(tag) {
             .select("player_tag,boosted,opted_out,last_seen_name,first_seen_at")
             .eq("player_tag", tag)
             .limit(1),
+          // Trophy/progression history. Recorded for EVERY tracked player at
+          // SNAPSHOT_EVERY_HOURS (20), not just boosted ones — boost only
+          // upgrades the per-brawler detail from weekly to daily. 400 rows is
+          // over a year at one a day, and retention ages them out at 365.
+          supabase
+            .from("player_snapshots")
+            .select("taken_at,trophies")
+            .eq("player_tag", tag)
+            .order("taken_at", { ascending: false })
+            .limit(400),
         ]);
         if (error) throw error;
         if (cancelled) return;
@@ -84,9 +94,10 @@ function usePlayerHistory(tag) {
           // rather than quietly grading a Diamond game against Masters data.
           bracket: rById[r.bracket_id] || null,
         }));
-        setState({ loading: false, rows: hydrated, tracked: trackedRows?.[0] || null, error: null });
+        setState({ loading: false, rows: hydrated, tracked: trackedRows?.[0] || null,
+                   snapshots: snapRows || [], error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, rows: [], tracked: null, error: e.message });
+        if (!cancelled) setState({ loading: false, rows: [], tracked: null, snapshots: [], error: e.message });
       }
     })();
     return () => { cancelled = true; };
@@ -375,7 +386,7 @@ function TrackingBox({ tag, tracked, historyCount }) {
   if (state === "boosted" || tracked?.boosted) {
     return (
       <div style={{ ...box, borderColor: "rgba(142,230,176,.32)", background: "rgba(142,230,176,.07)", color: "#8ee6b0" }}>
-        ⚡ Boosted — this profile updates several times a day and records trophy history.
+        ⚡ Boosted — this profile updates several times a day, and its per-brawler trophy detail refreshes daily.
       </div>
     );
   }
@@ -451,7 +462,7 @@ export default function PlayerPage() {
 
   const [live, setLive] = useState(null);
   const [liveErr, setLiveErr] = useState(null);
-  const { loading, rows, tracked } = usePlayerHistory(tag);
+  const { loading, rows, tracked, snapshots } = usePlayerHistory(tag);
 
   useEffect(() => {
     let cancelled = false;
@@ -562,6 +573,15 @@ export default function PlayerPage() {
             background: "rgba(255,143,143,.07)", border: "1px solid rgba(255,143,143,.25)", color: "#ff8f8f",
           }}>{liveErr}</div>
         )}
+
+        {/* Trophy history sits HERE, directly under the header's trophy
+            number, and deliberately not among the PlayerInsights panels. It was
+            pulled out of those on 2026-09-19 because they are ranked-only and a
+            trophy curve invited exactly the comparison they avoid — but the
+            header card has printed a live trophy count all along, so this is
+            where a trophy STAT already belongs. It renders nothing until there
+            are two snapshots, so an untracked or brand-new tag sees no gap. */}
+        <TrophyCurve snapshots={snapshots} />
 
         <TrackingBox tag={tag} tracked={tracked} historyCount={rows.length} />
 
