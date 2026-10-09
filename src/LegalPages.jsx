@@ -16,7 +16,10 @@
 //   · player tracking    tracked_players / player_matches / player_snapshots,
 //                        enrolled by /api/player on every lookup
 //   · OCR                api/_lib/ocr.js sends screenshots to Anthropic
-//   · analytics          none — no gtag/plausible/posthog anywhere
+//   · analytics          Vercel Web Analytics, mounted in src/main.jsx (2026-10-09).
+//                        COOKIELESS and no cross-site tracking, which is why
+//                        section 04 still truthfully says there is nothing to
+//                        consent to. Still no gtag/plausible/posthog.
 //
 // Structure follows the shape the owner asked for (numbered sections, a
 // contents index, a metadata strip). Deliberately NOT copied from the
@@ -44,9 +47,9 @@ const CONTROLLER = {
 };
 
 const META = {
-  updated: "24/09/2026",
+  updated: "09/10/2026",
   jurisdiction: "EU · GDPR",
-  version: "1.3",
+  version: "1.4",
 };
 
 const SECTIONS = [
@@ -194,10 +197,24 @@ export function PrivacyPolicyPage() {
               <Sec {...SECTIONS[0]}>
                 <Q>What do we collect from people who visit the site?</Q>
                 <P>
-                  <Term>Nothing, if you are just browsing.</Term> The tier list, brawler guides,
-                  draft assistant and leaderboards need no account, set no tracking cookies, and
-                  store nothing about you. There is no analytics or advertising software anywhere on
-                  this site.
+                  <Term>Almost nothing, if you are just browsing.</Term> The tier list, brawler
+                  guides, draft assistant and leaderboards need no account and set no cookies of any
+                  kind. There is no advertising software anywhere on this site and there never will
+                  be.
+                </P>
+                <P>
+                  <Term>What we do measure, since 9 October 2026:</Term> page views, through Vercel
+                  Web Analytics. It records which page was opened, roughly where in the world the
+                  request came from, and what kind of device and browser it was. It sets{" "}
+                  <Term>no cookies</Term>, assigns you no identifier, and cannot follow you to any
+                  other website — so it cannot build a profile of you and there is nothing here to
+                  opt out of. Vercel already hosts this site, so your request reaches them either
+                  way; this only means a count is kept.
+                </P>
+                <P>
+                  <Term>Why, plainly.</Term> This site had no way of knowing whether anybody used it.
+                  An earlier version of this page said there was no analytics at all, which was true
+                  when written. It changed the same day the measurement did, rather than afterwards.
                 </P>
                 <P>Creating an account is only needed to enter or run tournaments. If you do, we store:</P>
                 <UL>
@@ -297,9 +314,15 @@ export function PrivacyPolicyPage() {
                 <Q>Do we use cookies?</Q>
                 <P>
                   <Term>Only essential ones.</Term> They keep you signed in and do nothing else.
-                  There are no analytics cookies, no advertising cookies, and no third-party trackers
-                  on this site — which is why you have not been asked to accept anything. There is
-                  nothing to consent to.
+                  There are no analytics cookies, no advertising cookies and no cross-site trackers —
+                  which is why you have not been asked to accept anything. There is nothing to
+                  consent to.
+                </P>
+                <P>
+                  This stays true now that page views are counted (section 01): the analytics we use
+                  is <Term>deliberately cookieless</Term>, and that is exactly why it was chosen over
+                  the usual alternatives. Anything that needed a cookie would need your consent
+                  first, and you would be looking at a banner.
                 </P>
                 <P>
                   You can block or delete cookies through your browser settings. If you do, staying
