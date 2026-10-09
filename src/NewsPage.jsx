@@ -25,6 +25,7 @@ import { BrawlerIcon, MapThumb, ModeIcon } from "./MetaIcons";
 import { slugifyBrawlerKey } from "./BrawlersPage";
 import SiteHeader from "./SiteHeader";
 
+import { useSeo } from "./seo";
 // ── icons ─────────────────────────────────────────────────────────────────────
 // Every brawler name in this file's generated content is an exact reversible
 // title-case of the brawlerMeta.json key (brawler_name() in news_digest.py is
@@ -208,6 +209,10 @@ function PostCard({ post }) {
 }
 
 export default function NewsPage() {
+  useSeo({
+    title: "Brawl Stars meta news",
+    description: "Balance-patch impact and weekly meta snapshots for Brawl Stars Ranked, measured from our own match data rather than reposted from elsewhere.",
+  });
   const { posts, loading, error } = useNewsPosts();
 
   return (
@@ -314,6 +319,11 @@ export function NewsPostDetail() {
   const { slug } = useParams();
   const { post, loading, error } = useNewsPost(slug);
   const { goBack } = useSmartBack("/news", "News");
+
+  // ABOVE the loading/error early returns: a hook cannot sit behind a
+  // conditional return. Undefined while loading, so the tab keeps the default
+  // title rather than flashing the slug into the user's history.
+  useSeo({ title: post?.title, description: post?.summary });
 
   if (loading) {
     return (

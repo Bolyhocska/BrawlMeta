@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 
+import { useSeo } from "./seo";
 const SECTIONS = [
   {
     id: "news", tag: "META NEWS", badge: "UPDATED", accent: "#ffb43d", accentBg: "rgba(255,180,61,.14)",
@@ -54,6 +55,10 @@ function StatChip({ value, label, color }) {
 }
 
 export default function HomePage() {
+  useSeo({
+    description: "Free Brawl Stars ranked draft assistant, tier list and map stats, measured from over a million Masters-tier matches. Per-map win rates, counter picks and live meta - no account needed.",
+    canonicalPath: "/",
+  });
   return (
     <div style={{
       position: "relative", minHeight: "100vh", background: "#08080c",

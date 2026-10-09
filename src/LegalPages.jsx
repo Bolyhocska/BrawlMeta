@@ -38,6 +38,7 @@
 import { Link } from "react-router-dom";
 import { GuideShell } from "./GuidesPages";
 
+import { useSeo } from "./seo";
 const MONO = "'JetBrains Mono', monospace";
 const DISPLAY = "'Baloo 2', sans-serif";
 
@@ -179,6 +180,7 @@ function MetaStrip() {
 // ── pages ────────────────────────────────────────────────────────────────────
 
 export function PrivacyPolicyPage() {
+  useSeo({ title: "Privacy policy", description: "What BrawlApex collects, why, and how to stop it: player match history, progression snapshots, cookies, and your rights under GDPR." });
   return (
     <GuideShell>
       <div style={{ position: "relative", zIndex: 2, maxWidth: 1120, margin: "0 auto", padding: "48px 5vw 30px" }}>
@@ -459,6 +461,7 @@ export function PrivacyPolicyPage() {
 }
 
 export function AboutPage() {
+  useSeo({ title: "About", description: "What BrawlApex is, where the data comes from, and why players never pay." });
   const sections = [
     { id: "idea", n: "01", tag: "IDEA", title: "What This Is." },
     { id: "features", n: "02", tag: "FEATURES", title: "What You Can Do Here." },

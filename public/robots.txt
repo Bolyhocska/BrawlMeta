@@ -1,0 +1,28 @@
+# BrawlApex — https://brawl-meta.vercel.app
+#
+# Until 2026-10-09 this file did not exist. vercel.json rewrites /(.*) to
+# /index.html, so a crawler asking for /robots.txt was served the SPA shell
+# with a 200 — which is not "allow everything", it is a malformed robots file.
+# Static files in public/ are matched before rewrites, so simply existing fixes
+# it. Same story for /sitemap.xml.
+
+User-agent: *
+Allow: /
+
+# Player profiles are deliberately NOT indexed, and this is a privacy decision
+# rather than an SEO one. Every tracked player is in our database because they
+# appeared in someone's battlelog, not because they asked — the privacy policy
+# says so in as many words. Publishing a page per tag is defensible; getting
+# 1,400 of them indexed under people's in-game names is a different thing, and
+# nobody opted into it. /player/:tag also carries a noindex tag, since robots
+# rules are a request and the meta tag is the actual instruction.
+Disallow: /player/
+
+# Account and auth-gated pages: no content for a crawler, and some of it is
+# personal.
+Disallow: /profile
+Disallow: /tournaments/profile
+Disallow: /tournaments/create
+Disallow: /*/manage$
+
+Sitemap: https://brawl-meta.vercel.app/sitemap.xml

@@ -5,6 +5,7 @@ import BRAWLER_META from "./data/brawlerMeta.json";
 import { slugifyBrawlerKey } from "./BrawlersPage";
 import { tileStyles } from "./data/brawlerTile";
 
+import { useSeo } from "./seo";
 // ─── Shared shell + primitives (from the cyberpunk design handoff) ───────────
 
 const MONO = "'JetBrains Mono', monospace";
@@ -391,6 +392,10 @@ const LANDING_CARDS = [
 ];
 
 export function GuidesLandingPage() {
+  useSeo({
+    title: "Brawl Stars guides",
+    description: "Mode guides, map breakdowns and per-brawler guides for Brawl Stars Ranked - what each mode actually rewards, and which brawlers deliver it.",
+  });
   return (
     <GuideShell>
       <section style={{ position: "relative", zIndex: 10, padding: "30px 5vw 50px", maxWidth: 860, margin: "0 auto", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -427,6 +432,10 @@ export function GuidesLandingPage() {
 // ─── Skills guide (/guides/skills) ───────────────────────────────────────────
 
 export function SkillsGuidePage() {
+  useSeo({
+    title: "Core skills guide",
+    description: "The mechanics that decide Brawl Stars Ranked games: positioning, super cycling, lane control and when to trade.",
+  });
   const sections = [
     {
       tag: "SHOOTING", accent: "#ffb43d", title: "Aim: auto vs. manual",
@@ -503,6 +512,10 @@ export function SkillsGuidePage() {
 // ─── Modes index (/guides/modes) ─────────────────────────────────────────────
 
 export function ModesGuidesPage() {
+  useSeo({
+    title: "Game mode guides",
+    description: "How every Brawl Stars Ranked mode is actually won - Heist, Brawl Ball, Gem Grab, Bounty, Knockout and Hot Zone, with the brawler classes each one rewards.",
+  });
   return (
     <GuideShell>
       <section style={{ position: "relative", zIndex: 10, padding: "30px 5vw 50px", maxWidth: 860, margin: "0 auto", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -547,6 +560,14 @@ export function ModesGuidesPage() {
 export function ModeGuidePage() {
   const { modeId } = useParams();
   const m = MODE_GUIDES[modeId];
+
+  // ABOVE the `if (!m)` early return - a hook cannot sit behind a conditional
+  // return. An unknown modeId is noindexed rather than titled, since it
+  // renders a not-found state and a crawler should not keep that URL.
+  useSeo(m ? {
+    title: `${m.name} guide`,
+    description: `How to win ${m.name} in Brawl Stars Ranked: what the mode rewards, which brawler classes deliver it, and the measured best picks.`,
+  } : { noindex: true });
 
   if (!m) {
     return (
@@ -722,6 +743,10 @@ export function ModeGuidePage() {
 // ─── Safe Zone map guide (/guides/modes/heist/safe-zone) — 1:1 from handoff ──
 
 export function SafeZoneGuidePage() {
+  useSeo({
+    title: "Heist on Safe Zone",
+    description: "Safe Zone heist guide: one lane, no wall cover, sniper-friendly. Best picks, lane tricks and what the win rates say about this specific map.",
+  });
   const picks = [
     { tag: "LONG-RANGE ATTACKERS", accent: "#ffb43d", title: "Long-range attackers",
       desc: "The open safe with no wall cover means a clean sightline is often all you need. These brawlers chip the safe from a position the enemy has to work to reach.",
@@ -827,6 +852,10 @@ export function SafeZoneGuidePage() {
 // ─── Brawler guides index (/guides/brawlers) ─────────────────────────────────
 
 export function BrawlerGuidesPage() {
+  useSeo({
+    title: "Brawler guides",
+    description: "Every Brawl Stars brawler with a measured Ranked guide: win rates, best and worst maps, counters and teammates from Masters-tier match data.",
+  });
   const [search, setSearch] = useState("");
   const brawlers = Object.entries(BRAWLER_META)
     .map(([key, meta]) => ({

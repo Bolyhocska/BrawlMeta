@@ -16,6 +16,7 @@ import {
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import { TrendChart, BarList, ScatterChart, CHART_COLORS } from "./Charts";
 import SiteHeader from "./SiteHeader";
+import { useSeo } from "./seo";
 
 export const mapSlug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -173,6 +174,10 @@ function buildTable(rows, mapName, bracket) {
 // ── landing ──────────────────────────────────────────────────────────────────
 
 export function MapsLandingPage() {
+  useSeo({
+    title: "Ranked map stats",
+    description: "Every Brawl Stars Ranked map with measured win rates: the best and worst brawlers on each, by mode, from over a million Masters-tier matches.",
+  });
   const { rows, pool, loading, error } = useMapStats(CURRENT_PATCH);
   const [bracket, setBracket] = useState("masters_legendary");
 
@@ -281,6 +286,17 @@ export function MapDetailPage() {
     [rows, slug]);
   const mode = useMemo(() => rows.find(r => r.map === mapName)?.mode, [rows, mapName]);
   const history = useMapHistory(mapName, bracket, CURRENT_PATCH);
+
+  // mapName resolves from a fetched list, so it is null on first paint. Pass
+  // undefined rather than a placeholder: useSeo skips undefined, so the tab
+  // keeps the default title until the real name arrives instead of writing
+  // "Loading" into the user's history.
+  useSeo({
+    title: mapName ? `${mapName} — best brawlers` : undefined,
+    description: mapName
+      ? `Best brawlers on ${mapName}${mode ? ` (${formatMode(mode)})` : ""} in Brawl Stars Ranked. Win rates, pick rates and counters measured from Masters-tier matches, updated daily.`
+      : undefined,
+  });
 
   const table = useMemo(
     () => (mapName ? buildTable(rows, mapName, bracket) : { matches: 0, brawlers: [] }),

@@ -23,6 +23,7 @@ import { computeWinSplit } from "./data/draftEngine";
 import { toSeries, bestSwap, gradeSeries, bucketOf, loadIntelligence, loadMapStats, DEFAULT_BRACKET } from "./data/playerStats";
 import PlayerInsights, { TrophyCurve } from "./PlayerInsights";
 import PlayerSearch from "./PlayerSearch";
+import { useSeo } from "./seo";
 import UpgradeAdvisor from "./UpgradeAdvisor";
 import BRAWLER_META from "./data/brawlerMeta.json";
 
@@ -509,6 +510,21 @@ export default function PlayerPage() {
   const starKnown = rows.filter(r => r.is_star_player !== null).length;
 
   const name = live?.name || tracked?.last_seen_name || tag;
+
+  // NOINDEX, and this is a privacy decision rather than an SEO one. Everyone
+  // in tracked_players is there because they turned up in someone's battlelog,
+  // not because they asked - the privacy policy says exactly that. Serving a
+  // page per tag is defensible; letting Google index ~1,400 of them under
+  // people's in-game names is a different thing nobody opted into. robots.txt
+  // also disallows /player/, but that is a request and this is the
+  // instruction, so both are set.
+  //
+  // MUST stay BELOW `name`. A hook's arguments are evaluated during render, so
+  // placing this above the declaration reads a const inside its temporal dead
+  // zone - a ReferenceError that white-screens the page and that the build
+  // does not catch, because it is a runtime fault and not a syntax one. The
+  // same mistake already cost this project the whole profile page once.
+  useSeo({ title: name ? `${name} (${tag})` : tag, noindex: true });
 
   return (
     <div style={{

@@ -8,6 +8,37 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=Space+Mono:wght@400;700&family=Baloo+2:wght@600;700;800&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     <title>BrawlApex — Ranked Draft Intelligence</title>
+
+    <!-- SEO + SHARE CARDS. Added 2026-10-09. Before this the only tag in here
+         was <title>, so every one of ~165 URLs served byte-identical HTML with
+         no description: Google saw one page rather than a tier list plus 33
+         map pages plus 107 brawler guides, and a link pasted into Discord
+         rendered as a bare URL with no card at all. For a Brawl Stars audience
+         that lives in Discord, that second one probably cost more than the
+         first.
+
+         These are the DEFAULTS. src/seo.js overwrites title, description and
+         canonical per route on navigation, which Google honours because it
+         executes JS. Social crawlers do NOT execute JS - they read this static
+         HTML - so what is written here is exactly what every shared link
+         shows, which is why the copy below describes the site rather than the
+         home page. -->
+    <meta name="description" content="Free Brawl Stars ranked draft assistant, tier list and map stats, measured from over a million Masters-tier matches. Per-map win rates, counter picks and live meta - no account needed." />
+    <link rel="canonical" href="https://brawl-meta.vercel.app/" />
+    <meta name="theme-color" content="#08080c" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BrawlApex" />
+    <meta property="og:url" content="https://brawl-meta.vercel.app/" />
+    <meta property="og:title" content="BrawlApex — Ranked Draft Intelligence" />
+    <meta property="og:description" content="Free Brawl Stars ranked draft assistant, tier list and map stats, measured from over a million Masters-tier matches. No account needed." />
+
+    <!-- summary, NOT summary_large_image: there is no og:image yet, and
+         requesting the large format without one renders a broken card. Switch
+         both together when an image exists. -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="BrawlApex — Ranked Draft Intelligence" />
+    <meta name="twitter:description" content="Free Brawl Stars ranked draft assistant, tier list and map stats, measured from over a million Masters-tier matches." />
   </head>
   <body>
     <div id="root"></div>

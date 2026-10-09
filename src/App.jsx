@@ -3,6 +3,7 @@ import { Routes, Route, Link, useParams, useNavigate, useSearchParams, useLocati
 import { ChevronDown, Star, TrendingUp, Check, Crown, LineChart, ArrowUpRight } from "lucide-react";
 import BrawlersPage, { computeStatsFromAggregated, BrawlerGuidePage, findBrawlerKeyBySlug } from "./BrawlersPage";
 import HomePage from "./HomePage";
+import { useSeo } from "./seo";
 import SiteHeader from "./SiteHeader";
 const MapsLandingPage = lazy(() => import("./MapsPages").then(m => ({ default: m.MapsLandingPage })));
 const MapDetailPage   = lazy(() => import("./MapsPages").then(m => ({ default: m.MapDetailPage })));
@@ -706,6 +707,16 @@ function BrawlerGuideRoute() {
   const guideBack = useSmartBack("/app?tab=brawlers", "Brawlers");
   const brawlerKey = findBrawlerKeyBySlug(brawlerSlug);
   const { stats: brawlerStats, loading } = useBrawlerStats(CURRENT_PATCH);
+
+  // 107 of these, and they are the largest block of indexable content on the
+  // site. brawlerKey is resolved synchronously from a local JSON map, so
+  // unlike the map pages it is correct on the first paint and never flashes.
+  // An unknown slug gets noindex rather than a title: it renders a not-found
+  // state, and a crawler should not keep a URL that resolves to nothing.
+  useSeo(brawlerKey ? {
+    title: `${formatBrawlerName(brawlerKey)} guide — builds, counters and best maps`,
+    description: `${formatBrawlerName(brawlerKey)} in Brawl Stars Ranked: measured win rate, best and worst maps, which brawlers counter them and who they pair with. From Masters-tier match data, updated daily.`,
+  } : { noindex: true });
 
   // BrawlerStats stores a row per rank bracket, and the two genuinely disagree
   // — Bibi is 47.7% on New Horizons in Masters and 31.4% in Diamond/Mythic. The
