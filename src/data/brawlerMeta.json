@@ -268,6 +268,11 @@
         "desc": "Berry's next main attack area lasts for x% longer.",
         "img": "/icons/gadgets/23000767.png",
         "name": "Healthy Additives"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "SECRET FORMULA"
       }
     ],
     "id": 16000082,
@@ -284,6 +289,11 @@
         "desc": "Berry's basic attack gains x% extra damage on impact in areas with no ice cream.",
         "img": "/icons/star-powers/23000765.png",
         "name": "Making A Mess"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "STICKY TOPPINGS"
       }
     ]
   },
@@ -662,6 +672,11 @@
         "desc": "Chester eats a mystery flavored candy bean from his cap, gaining a random buff for x seconds.",
         "img": "/icons/gadgets/23000530.png",
         "name": "Candy Beans"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "PRANKSTER'S SURPRISE"
       }
     ],
     "id": 16000063,
@@ -678,6 +693,11 @@
         "desc": "Chester will always know what his next Super will be.",
         "img": "/icons/star-powers/23000528.png",
         "name": "Sneak Peek"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "JESTER'S PRIVILEGE"
       }
     ]
   },
@@ -1303,6 +1323,11 @@
         "desc": "Gale uses his leaf blower to create a local tornado, which will push away any opponents that try to pass through.",
         "img": "/icons/gadgets/23000407.png",
         "name": "Twister"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "NORTH WIND WALL"
       }
     ],
     "id": 16000035,
@@ -1985,6 +2010,11 @@
         "desc": "Instantly adds x% freeze meter to opponents inside Lou's Super.",
         "img": "/icons/gadgets/23000400.png",
         "name": "Cryo Syrup"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "AVALANCHE"
       }
     ],
     "id": 16000041,
@@ -2001,6 +2031,11 @@
         "desc": "Opponents lose up to x% of their damage based on how frozen they are from Lou's attacks.",
         "img": "/icons/star-powers/23000325.png",
         "name": "Hypothermia"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "COLD SNAP"
       }
     ]
   },
@@ -2097,6 +2132,11 @@
         "desc": "Mandy receives x% shield while Focused.",
         "img": "/icons/star-powers/23000544.png",
         "name": "Hard Candy"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "GOBSTOPPER"
       }
     ]
   },
@@ -2809,6 +2849,38 @@
       }
     ]
   },
+  "REY": {
+    "class": "",
+    "description": "",
+    "gadgets": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "QUEEN'S GAMBIT"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "REY LOPEZ"
+      }
+    ],
+    "id": 16000112,
+    "imageUrl": "/icons/brawlers/16000112.png",
+    "rarity": "",
+    "rarityColor": "#888888",
+    "starPowers": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "CLOCK MANAGEMENT"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "EN PASSANT"
+      }
+    ]
+  },
   "RICO": {
     "class": "Damage Dealer",
     "description": "Rico is definitely a real space bounty hunter who tracks down the galaxy's most wanted criminals, not a gumball machine pretending to be cool.",
@@ -2875,6 +2947,38 @@
         "desc": "Rosa's punches gain +x damage during her Super.",
         "img": "/icons/star-powers/23000147.png",
         "name": "Thorny Gloves"
+      }
+    ]
+  },
+  "RUBY": {
+    "class": "",
+    "description": "",
+    "gadgets": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "SHUFFLE AND CUT"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "STACK THE DECK"
+      }
+    ],
+    "id": 16000113,
+    "imageUrl": "/icons/brawlers/16000113.png",
+    "rarity": "",
+    "rarityColor": "#888888",
+    "starPowers": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "LUCKY NUMBER"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "DOUBLE OR NOTHING"
       }
     ]
   },
@@ -3291,6 +3395,38 @@
         "desc": "Tara's Super cracks open a dimensional portal! A shadowy version of Tara appears to heal Tara and her teammates.",
         "img": "/icons/star-powers/23000160.png",
         "name": "Healing Shade"
+      }
+    ]
+  },
+  "THUNDER FROGS": {
+    "class": "",
+    "description": "",
+    "gadgets": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "DOUBLE JUMPERS"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "SOOTHING SHOCK"
+      }
+    ],
+    "id": 16000111,
+    "imageUrl": "/icons/brawlers/16000111.png",
+    "rarity": "",
+    "rarityColor": "#888888",
+    "starPowers": [
+      {
+        "desc": "",
+        "img": null,
+        "name": "LEECH LANDING"
+      },
+      {
+        "desc": "",
+        "img": null,
+        "name": "SWAMP STOMPS"
       }
     ]
   },
