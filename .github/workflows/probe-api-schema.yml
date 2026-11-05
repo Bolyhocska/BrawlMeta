@@ -1,0 +1,70 @@
+name: Probe — Supercell API schema
+
+# DIAGNOSTIC. Prints every field the Supercell API actually returns, so the
+# question "does the public API expose the new post-match stats (damage,
+# healing, ...) that the game client now shows" is settled by observation.
+# Nothing in the repo could answer it: parse_battle reads twelve keys and
+# discards the rest, and no raw payload is stored anywhere.
+#
+# NO SCHEDULE, ON PURPOSE. This is run by hand when there is a question. It
+# costs 2 API calls, writes to no table and imports nothing from the scrapers
+# except the shared auth/proxy constants.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Player tag to inspect (default: the owner''s own)'
+        required: false
+        default: ''
+      redact:
+        description: 'Mask tags and names in the output'
+        type: boolean
+        required: false
+        default: false
+
+# Shares the single IP-allowlisted Supercell key with every scraper, so it
+# queues behind itself like the rest rather than racing for rate budget.
+concurrency:
+  group: probe-api-schema
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      # SUPABASE_KEY is deliberately NOT passed: it is the service-role key and
+      # this probe writes to nothing. The script has its own credential check
+      # rather than common.require_credentials(), which would demand it.
+      #
+      # inputs.tag goes through env, never interpolated into the run script.
+      # `${{ inputs.tag }}` inline would let dispatch input run as shell — only
+      # a maintainer can dispatch this, but the pattern is wrong regardless and
+      # costs nothing to avoid.
+      - name: Probe the API
+        env:
+          SUPERCELL_API_KEY: ${{ secrets.SUPERCELL_API_KEY }}
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+          PROBE_TAG: ${{ inputs.tag }}
+          PROBE_REDACT: ${{ inputs.redact }}
+        run: |
+          args=""
+          [ -n "$PROBE_TAG" ] && args="$PROBE_TAG"
+          [ "$PROBE_REDACT" = "true" ] && args="$args --redact"
+          python -m scrapers.probe_api_schema $args
