@@ -52,8 +52,11 @@ add("/guides/skills",    0.7, "monthly");
 add("/guides/modes/heist/safe-zone", 0.6, "monthly");
 add("/news",             0.8, "daily");
 add("/upgrade",          0.7, "weekly");
-add("/tournaments",      0.6, "weekly");
-add("/scrims",           0.5, "weekly");
+// /tournaments and /scrims are OMITTED while TOURNAMENTS_ENABLED is false in
+// src/appCore.js. The routes still resolve, but the site presents no way in,
+// so asking a crawler to index them would advertise a section visitors cannot
+// reach from anywhere. robots.txt disallows them too, to retire the ones
+// Google may already hold. Restore these two lines with the flag.
 add("/about",            0.3, "yearly");
 add("/privacy",          0.3, "yearly");
 

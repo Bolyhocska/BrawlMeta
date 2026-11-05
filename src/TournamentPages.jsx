@@ -14,7 +14,7 @@ import PlayerSearch from "./PlayerSearch";
 import { toSeries } from "./data/playerStats";
 import { Trophy, Users, ShieldCheck, Clock, Swords, Wallet, ChevronRight, CheckCircle2, AlertTriangle, LogIn, LineChart } from "lucide-react";
 import SiteHeader from "./SiteHeader";
-import { supabase } from "./appCore";
+import { supabase, TOURNAMENTS_ENABLED } from "./appCore";
 import { useAuth } from "./auth";
 import { groupIntoTeams, totalRoundsFor, roundLabel, nextPowerOfTwo, byesNeeded } from "./data/bracket";
 import { normalizeTag } from "./data/verifyLogic";
@@ -1393,7 +1393,7 @@ export function TournamentProfilePage() {
         <ChapterNav active={activeChapter} />
 
         {/* 1 · HOW YOU'RE PLAYING */}
-        <Chapter {...CHAPTERS[0]}>
+        <Chapter {...chapter("form")}>
           {/* Last ten drafts as pips. Borrowed from Faceit: it is the most-glanced
               element on sites that have it, costs nothing, and has no sample-size
               problem — ten results are ten results. */}
@@ -1434,7 +1434,7 @@ export function TournamentProfilePage() {
         </Chapter>
 
         {/* 2 · GET BETTER */}
-        <Chapter {...CHAPTERS[1]} delay={0.04}>
+        <Chapter {...chapter("improve")} delay={0.04}>
           {/* The advisor moved to its own page. It outgrew a profile section once
               it answered per mode and per role as well as overall — six mode
               lists, seven role lists and the full roster grid is a page, not a
@@ -1462,7 +1462,7 @@ export function TournamentProfilePage() {
               panels in chapter 1: those are explicitly "competitive Ranked
               only" and trophies are a ladder stat, so putting it there invited
               the comparison chapter 1 is careful to avoid. This chapter already
-              promised it — CHAPTERS[1].blurb says "and your trophy progress" —
+              promised it — the "improve" chapter blurb says "and your trophy progress" —
               and until now only the boost upsell below rendered, which claimed
               "your trophy curve is recorded daily and shown free" next to no
               curve at all. */}
@@ -1492,7 +1492,8 @@ export function TournamentProfilePage() {
         </Chapter>
 
         {/* 3 · TOURNAMENTS */}
-        <Chapter {...CHAPTERS[2]} delay={0.08}>
+        {TOURNAMENTS_ENABLED && (
+        <Chapter {...chapter("tournaments")} delay={0.08}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 22 }}>
             {[
               { label: "WALLET BALANCE", value: `$${Number(wallet?.balance || 0).toLocaleString()}`, icon: <Wallet size={15} color={GOLD} />, note: "withdrawals coming soon" },
@@ -1536,11 +1537,12 @@ export function TournamentProfilePage() {
             </div>
           )}
         </Chapter>
+        )}
 
         {/* 4 · ACCOUNT. Settings sit LATE on purpose. They used to greet you,
             which told every visitor this page was about admin — it is what you
             came for once, not what you come back for. */}
-        <Chapter {...CHAPTERS[3]} delay={0.12}>
+        <Chapter {...chapter("account")} delay={0.12}>
           <form onSubmit={saveIdentity} style={{ ...page.card, padding: 22, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontFamily: MONO, fontSize: 10, color: "#9a9aab" }}>DISPLAY NAME {nameLocked && <span style={{ color: "#8b8b9c" }}>· 🔒 PERMANENT</span>}</span>
@@ -1595,12 +1597,26 @@ export function TournamentProfilePage() {
 // another component's render is a new type every render and remounts its whole
 // subtree — the bug that cost the create-tournament form its input focus.
 
-const CHAPTERS = [
-  { id: "form", n: 1, title: "How you're playing", blurb: "Your recent games and what they say." },
-  { id: "improve", n: 2, title: "Get better", blurb: "What to upgrade, and your trophy progress." },
-  { id: "tournaments", n: 3, title: "Tournaments", blurb: "Your winnings, entries and match history." },
-  { id: "account", n: 4, title: "Account", blurb: "Your name and player tag." },
+// Addressed BY ID, never by index. Hiding the tournaments chapter behind
+// TOURNAMENTS_ENABLED shortens this list, and the old `CHAPTERS[2]` /
+// `CHAPTERS[3]` call sites would then silently point one chapter to the left
+// — the Account chapter would render under the Tournaments heading, with no
+// error anywhere. `n` is assigned after filtering so the pills read 1·2·3
+// rather than skipping a number.
+const ALL_CHAPTERS = [
+  { id: "form", title: "How you're playing", blurb: "Your recent games and what they say." },
+  { id: "improve", title: "Get better", blurb: "What to upgrade, and your trophy progress." },
+  { id: "tournaments", title: "Tournaments", blurb: "Your winnings, entries and match history." },
+  { id: "account", title: "Account", blurb: "Your name and player tag." },
 ];
+
+const CHAPTERS = ALL_CHAPTERS
+  .filter(c => c.id !== "tournaments" || TOURNAMENTS_ENABLED)
+  .map((c, i) => ({ ...c, n: i + 1 }));
+
+/** Chapter props by id. Returns undefined for a hidden chapter, which is only
+ *  ever spread inside the matching TOURNAMENTS_ENABLED guard. */
+const chapter = (id) => CHAPTERS.find(c => c.id === id);
 
 function ChapterNav({ active }) {
   return (

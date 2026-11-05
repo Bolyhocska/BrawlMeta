@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
+import { TOURNAMENTS_ENABLED } from "./appCore";
 
 import { useSeo } from "./seo";
 const SECTIONS = [
@@ -15,12 +16,16 @@ const SECTIONS = [
     bullets: "S-tier picks · Win rates · Map filters", linkHref: "/app?tab=brawlers", linkLabel: "View Tier List",
     imgPlaceholder: "Drop tier list art",
   },
-  {
+  // Scrim Finder is hidden behind TOURNAMENTS_ENABLED (owner, 2026-11-05) and
+  // kept here rather than deleted, so restoring it is one flag. Note the badge
+  // says LIVE: a card advertising a live feature is exactly what must not stay
+  // on the home page while the section is unreachable.
+  ...(TOURNAMENTS_ENABLED ? [{
     id: "scrims", tag: "SCRIM FINDER", badge: "LIVE", accent: "#8ee6b0", accentBg: "rgba(142,230,176,.14)",
     heading: "Scrim Finder", desc: "Match with teams for practice scrims before tournament day.",
     bullets: "Team matching · Scheduling · Replay review", linkHref: "/scrims", linkLabel: "Find a Scrim",
     imgPlaceholder: "Drop scrims art",
-  },
+  }] : []),
   {
     id: "ranked", tag: "RANKED", badge: "CLIMB", accent: "#ffb43d", accentBg: "rgba(255,180,61,.14)",
     heading: "Ranked Tracker", desc: "Live map-aware picks and climbing tools for ranked matches.",

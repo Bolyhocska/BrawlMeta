@@ -41,6 +41,24 @@ export const DIAMOND_ENABLED = false;
 // which are small curated lists that keep filling; it is only the broad
 // 600k-row directory that drops out. Flip BOTH this and the scraper flag.
 export const DIRECTORY_SEARCH_ENABLED = false;
+
+// Tournaments and Scrims are HIDDEN, not removed (owner decision 2026-11-05).
+// Every route, page, API handler, RPC and table is untouched and still works —
+// this flag only removes the ways in. Flip it to true and both come straight
+// back with nothing to rebuild.
+//
+// WHAT IT HIDES: the two nav pills, the Scrim Finder card on the home page,
+// and the Tournaments chapter on /profile. The ROUTES ARE DELIBERATELY LEFT
+// LIVE so /tournaments and /scrims still load if you type them — the owner can
+// keep checking the feature while visitors have no path to it. They are
+// removed from sitemap.xml and disallowed in robots.txt instead, so crawlers
+// stop surfacing a section the site is not presenting.
+//
+// Nothing server-side is gated on this. Tag-freeze-on-first-tournament,
+// Registrations, wallets and the bracket RPCs all behave exactly as before, so
+// the 21 existing registrations and 6 tournaments are untouched and no data
+// decays while it is off.
+export const TOURNAMENTS_ENABLED = false;
 // The patch actually live in the game. Equal to CURRENT_PATCH once a rollover
 // has completed, and AHEAD of it during the staging window between a patch going
 // live and the site having enough of it to read - which is exactly when the UI

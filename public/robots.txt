@@ -25,4 +25,11 @@ Disallow: /tournaments/profile
 Disallow: /tournaments/create
 Disallow: /*/manage$
 
+# Tournaments and Scrims are HIDDEN rather than removed (owner, 2026-11-05):
+# TOURNAMENTS_ENABLED in src/appCore.js. The routes still resolve, but nothing
+# on the site links to them, so they are disallowed here and dropped from
+# sitemap.xml until the flag goes back on.
+Disallow: /tournaments
+Disallow: /scrims
+
 Sitemap: https://brawl-meta.vercel.app/sitemap.xml

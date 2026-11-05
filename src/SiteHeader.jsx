@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./auth";
 import PlayerSearch from "./PlayerSearch";
+import { TOURNAMENTS_ENABLED } from "./appCore";
 
 const NAV_STYLE = {
   display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#b7b7c6",
@@ -30,8 +31,12 @@ const NAV_ITEMS = [
   ] },
   { label: "Ranked", to: "/app?tab=meta" },
   { label: "Maps", to: "/maps" },
-  { label: "Tournaments", to: "/tournaments" },
-  { label: "Scrims", to: "/scrims" },
+  // Hidden behind TOURNAMENTS_ENABLED (owner, 2026-11-05) rather than deleted.
+  // The routes still resolve; this is only the way in. See appCore.js.
+  ...(TOURNAMENTS_ENABLED ? [
+    { label: "Tournaments", to: "/tournaments" },
+    { label: "Scrims", to: "/scrims" },
+  ] : []),
   { label: "Premium", to: "/app?tab=premium" },
 ];
 
@@ -168,7 +173,10 @@ function AccountMenu() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "#f4f4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#8a7fa6" }}>{profile?.player_tag || "no tag set"}</div>
           </div>
-          <Link className="bm-tap" to="/tournaments/profile" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#d9d9e6", fontSize: 13, fontWeight: 600 }}
+          {/* /profile, not the legacy /tournaments/profile alias — both render the
+              same component, but with the tournaments section hidden a "My profile"
+              click should not put /tournaments/ in the address bar. */}
+          <Link className="bm-tap" to="/profile" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#d9d9e6", fontSize: 13, fontWeight: 600 }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(179,107,255,.14)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
             My profile
