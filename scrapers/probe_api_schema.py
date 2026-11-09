@@ -134,6 +134,14 @@ def main():
         raise SystemExit(1)
 
     tag = next((a for a in sys.argv[1:] if not a.startswith("--")), DEFAULT_TAG)
+    tag = tag.split(",")[0].strip() or DEFAULT_TAG
+    # Ranks-only pass over any extra tags (cheap: 2 calls each, no schema dump).
+    for t in extra_tags():
+        t = t if t.startswith("#") else "#" + t
+        e = t.replace("#", "%23")
+        b = get(f"{BASE_URL}/players/{e}/battlelog")
+        p = get(f"{BASE_URL}/players/{e}")
+        rank_report(t, (b or {}).get("items") or [], p)
     if not tag.startswith("#"):
         tag = "#" + tag
     enc = tag.replace("#", "%23")
@@ -172,8 +180,47 @@ def main():
                   "is where any new per-match stats would matter most — re-run "
                   "with a tag that has played Ranked recently.")
 
+    rank_report(tag, items, prof)
     print()
     print("Done. 2 API calls, nothing written.")
+
+
+def rank_report(tag, items, prof):
+    """In a competitive Ranked battle, `brawler.trophies` is NOT a trophy count:
+    it is that player's Ranked rank (measured 2026-11-09 — the subject's own
+    entry read 15 while their profile said rankedRank 15 / MYTHIC III). This
+    prints every Ranked battle's six ranks next to the profile's rank name, so
+    the number->name scale can be read off real data instead of assumed."""
+    prof = prof or {}
+    print()
+    print("=" * 78)
+    print(f"RANKS — {tag}  profile: rankedRank={prof.get('rankedRank')} "
+          f"'{prof.get('rankedRankName')}'  allTimeHigh={prof.get('highestAllTimeRankedRank')} "
+          f"'{prof.get('highestAllTimeRankedRankName')}'")
+    print("=" * 78)
+    n = 0
+    for b in items:
+        bt = b.get("battle", {}) or {}
+        typ = (bt.get("type") or "")
+        if "ranked" not in typ.lower() or typ == "ranked":
+            continue
+        n += 1
+        own, ranks = None, []
+        for team in bt.get("teams", []) or []:
+            for p in team:
+                r = (p.get("brawler") or {}).get("trophies")
+                ranks.append(r)
+                if p.get("tag") == tag:
+                    own = r
+        print(f"  {b.get('battleTime','?')[:13]} {typ:<11} own={own!s:<3} "
+              f"min={min(ranks) if ranks else None!s:<3} max={max(ranks) if ranks else None!s:<3} all={ranks}")
+    print(f"  competitive Ranked battles in log: {n}")
+
+
+def extra_tags():
+    """Comma-separated tags after the first get a ranks-only report."""
+    raw = next((a for a in sys.argv[1:] if not a.startswith("--")), "")
+    return [t.strip() for t in raw.split(",")[1:] if t.strip()]
 
 
 if __name__ == "__main__":
