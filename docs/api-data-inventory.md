@@ -213,7 +213,7 @@ rounds, median **249 rounds (~107 series)** per player, 678 players ≥200 round
 | | why |
 |---|---|
 | Damage dealt, healing, kills, objective time | Not in the API. Client-side only. No parameter, no tier, no workaround |
-| Per-match rank tier | Not in the API; `seed_bracket` is the approximation |
+| ~~Per-match rank tier~~ | **WRONG — corrected 2026-11-09.** It IS in the API: in Ranked battles `brawler.trophies` holds each player's rank at match time (19–21 Masters, 22 Pro). The masters spider now filters on it. |
 | Draft order / ban data | Not in the API — this is why `firstPickSafety`, `counterability` and `banStrategy` stay priors forever |
 | Accurate match-time Elo | Only snapshot-time Elo exists |
 | Anything below Diamond in Ranked | `SPIDER_DEPTH = 2` from Masters seeds — such players never enter the graph |

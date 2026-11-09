@@ -311,6 +311,29 @@ DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
 DIAMOND_WINDOW_CAP = 750000
 SPIDER_DEPTH = 2                       # strictly 2 hops from seed players — rank purity by proximity
 
+# PER-MATCH RANK IS IN THE API (found 2026-11-09). In a competitive Ranked
+# battle, teams[][].brawler.trophies is NOT a trophy count: it is that player's
+# Ranked rank AT THE TIME OF THE GAME. Measured against /players profiles, the
+# scale is three steps per tier:
+#     1-3 Bronze · 4-6 Silver · 7-9 Gold · 10-12 Diamond · 13-15 Mythic
+#     16-18 Legendary · 19-21 Masters · 22 Pro
+# (anchors: 1 BRONZE I, 13 MYTHIC I, 15 MYTHIC III, 16 LEGENDARY I,
+#  17 LEGENDARY II, 18 LEGENDARY III, 19 MASTERS I, 21 MASTERS III, 22 PRO.)
+# A climbing player's own entries read 17 -> 18 across a day while their
+# profile already says 19, which is how we know it is match-time, not current.
+#
+# This retires the oldest caveat in the project: rank purity no longer has to
+# be approximated by SPIDER_DEPTH proximity — it can be READ.
+#
+# The masters spider keeps a match only when the MEDIAN of the six ranks is
+# Masters I or higher (owner decision 2026-11-09). Median rather than "all six"
+# because Ranked lobbies are mixed: a [19,19,19,19,18,19] lobby is plainly a
+# Masters game, and requiring every slot would discard it. At the post-Update-70
+# Ranked reset almost no lobby clears even the median bar — measured over 36
+# rounds from top players, 0 had all six Masters and 2 had a Masters median —
+# so expect low Masters volume until the ladder re-climbs. One constant.
+MASTERS_MIN_LOBBY_RANK = 19
+
 # How far back player_directory keeps a name searchable. A TIME window, not a
 # row cap: the monthly Ranked reset re-stratifies the ladder and dumps a few
 # hundred thousand one-off strangers into the spider's 2-hop neighbourhood
@@ -892,10 +915,22 @@ def parse_battle(match, player_tag, bracket):
         STATS.note_reject(f"map not in allowlist ({map_name})")
         return battle_tags, None, battle_players
 
+    # Match-time Ranked rank of all six players (see MASTERS_MIN_LOBBY_RANK).
+    # lobby_rank is the median, or None when any slot is unreadable — callers
+    # that filter on rank must treat None as "unknown", never as "low".
+    ranks = [(p.get("brawler") or {}).get("trophies") for team in teams for p in team]
+    if len(ranks) == 6 and all(isinstance(r, int) for r in ranks):
+        srt = sorted(ranks)
+        lobby_rank = (srt[2] + srt[3]) / 2
+    else:
+        lobby_rank = None
+
     record = {
         "map": map_name,
         "mode": mode_name,
         "rank_bracket": bracket,
+        "ranks": ranks,
+        "lobby_rank": lobby_rank,
         "winners": winners,
         "losers": losers,
         "patch": match_patch,
@@ -962,6 +997,20 @@ def fetch_player_battles(player_tag, bracket, extracted_data, seen_tags, seen_ha
         candidate_tags.extend(battle_tags)
         if record is None:
             continue
+        # Masters bracket keeps only Masters lobbies. Applied HERE, in the
+        # spider, and not in parse_battle: the player tracker calls parse_battle
+        # directly and must keep every Ranked game a tracked player plays, at any
+        # rank, or a Mythic player's profile would go blank. The frontier tags
+        # above are still taken from rejected lobbies, so the spider's reach is
+        # unchanged — only what it STORES is narrowed.
+        if bracket == "masters_legendary":
+            lr = record["lobby_rank"]
+            if lr is None:
+                STATS.note_reject("rank unreadable (masters filter)")
+                continue
+            if lr < MASTERS_MIN_LOBBY_RANK:
+                STATS.note_reject(f"lobby below Masters (median {lr:g})")
+                continue
         log_parties.setdefault(
             (tuple(sorted(t for t in battle_tags if t)), record["map"]), set()
         ).add(record["battle_time"])
