@@ -48,7 +48,7 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-CURRENT_PATCH = "69.230"
+CURRENT_PATCH = "70.648"
 
 # Patch start times (UTC). Used to determine which patch a match actually
 # belongs to based on its own battleTime, instead of blindly stamping every
@@ -84,6 +84,23 @@ PATCH_START_TIMES = [
     # from zero, where they are proportionally enormous and poison the first
     # tier list anyone sees. Bias toward the big patch.
     ("69.230", datetime(2026, 9, 1, 6, 0, 0, tzinfo=timezone.utc)),
+    # 70.648 — Update 70 ("Ranked Refresh & Brawlidays"), the November 2026
+    # balance patch, live after maintenance on Tuesday 2026-11-03. Version taken
+    # from the APK build uploaded that day; a later 70.757 build (11-06) came
+    # with NO maintenance break (longest gap in player_matches 11-04..11-08 was
+    # 85 minutes), so it is a hotfix inside this epoch, not a new one.
+    #
+    # BOUNDARY MEASURED, same method as 69.230: newest ranked battle before the
+    # break 2026-11-02 20:24:58 UTC, first after it 09:29:34 UTC; every other
+    # night of the prior fortnight had >=740 rounds in that same window and this
+    # one had zero. 09:00 is the LATE end of the dead window, for the asymmetric
+    # reason recorded above.
+    #
+    # ROLLED OVER SIX DAYS LATE (on 11-09). player_matches was relabelled exactly
+    # from battle_time. ranked_matches has no battle_time, so the ~338k rows
+    # collected 11-03..11-09 are stamped 69.230 and CANNOT be split cleanly --
+    # the irreversibility this file warns about. See CLAUDE.md for what was done.
+    ("70.648", datetime(2026, 11, 3, 9, 0, 0, tzinfo=timezone.utc)),
 ]
 
 # A patch-launch "burst" mode lived here from 2026-09-01 to 2026-09-05: inside a
@@ -216,6 +233,9 @@ RANKED_MAPS = {
 # arriving with the season get picked up by the daily pool refresh without anyone
 # editing this file.
 RANKED_MAPS["69.230"] = set(RANKED_MAPS["68.250"])
+# Without this key parse_battle's map filter turns OFF for the new patch rather
+# than tightening (allowed_maps is None -> no check). Same floor, copied forward.
+RANKED_MAPS["70.648"] = set(RANKED_MAPS["69.230"])
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DYNAMIC MAP POOL

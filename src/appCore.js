@@ -64,7 +64,7 @@ export const TOURNAMENTS_ENABLED = false;
 // live and the site having enough of it to read - which is exactly when the UI
 // must not call the older patch "current". Keeping the constant when the two
 // agree costs nothing and makes the next rollover a one-line stage.
-export const LIVE_PATCH = "69.230";
+export const LIVE_PATCH = "70.648";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── Sample-weighted win rate ────────────────────────────────────────────────
