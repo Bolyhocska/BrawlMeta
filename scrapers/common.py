@@ -290,9 +290,15 @@ def refresh_dynamic_map_pool():
 # ==========================================
 # THROTTLES & TARGETS
 # ==========================================
-MASTERS_WINDOW_CAP = 1500000           # sliding-window retention: keep the newest 1.5M Masters rows (FIFO by collected_at)
-MASTERS_BASELINE = MASTERS_WINDOW_CAP  # Masters fills all the way to the 1.5M window before Diamond/Mythic collection ever starts — the owner wants the full Masters window in force first, then the rolling steady-state, and only then Diamond/Mythic
-MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met (== steady-state that the FIFO window trims back to 1.5M)
+# Lowered 1.5M -> 1.2M on 2026-11-10 (owner decision): the database was 610 MB
+# against the 500 MB free plan, and this table is the largest thing in it. At
+# ~125k rows/day this is ~10 days of history instead of ~13. No rows were
+# deleted by hand — the window held 1.19M at the time, so the FIFO prune simply
+# starts evicting once it passes 1.2M.
+MASTERS_WINDOW_CAP = 1200000           # sliding-window retention: keep the newest 1.2M Masters rows (FIFO by collected_at)
+META_DAILY_KEEP_DAILY_DAYS = 14        # meta_daily: daily snapshots this recent, weekly beyond (thin_meta_daily RPC)
+MASTERS_BASELINE = MASTERS_WINDOW_CAP  # Masters fills all the way to the window before Diamond/Mythic collection ever starts — the owner wants the full Masters window in force first, then the rolling steady-state, and only then Diamond/Mythic
+MASTERS_STEADY = 50000                 # per-run Masters target once the baseline is met (== steady-state that the FIFO window trims back to the cap)
 MASTERS_RUN_CAP = 150000               # max matches one Masters run may collect while filling the baseline
 DIAMOND_RUN_CAP = 50000                # per-run Diamond/Mythic target
 # Sliding window for Diamond/Mythic, the same FIFO mechanism Masters uses.
@@ -1303,7 +1309,29 @@ def prune_meta_history():
 
     Non-fatal for the same reason capture_meta_history is — a failed cleanup
     must never fail a scrape that already stored its matches.
+
+    Also thins OPEN patches (owner decision 2026-11-10): every day is kept for
+    the newest META_DAILY_KEEP_DAILY_DAYS, then only the last snapshot of each
+    week. Rows are cumulative patch-to-date snapshots, so old consecutive days
+    are near-duplicates, and an open patch used to grow ~0.8 MB/day to a ~55 MB
+    peak. news_digest's shifters diff today vs exactly 7 days ago, so the daily
+    window must stay above 7.
     """
+    try:
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/thin_meta_daily",
+            json={"keep_daily_days": META_DAILY_KEEP_DAILY_DAYS},
+            headers=SUPABASE_HEADERS, timeout=120,
+        )
+        if res.status_code in (200, 204):
+            n = (res.text or "").strip()
+            if n not in ("", "0"):
+                print(f"🧹 meta_daily: {n} rows thinned to weekly (older than {META_DAILY_KEEP_DAILY_DAYS}d).")
+        else:
+            print(f"⚠️ meta_daily thin failed: {res.status_code} {res.text[:200]}")
+    except Exception as exc:
+        print(f"⚠️ meta_daily thin error: {exc}")
+
     if not CLOSED_PATCHES:
         return
     try:

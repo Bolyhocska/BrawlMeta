@@ -7,7 +7,7 @@ name: Scrape — Masters Matches
 # "ran out of players" — widening the seed set barely helps, because the top-200
 # global players all queue against each other and their neighbourhoods overlap.
 # What DOES produce new rows is elapsed time, since the same players keep
-# playing. So we re-walk the graph 4x a day while filling the 1.5M baseline.
+# playing. So we re-walk the graph 4x a day while filling the window baseline (MASTERS_WINDOW_CAP).
 #
 # Scheduled one hour after each scrape-leaderboard run (05/11/17/23) so the two
 # scrapers never share the proxy, and early enough at 06:00 to finish before

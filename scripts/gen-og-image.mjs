@@ -99,7 +99,7 @@ const card = el("div", {
   // the one place that stops being true.
   el("div", { display: "flex", marginTop: 44, alignItems: "center" }, [
     ...[
-      ["1.5M", "RANKED MATCHES"],
+      ["1.2M", "RANKED MATCHES"],
       ["107",  "BRAWLERS"],
       ["33",   "MAPS"],
     ].flatMap(([v, k], i) => [

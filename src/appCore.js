@@ -23,7 +23,12 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 //
 // The two rebuild RPCs are scoped `WHERE patch = target_patch`, so 68.250 is
 // still intact underneath and setting this back is a one-line revert.
-export const CURRENT_PATCH = "69.230";
+//
+// Moved to 70.648 on 2026-11-10 (owner), seven days into the patch: 104 of 108
+// brawlers past 100 games, 101 with head-to-head data, 12.8k map_pair_edges —
+// the same depth 69.230 had when the site moved onto it. 69.230 stays intact
+// underneath until it is closed in scrapers/common.py.
+export const CURRENT_PATCH = "70.648";
 
 // Diamond/Mythic is PAUSED, not removed (owner decision 2026-09-19): the free
 // Supabase tier is 500 MB and the bracket costs ~66 MB across ranked_matches

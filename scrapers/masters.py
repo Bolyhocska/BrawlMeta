@@ -202,9 +202,9 @@ def main():
     # so a newly rotated-in map is collected without a code edit.
     refresh_dynamic_map_pool()
 
-    # Fill to the full 1.5M window baseline first (up to MASTERS_RUN_CAP per
+    # Fill to the full MASTERS_WINDOW_CAP baseline first (up to MASTERS_RUN_CAP per
     # run); once met, throttle down to a steady 50k per run — the FIFO window
-    # prune then trims each run's surplus back to 1.5M.
+    # prune then trims each run's surplus back to the cap.
     # patch_name=None: MASTERS_BASELINE is the size of the retention WINDOW, and
     # the FIFO prune caps that window across all patches. Counting only
     # CURRENT_PATCH understated `stored` by however many old-patch rows were
