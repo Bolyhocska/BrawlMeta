@@ -4,16 +4,14 @@
 #
 #   python -m scrapers.masters
 #
-# Seeds: a RANDOM `SEED_COUNT` of the live top-200 global ranked players
-# (scraped from brawlytix each run into masters_players, brawlace as a
-# secondary source, with stored/hardcoded fallbacks below that).
-# The public API has no per-match rank-tier field, so rank purity is enforced
-# by spider proximity instead: SPIDER_DEPTH=2 keeps collection within two
-# matchmaking hops of verified top-ranked players. At Masters I+ the queue is
-# solo-only and matchmaking rank-tight, so those hops stay Masters-adjacent
-# instead of drifting down the ladder.
+# Seeds: `SEED_COUNT` players VERIFIED as Masters I+ via /players rankedRank
+# (see get_masters_seeds), drawn from scraped leaderboards when available and
+# otherwise from stored candidate pools. Stored matches are filtered on the
+# lobby's match-time rank (MASTERS_MIN_LOBBY_RANK in common.py); SPIDER_DEPTH=2
+# bounds how far the walk strays from those verified seeds.
 
 import re
+import time
 import random
 import requests
 from datetime import datetime, timezone
@@ -31,7 +29,8 @@ except ImportError:
 from scrapers.common import (
     require_credentials, LookupCache, refresh_dynamic_map_pool, get_stored_match_count,
     harvest_bracket, push_matches, push_players, reaggregate, prune_bracket,
-    SUPABASE_URL, SUPABASE_HEADERS, PROXIES,
+    SUPABASE_URL, SUPABASE_HEADERS, PROXIES, BASE_URL, HEADERS, REQUEST_DELAY,
+    MASTERS_MIN_LOBBY_RANK,
     MASTERS_BASELINE, MASTERS_STEADY, MASTERS_RUN_CAP, SPIDER_DEPTH,
     MASTERS_WINDOW_CAP,
 )
@@ -137,19 +136,88 @@ def fetch_top_ranked_players(limit=200):
 # seeds = wider frontier at the SAME depth, so rank purity is unaffected.
 SEED_COUNT = 25
 
+# API verification of seeds (2026-11-10). Both scraped leaderboards died in
+# October: brawlytix put a Cloudflare managed challenge on its leaderboard path
+# (homepage still 200, the leaderboard answers `cf-mitigated: challenge` from
+# any IP, residential included — so not a GitHub-runner block, and solving it
+# would be bot-detection evasion, which we do not do), and brawlace's origin
+# went down site-wide (Cloudflare 520 on every path). Last brawlytix refresh of
+# masters_players: 2026-10-11.
+#
+# They are no longer needed for trust. /players/{tag} carries `rankedRank` on
+# the same 1–22 scale as the battlelog's per-match rank, so a seed can be READ
+# as Masters+ instead of inferred from which list it came from. That also
+# upgrades the stored spider pool: a tag one hop from last run's seeds is
+# verified directly here, not trusted by proximity.
+SEED_VERIFY_MAX_CALLS = 150   # one /players call each; ~0.4% of a run's battlelog calls
+
+def _player_ranked_rank(tag):
+    """Current-season Ranked rank (1–22) from /players, or None on any failure."""
+    time.sleep(REQUEST_DELAY)
+    try:
+        res = requests.get(f"{BASE_URL}/players/{tag.replace('#', '%23')}",
+                           headers=HEADERS, proxies=PROXIES, timeout=20)
+        if res.status_code != 200:
+            return None
+        return res.json().get("rankedRank")
+    except Exception:
+        return None
+
+def _stored_candidates():
+    """Every tag we have reason to think is near the top of Ranked: the stored
+    spider pool (refreshed each run), every tag brawlytix ever gave us, the
+    tracked Masters-seeded players and the trophy top 200. Candidates only —
+    nothing here is trusted until _player_ranked_rank says so."""
+    out = []
+    for url in (
+        f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&limit=5000",
+        f"{SUPABASE_URL}/rest/v1/tracked_players?select=player_tag&seed_bracket=eq.{BRACKET}&active=eq.true&limit=5000",
+        f"{SUPABASE_URL}/rest/v1/top_200_leaderboard?select=player_tag&limit=500",
+    ):
+        try:
+            res = requests.get(url, headers=SUPABASE_HEADERS, timeout=30)
+            if res.status_code == 200:
+                out += [r["player_tag"] for r in res.json() if r.get("player_tag")]
+            else:
+                print(f"⚠️ seed candidate read failed: {res.status_code} {url.split('?')[0].rsplit('/', 1)[-1]}")
+        except Exception as e:
+            print(f"⚠️ seed candidate read error: {e}")
+    return out
+
+def verify_seeds(candidates, count, max_calls=SEED_VERIFY_MAX_CALLS):
+    """Check candidates (in the given order) against the API until `count` are
+    at Masters I+ (MASTERS_MIN_LOBBY_RANK — the same bar matches are stored at)."""
+    verified, ranks, calls = [], {}, 0
+    for tag in dict.fromkeys(candidates):
+        if len(verified) >= count or calls >= max_calls:
+            break
+        r = _player_ranked_rank(tag)
+        calls += 1
+        ranks[r] = ranks.get(r, 0) + 1
+        if isinstance(r, int) and r >= MASTERS_MIN_LOBBY_RANK:
+            verified.append(tag)
+    dist = ", ".join(f"{k}:{v}" for k, v in sorted(ranks.items(), key=lambda kv: (kv[0] is None, kv[0] or 0)))
+    print(f"🔎 seed verification: {len(verified)}/{count} Masters+ from {calls} /players calls (rankedRank → count: {dist})")
+    return verified
+
 def get_masters_seeds(count=SEED_COUNT):
-    """Random `count` of the live top-200 ranked players. Falls back to all 5
-    hardcoded pro anchors + rotating players from the stored 'spider' pool
-    (each row there is, by construction, exactly one hop from a player
-    verified in SOME prior run — see persist_spider_players). Returns (seeds,
-    verified_set) — verified_set is which of the returned seeds are
-    trustworthy as a depth-1 collection origin for THIS run (real leaderboard
-    players or hardcoded pros; never a previously-spidered player, which is
-    what stops drift from compounding)."""
+    """Up to `count` seeds VERIFIED as Masters I+ by the API. Scraped
+    leaderboard tags (if a source ever comes back) are tried first, then the
+    stored candidate pools in random order. Returns (seeds, verified_set);
+    verified_set is the depth-1 whitelist for persist_spider_players.
+
+    If the API cannot verify anyone (key/proxy outage), falls back to the old
+    behaviour: 5 hardcoded pro anchors + rotating spider-pool players, with only
+    the anchors trusted."""
     top = fetch_top_ranked_players(200)
-    if top:
-        seeds = random.sample(top, min(count, len(top)))
-        return seeds, set(seeds)
+    stored = _stored_candidates()
+    random.shuffle(top)
+    random.shuffle(stored)
+    anchors = list(FALLBACK_MASTERS_SEEDS)
+    verified = verify_seeds(top + stored + anchors, count)
+    if verified:
+        return verified, set(verified)
+    print("⚠️ no seed could be verified via the API — falling back to anchors + spider pool.")
     res = requests.get(
         f"{SUPABASE_URL}/rest/v1/masters_players?select=player_tag&source=eq.spider&limit=1000",
         headers=SUPABASE_HEADERS,
@@ -157,11 +225,10 @@ def get_masters_seeds(count=SEED_COUNT):
     pool = []
     if res.status_code == 200:
         pool = [r["player_tag"] for r in res.json() if r.get("player_tag")]
-    anchors = list(FALLBACK_MASTERS_SEEDS)
     if pool:
         rotating_n = max(0, count - len(anchors))
         rotating = [t for t in random.sample(pool, min(rotating_n, len(pool))) if t not in anchors]
-        print(f"brawlace unavailable — seeding {len(anchors)} anchor pros + {len(rotating)} rotating (unverified) players.")
+        print(f"seeding {len(anchors)} anchor pros + {len(rotating)} rotating (unverified) players.")
         return anchors + rotating, set(anchors)
     print("Using hardcoded fallback Masters seeds.")
     return anchors, set(anchors)
