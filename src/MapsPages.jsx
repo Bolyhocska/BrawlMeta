@@ -16,6 +16,7 @@ import {
 import { draftClassOf, classLabel } from "./data/draftEngine";
 import { TrendChart, BarList, ScatterChart, CHART_COLORS } from "./Charts";
 import SiteHeader from "./SiteHeader";
+import { MapRotation } from "./LiveFeeds";
 import { useSeo } from "./seo";
 
 export const mapSlug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -214,6 +215,11 @@ export function MapsLandingPage() {
             printed beside every rate.
           </p>
         </div>
+
+        {/* Moved here from the Leaderboards tab (owner, 2026-11-12): "what is
+            on rotation right now" is a maps question, and this is where
+            people come to ask it. */}
+        <MapRotation />
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {BRACKETS.map(b => (

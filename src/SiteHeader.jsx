@@ -16,28 +16,32 @@ const NAV_STYLE = {
 // This is the ONLY navigation into the app's tabs; there's no secondary
 // in-app tab switcher anymore.
 const NAV_ITEMS = [
-  { label: "News", to: "/news" },
-  { label: "My Profile", to: "/profile" },
+  // Simplified 2026-11-12 (owner): eight items down to four. Nothing was
+  // deleted — every route still resolves — only the ways in moved:
+  //   News         -> latest posts on the home page (/news still works)
+  //   My Profile   -> the account menu, which already had it
+  //   Premium      -> the account menu + the site footer
+  //   Leaderboards -> map rotation on /maps, top-200 ladder on the home page
+  //                   (/app?tab=trending still renders both)
+  // "Draft" leads because it is the product; it used to be labelled "Ranked"
+  // and sat sixth, which hid the one thing the share card advertises.
+  { label: "Draft", to: "/app?tab=meta" },
   // "Brawlers", not "Tier List": the page is a full per-brawler stats browser
   // (per-mode, per-map, duos, head-to-head) and the tier grouping is one view
-  // of it. The old label undersold it and sent /news brawler facts somewhere
-  // that sounded like a ranking rather than a stat page.
+  // of it.
   { label: "Brawlers", to: "/app?tab=brawlers" },
-  { label: "Leaderboards", to: "/app?tab=trending" },
+  { label: "Maps", to: "/maps" },
   { label: "Guides", dropdown: [
     { label: "Skills Guide", desc: "Movement & shooting fundamentals", to: "/guides/skills" },
     { label: "Mode Guides", desc: "Every ranked mode + map guides", to: "/guides/modes" },
     { label: "Brawler Guides", desc: "Full guide for every brawler", to: "/guides/brawlers" },
   ] },
-  { label: "Ranked", to: "/app?tab=meta" },
-  { label: "Maps", to: "/maps" },
   // Hidden behind TOURNAMENTS_ENABLED (owner, 2026-11-05) rather than deleted.
   // The routes still resolve; this is only the way in. See appCore.js.
   ...(TOURNAMENTS_ENABLED ? [
     { label: "Tournaments", to: "/tournaments" },
     { label: "Scrims", to: "/scrims" },
   ] : []),
-  { label: "Premium", to: "/app?tab=premium" },
 ];
 
 function NavLink({ to, children }) {
@@ -181,6 +185,11 @@ function AccountMenu() {
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
             My profile
           </Link>
+          <Link className="bm-tap" to="/app?tab=premium" onClick={() => setOpen(false)} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", color: "#ffce7a", fontSize: 13, fontWeight: 600 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,180,61,.12)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+            {profile?.is_premium ? "Premium 👑" : "Premium"}
+          </Link>
           <button onClick={() => { setOpen(false); signOut(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 10, background: "none", border: "none", color: "#ff8f8f", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,143,143,.1)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
@@ -265,14 +274,6 @@ function MobileNav() {
           padding: "2px 6px 12px", marginBottom: 6, borderBottom: "1px solid rgba(255,255,255,.08)",
         }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: "#8a7fa6" }}>MENU</span>
-          <span style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
-            border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-            fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 1.5, color: "#ffce7a",
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
-            LIVE
-          </span>
         </div>
 
         {NAV_ITEMS.map(n => n.dropdown ? (
@@ -301,7 +302,7 @@ function MobileNav() {
 
         {!user && (
           <p style={{ margin: "14px 14px 0", fontSize: 11.5, lineHeight: 1.5, color: "#8b8b9c", fontFamily: "'Chakra Petch', sans-serif" }}>
-            Sign in to save drafts and enter tournaments.
+            {TOURNAMENTS_ENABLED ? "Sign in to save drafts and enter tournaments." : "Sign in to save drafts and track your own matches."}
           </p>
         )}
       </div>
@@ -370,23 +371,6 @@ export default function SiteHeader() {
       `}</style>
     </header>
 
-    {/* LIVE sits under the header rather than stacked beneath the account
-        button. In the header-right column it forced that side to two rows and
-        crowded the profile; on its own line it reads as a status strip for the
-        whole site, which is what it actually is. */}
-    <div className="site-live-strip" style={{
-      position: "relative", zIndex: 39, display: "flex", alignItems: "center",
-      padding: "0 5vw 10px", marginTop: -8,
-    }}>
-      <span style={{
-        display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999,
-        border: "1px solid rgba(255,180,61,.28)", background: "rgba(13,13,20,.6)",
-        fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: 1.5, color: "#ffce7a",
-      }}>
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb43d", boxShadow: "0 0 8px #ffb43d", animation: "bm-pulse 1.5s infinite" }} />
-        LIVE
-      </span>
-    </div>
     </>
   );
 }

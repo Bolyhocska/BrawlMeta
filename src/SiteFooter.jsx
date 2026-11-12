@@ -22,6 +22,8 @@ export default function SiteFooter() {
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
           <Link to="/about" style={{ color: "#8b8b9c", textDecoration: "none" }}>About</Link>
+          <Link to="/news" style={{ color: "#8b8b9c", textDecoration: "none" }}>News</Link>
+          <Link to="/app?tab=premium" style={{ color: "#8b8b9c", textDecoration: "none" }}>Premium</Link>
           <Link to="/privacy" style={{ color: "#8b8b9c", textDecoration: "none" }}>Privacy &amp; Cookies</Link>
         </div>
       </div>

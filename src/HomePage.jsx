@@ -1,15 +1,14 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "./SiteHeader";
 import { TOURNAMENTS_ENABLED } from "./appCore";
 
 import { useSeo } from "./seo";
+import { GlobalTop200 } from "./LiveFeeds";
+// Lazy so the news module (and MapsPages, which it imports) stays out of the
+// home page's first bundle; it renders nothing until posts arrive anyway.
+const LatestNews = lazy(() => import("./NewsPage").then(m => ({ default: m.LatestNews })));
 const SECTIONS = [
-  {
-    id: "news", tag: "META NEWS", badge: "UPDATED", accent: "#ffb43d", accentBg: "rgba(255,180,61,.14)",
-    heading: "Meta News", desc: "Patch breakdowns, balance changes, and pro-scene highlights.",
-    bullets: "Patch notes · Pro matches · Community", linkHref: "/news", linkLabel: "Read News",
-    imgPlaceholder: "Drop news / patch art",
-  },
   {
     id: "tier-list", tag: "TIER LIST", badge: "POPULAR", accent: "#b36bff", accentBg: "rgba(179,107,255,.14)",
     heading: "Tier List", desc: "See which brawlers are dominating this meta, updated daily.",
@@ -27,9 +26,9 @@ const SECTIONS = [
     imgPlaceholder: "Drop scrims art",
   }] : []),
   {
-    id: "ranked", tag: "RANKED", badge: "CLIMB", accent: "#ffb43d", accentBg: "rgba(255,180,61,.14)",
-    heading: "Ranked Tracker", desc: "Live map-aware picks and climbing tools for ranked matches.",
-    bullets: "Live picks · Map meta · Roster tips", linkHref: "/app?tab=meta", linkLabel: "Launch Ranked",
+    id: "draft", tag: "DRAFT", badge: "CLIMB", accent: "#ffb43d", accentBg: "rgba(255,180,61,.14)",
+    heading: "Draft Assistant", desc: "Live map-aware picks for every slot of a Ranked draft.",
+    bullets: "Pick suggestions · Counters · Win split", linkHref: "/app?tab=meta", linkLabel: "Open Draft Assistant",
     imgPlaceholder: "Drop ranked mode art",
   },
 ];
@@ -178,6 +177,14 @@ export default function HomePage() {
             </div>
           );
         })}
+      </div>
+
+      {/* ================= NEWS + LADDER =================
+          Both used to have their own nav pill (owner moved them here,
+          2026-11-12). News first: it is the thing that changes. */}
+      <div style={{ position: "relative", zIndex: 10, padding: "0 5vw 80px", maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", gap: 44 }}>
+        <Suspense fallback={null}><LatestNews limit={3} /></Suspense>
+        <GlobalTop200 />
       </div>
 
       {/* ================= FOOTER ================= */}

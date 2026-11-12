@@ -124,14 +124,14 @@ function CategoryBadge({ post }) {
 
 // ── list ──────────────────────────────────────────────────────────────────────
 
-function useNewsPosts() {
+function useNewsPosts(limit = 100) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    supabase.from("news_posts").select("*").order("published_at", { ascending: false }).limit(100)
+    supabase.from("news_posts").select("*").order("published_at", { ascending: false }).limit(limit)
       .then(({ data, error: err }) => {
         if (cancelled) return;
         if (err) setError(err.message);
@@ -139,7 +139,7 @@ function useNewsPosts() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [limit]);
 
   return { posts, loading, error };
 }
@@ -205,6 +205,25 @@ function PostCard({ post }) {
         </div>
       </article>
     </Link>
+  );
+}
+
+// The newest few posts, for the home page. News left the top nav on
+// 2026-11-12 (owner) — it posts about weekly, which is not enough to earn a
+// permanent slot in the bar, but it is exactly what a returning visitor wants
+// to see first. Renders nothing at all when there are no posts or the query
+// fails, so the home page never shows an empty "News" frame.
+export function LatestNews({ limit = 3 }) {
+  const { posts, loading, error } = useNewsPosts(limit);
+  if (loading || error || posts.length === 0) return null;
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#ffb43d" }}>◈ LATEST NEWS</span>
+        <Link to="/news" style={{ fontFamily: MONO, fontSize: 11, color: "#7cc4ff", textDecoration: "none" }}>All news →</Link>
+      </div>
+      {posts.map(p => <PostCard key={p.id} post={p} />)}
+    </section>
   );
 }
 
