@@ -297,7 +297,19 @@ def _schedule(row, new_count, newest=None, dead=False, snapped=False, snapped_br
     active = True
 
     if dead:
-        active, empty = False, empty + 1
+        # A 404 is NOT proof the tag is gone. On 2026-11-03 (the 70.648
+        # maintenance) the API 404'd battlelogs for live accounts, and this
+        # branch used to switch the player off on the spot: 213 players in one
+        # day, 169 of whom had played in the previous three days, and tracked
+        # players per day fell ~250 -> ~110 overnight with nothing ever turning
+        # them back on. So a 404 now counts as an ordinary empty poll: a truly
+        # dead tag still ends up inactive, via the same back-off as a quiet one
+        # (~9 days of empty polls), and a maintenance blip costs nothing.
+        empty += 1
+        if empty >= EMPTY_POLLS_BEFORE_BACKOFF:
+            interval = min(MAX_INTERVAL_MINS, interval * 2)
+            if interval >= MAX_INTERVAL_MINS:
+                active = False
     elif new_count >= OUTRUN_THRESHOLD:
         interval = max(MIN_INTERVAL_MINS, int(interval / 2))   # we are losing history
         empty = 0
